@@ -124,12 +124,12 @@
 <div class="table-wrap"><table><thead><tr><th>选项</th><th>阅读方法</th></tr></thead><tbody><tr><td>正常</td><td>常规的按下／释放处理，从最简单的A → B开始理解。</td></tr><tr><td>按下</td><td>在原始输入按下阶段触发映射内容。</td></tr><tr><td>抬起</td><td>在原始输入释放阶段使用“抬起映射”内容。</td></tr><tr><td>按下+抬起</td><td>按下阶段使用“映射按键”，释放阶段使用“抬起映射”。</td></tr><tr><td>正常+抬起</td><td>保留正常映射处理，同时在释放阶段使用“抬起映射”。</td></tr></tbody></table></div>
 <p>选择需要抬起内容的时机后，上方“抬起映射”编辑区才会启用。不要把灰色的抬起区域误认为故障，也不要只改普通映射行就期待释放时发送另一套内容。</p>
 </section>
-<section id="item-other-options" data-search="原始按键穿透 SendInput SendMessage FakerInput PasteText 禁用 循环 次数 不可打断 固定虚拟键码 映射码">
+<section id="item-other-options" data-search="原始按键穿透 SendInput SendMessage FakerInput IbInput PasteText 禁用 循环 次数 不可打断 固定虚拟键码 映射码">
 <h2>其余区域怎么选择</h2>
 <div class="table-wrap"><table><thead><tr><th>区域／选项</th><th>用途与建议</th></tr></thead><tbody>
 <tr><td>原始按键列表／映射按键列表</td><td>选择键名；旁边的分类按钮缩小列表范围。最终内容以上方键名编辑区和表格为准。</td></tr>
 <tr><td>连续按键录制、按键记录区</td><td>辅助采集输入；“按键编辑”切换记录区的编辑方式，“复制”复制记录。录制和正式运行映射是不同操作。</td></tr>
-<tr><td>发送方式</td><td>普通练习保持SendInput。SendMessage面向消息方式的目标程序；FakerInput依赖对应驱动，不是所有目标都通用的“加强模式”。</td></tr>
+<tr><td>发送方式</td><td>普通练习保持SendInput。SendMessage面向消息方式的目标程序；FakerInput与<a href="#ibinput">IbInput</a>依赖各自兼容驱动，不是所有目标都通用的“加强模式”。</td></tr>
 <tr><td>固定虚拟键码</td><td>用于有明确需求的键码覆盖；不了解时保持0x0，不要为普通字母练习修改。</td></tr>
 <tr><td>原始按键穿透</td><td>保留原始输入的同时执行映射；勾选后目标可能同时收到A和B，不要误以为映射失效。</td></tr>
 <tr><td>按键按住时序列循环／序列循环次数</td><td>控制序列重复条件或次数，不等于单键连发。先学会单次序列再启用。</td></tr>
@@ -455,9 +455,9 @@
 <h2>取得坐标，再添加映射</h2><ol class="steps"><li><strong>先选参考范围与目标窗口。</strong>窗口坐标需要正确目标；先完成<a href="#windows">窗口信息匹配</a>。不要从QKeyMapper自己的按钮位置推算游戏位置。</li><li><strong>使用拾取快捷方式或坐标拾取器。</strong>屏幕点使用左Ctrl＋鼠标左键，窗口点使用左Alt＋鼠标左键。也可在“视图”勾选“显示坐标采集悬浮窗”，打开标题为“坐标采集”的拾取器，选择屏幕／窗口模式，将拾取工具拖到目标再释放；拖动中右键可取消。</li><li><strong>核对坐标值与目标。</strong>窗口模式若没有匹配目标、坐标显示不可用，先修正目标信息。选取框的数值是给自己环境使用的，不是本书中的通用推荐值。</li><li><strong>选择对应映射按键并添加。</strong>例如列表的Mouse-L_ScreenPoint或Mouse-L_WindowPoint会根据已拾取值生成标准格式。添加后检查表格里的完整名称，再保存。</li></ol>
 <figure><button type="button" class="image-button"><img data-src="images/stage3-picker.png" alt="坐标拾取器界面：屏幕与窗口模式、拖动拾取工具、当前与已拾取坐标"></button><figcaption><b>先看参考模式。</b>这是拾取器入口截图；没有匹配目标时，不应把窗口模式的坐标当作有效游戏位置。</figcaption></figure><p class="small">坐标拾取不是点击映射已执行的证明。选择列表里的_ScreenPoint／_WindowPoint是辅助生成入口；保存到映射行的是下一节的标准坐标写法。</p></section>
 <section id="mouse-click" data-search="Mouse-L Mouse-R Mouse-M Mouse-X1 Mouse-X2 ScreenPoint WindowPoint 点击">
-<h2>坐标点击格式</h2><table><thead><tr><th>需求</th><th>映射按键示例</th><th>作用</th></tr></thead><tbody><tr><td>屏幕点左键</td><td><code>Mouse-L(500,100)</code></td><td>将指针移到该屏幕点并发送左键动作。</td></tr><tr><td>窗口内右键</td><td><code>Mouse-R:W(500,100)</code></td><td>将指针移到目标客户区相对点并发送右键。</td></tr><tr><td>中键与侧键</td><td><code>Mouse-M(500,100)</code>、<code>Mouse-X1:W(500,100)</code>、<code>Mouse-X2(500,100)</code></td><td>L、R、M、X1、X2分别表示左、右、中、侧键1、侧键2；均可按支持格式选择屏幕／窗口参考。</td></tr></tbody></table><p>普通按键动作还受触发的按下／抬起及发送时机影响。只想单次点击时，先使用普通触发和明确释放的练习，不要同时开启锁定或连发。</p></section>
+<h2>坐标点击格式</h2><table><thead><tr><th>需求</th><th>映射按键示例</th><th>作用</th></tr></thead><tbody><tr><td>屏幕点左键</td><td><code>Mouse-L(500,100)</code></td><td>将指针移到该屏幕点并发送左键动作。</td></tr><tr><td>窗口内右键</td><td><code>Mouse-R:W(500,100)</code></td><td>将指针移到目标客户区相对点并发送右键。</td></tr><tr><td>中键与侧键</td><td><code>Mouse-M(500,100)</code>、<code>Mouse-X1:W(500,100)</code>、<code>Mouse-X2(500,100)</code></td><td>L、R、M、X1、X2分别表示左、右、中、侧键1、侧键2；均可按支持格式选择屏幕／窗口参考。</td></tr></tbody></table><p>普通按键动作还受触发的按下／抬起及发送时机影响。只想单次点击时，先使用普通触发和明确释放的练习，不要同时开启锁定或连发。IbInput的G HUB近似精度见<a href="#ibinput-position">绝对定位说明</a>。</p></section>
 <section id="mouse-move" data-search="Mouse-Move Mouse-Move:R Mouse-Move_Relative Mouse-PosSave Mouse-PosRestore 恢复鼠标位置">
-<h2>绝对移动、相对移动和位置还原</h2><table><thead><tr><th>写法</th><th>作用</th></tr></thead><tbody><tr><td><code>Mouse-Move(800,600)</code></td><td>移到屏幕绝对位置，不点击。</td></tr><tr><td><code>Mouse-Move:W(500,400)</code></td><td>移到目标窗口客户区中的位置。</td></tr><tr><td><code>Mouse-Move:R(6,10)</code></td><td>从当前位置向右6、向下10；<code>(-6,-10)</code>为向左、向上。</td></tr><tr><td><code>Mouse-PosSave</code>／<code>Mouse-PosRestore</code></td><td>保存／还原指针位置；还原前先保存，不等于恢复窗口或游戏状态。</td></tr></tbody></table><p>在列表选择Mouse-Move_Relative时，“参数”区填<code>6,10</code>，程序生成<code>Mouse-Move:R(6,10)</code>。屏幕／窗口移动辅助项也分别生成无后缀／:W格式。</p><p>组合示例：<code>Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore</code>先保存位置、点击、再还原。仍须先确认目标安全、按键释放和序列时机；外部软件是否接受并非由格式检查保证。</p></section>
+<h2>绝对移动、相对移动和位置还原</h2><table><thead><tr><th>写法</th><th>作用</th></tr></thead><tbody><tr><td><code>Mouse-Move(800,600)</code></td><td>移到屏幕绝对位置，不点击。</td></tr><tr><td><code>Mouse-Move:W(500,400)</code></td><td>移到目标窗口客户区中的位置。</td></tr><tr><td><code>Mouse-Move:R(6,10)</code></td><td>从当前位置向右6、向下10；<code>(-6,-10)</code>为向左、向上。</td></tr><tr><td><code>Mouse-PosSave</code>／<code>Mouse-PosRestore</code></td><td>保存／还原指针位置；还原前先保存，不等于恢复窗口或游戏状态。</td></tr></tbody></table><p>在列表选择Mouse-Move_Relative时，“参数”区填<code>6,10</code>，程序生成<code>Mouse-Move:R(6,10)</code>。屏幕／窗口移动辅助项也分别生成无后缀／:W格式。</p><p>组合示例：<code>Mouse-PosSave»Mouse-L(300,200)»Mouse-PosRestore</code>先保存位置、点击、再还原。仍须先确认目标安全、按键释放和序列时机；外部软件是否接受并非由格式检查保证。IbInput后端选择及近似定位见<a href="#ibinput-position">相关说明</a>。</p></section>
 <section id="mouse-keyboard" data-search="Key2Mouse-Up Key2Mouse-Down Key2Mouse-Left Key2Mouse-Right 键盘移动鼠标 X轴速度 Y轴速度">
 <h2>用键盘持续移动鼠标指针</h2><ol class="steps"><li>选择一个练习用原始键，例如<code>I</code>；右侧选择<code>Key2Mouse-Up</code>，添加并保存。</li><li>在安全的空白桌面区域开始映射，按住I时预期指针持续上移，松开后停止；先确认停止快捷键。</li><li>其他三个方向使用<code>Key2Mouse-Down</code>、<code>Key2Mouse-Left</code>和<code>Key2Mouse-Right</code>。它们是按住控制方向，不是跳到一个绝对坐标。</li><li>在“映射高级设定”核对X轴／Y轴鼠标移动速度，分别影响水平／垂直节奏；先小幅调整，再保存配置。</li></ol><p>这个用途不要求先装Interception或创建虚拟手柄。不要同时混用坐标移动、鼠标转摇杆、锁定和连发来排查基础移动问题。这里描述操作预期，未发送真实鼠标输入。</p></section>
 <section id="mouse-background" data-search=":BG PostMessage 后台 同名窗口 鼠标不动 不支持后台点击">
@@ -772,10 +772,10 @@
 
 <article id="drivers" data-title="驱动选择与安装入口">
 <header><p class="eyebrow">按需要安装，不把所有驱动当成入门必选</p><h1>驱动选择与安装入口</h1><p class="lead">先判断自己需要读取什么、输出什么，再考虑驱动。驱动会改变Windows设备环境，不能仅凭软件截图里显示“可用”就照着全部安装。</p></header>
-<section id="driver-choose" data-search="驱动区别 ViGEmBus Interception FakerInput HidHide 需要安装哪个 SDL2 Win7 Win10 Win11">
+<section id="driver-choose" data-search="驱动区别 ViGEmBus Interception FakerInput IbInput G HUB Razer HidHide 需要安装哪个 SDL2 Win7 Win10 Win11">
 <h2>先选功能，再选驱动</h2>
-<table><thead><tr><th>用途</th><th>对应组件</th></tr></thead><tbody><tr><td>普通键鼠映射</td><td>不要求为了基础练习安装Interception／ViGEmBus；先使用正常输入路径。</td></tr><tr><td>读取物理手柄、转键鼠</td><td>SDL2读取；不等于屏蔽游戏收到的物理输入。</td></tr><tr><td>创建虚拟X360／DS4手柄</td><td>ViGEmBus；这是输出设备，与物理手柄检测不同。</td></tr><tr><td>区分多套键盘／鼠标</td><td>Interception；<strong>先读<a href="#interception-risk">严重输入失效风险</a></strong>，普通用户无需为基础映射启用。</td></tr><tr><td>通过虚拟HID键鼠发送输入</td><td>FakerInput；需同时在相应映射项选择发送方式，不是安装后所有条目自动改走该路径。</td></tr><tr><td>减少物理＋虚拟手柄双重输入</td><td>HidHide等独立工具；需要保持QKeyMapper可见物理设备。见<a href="#double-input">能力边界</a>。</td></tr></tbody></table>
-<p>QKeyMapper版本、Windows版本、应用位数与驱动支持是不同条件。不要因为手册可在旧浏览器阅读，就认为所有驱动都支持Win7；也不要把x86程序直接等同于x86操作系统。完整发布包内的安装入口会按操作系统架构选择相应资源。</p>
+<table><thead><tr><th>用途</th><th>对应组件</th></tr></thead><tbody><tr><td>普通键鼠映射</td><td>不要求为了基础练习安装Interception／ViGEmBus；先使用正常输入路径。</td></tr><tr><td>读取物理手柄、转键鼠</td><td>SDL2读取；不等于屏蔽游戏收到的物理输入。</td></tr><tr><td>创建虚拟X360／DS4手柄</td><td>ViGEmBus；这是输出设备，与物理手柄检测不同。</td></tr><tr><td>区分多套键盘／鼠标</td><td>Interception；<strong>先读<a href="#interception-risk">严重输入失效风险</a></strong>，普通用户无需为基础映射启用。</td></tr><tr><td>通过虚拟HID键鼠发送输入</td><td>FakerInput；需同时在相应映射项选择发送方式，不是安装后所有条目自动改走该路径。</td></tr><tr><td>通过兼容罗技／雷蛇驱动发送键鼠</td><td><a href="#ibinput">IbInput</a>；按映射行选择发送方式，再在IbInput设置统一选择后端。雷蛇包有单独的系统／架构条件。</td></tr><tr><td>减少物理＋虚拟手柄双重输入</td><td>HidHide等独立工具；需要保持QKeyMapper可见物理设备。见<a href="#double-input">能力边界</a>。</td></tr></tbody></table>
+<p>QKeyMapper版本、Windows版本、应用位数与驱动支持是不同条件。不要因为手册可在旧浏览器阅读，就认为所有驱动都支持Win7；也不要把x86程序直接等同于x86操作系统。各驱动有自己的发布条件；例如<a href="#ibinput-razer">RazerDriver</a>只在x64包中提供，面向64位Win10／Win11。</p>
 </section>
 <section id="driver-vigem" data-search="安装ViGEm 卸载ViGEm ViGEmBusDriver 驱动已退休 Windows7 1.16 1.17 安装资源缺失">
 <h2>ViGEmBus：只在需要虚拟手柄时安装</h2>
@@ -791,6 +791,90 @@
 <ol class="steps"><li>先用默认发送方式完成简单映射；确有使用虚拟HID键鼠路径的需要时，再查看驱动条件。</li><li>保存、停止映射，在“映射设定”页使用“安装FakerInput”，保留发布包的 <code>FakerInputDriver</code> 目录，阅读UAC和结果。已安装时按钮为卸载，不要误点。</li><li>打开需要的“映射项设定”，在“发送方式”中选择FakerInput；确认该条输入／输出支持此方式，再更新并保存。</li><li>使用安全测试窗口验证按下与释放，再测试目标软件。只有驱动可用，并不代表每个目标一定接受该输出。</li></ol>
 <p>卸载前停用相关映射，注意其他依赖软件；完整退出与卸载驱动不同。FakerInput不用于隐藏物理手柄，也不能当作Interception设备失效的恢复工具。<a href="https://github.com/Ryochan7/FakerInput" target="_blank" rel="noopener noreferrer">项目来源（需联网）</a>。</p>
 <div class="related"><a href="#interception">多键鼠：先读风险再决定 →</a><a href="#item-other-options">映射项发送方式</a></div>
+</section>
+</article>
+
+<article id="ibinput" data-title="IbInput发送方式">
+<header><p class="eyebrow">选择发送通道，再确认实际接收</p><h1>IbInput：通过罗技或雷蛇驱动发送键鼠</h1><p class="lead">IbInput是“发送方式”的一个选项。它复用已有的映射触发、序列和停止操作，通过兼容的G HUB或雷蛇驱动输出键盘、鼠标事件。安装驱动、连接成功与目标收到输入是三件不同的事。</p></header>
+<section id="ibinput-drivers" data-search="IbInput 驱动准备 安装G HUB 下载G HUB 最新版本 已安装 罗技实体设备 Razer 雷蛇驱动 需要安装哪个">
+<h2>驱动准备与安装</h2>
+<p>IbInput需要一条满足当前用途的兼容通道，<strong>不必同时安装G HUB和雷蛇驱动</strong>。先复用电脑上已经正常工作的驱动；“IbInput设置”中的选择不会替你安装厂商软件。</p>
+<table><thead><tr><th>你的电脑情况</th><th>建议操作</th></tr></thead><tbody>
+<tr><td>已经安装并使用G HUB，包括新版G HUB</td><td>先刷新状态并检查G HUB连接；通过即可直接使用，无需另装一份，也不必特意找旧版。</td></tr>
+<tr><td>尚未安装G HUB，准备使用罗技通道</td><td>从下面的罗技官网下载适用于本机的当前Windows版本，完成安装后再检测和连接。</td></tr>
+<tr><td>已有雷蛇驱动／Synapse，或准备使用雷蛇通道</td><td>先检查现有兼容接口；检查通过就复用。确有安装需要时，再按<a href="#ibinput-razer">雷蛇驱动说明</a>处理。</td></tr>
+</tbody></table>
+<h3>罗技 G HUB：已有的直接复用，没有的从官网安装</h3>
+<ol class="steps"><li>已经安装G HUB的用户，直接进入下一步；尚未安装时，先保存配置并退出QKeyMapper，从<a href="https://www.logitechg.com/zh-cn/software/ghub" target="_blank" rel="noopener noreferrer">罗技G HUB官网（需联网）</a>下载当前Windows安装程序，按安装器提示完成安装和首次启动。支持的系统以官网当前说明为准；安装器要求重启时，安排重启后再检查。</li><li>打开QKeyMapper的“映射设定” → “IbInput设置”，点击“刷新状态”，查看G HUB版本、驱动登记和进程信息。</li><li>手动选择“罗技 G HUB”并点击“连接检查”。检查通过即可将首选保持为G HUB，或切回“自动（推荐）”，再按下节做一条简单映射确认实际接收。</li><li>若未检测到或连接失败，先确认安装／首次启动已完成，记录G HUB版本和上方完整错误，再看<a href="#ibinput-troubleshooting">排查顺序</a>；不将“安装器已结束”直接当成通道已连接。</li></ol>
+<p>本功能不以连接罗技实体鼠标／键盘作为前置条件。即使G HUB界面没有列出实体设备，也应按QKeyMapper的驱动检测和连接检查判断；已有罗技设备的用户同样复用当前安装。厂商版本会更新，能否使用以实际检查结果为准。</p>
+<h3>雷蛇：先查兼容通道，再决定是否安装</h3>
+<p>已有雷蛇设备、驱动或Synapse的用户，先手动选择“雷蛇”做连接检查；通过后保留现有环境即可。没有兼容通道时，可按<a href="#ibinput-razer">雷蛇手动驱动包的系统条件、兼容提醒与安装步骤</a>处理。不要仅为IbInput安装Synapse 4，也不要把卸载原Synapse或替换原驱动作为必做步骤。</p>
+</section>
+<section id="ibinput-start" data-search="IbInput IbInputSimulator 入门 发送方式 A改B 键盘 鼠标 DLL 依赖 FakerInput">
+<h2>先用一条A → B练习</h2>
+<p>还没有准备输入驱动时，先看上面的<a href="#ibinput-drivers">驱动准备与安装</a>；已经检查通过的用户可以直接练习。</p>
+<ol class="steps"><li>完整解压发布包，保留与EXE同目录、相同位数的<code>IbInputSimulator.dll</code>及随包目录。只复制EXE不能使用这条发送通道。</li><li>在“映射设定”点击<b>“IbInput设置”</b>，先保留“自动（推荐）”。已有可用通道时，无需为了尝试IbInput再安装另一套驱动。</li><li>添加原始按键<code>A</code>、映射按键<code>B</code>。打开这一行的“映射项设定”，将“发送方式”改为<b>IbInput</b>，完成映射更新，再回到主窗口<b>保存设定</b>。</li><li>核对停止快捷键，在普通空白测试窗口开始映射，按下、松开A，确认收到B且松手后结束。先验证简单映射，再加入长按、双击、组合、连发或宏。</li><li>用当前停止快捷键或“映射停止”结束；默认快捷键是<b>左Ctrl＋F6</b>。确认已经停止后不要反复按。</li></ol>
+<figure><button type="button" class="image-button"><img data-src="images/ibinput-entry.png" alt="映射设定页中的IbInput设置按钮和未连接状态"></button><figcaption>从“映射设定”进入。停止映射时显示“未连接”通常是正常状态。</figcaption></figure>
+<figure><button type="button" class="image-button"><img data-src="images/ibinput-item.png" alt="映射项设定中将A映射为B并选择IbInput发送方式"></button><figcaption>发送方式按行选择；G HUB或雷蛇后端在IbInput设置中统一选择。</figcaption></figure>
+<p>推荐沿用<a href="#system-filterkeys">系统筛选键建议</a>，减少长时间按住实体键时Windows重复产生的Key Down。它不是切换发送方式的开关；关闭时的重复行为还受Windows和映射内容影响。</p>
+</section>
+<section id="ibinput-backend" data-search="自动 推荐 优先级 候选 顺序 罗技 G HUB 雷蛇 Razer Logitech legacy 旧版通道 回退 SendInput 首选后端 无法连接时">
+<h2>“自动”会选哪个后端？</h2>
+<p>自动按<strong>罗技 G HUB → 罗技旧版通道 → 雷蛇</strong>的候选顺序，结合本轮实际启用映射需要的能力，选择能连接的后端。旧版通道保留在选择列表中，当前没有开放产品映射能力，不会因为它连接成功就把未支持的映射交给它。</p>
+<ul><li><b>G HUB和雷蛇都可用：</b>普通键鼠、绝对坐标等两边都支持的用途优先G HUB；需要横向滚轮等仅雷蛇支持的能力时，自动筛选到雷蛇。</li><li><b>希望固定使用某条通道：</b>在“首选后端”手动选择。要求更精确的绝对坐标时，可固定雷蛇，或在映射项选择FakerInput。</li><li><b>查看实际选择：</b>选择框下的顺序是候选说明；“连接检查”的结果与运行时“当前后端”才说明那次实际使用的通道。</li></ul>
+<p>后端偏好是本机全局设置，单行只记录IbInput发送方式。一次运行固定使用已选通道；停止后再次启动或切表时重新准备，不在运行中悄悄换成其他后端。</p>
+<p>“无法连接时”默认不启动映射。若选择“启动前改用SendInput”，仅在启动连接失败时为该次运行固定改用SendInput，原配置仍为IbInput；它不能绕过映射规则或能力检查。先看实际后端和回退状态，再判断测试的是哪条通道。</p>
+</section>
+<section id="ibinput-status" data-search="刷新状态 连接检查 未连接 驱动已登记 已检测到 未检测到 查询失败 最近结果 更新于 回退">
+<h2>刷新、连接检查与运行状态分别看什么？</h2>
+<figure><button type="button" class="image-button"><img data-src="images/ibinput-popup.png" alt="IbInput设置：自动候选顺序、反馈区及罗技G HUB与雷蛇驱动分组状态"></button><figcaption>上方显示操作反馈，中间显示当前后端和软件检测到的驱动信息。界面内容以自己电脑的实际检测结果为准。</figcaption></figure>
+<table><thead><tr><th>入口／信息</th><th>含义与操作</th></tr></thead><tbody>
+<tr><td>刷新状态</td><td>重新查询版本、进程、服务及通信接口，并更新时间；不初始化驱动、不发送输入、不改变配置。没有环境变化时，除时间与刷新反馈外内容可能相同。</td></tr>
+<tr><td>连接检查</td><td>按当前偏好临时连接后关闭，显示成功／失败、实际后端和时间；不开始映射、不发送键鼠。检查通过后仍显示“未连接”，是临时连接已关闭。</td></tr>
+<tr><td>驱动已登记／已检测到</td><td>软件观察到相应驱动记录或兼容通信接口；不等于连接成功，更不等于目标应用收到输入。</td></tr>
+<tr><td>未检测到／查询失败</td><td>前者是本次没有找到对应信息；后者是查询本身未成功。先刷新，仍有疑问再做连接检查并保留完整结果。</td></tr>
+<tr><td>当前后端／回退</td><td>运行时实际使用的通道。停止后的“最近结果”是历史反馈，不代表仍保持连接。</td></tr>
+</tbody></table>
+<p>罗技详情包含G HUB软件版本、驱动登记和进程；雷蛇详情侧重兼容接口与服务。没有Synapse界面或进程不单独判为雷蛇驱动不可用；也不能仅凭Synapse已安装就判断兼容通道存在。</p>
+</section>
+<section id="ibinput-capabilities" data-search="支持范围 五按钮 滚轮 横向滚轮 普通键盘 长按 双击 组合 序列 连发 锁定 宏 手柄转鼠标">
+<h2>当前键鼠能力</h2>
+<div class="table-wrap"><table><thead><tr><th>用途</th><th>罗技 G HUB</th><th>雷蛇</th></tr></thead><tbody>
+<tr><td>普通键盘：字母、数字、功能、编辑／导航、数字区、标点及修饰键</td><td>支持</td><td>支持</td></tr>
+<tr><td>左、右、中、侧键1／2与垂直滚轮</td><td>支持</td><td>支持</td></tr>
+<tr><td>横向滚轮</td><td>未开放</td><td>支持</td></tr>
+<tr><td>相对移动、持续方向移动</td><td>支持</td><td>支持</td></tr>
+<tr><td>屏幕／窗口坐标、坐标点击、位置还原</td><td>多步逼近，见下节</td><td>原生绝对定位</td></tr>
+</tbody></table></div>
+<p>正常、长按、双击、组合、序列、连发、锁定与宏继续使用已有设置，不需要为IbInput重写一套映射。手柄／陀螺仪／触摸板转换到鼠标时，输出仍受上述通道能力约束；物理输入是否能被读取另见<a href="#motion">传感器与触摸板</a>及<a href="#gamepad">手柄说明</a>。</p>
+<p>相同键名不代表应用一定识别相同。请先在简单接收窗口确认按下与抬起，再验证目标程序；不要把连接成功理解成对所有游戏或权限组合的保证。</p>
+</section>
+<section id="ibinput-position" data-search="G HUB 绝对坐标 近似定位 误差 1像素 2像素 精确定位 Mouse-Move Mouse-PosRestore 坐标点击 拖动">
+<h2>G HUB绝对坐标：可能有约1～2像素偏差</h2>
+<p>罗技G HUB通过多步相对移动逼近绝对坐标，可能存在约<strong>1～2像素偏差</strong>，并增加少量定位耗时。需要更精确的绝对定位时，请选择<strong>雷蛇或FakerInput</strong>。自动选择仍可能优先采用G HUB。</p>
+<p>此说明适用于屏幕／窗口绝对移动、坐标点击和位置还原，不改变<code>Mouse-Move:R</code>的相对移动含义。已有按钮保持时可以移动形成拖动；新的坐标点击先确认到位，再发送按下。</p>
+<p>软件以X、Y各轴误差不超过2像素并经后续采样确认为到位。未能在限定步骤／时间内到位或无法读取指针位置时，会报错并停止映射，<strong>不会在未到位的位置继续发出新的点击</strong>。系统指针设置、外部鼠标移动和显示环境可能影响收敛，不能保证每种环境都能到位。使用时保留现有系统设置，先在安全空白窗口试用。</p>
+<p>坐标格式与客户区参考点统一见<a href="#mouse-coordinates">鼠标与坐标</a>，本页不另设校准参数。</p>
+</section>
+<section id="ibinput-rules" data-search="不能保存 混用 同一移动组 Mouse2vJoy Block-Keyboard Block-Mouse 回环 释放失败 必须停止">
+<h2>保存或开始时被拦截，先看具体行</h2>
+<p>同一个鼠标移动组不能混用IbInput与其他发送方式。例如同一有效映射表的四条<code>Key2Mouse-*</code>使用IbInput，再复制一组并改成SendInput，依然属于混用；原始键不同不改变移动组。将该组统一为一种方式，或分到不会同时生效的不同表。</p>
+<p>保存、保存并开始和单独开始共用这条规则；保存失败不落盘，也不会因此连接驱动。检查包含所保存的各表及附加Common，禁用行不参与。<strong>这不是禁止同一表出现两种发送方式：</strong>彼此独立且允许的键盘／鼠标映射仍可使用各自方式。没有安装或尚未连接驱动时，合法配置仍可保存。</p>
+<p>输出再次成为原始键而造成回环、与Mouse2vJoy／Block-Keyboard／Block-Mouse冲突等已有保护，以软件指出的具体行和原因处理。停止／退出需要释放本轮按键与按钮；若提示释放未完成，先保留错误信息处理，软件会阻止直接重启以免遗留保持状态。</p>
+</section>
+<section id="ibinput-razer" data-search="雷蛇 驱动安装 RazerDriver manage_driver.bat Synapse 4 Nanoleaf Win10 Win11 x64 Win7 x86 NSimSun 问号 中文字体 PowerShell">
+<h2>雷蛇驱动：先检查现有通道，确有需要再安装</h2>
+<p>先在IbInput设置中查看雷蛇检测信息，手动选择“雷蛇”后做连接检查。<strong>已经检查通过就无需重复安装。</strong>兼容驱动可以独立使用，不要求为了QKeyMapper额外安装或运行Synapse；单独安装Synapse 4也不保证提供IbInput需要的接口。不同软件版本和设备组合应以实际检查为准。</p>
+<div class="callout warning"><strong>已有雷蛇设备或Synapse用户，先确认兼容与恢复条件。</strong><p>随包驱动属于旧版组件，可能与正在使用的雷蛇软件共用驱动。不要为了尝试IbInput直接卸载Synapse、替换现有驱动或移除设备；先阅读包内README并保留原软件／驱动的恢复方法。已检测到接口时先检查连接，不把安装作为固定步骤。</p></div>
+<p><code>RazerDriver</code>仅随<strong>Qt6_x64和Qt5_x64</strong>包提供，面向<strong>64位Windows 10／11</strong>，不支持Win7、x86或ARM64系统。64位系统请选择合适的x64产品包；不要从驱动版本<code>10.0.15063.0</code>推导最低Windows版本。</p>
+<ol class="steps"><li>若软件没有检测到兼容通道，先阅读发布包<code>RazerDriver/README.md</code>及<a href="https://github.com/Chaoses-Ib/IbInputSimulator/issues/7" target="_blank" rel="noopener noreferrer">上游雷蛇驱动说明（需联网）</a>，确认适用环境和确有安装需要。</li><li>保存配置并退出所有QKeyMapper实例，手动运行<code>RazerDriver/manage_driver.bat</code>。菜单“刷新状态”只查询设备；确认需要“安装／修复驱动”时，阅读UAC及提示，输入<code>INSTALL</code>后才继续。</li><li>查看结果与日志；提示需要重启时，由自己安排重启。失败则保留提示，不反复安装或自行删除驱动、服务。</li><li>重新启动QKeyMapper，先选择雷蛇做连接检查，再用简单键盘映射确认实际接收。</li></ol>
+<p>“移除虚拟设备（保留驱动包）”只移除对应虚拟设备，DriverStore中的包保留，<strong>不等于完整卸载驱动</strong>。设备增减可能改变多键鼠编号，需要重新核对依赖编号的配置。</p>
+<p>如果脚本中文显示问号或方框，请分别在<strong>CMD菜单窗口</strong>和后续打开的<strong>管理员Windows PowerShell窗口</strong>右键标题栏 → 属性 → 字体，选择<strong>NSimSun（新宋体）</strong>等中文字体。两种窗口可能各自保存字体；只改CMD不一定影响PowerShell。看不清提示时先退出，不盲目确认安装，无需为此修改系统区域或启用全局UTF-8选项。</p>
+</section>
+<section id="ibinput-troubleshooting" data-search="IbInput不工作 连接失败 自动选错 检查通过没有输入 保存失败 接收">
+<h2>最短排查顺序</h2>
+<ol class="steps"><li>先看是配置校验错误、驱动查询失败还是连接失败；保留上方完整原因和错误码。</li><li>自动模式有疑问时，手动固定一个后端做连接检查；不要一边测试一边安装／卸载另一套软件。</li><li>检查通过却没有输入时，看该次运行的实际后端／回退、映射项发送方式、禁用状态和目标窗口，再用一条A → B验证。</li><li>只有复杂配置失败时，逐项恢复序列、锁定、宏和Common，按具体行定位；不要用相互映射抵消重复输入。</li><li>坐标失败按<a href="#ibinput-position">近似定位边界</a>处理；需要精确点击时选择雷蛇／FakerInput。出现释放未完成时先处理该错误，再尝试重新运行。</li></ol>
+<div class="related"><a href="#driver-fakerinput">FakerInput的安装与选择</a><a href="#system-filterkeys">系统筛选键</a><a href="#faq-report">反馈问题所需信息</a></div>
 </section>
 </article>
 
@@ -1188,6 +1272,7 @@
 <tr><td>A和B都出现</td><td>检查原始按键穿透；手柄还要考虑物理／虚拟双重输入，不能套用键鼠屏蔽。</td><td><a href="#double-input">手柄双重输入</a></td></tr>
 <tr><td>找不到新加的条目</td><td>核对当前配置、Tab、分类筛选和显示禁用行，不要先判断数据已删除。</td><td><a href="#table-filter-reset">恢复全部显示</a></td></tr>
 <tr><td>条目看不到但还在触发</td><td>分类筛选只改变可见行；真正不运行需禁用／删除条目或停止映射。</td><td><a href="#table-filter-boundaries">隐藏与禁用区别</a></td></tr>
+<tr><td>IbInput连接失败、检查通过却没有输出</td><td>先区分配置、检测、连接与实际接收；检查本轮后端和回退。</td><td><a href="#ibinput-troubleshooting">IbInput排查顺序</a></td></tr>
 <tr><td>运行一会儿突然换表／换配置</td><td>检查自动前台匹配、Tab快捷键、SwitchTab命令与共通映射；先关闭复杂条件单独练习。</td><td><a href="#window-auto">自动匹配流程</a></td></tr>
 <tr><td>序列或宏没有执行</td><td>先查格式、真实宏名／作用域、发送时机、循环与暂停状态；格式通过不证明引用存在。</td><td><a href="#macro-call">检查宏调用</a></td></tr>
 </tbody></table></section><section id="faq-save" data-search="没保存 数据丢失 映射消失 保存失败 保存取消 切换配置丢失 自动匹配丢失 INI损坏 备份">
@@ -1217,7 +1302,7 @@
 <tr><td>原始按键穿透／透传</td><td>执行映射的同时保留原始输入；目标可能既收到A又收到B。</td></tr>
 <tr><td>屏蔽／拦截</td><td>阻止原始输入继续按通常路径到达目标；手柄检测不具备同样的直接屏蔽能力。<a href="#gamepad-boundary">查看手柄限制</a></td></tr>
 <tr><td>发送时机</td><td>决定在输入的按下、释放等阶段怎样发送。不是触发类型。</td></tr>
-<tr><td>发送方式／后端</td><td>通过SendInput、SendMessage或FakerInput等路径发送；与“按下／抬起何时发”是不同维度，取决于目标支持及驱动条件。<a href="#item-other-options">查看边界</a></td></tr>
+<tr><td>发送方式／后端</td><td>通过SendInput、SendMessage或FakerInput／<a href="#ibinput">IbInput</a>等路径发送；与“按下／抬起何时发”是不同维度，取决于目标支持及驱动条件。<a href="#item-other-options">查看边界</a></td></tr>
 <tr><td>映射开始／停止快捷键</td><td>控制整个映射流程的热键，默认左Ctrl＋F6；不要与录制开始／停止或Tab切换热键混淆。<a href="#shortcut-safety">查看默认键</a></td></tr>
 <tr><td>延时／保持时间</td><td>发送步骤的等待／保持节奏；具体释放取决于发送设置。用NONE⏱200可表达纯等待。<a href="#sequence-basics">区分延时与触发长按</a></td></tr>
 <tr><td>等待／NONE</td><td>序列中可用空步骤表达等待；NONE不是要发送的实体键。</td></tr>
@@ -1277,7 +1362,7 @@
 <tr><td>07</td><td>鼠标与坐标</td><td><a href="#mouse">点击、移动、拾取与后台发送</a></td></tr>
 <tr><td>08</td><td>界面与辅助</td><td><a href="#interface">主题、缩放、托盘与显示切换</a> · <a href="#advanced">高级设定与提示</a> · <a href="#overlays">准星、悬浮与面板</a></td></tr>
 <tr><td>09</td><td>手柄与传感器</td><td><a href="#gamepad">物理输入</a> · <a href="#virtual-gamepad">虚拟输出</a> · <a href="#motion">陀螺仪与触摸板</a></td></tr>
-<tr><td>10</td><td>驱动与多键鼠</td><td><a href="#drivers">选择与安装入口</a> · <a href="#interception">Interception、设备编号及严重风险</a></td></tr>
+<tr><td>10</td><td>驱动与多键鼠</td><td><a href="#drivers">选择与安装入口</a> · <a href="#ibinput">IbInput、G HUB与雷蛇</a> · <a href="#interception">Interception、设备编号及严重风险</a></td></tr>
 <tr><td>11</td><td>专项功能</td><td><a href="#forza">极限竞速遥测与自动扳机</a></td></tr>
 <tr><td>12</td><td>排错与速查</td><td><a href="#troubleshooting">症状排查</a> · <a href="#shortcuts">快捷键</a> · <a href="#keynames">按键名称</a> · <a href="#parameters">参数格式</a> · <a href="#glossary">术语</a></td></tr>
 <tr><td>13</td><td>使用前必读与咨询</td><td><a href="#usage-notice">软件使用须知</a> · <a href="#usage-advice">使用建议</a> · <a href="#disclaimer">免责声明</a> · <a href="#support">教学视频与QQ群</a></td></tr>

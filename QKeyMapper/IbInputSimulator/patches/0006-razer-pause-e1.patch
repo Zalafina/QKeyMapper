@@ -1,0 +1,15 @@
+--- a/Simulator/include/IbInputSimulator/SendTypes/Razer.hpp
++++ b/Simulator/include/IbInputSimulator/SendTypes/Razer.hpp
+@@ -165,9 +165,11 @@
+             control.ki.Flags = keydown ? KEY_MAKE : KEY_BREAK;
+ 
+             // Extended keys
+-            // TODO: E1
+             switch (ki.wVk)
+             {
++            case VK_PAUSE:
++                control.ki.Flags |= KEY_E1;
++                break;
+             case VK_RCONTROL:
+             case VK_RMENU:
+             case VK_DIVIDE:

@@ -1,0 +1,21 @@
+--- a/Simulator/include/IbInputSimulator/SendTypes/Razer.hpp
++++ b/Simulator/include/IbInputSimulator/SendTypes/Razer.hpp
+@@ -168,6 +168,10 @@
+             // TODO: E1
+             switch (ki.wVk)
+             {
++            case VK_RCONTROL:
++            case VK_RMENU:
++            case VK_DIVIDE:
++            case VK_APPS:
+             case VK_SNAPSHOT:
+             case VK_INSERT:
+             case VK_HOME:
+@@ -201,7 +205,6 @@
+         }
+ 
+         /// - For extended keys, only the lowest byte is returned.
+-        /// - RCtrl and RAlt will be treated as left ones.
+         constexpr int16_t keyboard_usage_to_key(uint16_t usage_id) {
+             // Extracted from kbddef.dat in Razer Synapse
+             //

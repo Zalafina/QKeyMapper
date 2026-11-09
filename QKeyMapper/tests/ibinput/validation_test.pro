@@ -1,0 +1,10 @@
+QT = core gui widgets network
+CONFIG += console c++17
+CONFIG -= app_bundle
+TEMPLATE = app
+TARGET = QKeyMapperIbInputValidationTest
+DEFINES += NOMINMAX SDL_SUPPORTED SDL_WIN SDL_MAIN_HANDLED VIGEM_CLIENT_SUPPORT
+INCLUDEPATH += $$PWD/../.. $$PWD/../../QJoysticks/src $$PWD/../../QJoysticks/lib/SDL/include $$PWD/../../orderedmap $$PWD/../../GamepadMotion $$PWD/../../ViGEm/include
+SOURCES += $$PWD/validation_test.cpp
+HEADERS += $$PWD/../../qkm_ibinput_validation.h
+QMAKE_CXXFLAGS += /utf-8

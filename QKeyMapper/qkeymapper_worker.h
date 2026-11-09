@@ -10,6 +10,7 @@
 #include <QSize>
 // #include <QHotkey>
 #include <QThreadPool>
+#include <QSharedPointer>
 #include <QWaitCondition>
 #include <QDeadlineTimer>
 #include <QElapsedTimer>
@@ -121,8 +122,8 @@ bool isKeySequence(const QStringList &mappingkeyslist);
 QStringList splitMappingKeyString(const QString &mappingkeystr, int split_type, bool pure_keys = false);
 QStringList splitOriginalKeyString(const QString &originalkeystr, bool pure_keys = false);
 QString getRealOriginalKey(const QString &original_key);
-QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level = 0, bool skipOnlyOnce = false);
-QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level = 0, QSet<QString> *expandingMacros = nullptr, bool skipOnlyOnce = false);
+QStringList expandRepeatKeys(const QStringList &inputKeys, int nesting_level = 0, bool skipOnlyOnce = false, bool collectOnly = false);
+QStringList expandMacroKeys(const QStringList &inputKeys, int nesting_level = 0, QSet<QString> *expandingMacros = nullptr, bool skipOnlyOnce = false, bool collectOnly = false);
 
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
 typedef char16_t* Utf16Pointer;
@@ -819,13 +820,15 @@ template <typename T>
 int sign(T val) {
     return (T(0) < val) - (val < T(0));
 }
+quint64 qkmCurrentIbInputGeneration();
+
 class SendInputTask : public QRunnable
 {
 private:
     SendInputWorkItem m_work;
 
 public:
-    SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
+    SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, quint64 ibInputGeneration = qkmCurrentIbInputGeneration());
 
     void run() override;
 
@@ -851,6 +854,8 @@ public:
 
     // Save mapping table pointer to avoid array bounds issues during tab switching
     QList<MAP_KEYDATA> *m_keyMappingDataList = Q_NULLPTR;
+    quint64 m_ibInputGeneration = 0;
+    QSharedPointer<QList<MAP_KEYDATA>> m_ibInputSnapshot;
 };
 
 class QKeyMapper_Worker : public QObject
@@ -1201,14 +1206,14 @@ public:
 public slots:
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
-    void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList);
+    void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration);
 public:
-    void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
+    void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, quint64 ibInputGeneration = qkmCurrentIbInputGeneration());
     // void send_WINplusD(void);
-    void sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
-    void sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
+    void sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT, bool ibStopAction=false, quint64 ibInputGeneration=qkmCurrentIbInputGeneration());
+    void sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT, bool ibStopAction=false, quint64 ibInputGeneration=qkmCurrentIbInputGeneration());
     void saveMousePosition(void);
-    void restoreMousePosition(int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT);
+    void restoreMousePosition(int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT, bool ibStopAction=false, quint64 ibInputGeneration=qkmCurrentIbInputGeneration());
     // Track pending UI input before the Worker can inspect its source.
     bool queueVButtonKey(const QString &keyName, bool isKeyDown);
     static bool mappingInputEnabled()
@@ -1322,11 +1327,15 @@ public:
 signals:
     void setKeyHook_Signal(QSharedPointer<SendInputWorkItem> work);
     void setKeyUnHook_Signal(QSharedPointer<SendInputWorkItem> work);
-    void setKeyMappingRestart_Signal(QSharedPointer<SendInputWorkItem> work);
+    void setKeyMappingRestart_Signal(quint64 generation, QSharedPointer<SendInputWorkItem> work);
     void allMappingKeysReleased_Signal(void);
     void sessionLockStateChanged_Signal(bool locked, QSharedPointer<SendInputWorkItem> work);
     void inputFenceReached_Signal(quint64 generation);
     void sendInputDrainObserved_Signal(quint64 generation, const QString &outcome);
+    void ibInputFault_Signal(const QString &detail,quint64 generation=0);
+    void ibInputClosed_Signal(bool released, const QString &detail, quint64 generation);
+    void ibInputRestarted_Signal(quint64 generation);
+    void ibInputStatusChanged_Signal();
     // void startBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     // void stopBurstTimer_Signal(const QString &burstKey, int mappingIndex);
     void startBurstKeyTimer_Signal(const QString &burstKey, int mappingIndex, QList<MAP_KEYDATA> *keyMappingDataList);
@@ -1335,7 +1344,7 @@ signals:
     void sendKeyboardInput_Signal(V_KEYCODE vkeycode, int keyupdown);
     void sendMouseClick_Signal(V_MOUSECODE vmousecode, int keyupdown);
 #endif
-    void sendInputKeys_Signal(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList, QSharedPointer<SendInputWorkItem> work);
+    void sendInputKeys_Signal(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration, QSharedPointer<SendInputWorkItem> work);
 #ifdef VIGEM_CLIENT_SUPPORT
     void onMouseMove_Signal(int delta_x, int delta_y, int mouse_index);
 #endif
@@ -1398,7 +1407,7 @@ public slots:
     void threadFinished(void);
     void setWorkerKeyHook(void);
     void setWorkerKeyUnHook(void);
-    void setKeyMappingRestart(void);
+    void setKeyMappingRestart(quint64 generation);
     void allMappingKeysReleased(void);
     void sessionLockStateChanged(bool locked);
     void reachInputFence(quint64 generation);
@@ -1574,7 +1583,8 @@ private:
 #endif
     void clearAllBurstKeyTimersAndLockKeys(void);
     void clearAllPressedVirtualKeys(void);
-    void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys);
+    void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys, int rowindex,
+        SendInputTaskController rowController, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration);
     void clearAllNormalPressedMappingKeys(bool restart = false, QList<MAP_KEYDATA> *keyMappingDataListToCheck = Q_NULLPTR);
     void clearCustomKeyFlags(bool restart = false);
     void clearAllPressedRealCombinationKeys(void);
@@ -1811,6 +1821,10 @@ private:
     quint64 m_sendInputDrainGeneration = 0;
     quint64 m_lastSendInputDrainGeneration = 0;
     int m_sendInputDrainTimeoutMs = 0;
+    bool m_ibInputCloseQueued = false;
+    bool prepareIbInputRun(quint64 generation);
+    bool finishIbInputRun(bool notify=true);
+    void tryFinishIbInputRun();
 
     // Volume control instance
     VolumeController m_volumeController;

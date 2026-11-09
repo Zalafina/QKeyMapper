@@ -1,0 +1,97 @@
+--- a/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp
++++ b/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp
+@@ -1,6 +1,9 @@
+ ﻿#pragma once
+ #include <string>
+ #include <algorithm>
++#include <array>
++#include <cfgmgr32.h>
++#pragma comment(lib, "Cfgmgr32.lib")
+ #include <rapidjson/document.h>
+ #include <rapidjson/filereadstream.h>
+ #include "../common.hpp"
+@@ -11,10 +14,12 @@
+     class LogitechDriver {
+         HANDLE device = INVALID_HANDLE_VALUE;
+         bool has_acceleration = false;
++        std::wstring device_path;
+ 
+     public:
+         Error create() {
+-            std::wstring device_name = find_device();
++            device_path = find_device();
++            const std::wstring& device_name = device_path;
+             if (device_name.empty())
+                 return Error::DeviceNotFound;
+ 
+@@ -38,6 +43,43 @@
+             return Error::Success;
+         }
+ 
++        bool has_started_mouse() const {
++            if (device_path.compare(0, 4, LR"(\??\)") != 0)
++                return false;
++            const auto end = device_path.find(L"#{", 4);
++            if (end == std::wstring::npos)
++                return false;
++            std::wstring instance = device_path.substr(4, end - 4);
++            std::replace(instance.begin(), instance.end(), L'#', L'\\');
++            DEVINST bus = 0;
++            if (CM_Locate_DevNodeW(&bus, instance.data(), CM_LOCATE_DEVNODE_NORMAL) != CR_SUCCESS
++                || !property_equals(bus, CM_DRP_HARDWAREID, LR"(root\LGHUBVirtualBus)"))
++                return false;
++            std::array<DEVINST, 64> pending{};
++            size_t count = 0, next = 0;
++            DEVINST child = 0;
++            if (CM_Get_Child(&child, bus, 0) != CR_SUCCESS)
++                return false;
++            pending[count++] = child;
++            while (next < count) {
++                const DEVINST node = pending[next++];
++                ULONG status = 0, problem = 0;
++                if (CM_Get_DevNode_Status(&status, &problem, node, 0) == CR_SUCCESS
++                    && (status & DN_STARTED) && !(status & DN_HAS_PROBLEM)
++                    && property_equals(node, CM_DRP_CLASSGUID, L"{4d36e96f-e325-11ce-bfc1-08002be10318}"))
++                    return true;
++                for (auto query : { &CM_Get_Child, &CM_Get_Sibling }) {
++                    DEVINST related = 0;
++                    if (query(&related, node, 0) == CR_SUCCESS) {
++                        if (count == pending.size())
++                            return false;
++                        pending[count++] = related;
++                    }
++                }
++            }
++            return false;
++        }
++
+         void destroy() {
+             if (device != INVALID_HANDLE_VALUE) {
+                 CloseHandle(device);
+@@ -46,6 +88,13 @@
+         }
+ 
+     private:
++        static bool property_equals(DEVINST node, ULONG property, const wchar_t* expected) {
++            wchar_t value[256]{};
++            ULONG type = 0, size = sizeof(value) - sizeof(wchar_t);
++            return CM_Get_DevNode_Registry_PropertyW(node, property, &type, value, &size, 0) == CR_SUCCESS
++                && (type == REG_SZ || type == REG_MULTI_SZ) && _wcsicmp(value, expected) == 0;
++        }
++
+         int get_has_acceleration() {
+             //#TODO: G HUB
+ 
+@@ -421,8 +470,12 @@
+             if (error != Error::Success)
+                 return error;
+ 
++            if (driver.has_started_mouse())
++                return Error::Success;
+             if (!driver.report_enable_device({ .id = LogitechDriver::DeviceReportId::Mouse })) {
+                 const DWORD native_error = GetLastError();
++                if (native_error == ERROR_INVALID_PARAMETER && driver.has_started_mouse())
++                    return Error::Success;
+                 driver.destroy();
+                 SetLastError(native_error);
+                 return Error::DeviceCreateFailed;

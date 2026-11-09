@@ -1,0 +1,75 @@
+; Copyright: (c) 2020 Razer Inc. All rights reserved
+;
+; RzDev_0306_VBus.inf
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = Razer Device
+ClassGuid   = {1750F915-5639-497C-966C-3A65ACECFCB6}
+Provider    = %ManufacturerName%
+CatalogFile = rzdev_0306_vbus.cat
+DriverVer=02/18/2020,10.0.15063.0
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+; ================= Class section =====================
+
+[ClassInstall32]
+Addreg = RazerDeviceClassReg
+
+[RazerDeviceClassReg]
+HKR,,,0,%ClassName%
+;HKR,,Icon,,-5
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+RzDev_0306.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%RzDev.DeviceDesc% = RzDev_Device,RAZER\VirtualBus\VID_1532&PID_0306
+
+[RzDev_Device.NT]
+CopyFiles = Drivers_Dir
+
+[Drivers_Dir]
+RzDev_0306.sys
+
+[RzDev_Device.NT.HW]
+AddReg = RzDev_Device.NT.HW.AddReg
+
+[RzDev_Device.NT.HW.AddReg]
+HKR,,"VBusDevice",0x00010001,1                     ; VBus
+HKR,,"Virtual_Kbd",0x00010001,1                    ; Keyboard
+HKR,,"Virtual_Mou",0x00010001,1                    ; Mouse
+HKR,,"Virtual_Con",0x00010001,1                    ; Consumer Control
+
+;-------------- Service installation
+[RzDev_Device.NT.Services]
+AddService = RzDev_0306,%SPSVCINST_ASSOCSERVICE%, RzDev_Service_Inst
+
+; -------------- RzDev driver install sections
+[RzDev_Service_Inst]
+DisplayName    = %RzDev.ServiceDesc%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\RzDev_0306.sys
+
+[Strings]
+SPSVCINST_ASSOCSERVICE = 0x00000002
+ManufacturerName = "Razer Inc"
+ClassName = "Razer Device"
+DiskName = "Razer Installation Disk"
+RzDev.DeviceDesc = "Razer 0306 Device"
+RzDev.ServiceDesc = "Razer 0306 Service"

@@ -96,6 +96,12 @@ PERSIST-136 产品管理窗增加“保存启动选择”：开关立即影响�
 
 ## 完整保存的预览与提交
 
+IB-MCP-138：`mapping.add`可选`send_method`，0=SendInput、1=SendMessage、2=FakerInput、3=IbInput，缺省0。`mapping.update`只接受当前可见源行的`source_ref`和`send_method`，仍走预览／提交；隐藏行和非当前源拒绝，不开放其他字段。两者与GUI共用有效Common、禁用行及同移动组校验；合法保存不要求后端已连接。
+
+`ibinput.preferences.update`须带`qkm_get_state.result.ibinput.preferences_revision`，至少指定`preferred_backend`（auto／logitech_ghub／logitech_legacy／razer）或`unavailable_policy`（block／sendinput_before_start）。未指定项保留。提交仅改全局内存偏好及dirty，持久化仍需显式完整保存；预览说明包含两项共享键。实际语义变化使旧写预览失效，同值和被动状态采样不推进修订。取消保存保留此前草稿；写失败后须查询原operation及状态，不能盲重试。
+
+`qkm_get_state.ibinput`分别报告偏好／语义修订、实际连接后端、各后端已开放能力、当前启动前回退、停止／释放状态和最近历史结果。`sampled_at_utc`是观察时间；未连接时`actual_backend=null`，历史后端不表示当前连接。旧Logitech产品输入能力仍关闭，自动选择先筛当前映射所需能力，再依G HUB→旧Logitech→Razer尝试。主动连接检查／明确试发的MCP工具以及`ibinput_settings`窗口角色尚未提供。
+
 先核对目标声明`configuration.save.preview`，再调用`qkm_preview_changes`，例如`{"action":"configuration.save","setting_name":"Demo"}`；setting_name是明确配置组名，其他映射字段省略。普通／新建／覆盖目标及当前已选全局组均由产品校验，不切换GUI配置或改名称控件决定目标。须Read＋Configure、成功加载及初始静止或仍有效的完整清理许可、无打开编辑窗或未结算热键输入；Worker STOPPED本身不够。schema以oneOf保留原映射四个必填字段与保存分支，SDK拒绝未知字段，C++另独立校验组合及业务规则。
 
 description返回所属实例／组／save_revision、实际源快照和完整scope：全部目标／共享写入键、其他已加载及共享草稿、新组排序、启动选择，以及成功后GUI名称效果。它是完整写入足迹，`change_attribution=unavailable`，不是精确差异或“只保存刚加的一行”；始终报告全范围确认要求。原单调截止最多120秒，创建存储不会续期；保存与映射预览共用单配对替换／取消及结果归属。

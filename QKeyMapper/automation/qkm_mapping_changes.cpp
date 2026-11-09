@@ -47,19 +47,59 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const auto action = arguments.value(QStringLiteral("action"));
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
+    const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
+    const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
-        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview))) return fail("Unsupported preview action.");
+        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !preferencesPreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
     const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")}
+        : preferencesPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("preferences_revision"),
+            QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")}
+        : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method")}
         : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
             QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")} : preview
         ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
-            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("insert_row")}
+            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("insert_row"), QStringLiteral("send_method")}
         : apply ? QSet<QString>{idField, QStringLiteral("confirm_conflicts"), QStringLiteral("confirm_scope"),
             QStringLiteral("confirm_overwrite"), QStringLiteral("confirm_delete")}
             : QSet<QString>{idField};
     for (auto it = arguments.constBegin(); it != arguments.constEnd(); ++it) {
         if (!allowed.contains(it.key())) return fail("Unknown mapping change argument.");
+    }
+    const auto sendMethod = [&]() -> int {
+        const auto value = arguments.value(QStringLiteral("send_method"));
+        if (value.isUndefined()) return updatePreview ? -1 : 0;
+        if (!value.isDouble() || value.toDouble() < 0 || value.toDouble() > 3
+            || value.toDouble() != value.toInt(-1)) return -1;
+        return value.toInt();
+    };
+    if (preferencesPreview) {
+        const auto revision = arguments.value(QStringLiteral("preferences_revision"));
+        const auto backend = arguments.value(QStringLiteral("preferred_backend"));
+        const auto policy = arguments.value(QStringLiteral("unavailable_policy"));
+        if (!revision.isString() || !isLowerHex(revision.toString(), 64)
+            || (backend.isUndefined() && policy.isUndefined())) return fail("A current preferences revision and at least one preference are required.");
+        if (!backend.isUndefined() && (!backend.isString() || !QStringList{QStringLiteral("auto"), QStringLiteral("logitech_ghub"),
+            QStringLiteral("logitech_legacy"), QStringLiteral("razer")}.contains(backend.toString()))) return fail("Unsupported preferred backend.");
+        if (!policy.isUndefined() && (!policy.isString() || !QStringList{QStringLiteral("block"),
+            QStringLiteral("sendinput_before_start")}.contains(policy.toString()))) return fail("Unsupported unavailable policy.");
+        result.action = MappingChangeAction::UpdateIbInputPreferences;
+        result.preferences = {revision.toString(), backend.toString(), policy.toString()};
+        return result;
+    }
+    if (updatePreview) {
+        const auto reference = arguments.value(QStringLiteral("source_ref"));
+        const auto parts = reference.toString().split(QLatin1Char(':'));
+        bool tabOk = false, rowOk = false;
+        const int tab = parts.size() == 4 ? parts.at(2).toInt(&tabOk) : -1;
+        const int row = parts.size() == 4 ? parts.at(3).toInt(&rowOk) : -1;
+        if (!reference.isString() || reference.toString().size() > 128 || parts.size() != 4
+            || !isLowerHex(parts.at(0), 64) || parts.at(1) != QStringLiteral("row") || !tabOk || !rowOk
+            || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3)
+            || sendMethod() < 0) return fail("A canonical current source row and send method 0 to 3 are required.");
+        result.action = MappingChangeAction::UpdateMapping;
+        result.update = {reference.toString(), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, sendMethod()};
+        return result;
     }
     if (savePreview) {
         const auto name = arguments.value(QStringLiteral("setting_name"));
@@ -100,7 +140,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.removal.sourceRevision = arguments.value(QStringLiteral("source_revision")).toString();
         result.removal.sourceTabRef = arguments.value(QStringLiteral("source_tab_ref")).toString();
         const QString sourceIndex = result.removal.sourceTabRef.section(QLatin1Char(':'), 2, 2);
-        for (const auto &value : references.toArray()) {
+        const auto rows = references.toArray();
+        for (const auto &value : rows) {
             if (!value.isString() || value.toString().size() > 128) return fail("Malformed deletion source reference.");
             const QStringList parts = value.toString().split(QLatin1Char(':'));
             bool valid = false;
@@ -113,6 +154,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         }
         return result;
     }
+    if (sendMethod() < 0) return fail("Send method must be an integer from 0 to 3.");
+    result.addition.sendMethod = sendMethod();
     const auto basicKey = [](const QJsonValue &value) {
         if (!value.isString()) return false;
         const QString text = value.toString();
@@ -151,12 +194,17 @@ QJsonArray mappingChangeCapabilities()
             {QStringLiteral("additionalProperties"), false}, {QStringLiteral("properties"), properties},
             {QStringLiteral("required"), required}};
     };
-    const QJsonObject preview = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.add")}}},
+    auto preview = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.add")}}},
         {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), reference},
         {QStringLiteral("original_key"), key}, {QStringLiteral("mapping_key"), key},
         {QStringLiteral("insert_row"), QJsonObject{{QStringLiteral("type"), QJsonArray{QStringLiteral("integer"), QStringLiteral("null")}},
             {QStringLiteral("minimum"), 0}, {QStringLiteral("maximum"), 2147483647}}}},
         {QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"), QStringLiteral("original_key"), QStringLiteral("mapping_key")});
+    const QJsonObject sendMethodSchema{{QStringLiteral("type"), QStringLiteral("integer")},
+        {QStringLiteral("minimum"), 0}, {QStringLiteral("maximum"), 3}};
+    auto addProperties = preview.value(QStringLiteral("properties")).toObject();
+    addProperties.insert(QStringLiteral("send_method"), sendMethodSchema);
+    preview.insert(QStringLiteral("properties"), addProperties);
     const QJsonObject apply = schema({{QStringLiteral("preview_id"), identifierSchema},
         {QStringLiteral("confirm_conflicts"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}, {QStringLiteral("default"), false}}}},
         {QStringLiteral("preview_id")});
@@ -223,8 +271,36 @@ QJsonArray mappingChangeCapabilities()
         schema({{QStringLiteral("operation_id"), identifierSchema}}, {QStringLiteral("operation_id")}));
     operation.insert(QStringLiteral("result_ttl_ms"), double(MappingChangeStore::ResultTtlMs));
     operation.insert(QStringLiteral("max_results"), MappingChangeStore::MaxResults);
+    auto updatePreview = capability("mapping.update.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
+            {QStringLiteral("source_ref"), rowReference}, {QStringLiteral("send_method"), sendMethodSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method")}));
+    QJsonObject preferencesSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ibinput.preferences.update")}}},
+        {QStringLiteral("preferences_revision"), revision},
+        {QStringLiteral("preferred_backend"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("enum"), QJsonArray{QStringLiteral("auto"), QStringLiteral("logitech_ghub"), QStringLiteral("logitech_legacy"), QStringLiteral("razer")}}}},
+        {QStringLiteral("unavailable_policy"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("enum"), QJsonArray{QStringLiteral("block"), QStringLiteral("sendinput_before_start")}}}}},
+        {QStringLiteral("action"), QStringLiteral("preferences_revision")});
+    preferencesSchema.insert(QStringLiteral("anyOf"), QJsonArray{
+        QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("preferred_backend")}}},
+        QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("unavailable_policy")}}}});
+    auto preferencesPreview = capability("ibinput.preferences.update.preview", "qkm_preview_changes", Read | Configure, true, preferencesSchema);
+    const auto settingsApplySchema = schema({{QStringLiteral("preview_id"), identifierSchema},
+        {QStringLiteral("confirm_conflicts"), QJsonObject{{QStringLiteral("const"), false}}},
+        {QStringLiteral("confirm_scope"), QJsonObject{{QStringLiteral("const"), false}}},
+        {QStringLiteral("confirm_overwrite"), QJsonObject{{QStringLiteral("const"), false}}},
+        {QStringLiteral("confirm_delete"), QJsonObject{{QStringLiteral("const"), false}}}}, {QStringLiteral("preview_id")});
+    auto updateApply = capability("mapping.update.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    auto preferencesApply = capability("ibinput.preferences.update.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&updatePreview, &updateApply, &preferencesPreview, &preferencesApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("memory_only_no_save_or_start"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("semantic_preferences_revision_bound"),
+            QStringLiteral("no_open_editor_or_popup"), QStringLiteral("declared_fields_only")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
     return {previewCapability, saveCapability, addApply,
-        saveApplyCapability, deleteCapability, deleteApply,
+        saveApplyCapability, deleteCapability, deleteApply, updatePreview, updateApply, preferencesPreview, preferencesApply,
         capability("mapping.preview.cancel", "qkm_cancel_changes", Read | Configure, false,
             schema({{QStringLiteral("preview_id"), identifierSchema}}, {QStringLiteral("preview_id")})), operation};
 }
@@ -252,6 +328,7 @@ bool MappingChangeStore::remember(const MappingChangePreview &preview, const QSt
         {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
     if (preview.save) value.insert(QStringLiteral("target"), saveOperationTarget(preview));
     if (preview.removal) value.insert(QStringLiteral("target"), removalOperationTarget(preview));
+    if (preview.update || preview.preferences) value.insert(QStringLiteral("target"), preview.description.value(QStringLiteral("target")));
     if (!errorCode.isEmpty()) value.insert(QStringLiteral("error"), QJsonObject{
         {QStringLiteral("code"), errorCode}, {QStringLiteral("message"), message}});
     m_results.insert(preview.id, {preview.owner, value, now()});
@@ -276,7 +353,7 @@ void MappingChangeStore::prune()
 }
 
 std::optional<MappingChangePreview> MappingChangeStore::create(const MappingChangeOwner &owner,
-    const MappingAdditionArguments &arguments, const QJsonObject &description)
+    const MappingAdditionArguments &arguments, const QJsonObject &description, const QString &preferencesRevision)
 {
     prune();
     for (auto it = m_previews.begin(); it != m_previews.end();) {
@@ -289,18 +366,19 @@ std::optional<MappingChangePreview> MappingChangeStore::create(const MappingChan
     if (m_previews.size() >= MaxPreviews) return std::nullopt;
     QString id;
     do { id = QUuid::createUuid().toString(QUuid::Id128); } while (m_previews.contains(id) || m_results.contains(id));
-    const MappingChangePreview preview{owner, arguments, description, id, now()};
+    MappingChangePreview preview{owner, arguments, description, id, now()};
+    preview.preferencesRevision = preferencesRevision;
     m_previews.insert(id, preview);
     return preview;
 }
 
 std::optional<MappingChangePreview> MappingChangeStore::createSave(const MappingChangeOwner &owner,
-    const ConfigurationSaveBinding &binding, const QJsonObject &description)
+    const ConfigurationSaveBinding &binding, const QJsonObject &description, const QString &preferencesRevision)
 {
     if (binding.settingName.isEmpty() || !isLowerHex(binding.revision, 64) || binding.context.isEmpty() || binding.scope.isEmpty()
         || binding.expiresAt.isForever() || binding.expiresAt.hasExpired() || binding.expiresAt.remainingTime() > PreviewTtlMs)
         return std::nullopt;
-    auto preview = create(owner, MappingAdditionArguments(), description);
+    auto preview = create(owner, MappingAdditionArguments(), description, preferencesRevision);
     if (preview) {
         preview->save = binding;
         m_previews[preview->id] = *preview;
@@ -309,13 +387,29 @@ std::optional<MappingChangePreview> MappingChangeStore::createSave(const Mapping
 }
 
 std::optional<MappingChangePreview> MappingChangeStore::createRemoval(const MappingChangeOwner &owner,
-    const MappingRemovalArguments &arguments, const QJsonObject &description)
+    const MappingRemovalArguments &arguments, const QJsonObject &description, const QString &preferencesRevision)
 {
-    auto preview = create(owner, MappingAdditionArguments(), description);
+    auto preview = create(owner, MappingAdditionArguments(), description, preferencesRevision);
     if (preview) {
         preview->removal = arguments;
         m_previews[preview->id] = *preview;
     }
+    return preview;
+}
+
+std::optional<MappingChangePreview> MappingChangeStore::createUpdate(const MappingChangeOwner &owner,
+    const MappingUpdateArguments &arguments, const QJsonObject &description, const QString &preferencesRevision)
+{
+    auto preview = create(owner, MappingAdditionArguments(), description, preferencesRevision);
+    if (preview) { preview->update = arguments; m_previews[preview->id] = *preview; }
+    return preview;
+}
+
+std::optional<MappingChangePreview> MappingChangeStore::createPreferences(const MappingChangeOwner &owner,
+    const IbInputPreferencesArguments &arguments, const QJsonObject &description, const QString &preferencesRevision)
+{
+    auto preview = create(owner, MappingAdditionArguments(), description, preferencesRevision);
+    if (preview) { preview->preferences = arguments; m_previews[preview->id] = *preview; }
     return preview;
 }
 

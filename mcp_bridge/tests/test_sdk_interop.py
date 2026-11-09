@@ -37,14 +37,21 @@ TOOLS = {"qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_
          "qkm_open_mapping_settings", "qkm_close_mapping_settings"}
 BUSINESS_CAPABILITIES = {"state.read", "catalog.read", "source.read", "help.read", "windows.read", "windows.capture", "mapping.editor.open", "mapping.editor.close", "mapping.add.preview",
                          "configuration.save.preview", "configuration.save.apply", "mapping.add.apply", "mapping.delete.preview", "mapping.delete.apply", "mapping.preview.cancel", "operation.read", "demo.context.read",
-                         "mapping.settings.open", "mapping.settings.close"}
+                         "mapping.settings.open", "mapping.settings.close", "mapping.update.preview", "mapping.update.apply",
+                         "ibinput.preferences.update.preview", "ibinput.preferences.update.apply"}
 
 
 def business_state(state):
     run = dict(state["run"])
     sampled = datetime.fromisoformat(run.pop("sampled_at_utc").replace("Z", "+00:00"))
     assert sampled.utcoffset() == timedelta(0), "Run status must carry a UTC sample time"
-    return dict(state, run=run)
+    result = dict(state, run=run)
+    if "ibinput" in state:
+        ibinput = dict(state["ibinput"])
+        sampled = datetime.fromisoformat(ibinput.pop("sampled_at_utc").replace("Z", "+00:00"))
+        assert sampled.utcoffset() == timedelta(0), "IbInput observation must carry a UTC sample time"
+        result["ibinput"] = ibinput
+    return result
 
 
 def elevation(process) -> int:

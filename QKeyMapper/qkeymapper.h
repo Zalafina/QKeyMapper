@@ -30,6 +30,7 @@
 
 class QkmUiScale;
 class InputOwnerFence;
+class QkmIbInputPopup;
 
 #if (QT_VERSION < QT_VERSION_CHECK(6, 0, 0))
 #include <QtWin>
@@ -1300,6 +1301,8 @@ public:
     static bool isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname);
     static bool isViGEmBusInstalled(void);
     static bool isFakerInputInstalled(void);
+    void showIbInputSettings(QWidget *anchor);
+    void refreshIbInputUi();
     static bool checkForSysDevice(const wchar_t* searchHardwareId);
 
     static void setDisplayScaleValue(double scale);
@@ -2103,6 +2106,7 @@ private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;
     QJsonObject collectAutomationState(void) const;
+    QString automationIbInputPreferencesRevision() const;
     QJsonObject collectAutomationCatalog(void) const;
     QJsonObject collectAutomationSourceSnapshot(QString &errorCode) const;
     QJsonObject collectAutomationSourceSnapshotWithAccess(QString &errorCode) const;
@@ -2287,6 +2291,7 @@ private:
         quint64 runtimeRevision = 0;
         qsizetype sourceSize = 0;
         int insertRow = -1;
+        int sendMethod = 0;
         QString originalKey;
         QString mappingKey;
         bool disabled = false;
@@ -2300,7 +2305,7 @@ private:
     bool mappingAdditionAllowed(int tabIndex) const;
     bool removeMappingRows(int sourceTabIndex, QList<int> sourceRows, int topDisplayRow);
     MappingAdditionPlan prepareMappingAddition(int tabIndex, int insertRow,
-        const QString &originalKey, const QString &mappingKey) const;
+        const QString &originalKey, const QString &mappingKey, int sendMethod = 0) const;
     ValidationResult commitMappingAddition(const MappingAdditionPlan &plan, bool confirmCommonConflict,
         bool openSetupDialog = false);
     void addMappingFromGui(const QString &originalKey, const QString &mappingKey, bool openSetupDialog = false);
@@ -2674,6 +2679,8 @@ private:
     QAction *m_ActionHideDisabled = Q_NULLPTR;
     QAction *m_ActionShowCategory = Q_NULLPTR;
     int m_Current_UIPalette = QKeyMapperConstants::UI_PALETTE_INITIAL;
+    QkmIbInputPopup *m_IbInputPopup = Q_NULLPTR;
+    bool m_IbInputStopPending = false;
     ActionPopup *m_SettingBackupActionPopup = Q_NULLPTR;
     QFileDialog *m_SelectSettingCustomIconFileDialog = Q_NULLPTR;
     QStringList m_FavoriteOriginalKeys;

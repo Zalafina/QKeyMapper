@@ -4,6 +4,8 @@
 
 ## 当前状态与填写规则
 
+IB-MCP-138新增并选验四项能力：mapping.update.preview／apply、ibinput.preferences.update.preview／apply；工具数仍17，业务能力23。mapping.add的send_method纳入0–3并保留默认0；受限更新只改当前可见源行的发送方式，合法Common及可见禁用行可用，隐藏／非当前源拒绝，同移动组冲突不产生修改。两项全局偏好参与预览语义修订、非行足迹、显式完整保存、取消与写失败恢复；被动采样不写配置。Read／Configure正反例、普通Release独立GUI和正式MCP保存冷读、生命周期及私有演示／Default两后端代表结果见[独立证据页](ibinput_mcp_integration_validation.md)。完整M1／M2未完成；主动连接检查／试发工具、ibinput_settings受限角色仍未交付。
+
 日期：2026-10-28；初始源码基线：`d49a9f57`。**逐控件入口及68条关键链路已盘点。通信／配对、选定状态／目录／源查询／帮助已接；MAP-67-B1增加基本映射内存添加预览／提交／取消／结果查询，SAVE-95接保存只读预览、SAVE-97接完整范围／覆盖确认后的正式保存提交与分段结果，当前共15工具、14项业务能力（107增加windows.read，108增加windows.capture，109／110增加mapping.editor.open／close）。完整增改删、完整保存生命周期、MCP启停及全量GUI等价性仍未完成。** Python字节锁与PC-W11接续见ENV-39，缓存见CACHE-40／CACHE72；入口和链路数量不等于已支持能力数。
 
 UI-73：新增MCP界面及4项主窗口提示已接英文tr／正式三语言QM，NoFocus／ClickFocus遵循用户选择；双Qt各36项、实际产品类双Qt三语言66项及私有截图见[本片证据](ui_localization_validation.md)。仅UI与资源，不新增工具、业务能力或运行态编辑许可；High／Default／Win11边界另列。

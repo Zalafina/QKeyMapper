@@ -1,0 +1,28 @@
+--- a/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp
++++ b/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp
+@@ -422,7 +422,9 @@
+                 return error;
+ 
+             if (!driver.report_enable_device({ .id = LogitechDriver::DeviceReportId::Mouse })) {
++                const DWORD native_error = GetLastError();
+                 driver.destroy();
++                SetLastError(native_error);
+                 return Error::DeviceCreateFailed;
+             }
+             return Error::Success;
+--- a/Simulator/source/dllmain.cpp
++++ b/Simulator/source/dllmain.cpp
+@@ -129,8 +129,12 @@
+                 auto type = std::make_unique<Type::LogitechGHubNew>();
+                 type->create_base(&SendInputHook::GetAsyncKeyState_real);
+                 Error error = type->create();
+-                if (error != Error::Success)
++                if (error != Error::Success) {
++                    const DWORD native_error = GetLastError();
++                    type.reset();
++                    SetLastError(native_error);
+                     return error;
++                }
+                 main::send = std::move(type);
+             }
+             break;

@@ -96,6 +96,44 @@ Do not infer the target's desktop from `config.toml`, launcher options, a consol
 
 Report private-desktop presentation/state checks separately from real user-desktop interaction. They do not by themselves prove foreground activation, physical input, user-desktop shell behavior or physical dragging. Preserve historical evidence as recorded; do not retroactively assign a desktop to old runs that did not record it. These methods do not expand the selected verification scope or require a new diagnostic framework.
 
+### Private capture helper startup
+
+Read this before the first private-desktop snapshot, including after switching PCs. The target and the screenshot helper are separate processes: placing the Qt target on a private desktop does not place a later PowerShell/WinForms helper there. CreateNoWindow, hidden launch and -PrintWindow do not select a desktop.
+
+**Do not attach lpDesktop dynamically to Python's subprocess.STARTUPINFO and assume it reaches Windows.** On the verified CPython 3.11.9 runtime this attribute can be assigned without error but is ignored by that launch path: a child requested on a private desktop still ran on Default. Use an actual native STARTUPINFO.lpDesktop, for example the already-installed pywin32 win32process.STARTUPINFO with CreateProcess, or an equivalent verified WinAPI launcher. Do not install global packages, elevate capture, change sandbox settings or switch the input desktop as a workaround.
+
+For an existing owned desktop and verified scene metadata, this pattern launches the project capture script there. The variable root is the checkout path; scene contains the live test's PID, HWND, desktop and scene index, not stale handoff values. The target must keep its desktop alive until the helper exits.
+
+~~~python
+import subprocess
+import win32con, win32event, win32process
+
+command = [
+    "powershell.exe", "-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden",
+    "-ExecutionPolicy", "Bypass", "-File", str(root / "scripts/capture_ui_snapshots.ps1"),
+    "-ProcessId", str(scene["pid"]), "-WindowHandle", str(scene["hwnd"]),
+    "-PrintWindow", "-Label", f"private_{scene['pid']}_{scene['index']}",
+]
+startup = win32process.STARTUPINFO()
+startup.lpDesktop = "WinSta0\\" + scene["desktop"]
+process, thread, helper_pid, _ = win32process.CreateProcess(
+    None, subprocess.list2cmdline(command), None, None, False,
+    win32con.CREATE_NO_WINDOW, None, str(root), startup,
+)
+thread.Close()
+try:
+    assert win32event.WaitForSingleObject(process, 15000) == win32con.WAIT_OBJECT_0
+    assert win32process.GetExitCodeProcess(process) == 0
+finally:
+    process.Close()  # Closing a handle does not terminate a timed-out process.
+~~~
+
+Before capture, establish the helper's own thread desktop with GetThreadDesktop(GetCurrentThreadId()) and GetUserObjectInformation(UOI_NAME), as well as the target window's desktop and PID. A console-only child identity check is sufficient to validate a changed launcher without windows or input. With a real window, retain the capture script's HWND-to-PID ownership guard and inspect the resulting image. A cross-desktop lookup may return zero or fail: first check the helper's actual desktop and whether the HWND still exists; do not remove the guard, assume the target crashed or silently fall back to Default.
+
+If startup/capture fails, preserve that attempt as failed, stop waiting for its screenshot acknowledgement, and normally close only the owned test or confirm its bounded self-exit. Do not leave a private test behind while starting another. Retry only after identifying the changed launch condition. No screenshot acknowledgement or blank image is not a pass.
+
+Evidence on 2026-11-01: a no-window/no-input CPython 3.11.9 comparison reproduced Default for the unsupported dynamic attribute and the intended private desktop for native pywin32 startup; both children exited 0 and the owned desktop closed. Using the native route, the existing Medium Popup test then completed five private scenes with project-script snapshots and zero backend-init/send calls. This verifies that runtime/method; it does not assert that every earlier Win10/Win11 capture failure had the same cause. Task-specific logs and progress remain in the task's sole plan and ignored evidence directory.
+
 ## Screenshot capture and comparison
 
 After preparing the example runtime, launch and capture it:

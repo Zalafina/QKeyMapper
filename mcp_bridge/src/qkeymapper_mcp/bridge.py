@@ -187,10 +187,13 @@ class Bridge:
     async def preview_changes(self, source_revision: str | None = None, source_tab_ref: str | None = None,
                               original_key: str | None = None, mapping_key: str | None = None,
                               insert_row: int | None = None, *, action: str = "mapping.add", setting_name: str | None = None,
-                              source_refs: list[str] | None = None) -> dict:
+                              source_refs: list[str] | None = None, send_method: int | None = None,
+                              source_ref: str | None = None, preferences_revision: str | None = None,
+                              preferred_backend: str | None = None, unavailable_policy: str | None = None) -> dict:
         arguments = {key: value for key, value in dict(source_revision=source_revision, source_tab_ref=source_tab_ref,
             original_key=original_key, mapping_key=mapping_key, insert_row=insert_row, setting_name=setting_name,
-            source_refs=source_refs).items()
+            source_refs=source_refs, send_method=send_method, source_ref=source_ref, preferences_revision=preferences_revision,
+            preferred_backend=preferred_backend, unavailable_policy=unavailable_policy).items()
             if value is not None}
         if action == "mapping.add":
             arguments["insert_row"] = insert_row

@@ -1,0 +1,31 @@
+--- a/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp
++++ b/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp
+@@ -383,13 +383,20 @@
+-            POINT move{};
++            int64_t x=0,y=0;
+             if (mi.dwFlags & MOUSEEVENTF_MOVE) {
+-                move = { mi.dx, mi.dy };
++                x=mi.dx; y=mi.dy;
+                 if (mi.dwFlags & MOUSEEVENTF_ABSOLUTE) {
+-                    if (mi.dwFlags & MOUSEEVENTF_VIRTUALDESK) mouse_virtual_desk_absolute_to_screen(move);
+-                    else mouse_absolute_to_screen(move);
+-                    mouse_screen_to_relative(move);
+-                }
+-            }
+-            int64_t x = move.x, y = move.y;
++                    const bool virtualDesktop=(mi.dwFlags & MOUSEEVENTF_VIRTUALDESK)!=0;
++                    const int width=GetSystemMetrics(virtualDesktop ? SM_CXVIRTUALSCREEN : SM_CXSCREEN);
++                    const int height=GetSystemMetrics(virtualDesktop ? SM_CYVIRTUALSCREEN : SM_CYSCREEN);
++                    POINT cursor{};
++                    if (mi.dx<0 || mi.dx>65535 || mi.dy<0 || mi.dy>65535 || width<=1 || height<=1
++                        || !GetCursorPos(&cursor)) return false;
++                    // Use current display bounds, including negative virtual origins.
++                    const int left=virtualDesktop ? GetSystemMetrics(SM_XVIRTUALSCREEN) : 0;
++                    const int top=virtualDesktop ? GetSystemMetrics(SM_YVIRTUALSCREEN) : 0;
++                    x=int64_t(left)+int64_t(mi.dx)*(width-1)/65535-cursor.x;
++                    y=int64_t(top)+int64_t(mi.dy)*(height-1)/65535-cursor.y;
++                }
++            }
+             int64_t wheel = wheel_delta / WHEEL_DELTA;
+             using CoordinatesType = decltype(ReportType{}.x);
+             constexpr int64_t limit = max_value<CoordinatesType>();

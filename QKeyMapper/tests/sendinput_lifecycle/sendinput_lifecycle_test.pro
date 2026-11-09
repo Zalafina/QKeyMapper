@@ -15,3 +15,8 @@ for(qkmFileVariable, $$list(SOURCES HEADERS FORMS RESOURCES RC_FILE DISTFILES TR
 }
 INCLUDEPATH += $$QKM_PRODUCT_ROOT
 SOURCES += $$PWD/qkm_sendinput_lifecycle_test.cpp
+contains(CONFIG, ibinput_output_probe) {
+    DEFINES += QKM_IBINPUT_OUTPUT_PROBE
+    SOURCES += $$PWD/../ibinput/native_output_probe.cpp
+    HEADERS += $$PWD/../ibinput/native_output_probe.h
+}

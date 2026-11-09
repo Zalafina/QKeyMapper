@@ -723,6 +723,7 @@ namespace QKeyMapperConstants {
     inline constexpr int SENDMAPPINGKEY_METHOD_SENDINPUT    = 0;
     inline constexpr int SENDMAPPINGKEY_METHOD_SENDMESSAGE  = 1;
     inline constexpr int SENDMAPPINGKEY_METHOD_FAKERINPUT   = 2;
+    inline constexpr int SENDMAPPINGKEY_METHOD_IBINPUT      = 3;
 
     inline constexpr uint LOCK_STATE_LOCKOFF       = 0;
     inline constexpr uint LOCK_STATE_LOCKON        = 1;
@@ -1527,6 +1528,7 @@ namespace QKeyMapperConstants {
 
     inline constexpr const char REGEX_STRING_EMPTYSTRING[] = "^$";
 
+    inline constexpr const char REGEX_PATTERN_MOUSE_POINT_CLICK[] = R"((Mouse-L|Mouse-R|Mouse-M|Mouse-X1|Mouse-X2)(:W)?(:BG)?\((-?\d+),(-?\d+)\))";
     inline constexpr const char REGEX_PATTERN_MOUSE_MOVE[] = R"(Mouse-Move(:W)?(:BG)?\((-?\d+),(-?\d+)\))";
 
     // Relative mouse move mapping key pattern: "Mouse-Move:R(delta_x,delta_y)"

@@ -299,12 +299,12 @@ void lifecycleTransitions(int argc, char *argv[])
         activeTab(0);
         cleared();
         reuse(0);
-        worker->setKeyMappingRestart();
+        worker->setKeyMappingRestart(QkmIbInputClient::instance().requestRun());
         activeTab(0);
         cleared();
         reuse(0);
         tabs->setCurrentIndex(second);
-        worker->setKeyMappingRestart();
+        worker->setKeyMappingRestart(QkmIbInputClient::instance().requestRun());
         activeTab(second);
         cleared();
         require(QKeyMapper::s_LastActiveKeyMappingDataList.first().Original_Key == QStringLiteral("QkmForza0A"),

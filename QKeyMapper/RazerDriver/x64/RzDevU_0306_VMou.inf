@@ -1,0 +1,58 @@
+; Copyright: (c) 2019 Razer Inc. All rights reserved
+;
+; RzDevU_0306_VMou.inf
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = HIDClass
+ClassGuid   = {745a17a0-74d3-11d0-b6fe-00a0c90f57da}
+Provider    = %ManufacturerName%
+CatalogFile = rzdev_0306_vmou.cat
+DriverVer=02/18/2020,10.0.15063.0
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%RzDev.DeviceDesc%=RzDev_Device,   RZVIRTUAL\Vid_1532&Pid_0306&MI_00&Col00
+
+[RzDev_Device.NT]
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+;No files to copy
+
+[RzDev_Device.NT.HW]
+AddReg = RzDev_Device.NT.HW.AddReg
+
+[RzDev_Device.NT.HW.AddReg]  
+;
+
+;-------------- Service installation
+[RzDev_Device.NT.Services]
+AddService = mshidkmdf, 0x000001fa, mshidkmdf.AddService ;flag 0x2 sets this as the service for the device
+
+[mshidkmdf.AddService]
+ServiceType    = 1                  ; SERVICE_KERNEL_DRIVER
+StartType      = 3                  ; SERVICE_DEMAND_START
+ErrorControl   = 1                  ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %10%\System32\Drivers\mshidkmdf.sys
+
+[Strings]
+ManufacturerName="Razer Inc"
+DiskName = "Razer 0306 Installation Disk"
+RzDev.ServiceDesc= "Razer 0306 Service"
+RzDev.DeviceDesc = "HID-compliant device"

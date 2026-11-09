@@ -1,0 +1,16 @@
+--- a/Simulator/include/IbInputSimulator/SendTypes/Razer.hpp
++++ b/Simulator/include/IbInputSimulator/SendTypes/Razer.hpp
+@@ -197,6 +197,13 @@
+                 DebugOStream() << L"send_keyboard_input: " << control.ki.MakeCode << ", " << control.ki.Flags << std::endl;
+ 
+             DWORD bytes_returned;
++            if (ki.wVk == VK_PAUSE) {
++                if (!DeviceIoControl(device, 0x88883020, &control, sizeof control, nullptr, 0, &bytes_returned, nullptr))
++                    return false;
++                // Pause needs the complete E1 1D 45 make/break sequence.
++                control.ki.MakeCode = 0x45;
++                control.ki.Flags = keydown ? KEY_MAKE : KEY_BREAK;
++            }
+             return DeviceIoControl(device, 0x88883020, &control, sizeof control, nullptr, 0, &bytes_returned, nullptr);
+         }
+ 

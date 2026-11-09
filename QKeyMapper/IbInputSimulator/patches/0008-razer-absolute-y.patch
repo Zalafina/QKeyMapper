@@ -1,0 +1,11 @@
+--- a/Simulator/include/IbInputSimulator/SendTypes/Razer.hpp
++++ b/Simulator/include/IbInputSimulator/SendTypes/Razer.hpp
+@@ -106,5 +106,7 @@
+                     control.mi.Flags |= MOUSE_VIRTUAL_DESKTOP;
+                 }
+                 control.mi.LastX = mi.dx;
+-                control.mi.LastY = (LONG)std::round(mi.dy / 1.2);
++                // Absolute coordinates are already normalized; compensate only relative movement.
++                control.mi.LastY = (mi.dwFlags & MOUSEEVENTF_ABSOLUTE)
++                    ? mi.dy : (LONG)std::round(mi.dy / 1.2);
+             }

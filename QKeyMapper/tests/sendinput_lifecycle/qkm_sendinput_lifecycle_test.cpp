@@ -36,6 +36,11 @@
 #include "../../automation/qkm_demo_mode.h"
 #include "../../automation/qkm_demo_process.h"
 #include "../../automation/qkm_demo_host.h"
+#ifdef QKM_IBINPUT_OUTPUT_PROBE
+#define QKM_OUTPUT_PROBE_IMPLEMENTATION
+#include "../ibinput/native_output_probe.h"
+#undef QKM_OUTPUT_PROBE_IMPLEMENTATION
+#endif
 #include <SDL.h>
 #include "../../qgeneraladvanceddialog.h"
 #include "../../qfloatingbuttonsetupdialog.h"
@@ -118,6 +123,7 @@ public:
         mapper->m_GeneralAdvancedDialog->activateWindow();
     }
 };
+#include "../../qkm_ibinput_client.h"
 
 namespace {
 using namespace QKeyMapperConstants;
@@ -858,7 +864,7 @@ void installQueuedLifecycleWorkTest(QKeyMapper_Worker *worker, bool discard)
     }
     {
         const auto work = QSharedPointer<SendInputWorkItem>::create();
-        emit worker->setKeyMappingRestart_Signal(work);
+        emit worker->setKeyMappingRestart_Signal(QkmIbInputClient::instance().requestRun(), work);
         emit hook->setKeyMappingRestart_Signal(work);
     }
     result->workAtSubmission = SendInputWorkItem::outstanding();
@@ -1033,7 +1039,7 @@ void installRepeatTest(QKeyMapper_Worker *worker, const QString &mode)
                 }
                 if (spec.action == QStringLiteral("retrigger")) { trigger(true); }
                 else if (spec.action == QStringLiteral("stop")) { worker->setWorkerKeyUnHook(); }
-                else if (spec.action == QStringLiteral("restart")) { worker->setKeyMappingRestart(); }
+                else if (spec.action == QStringLiteral("restart")) { worker->setKeyMappingRestart(QkmIbInputClient::instance().requestRun()); }
                 else if (spec.action == QStringLiteral("release")) {
                     QKeyMapper_Worker::pressedRealKeysList.removeAll(original);
                     worker->emit_sendInputKeysSignal_Wrapper(0, data->first().Mapping_Keys, KEY_UP, data->first().Original_Key,
@@ -1667,7 +1673,7 @@ void installLifecycleTest()
                     SendInputTask::clearSendInputTaskControllerMap();
                 } else if (mode == QStringLiteral("stop") || mode == QStringLiteral("restart")) {
                     if (mode == QStringLiteral("stop")) { worker->setWorkerKeyUnHook(); }
-                    else { worker->setKeyMappingRestart(); }
+                    else { worker->setKeyMappingRestart(QkmIbInputClient::instance().requestRun()); }
                     for (auto &entry : SendInputTask::s_SendInputTaskControllerMap) {
                         result->passed = result->passed && entry.task_threadpool->waitForDone(1000);
                     }
@@ -1683,8 +1689,8 @@ void installLifecycleTest()
                         SendInputTask::clearSendInputTaskControllerMap();
                     } else if (mode == QStringLiteral("admission")) {
                         result->passed = result->passed && QMetaObject::invokeMethod(worker, "shutdownSendInputTasks", Qt::DirectConnection);
-                        worker->onSendInputKeys(-1, keys, KEY_DOWN, QStringLiteral("QkmLate"), SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, nullptr);
-                        worker->onSendInputKeys(-1, keys, KEY_UP, QStringLiteral("QkmLate"), SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, nullptr);
+                        worker->onSendInputKeys(-1, keys, KEY_DOWN, QStringLiteral("QkmLate"), SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, nullptr, 0);
+                        worker->onSendInputKeys(-1, keys, KEY_UP, QStringLiteral("QkmLate"), SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, nullptr, 0);
                     }
                 }
                 result->cleanupMs = elapsed.elapsed();
@@ -3696,6 +3702,9 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
                 "immutable configuration-only mode is on the observed private background desktop with no Run scope");
             check(!qApp->inherits("SingleApplication"), "configuration-only child bypasses the legacy instance activation channel");
             check(devicesAbsent(), "startup leaves Hook, Interception, libusb, SDL controller and virtual device resources uninitialized");
+#ifdef QKM_IBINPUT_OUTPUT_PROBE
+            for (const auto &entry : QkmNativeOutputProbe::exercise(true)) demoModeChecks->append(entry);
+#endif
             const quint64 denied = QkmAutomation::demoEffectDenialsForTest();
             mapper->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK);
             mapper->setKeyMappingRestart();
@@ -3710,8 +3719,8 @@ void QkmMappingAdditionTestAccess::startSaveContext(QKeyMapper *mapper)
             bool workerDenied = false;
             QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(), [&] {
                 auto *worker = QKeyMapper_Worker::getInstance();
-                worker->setWorkerKeyHook(); worker->setWorkerKeyUnHook(); worker->setKeyMappingRestart();
-                worker->onSendInputKeys(-1, {}, 0, {}, 0, 0, nullptr);
+                worker->setWorkerKeyHook(); worker->setWorkerKeyUnHook(); worker->setKeyMappingRestart(0);
+                worker->onSendInputKeys(-1, {}, 0, {}, 0, 0, nullptr, 0);
                 worker->doFunctionMappingProc(QStringLiteral("UNRECOGNIZED_DEMO_PROBE"));
                 workerDenied = !worker->queueVButtonKey(QString(), false);
 #ifdef FAKERINPUT_SUPPORT
@@ -6055,6 +6064,22 @@ int main(int argc, char *argv[])
 {
     const QString mode = qEnvironmentVariable("QKM_LIFECYCLE_CASE");
     const QString path = qEnvironmentVariable("QKM_LIFECYCLE_RESULT");
+#ifdef QKM_IBINPUT_OUTPUT_PROBE
+    if (mode == QStringLiteral("ibinput_output_control")) {
+        if (path.isEmpty() || !QkmAutomation::currentThreadOnPrivateDesktop()
+            || !QkmAutomation::initializeStartupPurpose(QkmAutomation::StartupPurpose::Standard)) return 2;
+        QCoreApplication app(argc, argv);
+        const auto checks = QkmNativeOutputProbe::exercise(false);
+        bool passed = true;
+        for (const auto &entry : checks) passed = passed && entry.toObject().value(QStringLiteral("passed")).toBool();
+        QSaveFile file(path);
+        const auto bytes = QJsonDocument(QJsonObject{{QStringLiteral("passed"), passed},
+            {QStringLiteral("substituted_native_boundaries"), true}, {QStringLiteral("checks"), checks}}).toJson();
+        if (!file.open(QIODevice::WriteOnly) || file.write(bytes) != bytes.size() || !file.commit()) return 2;
+        for (int attempt = 0; attempt < 1500 && !QFileInfo::exists(path + QStringLiteral(".done")); ++attempt) Sleep(10);
+        return passed && QFileInfo::exists(path + QStringLiteral(".done")) ? 0 : 2;
+    }
+#endif
     if (mode == QStringLiteral("demo_process_owner")) return runDemoProcessOwnerFixture(path);
     if (mode == QStringLiteral("demo_host_role") || mode == QStringLiteral("demo_host_manage")) {
         const QString directory = QDir::cleanPath(QFileInfo(path).absolutePath());
@@ -6215,10 +6240,16 @@ int main(int argc, char *argv[])
         evidence.insert(QStringLiteral("execution_policy"), QkmAutomation::configurationOnlyPolicy());
         evidence.insert(QStringLiteral("system_filter_keys_unchanged"), filterUnchanged);
         evidence.insert(QStringLiteral("effect_denials"), QString::number(QkmAutomation::demoEffectDenialsForTest()));
+#ifdef QKM_IBINPUT_OUTPUT_PROBE
+        evidence.insert(QStringLiteral("native_boundary_calls_at_exit"), QkmNativeOutputProbe::counts());
+        for (const auto &value : QkmNativeOutputProbe::counts()) {
+            if (value.toInt() != 0) evidence.insert(QStringLiteral("passed"), false);
+        }
+#endif
     }
     delete result;
     result = nullptr;
     QFile output(path);
     if (!output.open(QIODevice::WriteOnly) || output.write(QJsonDocument(evidence).toJson()) < 0) { return 2; }
-    return passed ? 0 : 2;
+    return evidence.value(QStringLiteral("passed")).toBool() ? 0 : 2;
 }

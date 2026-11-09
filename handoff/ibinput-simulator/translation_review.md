@@ -1,0 +1,893 @@
+# IbInput 新增文案审阅稿
+
+这是正式 TS/QM 更新前的文案提案，不维护开发进度；状态只见 [唯一主计划](qkeymapper_ibinputsimulator_integration_plan.md)。批准前不写正式翻译资源。
+
+每组注明 Qt context、占位符和换行。正文没有实际 LF；帮助说明以 HTML <br> 换行，链接目标保持不变。所有 %1／%2 原样保留。品牌名称保持原文；英文资源使用英文源本身。
+
+此稿覆盖本检查点新增可见源文，批准后由 Agent 使用项目 lupdate-pro／lrelease 更新对应 TS/QM，并核对加载及运行时刷新；完整产品三语 UI 仍按主计划验收。
+
+## Context: QkmIbInputClient
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Invalid IbInput preferences; defaults were used.` |
+| 中文 | `IbInput 偏好无效，已使用默认值。` |
+| 日本語 | `IbInput の設定が無効なため、既定値を使用しました。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Previous IbInput cleanup is incomplete.` |
+| 中文 | `上一次 IbInput 清理尚未完成。` |
+| 日本語 | `前回の IbInput の後処理が完了していません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `The selected IbInput backend does not support this mapping or still awaits validation.` |
+| 中文 | `所选 IbInput 后端不支持此映射，或相关能力尚待验证。` |
+| 日本語 | `選択した IbInput バックエンドはこのマッピングに対応していないか、検証待ちです。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput support is not included in this build.` |
+| 中文 | `此构建未包含 IbInput 支持。` |
+| 日本語 | `このビルドには IbInput サポートが含まれていません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput startup was cancelled.` |
+| 中文 | `IbInput 启动已取消。` |
+| 日本語 | `IbInput の起動をキャンセルしました。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Connected; input reception has not been verified.` |
+| 中文 | `已连接；输入接收情况尚未验证。` |
+| 日本語 | `接続済み。入力の受信は未確認です。` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput connection failed: %1` |
+| 中文 | `IbInput 连接失败：%1` |
+| 日本語 | `IbInput の接続に失敗しました: %1` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `SendInput is frozen for this run; configuration is unchanged.` |
+| 中文 | `本轮已固定使用 SendInput；配置未改变。` |
+| 日本語 | `この実行では SendInput を使用します。設定は変更されません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `This IbInput event was not admitted for the current run.` |
+| 中文 | `本轮准入未允许此 IbInput 输入事件。` |
+| 日本語 | `この IbInput 入力イベントは、現在の実行では許可されていません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Unsupported IbInput keyboard event.` |
+| 中文 | `不支持此 IbInput 键盘事件。` |
+| 日本語 | `この IbInput キーボードイベントには対応していません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `The IbInput keyboard report is full.` |
+| 中文 | `IbInput 键盘报告的普通键槽位已满。` |
+| 日本語 | `IbInput キーボードレポートの通常キー枠がいっぱいです。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput send failed; mapping must stop without retrying another backend.` |
+| 中文 | `IbInput 发送失败；必须停止映射，不会换后端重试。` |
+| 日本語 | `IbInput の送信に失敗しました。別のバックエンドで再試行せず、マッピングを停止します。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Unsupported IbInput mouse event.` |
+| 中文 | `不支持此 IbInput 鼠标事件。` |
+| 日本語 | `この IbInput マウスイベントには対応していません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Unsupported combined IbInput mouse event.` |
+| 中文 | `不支持此 IbInput 鼠标组合事件。` |
+| 日本語 | `この IbInput マウスイベントの組み合わせには対応していません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `This IbInput mouse button still awaits backend validation.` |
+| 中文 | `此 IbInput 鼠标按钮尚待后端验证。` |
+| 日本語 | `この IbInput マウスボタンはバックエンドでの検証待ちです。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `This IbInput button combination still awaits backend validation.` |
+| 中文 | `此 IbInput 按钮组合尚待后端验证。` |
+| 日本語 | `この IbInput ボタンの組み合わせはバックエンドでの検証待ちです。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput wheel send failed; mapping must stop.` |
+| 中文 | `IbInput 滚轮发送失败；必须停止映射。` |
+| 日本語 | `IbInput のホイール送信に失敗しました。マッピングを停止します。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Unsupported IbInput event type.` |
+| 中文 | `不支持此 IbInput 事件类型。` |
+| 日本語 | `この IbInput イベントの種類には対応していません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput release is incomplete; automatic restart is blocked.` |
+| 中文 | `IbInput 释放未完成，已阻止自动重启映射。` |
+| 日本語 | `IbInput の解放が完了していないため、自動再起動を禁止しています。` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput is mixed with another send method in one mouse movement group: %1` |
+| 中文 | `同一鼠标移动组混用了 IbInput 和其他发送方式：%1` |
+| 日本語 | `同じマウス移動グループに IbInput と別の送信方式が混在しています: %1` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `This IbInput feedback/blocking combination still awaits validation: %1` |
+| 中文 | `此 IbInput 反馈／屏蔽组合尚待验证：%1` |
+| 日本語 | `この IbInput のフィードバック／ブロックの組み合わせは検証待ちです: %1` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Complex IbInput combinations, repetition, locking or stop/tab commands still await validation: %1` |
+| 中文 | `复杂 IbInput 组合、重复、锁定或停止／切表命令尚待验证：%1` |
+| 日本語 | `複雑な IbInput の組み合わせ、繰り返し、ロック、停止／テーブル切替コマンドは検証待ちです: %1` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput output can trigger an original key; this feedback path awaits validation: %1` |
+| 中文 | `IbInput 输出可能触发原始按键，此反馈路径尚待验证：%1` |
+| 日本語 | `IbInput の出力が元のキーを発火する可能性があります。このフィードバック経路は検証待ちです: %1` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `This IbInput mouse button still awaits backend validation: %1` |
+| 中文 | `此 IbInput 鼠标按钮尚待后端验证：%1` |
+| 日本語 | `この IbInput マウスボタンはバックエンドでの検証待ちです: %1` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `This IbInput key representation still awaits validation: %1` |
+| 中文 | `此 IbInput 键码表示尚待验证：%1` |
+| 日本語 | `この IbInput キー表現は検証待ちです: %1` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput macro/repeat expansion still awaits validation: %1` |
+| 中文 | `IbInput 宏／重复展开尚待验证：%1` |
+| 日本語 | `IbInput のマクロ／繰り返し展開は検証待ちです: %1` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput send failed; mapping must stop.` |
+| 中文 | `IbInput 发送失败；必须停止映射。` |
+| 日本語 | `IbInput の送信に失敗しました。マッピングを停止します。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput absolute positioning is not available for this backend.` |
+| 中文 | `此后端尚未开放 IbInput 绝对定位。` |
+| 日本語 | `このバックエンドでは IbInput の絶対位置指定は使用できません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Wait for IbInput cleanup before starting.` |
+| 中文 | `请等待 IbInput 清理完成后再启动。` |
+| 日本語 | `IbInput の後処理が完了してから開始してください。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput tab switching is awaiting lifecycle validation; mapping was stopped.` |
+| 中文 | `IbInput 切表尚待生命周期验证；映射已停止。` |
+| 日本語 | `IbInput のテーブル切替はライフサイクル検証待ちです。マッピングを停止しました。` |
+
+占位符：%1、%2；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Table %1, row %2` |
+| 中文 | `表 %1，第 %2 行` |
+| 日本語 | `テーブル %1、行 %2` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Row %1` |
+| 中文 | `第 %1 行` |
+| 日本語 | `行 %1` |
+
+## Context: QkmIbInputPopup
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Preferred backend` |
+| 中文 | `首选后端` |
+| 日本語 | `優先バックエンド` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `If unavailable` |
+| 中文 | `无法连接时` |
+| 日本語 | `接続できない場合` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Automatic (recommended)` |
+| 中文 | `自动（推荐）` |
+| 日本語 | `自動（推奨）` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Logitech legacy` |
+| 中文 | `Logitech 旧版通道` |
+| 日本語 | `Logitech 旧方式` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Do not start mapping` |
+| 中文 | `不启动映射` |
+| 日本語 | `マッピングを開始しない` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Use SendInput before start` |
+| 中文 | `启动前改用 SendInput` |
+| 日本語 | `開始前に SendInput に切り替える` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Refresh status` |
+| 中文 | `刷新状态` |
+| 日本語 | `状態を更新` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Check connection` |
+| 中文 | `连接检查` |
+| 日本語 | `接続を確認` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup.` |
+| 中文 | `可能激活厂商虚拟设备，不发送测试输入。仅在映射清理完成后可用。` |
+| 日本語 | `メーカーの仮想デバイスを有効にする場合があります。テスト入力は送信しません。マッピングの後処理完了後のみ使用できます。` |
+
+占位符：无；换行：HTML <br>。
+
+| 语言 | 文案 |
+|---|---|
+| English | `<a href="https://www.logitechg.com/innovation/g-hub.html">G HUB</a> \| <a href="https://www.razer.com/synapse">Razer Synapse</a><br>Connection and accepted calls do not prove that an application received input.` |
+| 中文 | `<a href="https://www.logitechg.com/innovation/g-hub.html">G HUB</a> \| <a href="https://www.razer.com/synapse">Razer Synapse</a><br>连接成功或调用被接受，并不代表应用已收到输入。` |
+| 日本語 | `<a href="https://www.logitechg.com/innovation/g-hub.html">G HUB</a> \| <a href="https://www.razer.com/synapse">Razer Synapse</a><br>接続成功や呼び出しの受理は、アプリでの入力受信を保証しません。` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `G HUB version: %1` |
+| 中文 | `G HUB 版本：%1` |
+| 日本語 | `G HUB バージョン: %1` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Unknown` |
+| 中文 | `未知` |
+| 日本語 | `不明` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Observed process names: %1` |
+| 中文 | `观察到的进程名：%1` |
+| 日本語 | `確認したプロセス名: %1` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `G HUB driver registration: %1` |
+| 中文 | `G HUB 驱动登记：%1` |
+| 日本語 | `G HUB ドライバー登録: %1` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Observed` |
+| 中文 | `已观察到` |
+| 日本語 | `確認済み` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Razer installation and driver: Unknown` |
+| 中文 | `Razer 安装与驱动：未知` |
+| 日本語 | `Razer のインストールとドライバー: 不明` |
+
+占位符：%1、%2；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Backend: %1; fallback: %2` |
+| 中文 | `后端：%1；是否回退：%2` |
+| 日本語 | `バックエンド: %1、代替方式: %2` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Not connected` |
+| 中文 | `未连接` |
+| 日本語 | `未接続` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Yes` |
+| 中文 | `是` |
+| 日本語 | `はい` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `No` |
+| 中文 | `否` |
+| 日本語 | `いいえ` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Last result: %1` |
+| 中文 | `最近结果：%1` |
+| 日本語 | `前回の結果: %1` |
+
+占位符：%1；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Sampled: %1` |
+| 中文 | `采样时间：%1` |
+| 日本語 | `確認日時: %1` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Stop mapping and wait for cleanup before changing preferences.` |
+| 中文 | `请停止映射并等待清理完成后再修改偏好。` |
+| 日本語 | `マッピングを停止し、後処理が完了してから設定を変更してください。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Status refresh does not initialize a driver.` |
+| 中文 | `刷新状态不会初始化驱动。` |
+| 日本語 | `状態の更新ではドライバーを初期化しません。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `This checkpoint enables G HUB relative movement only. Other outputs await validation.` |
+| 中文 | `此检查点仅开放 G HUB 相对移动，其他输出尚待验证。` |
+| 日本語 | `このチェックポイントでは G HUB の相対移動のみ有効です。他の出力は検証待ちです。` |
+
+## Context: QKeyMapper
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Wait for IbInput cleanup before starting or changing mappings.` |
+| 中文 | `请等待 IbInput 清理完成后再启动或更改映射。` |
+| 日本語 | `IbInput の後処理が完了してから、マッピングを開始または変更してください。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Wait for the IbInput connection check to finish.` |
+| 中文 | `请等待 IbInput 连接检查完成。` |
+| 日本語 | `IbInput の接続確認が完了するまでお待ちください。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Wait for IbInput cleanup before saving.` |
+| 中文 | `请等待 IbInput 清理完成后再保存。` |
+| 日本語 | `IbInput の後処理が完了してから保存してください。` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `IbInput settings...` |
+| 中文 | `IbInput 设置...` |
+| 日本語 | `IbInput 設定...` |
+
+占位符：无；换行：无。
+
+| 语言 | 文案 |
+|---|---|
+| English | `Not connected` |
+| 中文 | `未连接` |
+| 日本語 | `未接続` |
+
+
+## W11-UX-01 用户验证反馈文案（已批准并实施，待最终人工验收）
+
+用户已明确批准以下U01～U10，并再次说明将人工验收最终结果。Qt5 lupdate-pro成功提取后，仅合并这些已批准项并重新生成三语QM；反向核对及正式QM的私有Popup实窗检查通过，证据见主计划12.8；不能代替用户人工确认。前述62项历史批准状态保持。文案仅改界面说明和操作反馈，不放宽能力或改变驱动初始化／关闭顺序；另获批准的保存混用校验使用既有错误词条，无新增未批准文字。`%1`为本地操作完成时间，保留Qt占位符；运行时切换语言重新翻译。U08替代检查点提示，实际能力扩大时同步修订。
+
+### U01 — QKeyMapper
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `IbInput settings` |
+| 中文 | `IbInput设置` |
+| 日本語 | `IbInput設定` |
+
+### U02 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Refresh installation, process and driver information without connecting or sending input.` |
+| 中文 | `刷新安装、进程和驱动信息，不连接后端，也不发送输入。` |
+| 日本語 | `インストール、プロセス、ドライバー情報を更新します。接続や入力送信は行いません。` |
+
+### U03 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Temporarily connect to the preferred backend, then disconnect. No test input is sent.` |
+| 中文 | `按首选后端设置短暂连接，随后断开；不发送测试输入。` |
+| 日本語 | `優先バックエンドに一時接続した後、切断します。テスト入力は送信しません。` |
+
+### U04 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Checking connection...` |
+| 中文 | `正在检查连接…` |
+| 日本語 | `接続を確認しています…` |
+
+### U05 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Status refreshed at %1.` |
+| 中文 | `%1 状态已刷新。` |
+| 日本語 | `%1 に状態を更新しました。` |
+
+### U06 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Connection check passed at %1. The temporary connection is closed.` |
+| 中文 | `%1 连接检查通过，临时连接已关闭。` |
+| 日本語 | `%1 に接続を確認できました。一時接続は切断済みです。` |
+
+### U07 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Connection check failed at %1. See the result below.` |
+| 中文 | `%1 连接检查失败，请查看下方结果。` |
+| 日本語 | `%1 の接続確認に失敗しました。下の結果を確認してください。` |
+
+### U08 — QkmIbInputPopup
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Currently supports G HUB relative mouse movement only.` |
+| 中文 | `目前仅支持 G HUB 鼠标相对移动。` |
+| 日本語 | `現在は G HUB によるマウスの相対移動のみに対応しています。` |
+
+### U09 — QKeyMapper
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Stopping...` |
+| 中文 | `正在停止…` |
+| 日本語 | `停止しています…` |
+
+### U10 — QKeyMapper
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Cleanup incomplete` |
+| 中文 | `清理未完成` |
+| 日本語 | `後処理が未完了` |
+
+
+## IB-04-K1 U11（已批准并实施；待用户最终确认）
+
+用户于2026-10-30明确批准。Context为QkmIbInputPopup，无占位符，替换U08的仅相对移动说明；不代表完整键盘／FakerInput功能对等。正式资源与已通过能力同步，不在失败时宣称已支持。
+
+| 语言 | 已批准文案 |
+|---|---|
+| English | Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24). |
+| 中文 | 目前支持 G HUB 鼠标相对移动及基础按键输出（A-Z、0-9、F1-F24）。 |
+| 日本語 | 現在は G HUB によるマウスの相対移動と基本キー出力（A-Z、0-9、F1-F24）に対応しています。 |
+
+
+基础键盘固定产品接收及停止／退出释放通过后实施U11。Qt5项目lupdate-pro成功提取，限定更新本项；三语lrelease和QM反向核对通过，旧U08仅保留vanished历史。Qt6私有Popup五场景与运行时语言切换检查通过（主计划12.11、out/ibinput/logs/k1-private-ui-final.log），150%中文／日文已滚动查看说明。用户后续人工确认结果统一见主计划最新交接卡片；基础功能确认不外推为全部三语／缩放场景或完整键盘／全部触发方式验收。
+
+## IB-04-M1 U12（撤回翻译，改为临时固定英文）
+
+Context：QkmIbInputPopup。替换U11的能力说明；无Qt占位符、无实际换行。品牌、按键和按钮名称保持原样；只在M1实现及所选验证完成后同步界面能力说明，验收状态只维护主计划。
+
+| 语言 | 建议文案 |
+|---|---|
+| English | Currently supports G HUB relative mouse movement, basic key output (A-Z, 0-9, F1-F24), five mouse buttons (left, right, middle, X1, X2) and vertical wheel scrolling. |
+| 中文 | 目前支持 G HUB 鼠标相对移动、基础按键输出（A-Z、0-9、F1-F24）、五个鼠标按钮（左键、右键、中键、X1、X2）及垂直滚轮。 |
+| 日本語 | 現在は G HUB によるマウスの相対移動、基本キー出力（A-Z、0-9、F1-F24）、5つのマウスボタン（左・右・中央・X1・X2）と縦スクロールに対応しています。 |
+
+2026-11-01 用户指出本条仅开发期间使用，建议固定中文或英文、无需三语维护。采用固定英文 QStringLiteral，撤回本条翻译提案，不更新正式 TS/QM；以上三语仅保留审阅历史。Release 前结合实际能力移除或改为必要的正式限制说明，不能在限制仍存在时直接隐藏。其他正式界面文字仍遵循原翻译约定。
+
+
+## IB-04-R1 U13-U22（2026-11-03，按当前状态给出明确操作）
+
+Context均为QkmIbInputPopup。U14／U16／U17／U18先获批准，其余最终预览及三语已于2026-11-03明确批准；10项均已按正式流程更新TS/QM。U13只保留说明链接和既有接收提示，不再显示抽象的“如果未检测到兼容接口”条件句或直接安装建议。U15实际结果由QKeyMapper自动被动查询；只有明确选择Razer且确实缺通道时显示U20，查询失败显示U22，不把失败当作未安装。已有通道时不提示重装。已有Razer／Synapse用户安装风险及步骤放在随包README与后续手册，当前未验证Synapse4／实体Razer设备共存功能。
+
+U13为RichText，两个固定网址保持；其他项单行，U14／U15各有一个%1。批准后使用正式lupdate-pro／lrelease流程；临时能力英文仍按U12独立处理。
+
+### U13 — 驱动说明链接
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `<a href="https://www.logitechg.com/innovation/g-hub.html">G HUB</a> &#124; <a href="https://github.com/Chaoses-Ib/IbInputSimulator/issues/7">Razer driver guide</a><br>Connection and accepted calls do not prove that an application received input.` |
+| 中文 | `<a href="https://www.logitechg.com/innovation/g-hub.html">G HUB</a> &#124; <a href="https://github.com/Chaoses-Ib/IbInputSimulator/issues/7">Razer 驱动说明</a><br>连接成功或调用被接受，并不代表应用已收到输入。` |
+| 日本語 | `<a href="https://www.logitechg.com/innovation/g-hub.html">G HUB</a> &#124; <a href="https://github.com/Chaoses-Ib/IbInputSimulator/issues/7">Razer ドライバーの案内</a><br>接続成功や呼び出しの受理は、アプリでの入力受信を保証しません。` |
+
+### U14 — 驱动服务观察（已批准）
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Razer driver services: %1` |
+| 中文 | `Razer 驱动服务：%1` |
+| 日本語 | `Razer ドライバーサービス: %1` |
+
+### U15 — 面向用户的实际检测结果
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Razer driver for IbInput: %1` |
+| 中文 | `Razer 驱动（IbInput）：%1` |
+| 日本語 | `IbInput 用 Razer ドライバー: %1` |
+
+### U16 — 详细服务观察（已批准）
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Not observed` |
+| 中文 | `未观察到` |
+| 日本語 | `未検出` |
+
+### U17 — 服务状态（已批准）
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Running` |
+| 中文 | `运行中` |
+| 日本語 | `実行中` |
+
+### U18 — 服务状态（已批准）
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Not running` |
+| 中文 | `未运行` |
+| 日本語 | `停止中` |
+
+### U19 — 已发现接口
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Detected` |
+| 中文 | `已检测到` |
+| 日本語 | `検出済み` |
+
+### U20 — 仅明确选择Razer且实际未发现接口时显示
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `QKeyMapper did not detect a Razer driver that IbInput can use. See the installation requirements in the Razer driver guide.` |
+| 中文 | `QKeyMapper 未检测到可供 IbInput 使用的 Razer 驱动。请查看“Razer 驱动说明”中的安装条件。` |
+| 日本語 | `IbInput で使用できる Razer ドライバーが QKeyMapper で検出されませんでした。「Razer ドライバーの案内」でインストール条件を確認してください。` |
+
+### U21 — 未发现接口
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Not detected` |
+| 中文 | `未检测到` |
+| 日本語 | `未検出` |
+
+### U22 — 仅明确选择Razer且检测失败时显示
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `QKeyMapper could not check the Razer driver status. Click Refresh status or Check connection.` |
+| 中文 | `QKeyMapper 暂时无法检测 Razer 驱动状态。请点击“刷新状态”或“连接检查”。` |
+| 日本語 | `QKeyMapper で Razer ドライバーの状態を確認できませんでした。「状態を更新」または「接続を確認」をクリックしてください。` |
+
+
+## Popup 可读性优化：U23～U33（2026-11-05，已批准）
+
+上下文均为QkmIbInputPopup。只改变显示和被动观察，不改变配置值、后端选择或驱动生命周期。已有Detected／Not detected、Running／Not running、Unknown、Yes／No、刷新／连接成功／等待清理说明及底部指引沿用原已批准词条；删除纯开发能力英文说明。用户已批准当前预览对应的U23～U33及分组布局，并同意本轮不显示雷蛇版本；批准后按lupdate-pro／lrelease更新正式TS／QM。临时预览QM仅在out保留用于对照。
+
+### U23 — 中央罗技分组标题；不改配置值。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Logitech G HUB` |
+| 中文 | `罗技 G HUB` |
+| 日本語 | `ロジクール G HUB` |
+
+### U24 — 中央雷蛇分组标题。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Razer driver` |
+| 中文 | `雷蛇驱动` |
+| 日本語 | `Razer ドライバー` |
+
+### U25 — %1实际连接后端或未连接；%2是／否。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Current backend: %1 (fallback: %2)` |
+| 中文 | `当前后端：%1（回退：%2）` |
+| 日本語 | `現在のバックエンド：%1（フォールバック：%2）` |
+
+### U26 — %1仅HH:mm:ss，被动采样时间。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Updated at %1` |
+| 中文 | `更新于 %1` |
+| 日本語 | `更新 %1` |
+
+### U27 — 仅G HUB服务登记；不宣称连接或输入就绪。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Driver registered` |
+| 中文 | `驱动已登记` |
+| 日本語 | `ドライバー登録済み` |
+
+### U28 — 仅确认服务／ImagePath不存在时使用。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Driver not registered` |
+| 中文 | `驱动未登记` |
+| 日本語 | `ドライバー未登録` |
+
+### U29 — 权限或系统查询失败；区别于未检测到。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Query failed` |
+| 中文 | `查询失败` |
+| 日本語 | `照会失敗` |
+
+### U30 — G HUB软件版本；未知沿用已有Unknown。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Version: %1` |
+| 中文 | `版本：%1` |
+| 日本語 | `バージョン: %1` |
+
+### U31 — 仅G HUB相关进程；未检测到或查询失败时显示对应状态。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Processes: %1` |
+| 中文 | `进程：%1` |
+| 日本語 | `プロセス: %1` |
+
+### U32 — Razer驱动服务及运行状态。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Services: %1` |
+| 中文 | `服务：%1` |
+| 日本語 | `サービス: %1` |
+
+### U33 — 删除“见下方”；实际错误原因／错误码紧接在同一上方反馈区。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Connection check failed at %1.` |
+| 中文 | `%1 连接检查失败。` |
+| 日本語 | `%1 接続チェックに失敗しました。` |
+
+
+## 自动选择提示：U34～U39（2026-11-05，已批准）
+
+上下文均为QkmIbInputPopup。保留既有G HUB／Logitech旧版通道翻译；自动顺序直接复用候选函数。检查结果按本次worker回传的实际后端显示，运行时使用当前状态；更改偏好或检查失败清除旧成功后端。运行结束后可在无新操作时恢复最近检查文字及原时间，真实错误仍保留，不把历史结果当作当前连接。用户已批准当前预览对应的U34～U39及显示方式；正式资源按lupdate-pro／lrelease更新。预览和连接状态夹具仍使用C API替身，不代表实际驱动连接。
+
+### U34 — %1由现有候选顺序和后端显示名称组成，仅自动选项下方显示。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Automatic order: %1` |
+| 中文 | `自动顺序：%1` |
+| 日本語 | `自動選択順: %1` |
+
+### U35 — 后端选择框及顺序提示的Tooltip；不改变连接行为。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `At mapping start, QKeyMapper tries backends in order and uses the first that supports the mapping and connects successfully. Check connection checks connectivity only; mapping start selects again. Refresh status does not connect.` |
+| 中文 | `开始映射时，QKeyMapper 按顺序尝试后端，使用首个支持当前映射且连接成功的后端。连接检查只检查能否连接；开始映射时会重新选择。刷新状态不会连接驱动。` |
+| 日本語 | `マッピング開始時に順番に試し、現在のマッピングに対応して接続に成功した最初のバックエンドを使用します。接続チェックは接続可否のみを確認し、マッピング開始時に再選択します。状態の更新ではドライバーに接続しません。` |
+
+### U36 — %1为本次检查HH:mm:ss；%2是检查实际连接后端，原始标识保留并在显示时翻译。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Connection check passed at %1: automatically selected %2. The temporary connection is closed.` |
+| 中文 | `%1 连接检查通过：自动选择了 %2；临时连接已关闭。` |
+| 日本語 | `%1 接続チェックに成功：%2 を自動選択しました。一時接続は切断済みです。` |
+
+### U37 — 手动指定时同样显示实际检查后端；%1时间，%2后端。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Connection check passed at %1: %2. The temporary connection is closed.` |
+| 中文 | `%1 连接检查通过：%2；临时连接已关闭。` |
+| 日本語 | `%1 接続チェックに成功：%2。一時接続は切断済みです。` |
+
+### U38 — Popup中的后端名称，配置值razer不变。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Razer` |
+| 中文 | `雷蛇` |
+| 日本語 | `Razer` |
+
+### U39 — 仅当前已连接且首选自动时标记实际后端；未连接／SendInput回退不套用此标记。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `%1 (automatic selection)` |
+| 中文 | `%1（自动选择）` |
+| 日本語 | `%1（自動選択）` |
+
+## 2026-11-05 品牌名称一致性修订（用户指定）
+
+沿用U23～U39的布局和行为；用户指定仅中文使用“罗技”，日文统一使用Logitech。上下文为QkmIbInputPopup；下面两项替代此前对应译文，其他文案保留。下拉选项、自动顺序、连接结果、当前后端和详情标题复用同一翻译来源，无需修改源码。
+
+### U40 — 旧版通道名称；实际仅中文变化。
+
+| 语言 | 指定文字 |
+|---|---|
+| English | Logitech legacy |
+| 中文 | 罗技 旧版通道 |
+| 日本語 | Logitech 旧方式 |
+
+### U41 — G HUB名称；实际仅日文变化。
+
+| 语言 | 指定文字 |
+|---|---|
+| English | Logitech G HUB |
+| 中文 | 罗技 G HUB |
+| 日本語 | Logitech G HUB |
+
+## 2026-11-09 A3 定位失败提示（用户已批准U42／U43）
+
+上下文QkmIbInputClient；仅新增失败时的解释，不新增设置项或改变已批准布局。占位符均为实际坐标／即时Windows错误，不将未到位写成成功。用户批准后已通过lupdate-pro／lrelease更新正式TS／QM；QM回转及六个实际Popup三语错误截图检查通过，详见主计划34.3。G HUB精度说明随IbInput完整手册统一更新。
+
+### U42 — 有界逼近未到位；%1／%2目标像素，%3／%4最后有效位置。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Logitech G HUB could not reach (%1, %2); last position: (%3, %4). Mapping must stop.` |
+| 中文 | `罗技 G HUB 未能移动到（%1，%2），最后位置为（%3，%4）。映射必须停止。` |
+| 日本語 | `Logitech G HUB で（%1, %2）に移動できませんでした。最終位置：（%3, %4）。マッピングを停止します。` |
+
+### U43 — 读取位置失败；%1为调用失败后立即取得的Windows错误码。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `IbInput could not read the cursor position (Windows error %1). Mapping must stop.` |
+| 中文 | `IbInput 无法读取鼠标指针位置（Windows 错误 %1）。映射必须停止。` |
+| 日本語 | `IbInput でマウスポインターの位置を取得できません（Windows エラー %1）。マッピングを停止します。` |

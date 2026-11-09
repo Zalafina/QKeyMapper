@@ -1,12 +1,12 @@
 # QKeyMapper MCP 开发计划：操作等价性、阶段排期与双机交接
 
-整理日期：2026-11-02（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
+整理日期：2026-11-09（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
 
 本文件是本任务唯一的计划、进度、决策及最新交接状态来源。相关入口：[目录规则](../README.md)、[能力与等价性矩阵](capability_matrix.md)、[验证记录](validation.md)。
 
 ## 当前进度与最新交接卡片
 
-2026-11-02按用户限定完成PERSIST-136A选定验证与局部修正，本地提交后停止，等待ibinput合流条件及用户安排；不合流／推送／推进137。8e9e9396只追加__pycache__忽略，未删缓存／源码或取消跟踪；10-31 Forza及10-30 PERSIST-136证据按原范围保留。
+2026-11-09完成IB-MCP-138核心融合及选定验证，进入提交／快进收尾。输入为MCP `94f0bb8485e7e607cff5c73bf6c0a45725e052d9`与固定IbInput `b5b484a63bf97716c407ae9680fd1b63f8d5eb01`；[本轮证据](ibinput_mcp_integration_validation.md)分别记录普通Release、维护目标、替身及历史范围。用户本轮要求接纳后停止，明日本机“继续”从Popup接续，不重复环境恢复或已通过验收；PERSIST-136A及STOP-46等历史结果不扩大。
 
 2026-10-30的PERSIST-136在PC-W11收尾；2026-10-31在PC-W10只执行Forza修复同步，不将其历史结果记成本轮Win11复验。
 
@@ -16,24 +16,35 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | PERSIST-136A选定完成，真实普通Release的启动选择／同登录配对复用／A→B保存冷读已核对；137未启动 |
-| 状态 | 本片聚焦本地提交后停止，等待ibinput合流条件及用户安排；不合并／推送／推进其他切片 |
-| 执行机器 | 本轮PC-W11／Windows 11 10.0.26200 x64；10-31 PC-W10 Forza与10-30 PERSIST-136组件证据分别保留，不冒充本轮产品结果 |
-| 任务分支 | `codex/qkeymapper-mcp-control` |
-| 源码基线 | 接续fdf886c3；8e9e9396只追加Python缓存忽略；136A为本提交的默认启动目录局部修正及真实产品测试，不改协议／凭据格式 |
-| 当前已完成 | Qt6真实GUI保存开／关及同路径产品重启、一次GUI配对Read＋Configure、正式MCP A→B提交保存／新桥接认证冷读、旧引用／预览拒绝／原结果unknown；双Qt默认构造回归通过 |
-| 当前未验证 | 本片Qt5普通产品／Win10／高DPI、跨Windows登录／PC重启、其他实例因果／真实客户端接线、完整Release包／干净环境／QQ及既有完整M1矩阵仍待；不扩大136历史组件证据 |
-| 构建与 EXE | 最终Qt6普通Release＋双Qt control构建原生0／零警告；实测out/mcp_product/persist136a_20261102/runtime-r2/QKeyMapperMcpAcceptance_persist136a_qt6.exe，原manifest High；SDK／桥接Medium，实际私有桌面 |
-| 提交与同步 | 本轮忽略提交8e9e9396、136A本聚焦提交（SHA由Git定位），不推送。接续所见origin/MCP=fdf886c3、ibinput远端跟踪6cbc0211；未切换／修改其工作区或提前合流 |
-| 未提交改动 | 本片源码／测试／合成INI／必要文档纳入136A；提交后核对工作树。未删除／取消跟踪缓存，个人Claude忽略规则保留 |
-| 本机独有材料 | 本轮PC-W11 out/mcp_product/persist136a_20261102：构建／失败EXE／部署、组件／8次退出、GUI／正式SDK／只读重建／冷读及共享缓存释放；原件不随Git。10-31 PC-W10材料只保留其历史范围 |
-| 授权边界 | 本轮仅自有合成配置普通Release／固定私有GUI／Read＋Configure，原manifest必要启动关闭走现有缓存；无Default输入桌面切换、系统键鼠注入、映射启动、驱动安装或全局设置修改 |
-| 当前控制器 | 复用此前共享Medium36124／b50d9e49ac8242f88ca16ad657544859 gen1，原期限18:30不改。当前五项空、自身三个定义授权已撤出；保留ibinput登记／原共享缓存，未接管关闭；历史初轮GUI失败诊断及未知记录保留 |
-| 下一项动作 | 等待codex/ibinput-simulator达到合流条件及用户明确安排；届时先核最新节点与下文合流待核对项。今日不合流、不启动137或新测试 |
-| 下一项完成标准 | 剩余保存／失败恢复及生命周期场景按实际结果逐项验收；已接通能力不等于完整C1-C或M1完成。后续按既定A→B完整路径推进实际运行和停止，缺失系统／GUI范围单列，不重复已验载荷或重置环境 |
-| 缓存观察安排 | 不再为Win11／2–5小时驻留单独排期，随日常使用积累；复查以现存日志规模决定工作量，必要靶向测试另估。该决定不代表未覆盖场景已经验证 |
-| 实耗与剩余 | 136A所选四逻辑阶段由有效原件＋显式只读重建续接完成，失败轮不计通过；完整M1／P3／M3-B和跨登录矩阵不因本片抵扣 |
-| 当前未决与阻碍 | 本片无在途产品／未定启动。共享缓存保留给ibinput；其合流、后续稳定凭据上下文137与跨登录／系统验收等用户安排 |
+| 当前切片 | IB-MCP-138：核心选验通过，待本地集成提交／快进收尾；本轮不启动Popup |
+| 执行机器 | PC-W11；普通Release配置、Default两后端、组件／实际ASan分别见本轮证据；Win10历史不冒充本轮复验 |
+| 目标分支／检查点 | codex/qkeymapper-mcp-control／94f0bb8485e7e607cff5c73bf6c0a45725e052d9，原工作区及暂存区接续为空 |
+| 集成分支／路径 | codex/ibinput-mcp-integration；D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
+| 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
+| 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
+| 当前已完成 | 方式3全链路、受限行更新、两全局偏好预览／保存事务、被动状态；Common／禁用／隐藏及移动组边界；旧代与零代通知守卫。TS并集后QM均1291 finished，v1.1手册及0009／许可保留 |
+| 当前验证 | 独立GUI和正式MCP冷读74个映射字段及两偏好一致；取消／写失败恢复、Read拒绝、重启旧引用／结果、真实维护入口生命周期和四组Default实际接收通过。Qt6零编译链接警告、Qt5双架构、定向静态项目诊断0、最终实际ASan五项及客户端边界均过 |
+| 当前未提交 | 集成树MERGE_HEAD=b5b484a6；产品／协议／测试／资源及必要文档已解决并暂存，无未合并项、未暂存或未跟踪源码；选定核心门槛已通过，只待提交／快进实录 |
+| 当前控制器 | 本轮Medium1884于18:36:05按技能off核实closed／缓存不可用／native_sessions=0，scope及五项资源为空；无其他QKeyMapper进程。旧控制器e82b6bcf的未知请求b588469d保留、未重放；当前关闭不冒称旧未知请求已被接管清理 |
+| 授权边界 | 开发／Git／构建／分析／截图普通权限；必要原manifest测试通过公共登记。用户已选两后端约15–20分钟Default自有接收窗回归，先公告协调；不安装驱动或改指针／筛选键设置 |
+| 下一项动作 | 只完成差异／文档检查、集成提交、原分支快进及清理，随后停止；明日本机从ibinput_settings固定Popup角色开始 |
+| 后续范围 | Popup发现／打开／捕获／关闭及权限／演示验收未实现；主动MCP连接检查／试发、PERSIST-137、可选Win10实体及Win10 Release PC三包／QQ联调均保留，不把完整M1／M2标完成 |
+| 本机证据 | 集成树out/ibinput_mcp_integration及原工作区out/mcp_product/ibinput138_20261109；身份、桌面、失败轮次、真实图片、FilterKeys及退出结果均在本机。只提交精简索引，不制作跨机包 |
+| 提交策略 | 选定核心门槛已通过，形成聚焦本地集成提交后仅快进接纳，保留父历史；不push、不合并master、不amend已验证提交 |
+
+### IB-MCP-138：已批准接纳契约（2026-11-09，进行中）
+
+现有mapping.add增加可选send_method（0–3、缺省0）；mapping.update只改当前source_ref的发送方式。ibinput.preferences.update仅接preferred_backend与unavailable_policy，至少一项，前者auto／logitech_ghub／logitech_legacy／razer，后者block／sendinput_before_start；提交只改内存和dirty，持久化仍须configuration.save。预览绑定实际偏好语义修订；真实变化使旧预览失效，被动刷新／同值不推进。两个INI全局键纳入完整足迹、取消及QSettings失败恢复，不在确认前单独写盘。GUI与MCP共用有效Common／禁用行／移动组合并规则；合法配置不依赖软件安装或连接。
+
+qkm_get_state增加分离偏好、实际后端／能力、回退、释放状态与最近结果／时间的ibinput对象；临时连接已关闭和历史结果不冒充当前连接。Read／Configure等范围沿正式认证；主动检查和试发工具按用户选择继续待实现，不从窗口动作绕行。核心生命周期保留工作令牌／源快照／真实排空，并使故障／关闭／重启携带代次；旧通知不解除新屏障，释放未完成不报成功。自动候选先筛能力，再按G HUB→旧Logitech→Razer尝试，旧通道仍未开放。
+
+configuration_only_demo使用既有共享策略在客户端原生初始化和最终输出层拒绝，覆盖A3像素／归一化／内部步进及SendInput回退。选验逐场分别核IbSendInit／IbSendInput／SendInput／SetCursorPos及其他受影响入口零调用，普通正对照验证计数接线；不以UI禁用或单一汇总替代。真实Qt6普通产品配置／冷读与正式维护目标的Default真实接收、组件替身及旧证据分别记录。Qt6 Release、Qt5 x64／x86、定向静态、实际ASan及两后端15–20分钟Default代表回归通过后才可快进。
+
+Popup的ibinput_settings角色发现／打开／捕获／关闭为快进后首片；绑定会话和窗口代次，ShowWindows与CaptureWindows分别校验，仅私有后台，不隐式连接／修改偏好／发输入。TS保留双方词条后重生QM，已批准U42／U43不重新审阅；新可见文案仍先三语审批。保留v1.1手册与0009制品／许可；dwExtraInfo只沿b5b484a6所录侧会话指定DLL／Hook范围，不追加专项或扩展FakerInput结论。
+
+**本轮收敛**：原MCP工作区只写忽略的测试材料，试合并／实现均在独立树。局部修复了generation=0的旧重启通知解除新IbInput清理屏障的问题：先由真实维护入口通知注入复现native2，补busy过滤后分离旧代／零代断言及4次保存拒绝通过。正常Default两后端停止／切表／重启／退出均核实际释放，不以Worker STOPPED替代。普通GUI／MCP业务证据与维护故障注入、输出边界替身、最终实际ASan分别记录。
+
+初始部署缺DLL导致身份核验失败／目标退出码缺失、原控制器unknown关闭，GUI探针的原生访问违例及其他夹具失败、Common目录字段错误、静态前置与编译失败均保留在[选定证据](ibinput_mcp_integration_validation.md)。修正后GUI-12／MCP-02／Read-01／sources-02等独立通过，不重写失败或用户转交的旧DLL／Hook事实。Default仅本机代表范围；PERSIST-137、Popup和发布阶段未验内容不计完成。
 
 ### FORZA-MERGE-20261031：master修复补验与本地同步
 

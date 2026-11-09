@@ -19,6 +19,7 @@ struct MappingAdditionArguments {
     QString originalKey;
     QString mappingKey;
     int insertRow = -1;
+    int sendMethod = 0;
 };
 
 struct MappingRemovalArguments {
@@ -27,13 +28,29 @@ struct MappingRemovalArguments {
     QList<int> sourceRows;
 };
 
+struct MappingUpdateArguments {
+    QString sourceReference;
+    QString sourceRevision;
+    QString sourceTabRef;
+    int sourceRow = -1;
+    int sendMethod = 0;
+};
+
+struct IbInputPreferencesArguments {
+    QString revision;
+    QString preferredBackend;
+    QString unavailablePolicy;
+};
+
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation };
-enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping };
+enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
     MappingChangeAction action = MappingChangeAction::AddMapping;
     MappingAdditionArguments addition;
     MappingRemovalArguments removal;
+    MappingUpdateArguments update;
+    IbInputPreferencesArguments preferences;
     QString settingName;
     QString id;
     bool confirmConflicts = false;
@@ -73,6 +90,9 @@ struct MappingChangePreview {
     qint64 created = 0;
     std::optional<ConfigurationSaveBinding> save;
     std::optional<MappingRemovalArguments> removal;
+    std::optional<MappingUpdateArguments> update;
+    std::optional<IbInputPreferencesArguments> preferences;
+    QString preferencesRevision;
 };
 
 // GUI-thread request state only; no source pointers, worker work, persistence or retries.
@@ -83,11 +103,15 @@ public:
     static constexpr int MaxPreviews = 32;
     static constexpr int MaxResults = 64;
     std::optional<MappingChangePreview> create(const MappingChangeOwner &owner,
-        const MappingAdditionArguments &arguments, const QJsonObject &description);
+        const MappingAdditionArguments &arguments, const QJsonObject &description, const QString &preferencesRevision = {});
     std::optional<MappingChangePreview> createSave(const MappingChangeOwner &owner,
-        const ConfigurationSaveBinding &binding, const QJsonObject &description);
+        const ConfigurationSaveBinding &binding, const QJsonObject &description, const QString &preferencesRevision = {});
     std::optional<MappingChangePreview> createRemoval(const MappingChangeOwner &owner,
-        const MappingRemovalArguments &arguments, const QJsonObject &description);
+        const MappingRemovalArguments &arguments, const QJsonObject &description, const QString &preferencesRevision = {});
+    std::optional<MappingChangePreview> createUpdate(const MappingChangeOwner &owner,
+        const MappingUpdateArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
+    std::optional<MappingChangePreview> createPreferences(const MappingChangeOwner &owner,
+        const IbInputPreferencesArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
     // The caller must revalidate live source, permissions and expiry before committing.
     std::optional<MappingChangePreview> begin(const MappingChangeOwner &owner, const QString &id);
     bool expired(const MappingChangePreview &preview)

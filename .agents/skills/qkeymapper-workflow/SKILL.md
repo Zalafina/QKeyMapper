@@ -87,6 +87,7 @@ Choose validation from the task purpose (collect evidence, fix behavior, add a f
 
 #### Desktop selection and user disruption
 
+- Before the first private-desktop capture, read [Private capture helper startup](../../../.agents/context/lessons/agent-autonomous-validation-toolchain.md#private-capture-helper-startup). Start the capture helper on the target's actual desktop and verify both identities. A dynamically added subprocess.STARTUPINFO.lpDesktop attribute is not proof of a native desktop assignment; do not repeat that launch pattern or bypass the ownership check.
 - Prefer real windows on an available private Windows desktop with `PrintWindow` for fonts, layout, sizes, clipping, programmatic scale changes, creation/destruction and return-value checks, when this can fully prove the intended result. Confirm actual application state and inspect the captured content.
 - Use the user's `Default` desktop for necessary real mouse/keyboard, foreground-focus, user-desktop taskbar/tray, occlusion/z-order and physical cross-monitor dragging/focus/DPI-recovery scenarios. Programmatic positioning checks may run in isolation; they do not prove physical dragging.
 - A private Windows desktop is distinct from Qt offscreen rendering, a hidden window and Windows Task View desktops. Do not change the tested style, DPI or business behavior to make a test run in the background. Modal dialogs, menus, ComboBox popups and native file dialogs do not require `Default` solely because of their type.

@@ -1,0 +1,218 @@
+diff --git a/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp b/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp
+index c2bf54c..91261f2 100644
+--- a/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp
++++ b/Simulator/include/IbInputSimulator/SendTypes/Logitech.hpp
+@@ -1,5 +1,6 @@
+ ﻿#pragma once
+ #include <string>
++#include <algorithm>
+ #include <rapidjson/document.h>
+ #include <rapidjson/filereadstream.h>
+ #include "../common.hpp"
+@@ -8,8 +9,8 @@
+ 
+ namespace Send::Type::Internal {
+     class LogitechDriver {
+-        HANDLE device;
+-        bool has_acceleration;
++        HANDLE device = INVALID_HANDLE_VALUE;
++        bool has_acceleration = false;
+ 
+     public:
+         Error create() {
+@@ -38,7 +39,10 @@ namespace Send::Type::Internal {
+         }
+ 
+         void destroy() {
+-            CloseHandle(device);
++            if (device != INVALID_HANDLE_VALUE) {
++                CloseHandle(device);
++                device = INVALID_HANDLE_VALUE;
++            }
+         }
+ 
+     private:
+@@ -174,7 +178,8 @@ namespace Send::Type::Internal {
+             if (has_acceleration && (report.x || report.y)) {
+                 ReportType report11 = report;
+                 report11.x = report11.y = compensate_switch;
+-                DeviceIoControl(device, IOCTL_BUSENUM_PLAY_MOUSEMOVE, &report11, sizeof(ReportType), nullptr, 0, &bytes_returned, nullptr);
++                if (!DeviceIoControl(device, IOCTL_BUSENUM_PLAY_MOUSEMOVE, &report11, sizeof(ReportType), nullptr, 0, &bytes_returned, nullptr))
++                    return false;
+ 
+                 report.x = compensate_lgs_acceleration(report.x);
+                 report.y = compensate_lgs_acceleration(report.y);
+@@ -273,6 +278,7 @@ namespace Send::Type::Internal {
+         LogitechDriver driver;
+         uint8_t compensate_switch = -1;
+         std::mutex mouse_mutex;
++        LogitechDriver::MouseButton mouse_buttons{};
+ 
+         template <typename T>
+         static constexpr T max_value()
+@@ -303,73 +309,55 @@ namespace Send::Type::Internal {
+             if constexpr (debug)
+                 DebugOStream() << L"send_mouse_input: " << mi.dwFlags << L", " << mi.dx << L", " << mi.dy << std::endl;
+ 
+-            ReportType mouse_report{};
+-
+-            //#TODO: move and then click, or click and then move? former?
+-
+-            //#TODO: MOUSEEVENTF_MOVE_NOCOALESCE
+-            if (mi.dwFlags & MOUSEEVENTF_MOVE) {
+-                POINT move{ mi.dx, mi.dy };
+-                if (mi.dwFlags & MOUSEEVENTF_ABSOLUTE) {
+-                    if (mi.dwFlags & MOUSEEVENTF_VIRTUALDESK)
+-                        mouse_virtual_desk_absolute_to_screen(move);
+-                    else
+-                        mouse_absolute_to_screen(move);
+-                    mouse_screen_to_relative(move);
+-                }
+-
+-                static_assert(std::is_same_v<decltype(mouse_report.x), decltype(mouse_report.y)>);
+-                using CoordinatesType = decltype(mouse_report.x);
+-                constexpr auto maxValue = max_value<CoordinatesType>();
+-
+-                while (abs(move.x) > maxValue || abs(move.y) > maxValue) {
+-                    if (abs(move.x) > maxValue) {
+-                        mouse_report.x = move.x > 0 ? maxValue : -maxValue;
+-                        move.x -= mouse_report.x;
+-                    }
+-                    else {
+-                        mouse_report.x = 0;
+-                    }
+-
+-                    if (abs(move.y) > maxValue) {
+-                        mouse_report.y = move.y > 0 ? maxValue : -maxValue;
+-                        move.y -= mouse_report.y;
+-                    }
+-                    else {
+-                        mouse_report.y = 0;
+-                    }
+-
+-                    driver.report_mouse(mouse_report, compensate_switch = -compensate_switch);
+-                }
+-
+-                mouse_report.x = (CoordinatesType)move.x;
+-                mouse_report.y = (CoordinatesType)move.y;
+-            } else {
+-                mouse_report.x = 0;
+-                mouse_report.y = 0;
+-            }
+-
+-            if (mi.dwFlags & MOUSEEVENTF_WHEEL) { // TODO MOUSEEVENTF_HWHEEL
+-                mouse_report.wheel = std::bit_cast<int32_t>(mi.mouseData) > 0 ? 1 : -1;
+-            }
+-
+-#define CODE_GENERATE(down, up, member)  \
+-            if (mi.dwFlags & down || mi.dwFlags & up)  \
+-                mouse_report.button.##member = mi.dwFlags & down;
+-
+-            CODE_GENERATE(MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, LButton)  //#TODO: may be switched?
++            if (mi.dwFlags & MOUSEEVENTF_HWHEEL)
++                return false;
++            if ((mi.dwFlags & (MOUSEEVENTF_XDOWN | MOUSEEVENTF_XUP))
++                && ((mi.dwFlags & MOUSEEVENTF_WHEEL) || (mi.mouseData != XBUTTON1 && mi.mouseData != XBUTTON2)))
++                return false;
++            const int32_t wheel_delta = (mi.dwFlags & MOUSEEVENTF_WHEEL) ? std::bit_cast<int32_t>(mi.mouseData) : 0;
++            if (wheel_delta % WHEEL_DELTA != 0)
++                return false;
++
++#define CODE_GENERATE(down, up, member) \
++            if (mi.dwFlags & down || mi.dwFlags & up) \
++                mouse_buttons.member = (mi.dwFlags & down) != 0;
++            CODE_GENERATE(MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, LButton)
+             CODE_GENERATE(MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, RButton)
+             CODE_GENERATE(MOUSEEVENTF_MIDDLEDOWN, MOUSEEVENTF_MIDDLEUP, MButton)
+ #undef CODE_GENERATE
+             if (mi.dwFlags & (MOUSEEVENTF_XDOWN | MOUSEEVENTF_XUP)) {
+-                bool down = mi.dwFlags & MOUSEEVENTF_XDOWN;
+-                switch (mi.mouseData) {
+-                case XBUTTON1: mouse_report.button.XButton1 = down; break;
+-                case XBUTTON2: mouse_report.button.XButton2 = down; break;
++                const bool down = (mi.dwFlags & MOUSEEVENTF_XDOWN) != 0;
++                if (mi.mouseData == XBUTTON1) mouse_buttons.XButton1 = down;
++                else mouse_buttons.XButton2 = down;
++            }
++
++            POINT move{};
++            if (mi.dwFlags & MOUSEEVENTF_MOVE) {
++                move = { mi.dx, mi.dy };
++                if (mi.dwFlags & MOUSEEVENTF_ABSOLUTE) {
++                    if (mi.dwFlags & MOUSEEVENTF_VIRTUALDESK) mouse_virtual_desk_absolute_to_screen(move);
++                    else mouse_absolute_to_screen(move);
++                    mouse_screen_to_relative(move);
+                 }
+             }
+-        
+-            return driver.report_mouse(mouse_report, compensate_switch = -compensate_switch);
++            int64_t x = move.x, y = move.y;
++            int64_t wheel = wheel_delta / WHEEL_DELTA;
++            using CoordinatesType = decltype(ReportType{}.x);
++            constexpr int64_t limit = max_value<CoordinatesType>();
++            do {
++                ReportType report{};
++                report.button = mouse_buttons;
++                report.x = static_cast<CoordinatesType>(std::clamp(x, -limit, limit));
++                report.y = static_cast<CoordinatesType>(std::clamp(y, -limit, limit));
++                const int wheel_step = wheel > 0 ? 1 : (wheel < 0 ? -1 : 0);
++                report.wheel = static_cast<Byte>(wheel_step);
++                if (!driver.report_mouse(report, compensate_switch = -compensate_switch))
++                    return false;
++                x -= report.x;
++                y -= report.y;
++                wheel -= wheel_step;
++            } while (x || y || wheel);
++            return true;
+         }
+ 
+     private:
+@@ -384,24 +372,22 @@ namespace Send::Type::Internal {
+                 set_modifier_state(ki.wVk, keydown);
+             }
+             else {
+-                uint8_t usage = Usb::keyboard_vk_to_usage((uint8_t)ki.wVk);;
++                if (ki.wVk > UINT8_MAX || (ki.dwFlags & (KEYEVENTF_UNICODE | KEYEVENTF_SCANCODE)))
++                    return false;
++                const uint8_t usage = Usb::keyboard_vk_to_usage(static_cast<uint8_t>(ki.wVk));
++                if (!usage)
++                    return false;
++                const auto begin = std::begin(keyboard_report.keys);
++                const auto end = std::end(keyboard_report.keys);
+                 if (keydown) {
+-                    for (int i = 0; i < 6; i++) {
+-                        if (keyboard_report.keys[i] == 0) {
+-                            keyboard_report.keys[i] = usage;
+-                            break;
+-                        }
++                    if (std::find(begin, end, usage) == end) {
++                        const auto slot = std::find(begin, end, 0);
++                        if (slot == end) return false;
++                        *slot = usage;
+                     }
+-                    //full
+                 }
+                 else {
+-                    for (int i = 0; i < 6; i++) {
+-                        if (keyboard_report.keys[i] == usage) {
+-                            keyboard_report.keys[i] = 0;
+-                            //#TODO: move to left?
+-                            break;
+-                        }
+-                    }
++                    std::replace(begin, end, usage, uint8_t{0});
+                 }
+             }
+ 
+@@ -435,7 +421,10 @@ namespace Send::Type::Internal {
+             if (error != Error::Success)
+                 return error;
+ 
+-            driver.report_enable_device({ .id = LogitechDriver::DeviceReportId::Mouse });
++            if (!driver.report_enable_device({ .id = LogitechDriver::DeviceReportId::Mouse })) {
++                driver.destroy();
++                return Error::DeviceCreateFailed;
++            }
+             return Error::Success;
+         }
+ 

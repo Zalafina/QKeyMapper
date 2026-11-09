@@ -8,6 +8,9 @@
 #include "automation/qkm_window_image.h"
 #include <QtMath>
 #include "qkeymapper.h"
+#include "qkm_ibinput_client.h"
+#include "qkm_ibinput_validation.h"
+#include "qkm_ibinput_popup.h"
 #include "ui_qkeymapper.h"
 #include "interception_worker.h"
 #include "qkeymapper_constants.h"
@@ -2015,13 +2018,19 @@ static QList<MAP_KEYDATA> buildDisplayKeyMappingDataList(int tabIndex)
     return displayDataList;
 }
 
-static void appendActiveKeyMappingRowsFromTab(int tabIndex, QSet<QString> &enabledGroups)
+static void appendActiveKeyMappingRowsFromTab(int tabIndex, QSet<QString> &enabledGroups,
+        QList<MAP_KEYDATA> &rows, QList<ActiveKeyMappingRowSourceInfo> &sources,
+        const QHash<int, QList<MAP_KEYDATA>> *overrides = nullptr)
 {
     if (tabIndex < 0 || tabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
-    QList<MAP_KEYDATA> *mappingDataList = QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+    const QList<MAP_KEYDATA> *mappingDataList = QKeyMapper::s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+    if (overrides) {
+        const auto replacement = overrides->constFind(tabIndex);
+        if (replacement != overrides->cend()) mappingDataList = &replacement.value();
+    }
     if (mappingDataList == Q_NULLPTR) {
         return;
     }
@@ -2038,13 +2047,33 @@ static void appendActiveKeyMappingRowsFromTab(int tabIndex, QSet<QString> &enabl
         }
 
         enabledGroups.insert(groupKey);
-        QKeyMapper::s_ActiveKeyMappingDataList.append(keymapdata);
+        rows.append(keymapdata);
 
         ActiveKeyMappingRowSourceInfo sourceInfo;
         sourceInfo.SourceTabIndex = tabIndex;
         sourceInfo.SourceRow = rowindex;
-        QKeyMapper::s_ActiveKeyMappingRowSourceInfoList.append(sourceInfo);
+        sources.append(sourceInfo);
     }
+}
+
+static QString ibInputSaveConflict(const QHash<int, QList<MAP_KEYDATA>> &overrides = {})
+{
+    for (int tab=0;tab<QKeyMapper::s_KeyMappingTabInfoList.size();++tab) {
+        if (QKeyMapper::isCommonMappingTab(QKeyMapper::s_KeyMappingTabInfoList.at(tab))) continue;
+        QList<MAP_KEYDATA> rows;
+        QList<ActiveKeyMappingRowSourceInfo> sources;
+        QSet<QString> enabledGroups;
+        if (shouldAppendCommonMappingRows(tab))
+            appendActiveKeyMappingRowsFromTab(QKeyMapper::findCommonMappingTabIndex(),enabledGroups,rows,sources,&overrides);
+        appendActiveKeyMappingRowsFromTab(tab,enabledGroups,rows,sources,&overrides);
+        QStringList locations;
+        for (const auto &source:std::as_const(sources))
+            locations.append(QCoreApplication::translate("QkmIbInputClient","Table %1, row %2")
+                .arg(source.SourceTabIndex+1).arg(source.SourceRow+1));
+        const QString error=QkmIbInputValidation::mixedMovementError(QkmIbInputValidation::expandedRows(rows),locations);
+        if (!error.isEmpty()) return error;
+    }
+    return {};
 }
 
 static const QList<ActiveKeyMappingRowSourceInfo> *getRuntimeActiveKeyMappingSourceInfoList()
@@ -3244,6 +3273,7 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     ui->ViGEmBusStatusLabel->setContentsMargins(6, 0, 6, 0);
     ui->multiInputStatusLabel->setContentsMargins(6, 0, 6, 0);
     ui->FakerInputStatusLabel->setContentsMargins(6, 0, 6, 0);
+    ui->ibInputStatusLabel->setContentsMargins(6, 0, 6, 0);
 
     // ui->virtualgamepadGroupBox->setStyle(defaultStyle);
     // ui->multiInputGroupBox->setStyle(defaultStyle);
@@ -3293,7 +3323,32 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     extractSoundFiles();
     initAddKeyComboBoxes();
     initWindowInfoMatchComboBoxes();
+    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputStatusChanged_Signal,this,&QKeyMapper::refreshIbInputUi,Qt::QueuedConnection);
+    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputFault_Signal,this,[this](const QString &detail,quint64 generation) {
+        if (generation && generation!=QkmIbInputClient::instance().requestedGeneration()) return;
+        if (m_KeyMapStatus!=KEYMAP_IDLE) MappingSwitch(MAPPINGSTART_BUTTONCLICK);
+        showFailurePopup(detail);
+        refreshIbInputUi();
+    },Qt::QueuedConnection);
+    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputClosed_Signal,this,[this](bool released,const QString &detail,quint64 generation) {
+        const auto &client=QkmIbInputClient::instance();
+        if ((generation && generation!=client.requestedGeneration()) || (!generation && client.busy())) return;
+        const bool wasPending=m_IbInputStopPending;
+        m_IbInputStopPending=!released;
+        if (wasPending && released && m_KeyMapStatus==KEYMAP_IDLE) { ui->keymapButton->setEnabled(true); changeControlEnableStatus(true); }
+        if (wasPending && !released) showFailurePopup(detail);
+        refreshIbInputUi();
+    },Qt::QueuedConnection);
     initSettingBackupActionPopup();
+    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputRestarted_Signal,this,[this](quint64 generation) {
+        const auto &client=QkmIbInputClient::instance();
+        if (client.statusSnapshot().releaseIncomplete || (!generation && client.busy()) || generation!=qkmCurrentIbInputGeneration()
+            || (generation && (generation!=client.requestedGeneration() || !client.acceptingInput()))) return;
+        m_IbInputStopPending=false;
+        ui->keymapButton->setEnabled(true);
+        refreshIbInputUi();
+    },Qt::QueuedConnection);
+    connect(ui->ibInputSettingsButton,&QPushButton::clicked,this,[this] { showIbInputSettings(ui->ibInputSettingsButton); });
     initSelectSettingCustomIconFileDialog();
     initWindowSwitchKeyLineEdit();
     initMappingSwitchKeyLineEdit();
@@ -5379,8 +5434,10 @@ void QKeyMapper::changeLanguage(const QString &langCode)
 
 void QKeyMapper::setKeyHook(HWND hWnd)
 {
-    if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
+    if (QkmAutomation::denyDemoEffect()) return;
+    if (KEYMAP_STOPPING == m_KeyMapStatus || m_IbInputStopPending) { return; }
     const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
+    QkmIbInputClient::instance().requestRun();
     // updateShortcutsMap();
 
     applySystemFilterKeysForCurrentSetting();
@@ -5400,7 +5457,11 @@ void QKeyMapper::setKeyHook(HWND hWnd)
 
 void QKeyMapper::setKeyUnHook(void)
 {
+    if (QkmAutomation::denyDemoEffect()) return;
     const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
+    if (QkmIbInputClient::instance().busy() || qkmCurrentIbInputGeneration()) m_IbInputStopPending=true;
+    QkmIbInputClient::instance().cancelRun();
+
     // freeShortcuts();
 
     restoreSystemFilterKeysBaseline();
@@ -5418,8 +5479,15 @@ void QKeyMapper::setKeyMappingRestart()
     if (QkmAutomation::denyDemoEffect()) return;
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return; }
     const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
+    if (qkmCurrentIbInputGeneration()) {
+        m_IbInputStopPending=true;
+        changeControlEnableStatus(false);
+    }
+    // Reserve and carry this intent; queued work must not consume a later request.
+    const auto generation=QkmIbInputClient::instance().requestRun();
+
     emit QKeyMapper_Hook_Proc::getInstance()->setKeyMappingRestart_Signal(lifecycleWork);
-    emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal(lifecycleWork);
+    emit QKeyMapper_Worker::getInstance()->setKeyMappingRestart_Signal(generation, lifecycleWork);
 }
 
 void QKeyMapper::startWinEventHook()
@@ -10911,11 +10979,11 @@ void QKeyMapper::buildActiveKeyMappingDataList()
         if (commonTabIndex >= 0
             && commonTabIndex < s_KeyMappingTabInfoList.size()
             && commonTabIndex != s_KeyMappingTabWidgetCurrentIndex) {
-            appendActiveKeyMappingRowsFromTab(commonTabIndex, enabledGroups);
+            appendActiveKeyMappingRowsFromTab(commonTabIndex, enabledGroups, s_ActiveKeyMappingDataList, s_ActiveKeyMappingRowSourceInfoList);
         }
     }
 
-    appendActiveKeyMappingRowsFromTab(s_KeyMappingTabWidgetCurrentIndex, enabledGroups);
+    appendActiveKeyMappingRowsFromTab(s_KeyMappingTabWidgetCurrentIndex, enabledGroups, s_ActiveKeyMappingDataList, s_ActiveKeyMappingRowSourceInfoList);
 
     // Point KeyMappingDataList to the active list during mapping
     KeyMappingDataList = &s_ActiveKeyMappingDataList;
@@ -13172,7 +13240,8 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
             disablefnkeyswitchList.append("OFF");
         }
         if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod
-            || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+            || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod
+                    || SENDMAPPINGKEY_METHOD_IBINPUT == keymapdata.SendMappingKeyMethod) {
             sendmappingkeymethodList.append(QString::number(keymapdata.SendMappingKeyMethod));
         }
         else {
@@ -14211,7 +14280,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                 const QString &sendmappingkeymethodStr = (i < sendmappingkeymethodStringList.size()) ? sendmappingkeymethodStringList.at(i) : QString::number(SENDMAPPINGKEY_METHOD_SENDINPUT);
                 bool ok;
                 int sendmappingkeymethod = sendmappingkeymethodStr.toInt(&ok);
-                if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT)) {
+                if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_IBINPUT)) {
                     sendmappingkeymethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
                 }
                 sendmappingkeymethodList.append(sendmappingkeymethod);
@@ -16683,6 +16752,11 @@ bool QKeyMapper::handleManualMappingSwitchRequest(QKeyMapper::MappingStartMode s
 {
     if (QkmAutomation::denyDemoEffect()) return false;
     if (KEYMAP_STOPPING == m_KeyMapStatus) { return false; }
+    if (m_KeyMapStatus==KEYMAP_IDLE && startmode!=MAPPINGSTART_LOADSETTING
+        && executionMappingStartActionMode(preferPhysicalCtrlState)==MAPPINGSTART_ACTION_SAVEANDSTART) {
+        const QString conflict=ibInputSaveConflict();
+        if (!conflict.isEmpty()) { showFailurePopup(conflict); return false; }
+    }
     if (KEYMAP_IDLE == m_KeyMapStatus
         && MAPPINGSTART_LOADSETTING != startmode
         && isCommonMappingTabIndex(s_KeyMappingTabWidgetCurrentIndex)) {
@@ -16931,6 +17005,14 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
         beginMappingStop();
         return;
     }
+    if (m_IbInputStopPending && m_KeyMapStatus==KEYMAP_IDLE) { showFailurePopup(tr("Wait for IbInput cleanup before starting or changing mappings.")); return; }
+    if (m_KeyMapStatus==KEYMAP_IDLE && QkmIbInputClient::instance().statusSnapshot().releaseIncomplete) {
+        showFailurePopup(QkmIbInputClient::instance().statusSnapshot().detail); return;
+    }
+    if (m_KeyMapStatus==KEYMAP_IDLE && m_IbInputPopup && m_IbInputPopup->connectionPending()) {
+        showFailurePopup(tr("Wait for the IbInput connection check to finish.")); return;
+    }
+
     Q_UNUSED(startmode);
     beginSystemFilterKeysSession();
 #ifdef CYCLECHECKTIMER_ENABLED
@@ -21214,6 +21296,9 @@ OrderedMap<QString, QVariant> QKeyMapper::collectGeneralSettingSaveValues(int la
         values.insert(LANGUAGE_INDEX , LANGUAGE_CHINESE);
     }
 
+    const auto ibPreferences = QkmIbInputClient::instance().preferences();
+    values.insert(QStringLiteral("IbInputPreferredBackend"), ibPreferences.backend);
+    values.insert(QStringLiteral("IbInputUnavailablePolicy"), ibPreferences.unavailablePolicy);
     values.insert(PLAY_SOUNDEFFECT, isSoundEffectEnabled());
     values.insert(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
     values.insert(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
@@ -21737,7 +21822,8 @@ OrderedMap<QString, QVariant> QKeyMapper::collectMappingTableSaveValues(bool pro
                     disablefnkeyswitchList.append("OFF");
                 }
                 if (SENDMAPPINGKEY_METHOD_SENDMESSAGE == keymapdata.SendMappingKeyMethod
-                    || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod) {
+                    || SENDMAPPINGKEY_METHOD_FAKERINPUT == keymapdata.SendMappingKeyMethod
+                    || SENDMAPPINGKEY_METHOD_IBINPUT == keymapdata.SendMappingKeyMethod) {
                     sendmappingkeymethodList.append(QString::number(keymapdata.SendMappingKeyMethod));
                 }
                 else {
@@ -22769,6 +22855,7 @@ QKeyMapper::AutomationSettingSavePreparation QKeyMapper::prepareAutomationSettin
         {QStringLiteral("gui_save_name"), ui->settingNameLineEdit->text()}};
     const QString contextRevision = QString::fromLatin1(QCryptographicHash::hash(
         QJsonDocument(result.context).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
+    if (!ibInputSaveConflict().isEmpty()) return fail(QStringLiteral("invalid_mapping"));
     result.save = prepareSettingSave(requestedName, selected, globalSelected,
         ui->languageComboBox->currentIndex(), contextRevision);
     if (!result.save.ok()) return fail(QStringLiteral("save_preparation_failed"));
@@ -22986,7 +23073,10 @@ QKeyMapper::SettingSaveResult QKeyMapper::saveKeyMapSettingWithResult(bool showS
     SettingSaveResult result;
     using Failure = SettingSaveResult::Failure;
     const auto fail = [&](Failure failure) { result.failure = failure; return result; };
-    if (KEYMAP_STOPPING == m_KeyMapStatus) { return fail(Failure::StateRejected); }
+    if (KEYMAP_STOPPING == m_KeyMapStatus || m_IbInputStopPending
+        || QkmIbInputClient::instance().busy()) { return fail(Failure::StateRejected); }
+    const QString ibConflict = ibInputSaveConflict();
+    if (!ibConflict.isEmpty()) { showFailurePopup(ibConflict); return fail(Failure::StateRejected); }
     // Create RAII guard to automatically save and restore category filter state
     CategoryFilterStateGuard filterGuard(this);
 
@@ -23720,6 +23810,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
     initializeAutomationSettingsReader();
 
     if (settingtext.isEmpty() || load_all) {
+        QkmIbInputClient::instance().setPreferences(QkmIbInputClient::readPreferences(settingFile));
+        refreshIbInputUi();
+
         // Load ignore rules from INI file
         loadIgnoreRulesFromINI();
 
@@ -26215,7 +26308,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                             const QString &sendmappingkeymethodStr = (i < sendmappingkeymethodStringList.size()) ? sendmappingkeymethodStringList.at(i) : QString::number(SENDMAPPINGKEY_METHOD_SENDINPUT);
                             bool ok;
                             int sendmappingkeymethod = sendmappingkeymethodStr.toInt(&ok);
-                            if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT)) {
+                            if (!ok || (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_FAKERINPUT && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_IBINPUT)) {
                                 sendmappingkeymethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
                             }
                             sendmappingkeymethodList.append(sendmappingkeymethod);
@@ -28624,6 +28717,11 @@ void QKeyMapper::loadGeneralSetting()
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     initializeAutomationSettingsReader();
+    QString ibDiagnostic;
+    QkmIbInputClient::instance().setPreferences(QkmIbInputClient::readPreferences(settingFile,&ibDiagnostic));
+    if (!ibDiagnostic.isEmpty()) showFailurePopup(ibDiagnostic);
+    refreshIbInputUi();
+
 
     // Load ignore rules from INI file
     loadIgnoreRulesFromINI();
@@ -29980,6 +30078,9 @@ void QKeyMapper::updatePressTimeSpinBoxEnabledState()
 
 void QKeyMapper::changeControlEnableStatus(bool status)
 {
+    if (m_IbInputStopPending) { status=false; ui->keymapButton->setEnabled(false); }
+    if (m_IbInputPopup) m_IbInputPopup->setRunning(m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending);
+
     // if (true == status && GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex()) {
     //     ui->processCheckBox->setEnabled(false);
     //     ui->titleCheckBox->setEnabled(false);
@@ -33455,6 +33556,7 @@ void QKeyMapper::scaleMainWindowWidgetMetrics(double r)
     scaleFixed(ui->mappingAdvancedSettingButton, 141, 22, 75, 18);
     scaleFixed(ui->mappingMacroListButton, 141, 22, 75, 18);
     scaleFixed(ui->vButtonPanelSetupButton, 141, 22, 75, 18);
+    scaleFixed(ui->ibInputSettingsButton, 141, 22, 75, 18);
     scaleFixed(ui->installFakerInputButton, 191, 21, 95, 18);
 
     // Left panel: Tab 3 (Virtual Gamepad)
@@ -37017,6 +37119,7 @@ void QKeyMapper::setUILanguage(int languageindex)
 
     updateSplitterHandleToolTip();
     updateMinimumWindowSize();
+    refreshIbInputUi();
 }
 
 void QKeyMapper::resetFontSize(double R)
@@ -37610,16 +37713,16 @@ void QKeyMapper::setUITheme(int themeindex)
                 image: url(:/partiallychecked_disabled.svg);
                 border: 1px solid rgb(86, 86, 86);
             }
-            QLineEdit, QPlainTextEdit {
+            QLineEdit, QPlainTextEdit, QTextEdit#ibInputDetails {
                 border: 1px solid rgb(108, 108, 108);
                 border-radius: 2px;
                 background-color: rgb(60, 60, 60);
             }
-            QLineEdit:disabled, QPlainTextEdit:disabled {
+            QLineEdit:disabled, QPlainTextEdit:disabled, QTextEdit#ibInputDetails:disabled {
                 border: 1px solid rgb(86, 86, 86);
                 background-color: rgb(50, 50, 50);
             }
-            QLineEdit:focus, QPlainTextEdit:focus {
+            QLineEdit:focus, QPlainTextEdit:focus, QTextEdit#ibInputDetails:focus {
                 border: 1px solid rgb(46, 134, 222);
             }
             QSpinBox, QDoubleSpinBox {
@@ -37818,6 +37921,13 @@ QString QKeyMapper::automationSourceReadBasis(void) const
     return {};
 }
 
+QString QKeyMapper::automationIbInputPreferencesRevision() const
+{
+    const QByteArray binding = m_McpControlDialog->server().instanceId().toUtf8() + '\0'
+        + QByteArray::number(QkmIbInputClient::instance().preferencesRevision());
+    return QString::fromLatin1(QCryptographicHash::hash(binding, QCryptographicHash::Sha256).toHex());
+}
+
 QJsonObject QKeyMapper::collectAutomationState(void) const
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -37871,6 +37981,31 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             {QStringLiteral("stop_completion"), automationSourceReadBasis() == QStringLiteral("completed_cleanup")
                 ? QStringLiteral("observed") : QStringLiteral("unobserved")},
             {QStringLiteral("actual_stop_shortcut"), s_MappingStopKeyString}}}};
+    const auto &ib = QkmIbInputClient::instance();
+    const auto preferences = ib.preferences();
+    const auto ibStatus = ib.statusSnapshot();
+    QJsonObject capabilities;
+    const auto backends = QkmIbInputClient::candidates(QStringLiteral("auto"));
+    for (const auto &backend : backends)
+        capabilities.insert(backend, int(QkmIbInputClient::capabilities(backend)));
+    const bool activeFallback = ibStatus.fallback && m_KeyMapStatus != KEYMAP_IDLE && m_KeyMapStatus != KEYMAP_STOPPING
+        && ibStatus.generation == ib.requestedGeneration() && ib.acceptingInput();
+    result.insert(QStringLiteral("ibinput"), QJsonObject{
+        {QStringLiteral("preferences"), QJsonObject{{QStringLiteral("preferred_backend"), preferences.backend},
+            {QStringLiteral("unavailable_policy"), preferences.unavailablePolicy}}},
+        {QStringLiteral("preferences_revision"), automationIbInputPreferencesRevision()},
+        {QStringLiteral("connected"), ibStatus.connected},
+        {QStringLiteral("actual_backend"), ibStatus.connected ? QJsonValue(ibStatus.backend) : QJsonValue(QJsonValue::Null)},
+        {QStringLiteral("capabilities_by_backend"), capabilities},
+        {QStringLiteral("fallback_active"), activeFallback},
+        {QStringLiteral("stopping"), ibStatus.stopping},
+        {QStringLiteral("release_incomplete"), ibStatus.releaseIncomplete},
+        {QStringLiteral("run_generation"), QString::number(ibStatus.generation)},
+        {QStringLiteral("last_result"), ibStatus.sampledAt.isValid() ? QJsonValue(QJsonObject{
+            {QStringLiteral("backend"), ibStatus.backend}, {QStringLiteral("detail"), ibStatus.detail},
+            {QStringLiteral("failed"), ibStatus.failed}, {QStringLiteral("fallback_selected"), ibStatus.fallback},
+            {QStringLiteral("sampled_at_utc"), ibStatus.sampledAt.toUTC().toString(Qt::ISODateWithMs)}}) : QJsonValue(QJsonValue::Null)},
+        {QStringLiteral("sampled_at_utc"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)}});
     if (QkmAutomation::configurationOnlyDemo()) result.insert(QStringLiteral("execution_policy"), QkmAutomation::configurationOnlyPolicy());
     return result;
 }
@@ -38287,6 +38422,137 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("started_by_operation"), false}}, code, message);
         fail(code, message);
     };
+    if (applyingPreview && applyingPreview->preferencesRevision != automationIbInputPreferencesRevision()) {
+        reject(QStringLiteral("stale_preview"), QStringLiteral("IbInput preferences changed after preview; obtain a fresh preview."));
+        return;
+    }
+    const bool updating = (!applying && validation.action == MappingChangeAction::UpdateMapping)
+        || (applyingPreview && applyingPreview->update.has_value());
+    const bool preferencesUpdate = (!applying && validation.action == MappingChangeAction::UpdateIbInputPreferences)
+        || (applyingPreview && applyingPreview->preferences.has_value());
+    if (updating || preferencesUpdate) {
+        if (validation.confirmConflicts || validation.confirmScope || validation.confirmOverwrite || validation.confirmDelete) {
+            reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
+            return;
+        }
+        const auto update = applying && updating ? *applyingPreview->update : validation.update;
+        const auto preferenceArguments = applying && preferencesUpdate ? *applyingPreview->preferences : validation.preferences;
+        const int tab = updating ? update.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt() : s_KeyMappingTabWidgetCurrentIndex;
+        if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
+            || m_KeyMappingDataTable->hasActiveEditor()) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
+            return;
+        }
+        const quint64 runtimeRevision = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
+        const QString preferencesRevision = automationIbInputPreferencesRevision();
+        QString sourceError;
+        const auto snapshot = collectAutomationSourceSnapshot(sourceError);
+        if (!sourceError.isEmpty() || snapshot.isEmpty()) {
+            reject(sourceError.isEmpty() ? QStringLiteral("context_busy") : sourceError,
+                QStringLiteral("No safe source context is available for the settings update."));
+            return;
+        }
+        QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+        const auto contextValid = [&] {
+            return !automationSourceReadBasis().isEmpty()
+                && QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() == runtimeRevision
+                && automationIbInputPreferencesRevision() == preferencesRevision;
+        };
+        if (!contextValid()) { reject(QStringLiteral("context_busy"), QStringLiteral("The settings context changed during validation.")); return; }
+        auto &client = QkmIbInputClient::instance();
+        auto candidatePreferences = client.preferences();
+        QJsonObject target{{QStringLiteral("instance_id"), owner.instance}};
+        QJsonObject change;
+        bool modified = false;
+        if (updating) {
+            const auto page = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
+                {{QStringLiteral("entity"), QStringLiteral("mappings")}, {QStringLiteral("source_revision"), update.sourceRevision},
+                    {QStringLiteral("source_tab_ref"), update.sourceTabRef}, {QStringLiteral("offset"), update.sourceRow}, {QStringLiteral("limit"), 1}});
+            if (!page.ok()) { reject(page.errorCode, page.message); return; }
+            const auto rows = page.page.value(QStringLiteral("items")).toArray();
+            const int displayRow = displayRowFromSource(s_KeyMappingTabWidgetCurrentIndex, tab, update.sourceRow);
+            int actualTab = -1, actualRow = -1;
+            QList<MAP_KEYDATA> *actualData = nullptr;
+            if (rows.size() != 1 || rows.first().toObject().value(QStringLiteral("source_ref")) != update.sourceReference
+                || displayRow < 0 || displayRow >= m_KeyMappingDataTable->rowCount() || m_KeyMappingDataTable->isRowHidden(displayRow)
+                || !resolveDisplayRowSource(s_KeyMappingTabWidgetCurrentIndex, displayRow, &actualTab, &actualRow, &actualData)
+                || actualTab != tab || actualRow != update.sourceRow || actualData != KeyMappingDataList) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("Only a current visible row attached to this source can be updated."));
+                return;
+            }
+            const auto &before = KeyMappingDataList->at(update.sourceRow);
+            auto after = before;
+            after.SendMappingKeyMethod = update.sendMethod;
+            QHash<int, QList<MAP_KEYDATA>> overrides{{tab, *KeyMappingDataList}};
+            overrides[tab][update.sourceRow] = after;
+            const auto conflict = ibInputSaveConflict(overrides);
+            if (!conflict.isEmpty()) { reject(QStringLiteral("invalid_mapping"), conflict); return; }
+            modified = before.SendMappingKeyMethod != after.SendMappingKeyMethod;
+            target.insert(QStringLiteral("source_ref"), update.sourceReference);
+            change = {{QStringLiteral("kind"), QStringLiteral("update_send_method")},
+                {QStringLiteral("before"), automationSourceRow(before)}, {QStringLiteral("after"), automationSourceRow(after)}};
+        } else {
+            if (preferenceArguments.revision != preferencesRevision) {
+                reject(QStringLiteral("stale_preview"), QStringLiteral("The preferences revision belongs to an older context; query state again."));
+                return;
+            }
+            const auto before = candidatePreferences;
+            if (!preferenceArguments.preferredBackend.isEmpty()) candidatePreferences.backend = preferenceArguments.preferredBackend;
+            if (!preferenceArguments.unavailablePolicy.isEmpty()) candidatePreferences.unavailablePolicy = preferenceArguments.unavailablePolicy;
+            modified = candidatePreferences.backend != before.backend || candidatePreferences.unavailablePolicy != before.unavailablePolicy;
+            target.insert(QStringLiteral("scope"), QStringLiteral("application_global_preferences"));
+            target.insert(QStringLiteral("preferences_revision"), preferencesRevision);
+            change = {{QStringLiteral("kind"), QStringLiteral("update_ibinput_preferences")},
+                {QStringLiteral("before"), QJsonObject{{QStringLiteral("preferred_backend"), before.backend},
+                    {QStringLiteral("unavailable_policy"), before.unavailablePolicy}}},
+                {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
+                    {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
+        }
+        const QString action = updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
+        const QJsonObject description{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
+            {QStringLiteral("changes"), QJsonArray{change}}, {QStringLiteral("modified"), false},
+            {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+        if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
+            reject(QStringLiteral("result_too_large"), QStringLiteral("The complete settings update exceeds the response limit.")); return;
+        }
+        if (!server.isRequestCurrent(request) || !contextValid() || validationBudget.hasExpired(MappingChangeBudgetMs)) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("Authorization or settings context changed, or the validation budget expired.")); return;
+        }
+        if (!applying) {
+            const auto preview = updating ? store.createUpdate(owner, update, description, preferencesRevision)
+                : store.createPreferences(owner, preferenceArguments, description, preferencesRevision);
+            if (!preview) { reject(QStringLiteral("preview_limit"), QStringLiteral("The bounded preview store is full.")); return; }
+            server.reply(request.connectionId, request.requestId, {{QStringLiteral("preview_id"), preview->id},
+                {QStringLiteral("operation_id"), preview->id}, {QStringLiteral("expires_in_ms"), double(MappingChangeStore::PreviewTtlMs)},
+                {QStringLiteral("description"), description}});
+            return;
+        }
+        if (store.expired(*applyingPreview)) { reject(QStringLiteral("preview_expired"), QStringLiteral("The settings preview expired before commit.")); return; }
+        if (modified) {
+            if (updating) {
+                (*KeyMappingDataList)[update.sourceRow].SendMappingKeyMethod = update.sendMethod;
+                ++m_AutomationSourceEpoch;
+            } else if (!client.setPreferences(candidatePreferences)) {
+                reject(QStringLiteral("context_busy"), QStringLiteral("The IbInput client no longer admits preference changes.")); return;
+            }
+            requestSaveSettingDirty();
+            if (preferencesUpdate) refreshIbInputUi();
+        }
+        QJsonObject result{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
+            {QStringLiteral("modified"), modified}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
+            {QStringLiteral("preferences_revision_after"), automationIbInputPreferencesRevision()},
+            {QStringLiteral("query_source_again"), updating && modified}};
+        if (updating) {
+            QString bindingError;
+            const auto after = collectAutomationSourceSnapshotWithAccess(bindingError);
+            const auto binding = bindingError.isEmpty() ? automationPostChangeSourceBinding(after, owner, tab, update.sourceRow) : QJsonObject();
+            result.insert(QStringLiteral("source_binding_status"), binding.isEmpty() ? QStringLiteral("unavailable") : QStringLiteral("captured"));
+            result.insert(QStringLiteral("source_binding_after"), binding.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(binding));
+        }
+        store.finish(owner, validation.id, QStringLiteral("applied"), result);
+        server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
+        return;
+    }
     if (!applying && validation.action == MappingChangeAction::SaveConfiguration) {
         const auto candidate = prepareAutomationSettingSave(request, validation.settingName);
         if (!candidate.ok()) {
@@ -38325,7 +38591,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         const ConfigurationSaveBinding binding{candidate.save.target.settingName, candidate.save.revision,
             candidate.context, candidate.scope, candidate.expiresAt};
-        const auto preview = store.createSave(owner, binding, description);
+        const auto preview = store.createSave(owner, binding, description, automationIbInputPreferencesRevision());
         if (!preview) {
             fail(QStringLiteral("preview_limit"), QStringLiteral("The bounded preview store is unavailable. Cancel your pending preview or obtain a fresh one later."));
             return;
@@ -38457,7 +38723,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 reject(QStringLiteral("context_busy"), QStringLiteral("Deletion preview authorization or validation budget is no longer valid."));
                 return;
             }
-            const auto preview = store.createRemoval(owner, removal, description);
+            const auto preview = store.createRemoval(owner, removal, description, automationIbInputPreferencesRevision());
             if (!preview) {
                 reject(QStringLiteral("preview_limit"), QStringLiteral("The bounded preview store is full; cancel your pending preview or wait for expiry."));
                 return;
@@ -38538,9 +38804,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         return;
     }
     const auto plan = prepareMappingAddition(targetIndex, arguments.insertRow < 0 ? KeyMappingDataList->size() : arguments.insertRow,
-        arguments.originalKey, arguments.mappingKey);
+        arguments.originalKey, arguments.mappingKey, arguments.sendMethod);
     if (!plan.ok()) { reject(plan.errorCode, plan.errorMessage); return; }
-    const auto row = automationSourceRow(createDefaultKeyMappingData(plan.originalKey, plan.mappingKey, plan.disabled));
+    auto added = createDefaultKeyMappingData(plan.originalKey, plan.mappingKey, plan.disabled);
+    added.SendMappingKeyMethod = plan.sendMethod;
+    const auto row = automationSourceRow(added);
     // The only source growth is this row; conflict patches change false to the shorter true.
     if (QJsonDocument(snapshot).toJson(QJsonDocument::Compact).size()
         + QJsonDocument(row).toJson(QJsonDocument::Compact).size() + 64 > MaxSourceSnapshotBytes) {
@@ -38572,7 +38840,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("The request is no longer authorized or exceeded its validation budget; obtain a fresh preview."));
             return;
         }
-        const auto preview = store.create(owner, arguments, description);
+        const auto preview = store.create(owner, arguments, description, automationIbInputPreferencesRevision());
         if (!preview) {
             reject(QStringLiteral("preview_limit"), QStringLiteral("The bounded preview store is full; cancel your pending preview or wait for expiry."));
             return;
@@ -38905,7 +39173,8 @@ void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRe
             const auto fields = rows.at(row).toObject().value(QStringLiteral("fields")).toObject();
             const auto keys = [&](const char *name) {
                 QStringList values;
-                for (const auto &value : fields.value(QLatin1String(name)).toArray()) values.append(value.toString());
+                const auto encoded = fields.value(QLatin1String(name)).toArray();
+                for (const auto &value : encoded) values.append(value.toString());
                 return values.join(SEPARATOR_NEXTARROW);
             };
             const QString mapping = keys(KEYMAPDATA_MAPPINGKEYS);
@@ -41576,6 +41845,8 @@ bool QKeyMapper::mappingAdditionAllowed(int tabIndex) const
 {
     Q_ASSERT(QThread::currentThread() == thread());
     return ui && isInitialized() && !loadSetting_flag && !m_MappingSourceLoading
+        && !m_IbInputStopPending && !QkmIbInputClient::instance().busy()
+        && (!m_IbInputPopup || !m_IbInputPopup->connectionPending())
         && m_KeyMapStatus == KEYMAP_IDLE && m_mappingStopPhase == MappingStopPhase::None
         && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED
         && !QKeyMapper_Worker::s_MappingInputClosed.loadAcquire()
@@ -41588,14 +41859,14 @@ bool QKeyMapper::mappingAdditionAllowed(int tabIndex) const
 }
 
 QKeyMapper::MappingAdditionPlan QKeyMapper::prepareMappingAddition(int tabIndex, int insertRow,
-    const QString &originalKey, const QString &mappingKey) const
+    const QString &originalKey, const QString &mappingKey, int sendMethod) const
 {
     MappingAdditionPlan plan;
     plan.errorCode = QStringLiteral("context_busy");
     plan.errorMessage = mappingAdditionContextError(false);
     if (!mappingAdditionAllowed(tabIndex)) { return plan; }
     plan.errorCode = QStringLiteral("invalid_arguments");
-    if (insertRow < 0 || insertRow > KeyMappingDataList->size()) {
+    if (sendMethod < 0 || sendMethod > 3 || insertRow < 0 || insertRow > KeyMappingDataList->size()) {
         plan.errorMessage = mappingAdditionContextError(true);
         return plan;
     }
@@ -41612,6 +41883,7 @@ QKeyMapper::MappingAdditionPlan QKeyMapper::prepareMappingAddition(int tabIndex,
     plan.runtimeRevision = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
     plan.sourceSize = KeyMappingDataList->size();
     plan.insertRow = insertRow;
+    plan.sendMethod = sendMethod;
     plan.originalKey = originalKey;
     plan.mappingKey = mappingKey;
     const QString groupKey = normalizeOriginalKeyForExclusiveGroup(originalKey);
@@ -41638,6 +41910,17 @@ QKeyMapper::MappingAdditionPlan QKeyMapper::prepareMappingAddition(int tabIndex,
     } else if (plan.disabled) {
         plan.warningMessage = tr("A mapping for the same OriginalKey is already enabled. The newly added one was set to Disabled.");
     }
+    QHash<int, QList<MAP_KEYDATA>> overrides;
+    overrides.insert(tabIndex, *KeyMappingDataList);
+    for (const auto &conflict : std::as_const(plan.disableRows)) {
+        if (!overrides.contains(conflict.first)) overrides.insert(conflict.first, *s_KeyMappingTabInfoList.at(conflict.first).KeyMappingData);
+        overrides[conflict.first][conflict.second].Disabled = true;
+    }
+    auto added = createDefaultKeyMappingData(plan.originalKey, plan.mappingKey, plan.disabled);
+    added.SendMappingKeyMethod = sendMethod;
+    overrides[tabIndex].insert(insertRow, added);
+    const auto conflict = ibInputSaveConflict(overrides);
+    if (!conflict.isEmpty()) { plan.errorCode = QStringLiteral("invalid_mapping"); plan.errorMessage = conflict; return plan; }
     plan.errorCode.clear();
     plan.errorMessage.clear();
     return plan;
@@ -41648,7 +41931,7 @@ ValidationResult QKeyMapper::commitMappingAddition(const MappingAdditionPlan &pl
 {
     if (!plan.ok()) { return {false, plan.errorMessage}; }
     // Rebuild decisions before any writes; a modal confirmation may have processed other events.
-    const auto current = prepareMappingAddition(plan.tabIndex, plan.insertRow, plan.originalKey, plan.mappingKey);
+    const auto current = prepareMappingAddition(plan.tabIndex, plan.insertRow, plan.originalKey, plan.mappingKey, plan.sendMethod);
     if (!current.ok()) { return {false, current.errorMessage}; }
     if (current.tabInternalName != plan.tabInternalName || current.table != plan.table
         || current.sourceEpoch != plan.sourceEpoch || current.loadGeneration != plan.loadGeneration
@@ -41658,7 +41941,8 @@ ValidationResult QKeyMapper::commitMappingAddition(const MappingAdditionPlan &pl
         || (!current.disableRows.isEmpty() && !confirmCommonConflict)) {
         return {false, mappingAdditionContextError(true)};
     }
-    const MAP_KEYDATA mapping = createDefaultKeyMappingData(current.originalKey, current.mappingKey, current.disabled);
+    MAP_KEYDATA mapping = createDefaultKeyMappingData(current.originalKey, current.mappingKey, current.disabled);
+    mapping.SendMappingKeyMethod = current.sendMethod;
     for (const auto &row : current.disableRows) {
         (*s_KeyMappingTabInfoList.at(row.first).KeyMappingData)[row.second].Disabled = true;
     }
@@ -52829,4 +53113,48 @@ void QKeyMapper::onLastAutoMatchedSettingTimerTimeout()
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[onLastAutoMatchedSettingTimerTimeout]" << "Timer timeout, cleared last auto matched setting";
 #endif
+}
+
+void QKeyMapper::showIbInputSettings(QWidget *anchor)
+{
+    if (!m_IbInputPopup) {
+        m_IbInputPopup=new QkmIbInputPopup(this);
+        connect(m_IbInputPopup,&QkmIbInputPopup::preferencesChanged,this,[this] { requestSaveSettingDirty(); refreshIbInputUi(); });
+        connect(m_IbInputPopup,&QkmIbInputPopup::connectionCheckRequested,this,[this] {
+            QPointer<QkmIbInputPopup> popup(m_IbInputPopup);
+            if (m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending) { popup->connectionChecked(); return; }
+            QMetaObject::invokeMethod(QKeyMapper_Worker::getInstance(),[popup] {
+                const bool success=QkmIbInputClient::instance().checkConnection();
+                const QString backend=success ? QkmIbInputClient::instance().statusSnapshot().backend : QString();
+                emit QKeyMapper_Worker::getInstance()->ibInputStatusChanged_Signal();
+                QMetaObject::invokeMethod(qApp,[popup,success,backend] { if (popup) popup->connectionChecked(success,backend); },Qt::QueuedConnection);
+            },Qt::QueuedConnection);
+        });
+    }
+    m_IbInputPopup->setRunning(m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending);
+    m_IbInputPopup->showAt(anchor,m_uiScale ? m_uiScale->ratio() : 1.0);
+}
+
+void QKeyMapper::refreshIbInputUi()
+{
+    if (!ui) return;
+    ui->ibInputSettingsButton->setText(tr("IbInput settings"));
+    ui->ibInputSettingsButton->setFont(ui->mappingAdvancedSettingButton->font());
+    ui->ibInputStatusLabel->setFont(ui->FakerInputStatusLabel->font());
+    const auto status=QkmIbInputClient::instance().statusSnapshot();
+    QString text=tr("Not connected");
+    QString style;
+    if (status.releaseIncomplete) { text=tr("Cleanup incomplete"); style=QStringLiteral("color:red;"); }
+    else if (m_IbInputStopPending || status.stopping) { text=tr("Stopping..."); style=QStringLiteral("color:#c08000;"); }
+    else if (status.connected) {
+        text=status.backend==QStringLiteral("logitech_ghub") ? QStringLiteral("Logitech G HUB")
+            : status.backend==QStringLiteral("razer") ? QStringLiteral("Razer") : status.backend;
+        style=QStringLiteral("color:green;");
+    } else if (status.fallback && m_KeyMapStatus!=KEYMAP_IDLE) {
+        text=QStringLiteral("SendInput"); style=QStringLiteral("color:#c08000;");
+    }
+    ui->ibInputStatusLabel->setText(QStringLiteral("IbInput: %1").arg(text));
+    ui->ibInputStatusLabel->setStyleSheet(style);
+    ui->ibInputStatusLabel->setToolTip(status.detail);
+    if (m_IbInputPopup) { m_IbInputPopup->setRunning(m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending); m_IbInputPopup->retranslate(); }
 }

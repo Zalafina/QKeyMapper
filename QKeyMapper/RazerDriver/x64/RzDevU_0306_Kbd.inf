@@ -1,0 +1,71 @@
+; Copyright: (c) 2019 Razer Inc. All rights reserved
+;
+; RzDevU_0306_Kbd.inf
+;
+
+[Version]
+Signature   = "$WINDOWS NT$"
+Class       = Keyboard
+ClassGuid   = {4D36E96B-E325-11CE-BFC1-08002BE10318}
+Provider    = %ManufacturerName%
+CatalogFile = rzdev_0306_kbd.cat
+DriverVer=02/18/2020,10.0.15063.0
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[SourceDisksNames]
+1 = %DiskName%,,,""
+
+[SourceDisksFiles]
+RzDev_0306.sys  = 1,,
+
+;*****************************************
+; Install Section
+;*****************************************
+
+[Manufacturer]
+%ManufacturerName%=Standard,NTamd64
+
+[Standard.NTamd64]
+%RzDev.DeviceDesc%=RzDev_Device,         HID\Vid_1532&Pid_0306&MI_00&Col01
+
+[RzDev_Device.NT]
+Include = keyboard.inf
+Needs = HID_Keyboard_Inst.NT
+CopyFiles=Drivers_Dir
+
+[Drivers_Dir]
+RzDev_0306.sys
+
+[RzDev_Device.NT.HW]
+Include=keyboard.inf
+Needs=HID_Keyboard_Inst.NT.HW
+AddReg = RzDev_Device.NT.HW.AddReg
+
+[RzDev_Device.NT.HW.AddReg]  
+HKR,,"UpperFilters",0x00010000,"RzDev_0306"
+;; FILE_DEVICE_SECURE                         
+HKR,,DeviceCharacteristics,0x10001,0x0100         ; Use same security checks on relative opens
+; SDDL_DEVOBJ_SYS_ALL_ADM_RWX_WORLD_RWX_RES_RWX
+HKR,,Security,,"D:P(A;;GA;;;SY)(A;;GRGWGX;;;BA)(A;;GRGWGX;;;WD)(A;;GRGWGX;;;RC)"
+
+;-------------- Service installation
+[RzDev_Device.NT.Services]
+AddService = RzDev_0306,, RzDev_Service_Inst
+Include=keyboard.inf
+Needs=HID_Keyboard_Inst.NT.Services
+
+; -------------- RzDev driver install sections
+[RzDev_Service_Inst]
+DisplayName    = %RzDev.ServiceDesc%
+ServiceType    = 1               ; SERVICE_KERNEL_DRIVER
+StartType      = 3               ; SERVICE_DEMAND_START
+ErrorControl   = 1               ; SERVICE_ERROR_NORMAL
+ServiceBinary  = %12%\RzDev_0306.sys
+
+[Strings]
+ManufacturerName="Razer Inc"
+DiskName = "Razer 0306 Installation Disk"
+RzDev.ServiceDesc = "Razer 0306 Service"
+RzDev.DeviceDesc = "HID Keyboard Device"

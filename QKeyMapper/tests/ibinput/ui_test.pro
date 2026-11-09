@@ -1,0 +1,13 @@
+QT = core gui widgets testlib
+CONFIG += console c++17
+CONFIG -= app_bundle
+TEMPLATE = app
+TARGET = QKeyMapperIbInputUiTest
+DEFINES += IBINPUT_SUPPORT IB_INPUT_STATIC NOMINMAX
+INCLUDEPATH += $$PWD/../.. $$PWD/../../IbInputSimulator/include
+SOURCES += $$PWD/ui_test.cpp $$PWD/../../qkm_ibinput_client.cpp $$PWD/../../qkm_ui_scale.cpp
+HEADERS += $$PWD/../../qkm_ibinput_client.h $$PWD/../../qkm_ibinput_popup.h $$PWD/../../qkm_ui_scale.h
+LIBS += user32.lib version.lib setupapi.lib advapi32.lib
+QMAKE_CXXFLAGS += /utf-8
+
+SOURCES += $$PWD/../../automation/qkm_demo_mode.cpp

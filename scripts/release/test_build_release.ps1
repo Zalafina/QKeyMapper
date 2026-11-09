@@ -139,7 +139,26 @@ foreach ($variant in $variants) {
     Put "$variantRepo/QKeyMapper/ahk_utils/readme.txt" 'readme'
     Put "$variantRepo/QKeyMapper_Keyname.pdf" "keys-$($variant.Name)"
     Put "$variantRepo/readme/QKeyMapper使用手册.html" $manualContent
-    Prepare-Package $baseline $variantStage $variantRepo $release $work
+    $architecture = if ($variant.Name -eq 'Qt5_x86') { 'x86' } else { 'x64' }
+    foreach ($arch in @('x64','x86')) {
+        Put "$variantRepo/QKeyMapper/IbInputSimulator/lib/$arch/IbInputSimulator.dll" "vendor-$arch"
+    }
+    foreach ($name in $script:IbInputLicenseFiles) { Put "$variantRepo/QKeyMapper/IbInputSimulator/licenses/$name" "license-$name" }
+    if ($architecture -eq 'x64') {
+        foreach ($name in $script:RazerDriverFiles) { Put "$variantRepo/QKeyMapper/RazerDriver/$name" "owned-$name" }
+        Put "$variantRepo/QKeyMapper/RazerDriver/INTEGRATION_GUIDE.md" 'developer reference'
+    }
+    Put "$baseline/RazerDriver/INTEGRATION_GUIDE.md" 'stale developer reference'
+    Put "$baseline/RazerDriver/manage_driver.bat" 'stale manager'
+    Prepare-Package $baseline $variantStage $variantRepo $release $work $architecture
+    Check ([IO.File]::ReadAllText("$variantStage/IbInputSimulator.dll") -ceq "vendor-$architecture") "$($variant.Name) deploys matching IbInput DLL"
+    Check (Test-Path -LiteralPath "$variantStage/licenses/IbInputSimulator/IbInputSimulator-LICENSE.txt") "$($variant.Name) includes IbInput license"
+    if ($architecture -eq 'x64') {
+        Check ([IO.File]::ReadAllText("$variantStage/RazerDriver/manage_driver.bat") -ceq 'owned-manage_driver.bat') "$($variant.Name) includes manual driver manager"
+    } else {
+        Check (-not (Test-Path -LiteralPath "$variantStage/RazerDriver")) 'Qt5_x86 excludes the entire driver directory, including stale baseline content'
+    }
+    Check (-not (Test-Path -LiteralPath "$variantStage/RazerDriver/INTEGRATION_GUIDE.md")) "$($variant.Name) excludes developer reference from source and stale baseline"
     Check ([IO.File]::ReadAllText("$variantStage/QKeyMapper使用手册.html") -ceq $manualContent) "$($variant.Name) deploys current manual from its own repository"
     Check ([IO.File]::ReadAllText("$variantStage/QKeyMapper按键名称说明.pdf") -ceq "keys-$($variant.Name)") "$($variant.Name) keeps and refreshes keyname PDF"
     foreach ($name in $obsoleteDocuments) { Check (-not (Test-Path -LiteralPath (Join-Path $variantStage $name))) "$($variant.Name) excludes $name" }
@@ -154,9 +173,18 @@ foreach ($variant in $variants) {
         $reader = [IO.StreamReader]::new($entry.Open(), [Text.Encoding]::UTF8)
         try { Check ($reader.ReadToEnd() -ceq $manualContent) "$($variant.Name) ZIP manual matches its repository" } finally { $reader.Dispose() }
         Check ($null -ne $archive.GetEntry("QKeyMapper_$($variant.Name)/QKeyMapper按键名称说明.pdf")) "$($variant.Name) ZIP retains keyname PDF"
+        if ($architecture -eq 'x86') {
+            Check (@($archive.Entries | Where-Object { $_.FullName -like '*/RazerDriver/*' }).Count -eq 0) 'Qt5_x86 ZIP contains no Razer driver payload'
+        }
         foreach ($name in $obsoleteDocuments) { Check ($null -eq $archive.GetEntry("QKeyMapper_$($variant.Name)/$name")) "$($variant.Name) ZIP excludes $name" }
     } finally { $archive.Dispose() }
 }
+$driverSource = "$repo/QKeyMapper/RazerDriver/x64/RzDev_0306.sys"
+$driverSaved = [IO.File]::ReadAllText($driverSource)
+Remove-Item -LiteralPath $driverSource
+Expect-Failure { Prepare-Package $baseline $stage $repo $release $work } '缺少必需文件.*RzDev_0306.sys' 'missing driver payload blocks staging before reset'
+Check ([IO.File]::ReadAllText("$stage/RazerDriver/manage_driver.bat") -ceq 'owned-manage_driver.bat') 'missing driver source preserves existing stage'
+Put $driverSource $driverSaved
 Check ([IO.File]::ReadAllText("$baseline/QKeyMapper使用手册.html") -ceq 'old manual') 'baseline manual is not overwritten'
 foreach ($name in $obsoleteDocuments) { Check (Test-Path -LiteralPath (Join-Path $baseline $name)) "baseline $name is not deleted" }
 $originalManual = [IO.File]::ReadAllText("$repo/readme/QKeyMapper使用手册.html")

@@ -326,3 +326,5 @@ TRANSLATIONS += \
     translations/QKeyMapper_zh_CN.ts \
     translations/QKeyMapper_ja_JP.ts
 }
+
+include(ibinput.pri)

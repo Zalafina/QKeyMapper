@@ -48,6 +48,18 @@ class ToolResultTests(unittest.TestCase):
         with self.assertRaises((ValueError, AssertionError)):
             business_state(dict(after, run=dict(after["run"], sampled_at_utc="not a sample time")))
 
+    def test_ibinput_observation_time_is_not_a_configuration_change(self):
+        from test_sdk_interop import business_state
+        state = {"run": {"sampled_at_utc": "2026-11-09T08:00:00Z"},
+                 "ibinput": {"preferences_revision": "a" * 64, "preferences": {"preferred_backend": "auto"},
+                             "sampled_at_utc": "2026-11-09T08:00:00Z", "connected": False}}
+        later = dict(state, ibinput=dict(state["ibinput"], sampled_at_utc="2026-11-09T08:00:01Z"))
+        self.assertEqual(business_state(state), business_state(later))
+        changed = dict(later, ibinput=dict(later["ibinput"], preferences_revision="b" * 64))
+        self.assertNotEqual(business_state(state), business_state(changed))
+        with self.assertRaises((ValueError, AssertionError)):
+            business_state(dict(later, ibinput=dict(later["ibinput"], sampled_at_utc="invalid")))
+
     def test_stdio_business_errors_and_failed_operation_data(self):
         from jsonschema import Draft202012Validator
         from test_sdk_interop import TOOLS, call
@@ -64,11 +76,18 @@ class ToolResultTests(unittest.TestCase):
                 mapping = {"source_revision": "a" * 64, "source_tab_ref": "a" * 64 + ":source:0",
                            "original_key": "A", "mapping_key": "B"}
                 save = {"action": "configuration.save", "setting_name": "配置95"}
-                for valid in (mapping, dict(mapping, action="mapping.add"), save):
+                update = {"action": "mapping.update", "source_ref": "a" * 64 + ":row:0:0", "send_method": 3}
+                preferences = {"action": "ibinput.preferences.update", "preferences_revision": "a" * 64,
+                               "preferred_backend": "razer"}
+                for valid in (mapping, dict(mapping, action="mapping.add"), dict(mapping, send_method=3), save, update,
+                              preferences, dict(preferences, unavailable_policy="sendinput_before_start")):
                     self.assertFalse(list(validator.iter_errors(valid)), valid)
                 for invalid in ({}, {"action": "configuration.save"}, dict(save, setting_name=None),
                                 dict(save, original_key="A"), dict(mapping, mapping_key=None),
-                                dict(mapping, setting_name="extra"), dict(save, unknown=True)):
+                                dict(mapping, setting_name="extra"), dict(save, unknown=True), dict(update, send_method=True),
+                                dict(update, send_method=4), dict(update, source_ref="a" * 64 + ":row:00:0"),
+                                dict(update, original_key="A"), dict(preferences, preferred_backend=None),
+                                dict(preferences, unavailable_policy="always"), dict(preferences, send_method=3)):
                     self.assertTrue(list(validator.iter_errors(invalid)), invalid)
                 for entity, code in (("configurations", "permission_denied"), ("tabs", "stale_catalog"),
                                      ("mapping_sources", "stale_source"), ("mappings", "context_busy")):

@@ -1,0 +1,9 @@
+QT = core
+CONFIG += console c++17
+CONFIG -= app_bundle
+TEMPLATE = app
+TARGET = QKeyMapperIbInputProductGui
+SOURCES += ibinput_product_gui.cpp
+DEFINES += NOMINMAX WIN32_LEAN_AND_MEAN
+QMAKE_CXXFLAGS += /utf-8
+LIBS += user32.lib ole32.lib oleaut32.lib

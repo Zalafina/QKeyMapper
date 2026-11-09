@@ -1294,9 +1294,17 @@ Update</string>
            <string>FakerInput</string>
           </property>
          </item>
-        </widget>
+        <item><property name="text"><string notr="true">IbInput</string></property></item>
+          </widget>
        </item>
        <item>
+          <widget class="QPushButton" name="ibInputSettingsButton">
+           <property name="text"><string notr="true">IbInput...</string></property>
+           <property name="autoDefault"><bool>false</bool></property>
+           <property name="focusPolicy"><enum>Qt::NoFocus</enum></property>
+          </widget>
+         </item>
+         <item>
         <spacer name="sendMethod_tailSpacer">
          <property name="orientation">
           <enum>Qt::Orientation::Horizontal</enum>

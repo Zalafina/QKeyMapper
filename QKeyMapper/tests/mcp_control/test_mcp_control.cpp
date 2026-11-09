@@ -195,6 +195,7 @@ private slots:
     void mappingHelpReference();
     void mappingHelpBoundaries();
     void mappingChangeArguments();
+    void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
     void mappingRemovalLifecycle();
@@ -204,6 +205,57 @@ private slots:
     void configurationSaveExpiry();
     void configurationSaveLimits();
 };
+
+void McpControlTest::ibInputChangeArguments()
+{
+    const QString revision(64, QLatin1Char('a'));
+    const QString source = revision + QStringLiteral(":row:0:1");
+    const auto validate = [](const QJsonObject &arguments) {
+        return validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), arguments);
+    };
+    const QJsonObject update{{QStringLiteral("action"), QStringLiteral("mapping.update")},
+        {QStringLiteral("source_ref"), source}, {QStringLiteral("send_method"), 3}};
+    const auto parsed = validate(update);
+    QVERIFY(parsed.ok());
+    QCOMPARE(parsed.action, MappingChangeAction::UpdateMapping);
+    QCOMPARE(parsed.update.sourceRow, 1);
+    QCOMPARE(parsed.update.sendMethod, 3);
+    for (const auto &bad : QJsonArray{true, -1, 4, 1.5, QStringLiteral("3"), QJsonValue(QJsonValue::Null)}) {
+        auto arguments = update; arguments.insert(QStringLiteral("send_method"), bad);
+        QVERIFY(!validate(arguments).ok());
+    }
+    for (const auto &bad : {QStringLiteral(":row:00:1"), QStringLiteral(":row:0:-1"), QStringLiteral(":source:0")}) {
+        auto arguments = update; arguments.insert(QStringLiteral("source_ref"), revision + bad);
+        QVERIFY(!validate(arguments).ok());
+    }
+    auto extra = update; extra.insert(QStringLiteral("original_key"), QStringLiteral("B"));
+    QVERIFY(!validate(extra).ok());
+    const QJsonObject preferences{{QStringLiteral("action"), QStringLiteral("ibinput.preferences.update")},
+        {QStringLiteral("preferences_revision"), revision}, {QStringLiteral("preferred_backend"), QStringLiteral("razer")}};
+    const auto settings = validate(preferences);
+    QVERIFY(settings.ok());
+    QCOMPARE(settings.action, MappingChangeAction::UpdateIbInputPreferences);
+    QCOMPARE(settings.preferences.preferredBackend, QStringLiteral("razer"));
+    auto invalid = preferences; invalid.remove(QStringLiteral("preferred_backend"));
+    QVERIFY(!validate(invalid).ok());
+    invalid.insert(QStringLiteral("unavailable_policy"), QStringLiteral("sendinput_before_start"));
+    QVERIFY(validate(invalid).ok());
+    invalid.insert(QStringLiteral("unavailable_policy"), QStringLiteral("always_sendinput"));
+    QVERIFY(!validate(invalid).ok());
+    invalid = preferences; invalid.insert(QStringLiteral("preferred_backend"), QStringLiteral("AnyDriver"));
+    QVERIFY(!validate(invalid).ok());
+    MappingChangeStore store;
+    const MappingChangeOwner owner{QString(32, QLatin1Char('b')), QString(32, QLatin1Char('c')), 1};
+    const auto preview = store.createUpdate(owner, parsed.update,
+        {{QStringLiteral("target"), QJsonObject{{QStringLiteral("source_ref"), source}}}}, revision);
+    QVERIFY(preview.has_value());
+    const auto begun = store.begin(owner, preview->id);
+    QVERIFY(begun.has_value());
+    QCOMPARE(begun->preferencesRevision, revision);
+    QCOMPARE(begun->update->sourceReference, source);
+    store.finish(owner, preview->id, QStringLiteral("applied"), {{QStringLiteral("modified"), true}});
+    QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("target")).toObject().value(QStringLiteral("source_ref")).toString(), source);
+}
 
 void McpControlTest::mappingChangeArguments()
 {
@@ -249,7 +301,7 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
         {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
     const auto capabilities = mappingChangeCapabilities();
-    QCOMPARE(capabilities.size(), 8);
+    QCOMPARE(capabilities.size(), 12);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("preview_ttl_ms")).toInt(), 120000);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     const auto operation = capabilities.last().toObject();

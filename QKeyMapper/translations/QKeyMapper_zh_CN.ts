@@ -4880,6 +4880,48 @@ Do you confirm to continue installing Interception driver?</source>
         <source>Window Title</source>
         <translation type="vanished">窗口标题</translation>
     </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="16762" />
+        <source>Wait for IbInput cleanup before starting or changing mappings.</source>
+        <translation>请等待 IbInput 清理完成后再启动或更改映射。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="16767" />
+        <source>Wait for the IbInput connection check to finish.</source>
+        <translation>请等待 IbInput 连接检查完成。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="21110" />
+        <source>Wait for IbInput cleanup before saving.</source>
+        <translation>请等待 IbInput 清理完成后再保存。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.ui" line="1197" />
+        <location filename="../qkeymapper.cpp" line="50942" />
+        <source>IbInput settings...</source>
+        <translation type="vanished">IbInput 设置...</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50945" />
+        <source>Not connected</source>
+        <translation>未连接</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.ui" line="1197" />
+        <location filename="../qkeymapper.cpp" line="50974" />
+        <source>IbInput settings</source>
+        <translation>IbInput设置</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50981" />
+        <source>Stopping...</source>
+        <translation>正在停止…</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper.cpp" line="50980" />
+        <source>Cleanup incomplete</source>
+        <translation>清理未完成</translation>
+    </message>
 </context>
 <context>
     <name>QKeyRecord</name>
@@ -7419,6 +7461,485 @@ Reason: %1</source>
 Reason: %1</source>
         <translation>无法显示配对设置。
 原因：%1</translation>
+    </message>
+</context>
+<context>
+    <name>QkmIbInputClient</name>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="40" />
+        <source>Invalid IbInput preferences; defaults were used.</source>
+        <translation>IbInput 偏好无效，已使用默认值。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="103" />
+        <source>Previous IbInput cleanup is incomplete.</source>
+        <translation>上一次 IbInput 清理尚未完成。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="109" />
+        <source>The selected IbInput backend does not support this mapping or still awaits validation.</source>
+        <translation>所选 IbInput 后端不支持此映射，或相关能力尚待验证。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="111" />
+        <source>IbInput support is not included in this build.</source>
+        <translation>此构建未包含 IbInput 支持。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="115" />
+        <location filename="../qkm_ibinput_client.cpp" line="122" />
+        <source>IbInput startup was cancelled.</source>
+        <translation>IbInput 启动已取消。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="123" />
+        <source>Connected; input reception has not been verified.</source>
+        <translation>已连接；输入接收情况尚未验证。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="127" />
+        <source>IbInput connection failed: %1</source>
+        <translation>IbInput 连接失败：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="129" />
+        <source>SendInput is frozen for this run; configuration is unchanged.</source>
+        <translation>本轮已固定使用 SendInput；配置未改变。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="154" />
+        <source>This IbInput event was not admitted for the current run.</source>
+        <translation>本轮准入未允许此 IbInput 输入事件。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="156" />
+        <source>Unsupported IbInput keyboard event.</source>
+        <translation>不支持此 IbInput 键盘事件。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="161" />
+        <source>The IbInput keyboard report is full.</source>
+        <translation>IbInput 键盘报告的普通键槽位已满。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="164" />
+        <location filename="../qkm_ibinput_client.cpp" line="187" />
+        <source>IbInput send failed; mapping must stop without retrying another backend.</source>
+        <translation>IbInput 发送失败；必须停止映射，不会换后端重试。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="172" />
+        <source>Unsupported IbInput mouse event.</source>
+        <translation>不支持此 IbInput 鼠标事件。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="176" />
+        <source>Unsupported combined IbInput mouse event.</source>
+        <translation>不支持此 IbInput 鼠标组合事件。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="178" />
+        <source>This IbInput mouse button still awaits backend validation.</source>
+        <translation>此 IbInput 鼠标按钮尚待后端验证。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="181" />
+        <source>This IbInput button combination still awaits backend validation.</source>
+        <translation>此 IbInput 按钮组合尚待后端验证。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="186" />
+        <source>IbInput wheel send failed; mapping must stop.</source>
+        <translation>IbInput 滚轮发送失败；必须停止映射。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="189" />
+        <source>Unsupported IbInput event type.</source>
+        <translation>不支持此 IbInput 事件类型。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_client.cpp" line="198" />
+        <source>IbInput release is incomplete; automatic restart is blocked.</source>
+        <translation>IbInput 释放未完成，已阻止自动重启映射。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="54" />
+        <source>IbInput is mixed with another send method in one mouse movement group: %1</source>
+        <translation>同一鼠标移动组混用了 IbInput 和其他发送方式：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="55" />
+        <source>This IbInput feedback/blocking combination still awaits validation: %1</source>
+        <translation>此 IbInput 反馈／屏蔽组合尚待验证：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="65" />
+        <source>Complex IbInput combinations, repetition, locking or stop/tab commands still await validation: %1</source>
+        <translation>复杂 IbInput 组合、重复、锁定或停止／切表命令尚待验证：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="69" />
+        <source>IbInput output can trigger an original key; this feedback path awaits validation: %1</source>
+        <translation>IbInput 输出可能触发原始按键，此反馈路径尚待验证：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="82" />
+        <source>This IbInput mouse button still awaits backend validation: %1</source>
+        <translation>此 IbInput 鼠标按钮尚待后端验证：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="93" />
+        <source>This IbInput key representation still awaits validation: %1</source>
+        <translation>此 IbInput 键码表示尚待验证：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="95" />
+        <source>IbInput macro/repeat expansion still awaits validation: %1</source>
+        <translation>IbInput 宏／重复展开尚待验证：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="116" />
+        <source>IbInput send failed; mapping must stop.</source>
+        <translation>IbInput 发送失败；必须停止映射。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="5204" />
+        <location filename="../qkeymapper_worker.cpp" line="5340" />
+        <location filename="../qkeymapper_worker.cpp" line="5480" />
+        <source>IbInput absolute positioning is not available for this backend.</source>
+        <translation>此后端尚未开放 IbInput 绝对定位。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="9931" />
+        <source>Wait for IbInput cleanup before starting.</source>
+        <translation>请等待 IbInput 清理完成后再启动。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="10382" />
+        <source>IbInput tab switching is awaiting lifecycle validation; mapping was stopped.</source>
+        <translation>IbInput 切表尚待生命周期验证；映射已停止。</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="21" />
+        <source>Table %1, row %2</source>
+        <translation>表 %1，第 %2 行</translation>
+    </message>
+    <message>
+        <location filename="../qkeymapper_worker.cpp" line="23" />
+        <source>Row %1</source>
+        <translation>第 %1 行</translation>
+    </message>
+    <message>
+        <source>Logitech G HUB could not reach (%1, %2); last position: (%3, %4). Mapping must stop.</source>
+        <translation>罗技 G HUB 未能移动到（%1，%2），最后位置为（%3，%4）。映射必须停止。</translation>
+    </message>
+    <message>
+        <source>IbInput could not read the cursor position (Windows error %1). Mapping must stop.</source>
+        <translation>IbInput 无法读取鼠标指针位置（Windows 错误 %1）。映射必须停止。</translation>
+    </message>
+</context>
+<context>
+    <name>QkmIbInputPopup</name>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="80" />
+        <source>Preferred backend</source>
+        <translation>首选后端</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="80" />
+        <source>If unavailable</source>
+        <translation>无法连接时</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="81" />
+        <source>Automatic (recommended)</source>
+        <translation>自动（推荐）</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="81" />
+        <source>Logitech legacy</source>
+        <translation>罗技 旧版通道</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="83" />
+        <source>Do not start mapping</source>
+        <translation>不启动映射</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="83" />
+        <source>Use SendInput before start</source>
+        <translation>启动前改用 SendInput</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="84" />
+        <source>Refresh status</source>
+        <translation>刷新状态</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="84" />
+        <source>Check connection</source>
+        <translation>连接检查</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="85" />
+        <source>May activate the vendor virtual device. No test input is sent. Available only after mapping cleanup.</source>
+        <translation type="vanished">可能激活厂商虚拟设备，不发送测试输入。仅在映射清理完成后可用。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="86" />
+        <source>&lt;a href="https://www.logitechg.com/innovation/g-hub.html"&gt;G HUB&lt;/a&gt; | &lt;a href="https://www.razer.com/synapse"&gt;Razer Synapse&lt;/a&gt;&lt;br&gt;Connection and accepted calls do not prove that an application received input.</source>
+        <translation>&lt;a href="https://www.logitechg.com/innovation/g-hub.html"&gt;G HUB&lt;/a&gt; | &lt;a href="https://www.razer.com/synapse"&gt;Razer Synapse&lt;/a&gt;&lt;br&gt;连接成功或调用被接受，并不代表应用已收到输入。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="100" />
+        <source>G HUB version: %1</source>
+        <translation>G HUB 版本：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="100" />
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>Unknown</source>
+        <translation>未知</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="101" />
+        <source>Observed process names: %1</source>
+        <translation>观察到的进程名：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>G HUB driver registration: %1</source>
+        <translation>G HUB 驱动登记：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>Observed</source>
+        <translation>已观察到</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="103" />
+        <source>Razer installation and driver: Unknown</source>
+        <translation>Razer 安装与驱动：未知</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="104" />
+        <source>Backend: %1; fallback: %2</source>
+        <translation>后端：%1；是否回退：%2</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="104" />
+        <source>Not connected</source>
+        <translation>未连接</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="104" />
+        <source>Yes</source>
+        <translation>是</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="104" />
+        <source>No</source>
+        <translation>否</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="105" />
+        <source>Last result: %1</source>
+        <translation>最近结果：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="106" />
+        <source>Sampled: %1</source>
+        <translation>采样时间：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="107" />
+        <source>Stop mapping and wait for cleanup before changing preferences.</source>
+        <translation>请停止映射并等待清理完成后再修改偏好。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="108" />
+        <source>Status refresh does not initialize a driver.</source>
+        <translation>刷新状态不会初始化驱动。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="109" />
+        <source>This checkpoint enables G HUB relative movement only. Other outputs await validation.</source>
+        <translation type="vanished">此检查点仅开放 G HUB 相对移动，其他输出尚待验证。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="102" />
+        <source>Refresh installation, process and driver information without connecting or sending input.</source>
+        <translation>刷新安装、进程和驱动信息，不连接后端，也不发送输入。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="103" />
+        <source>Temporarily connect to the preferred backend, then disconnect. No test input is sent.</source>
+        <translation>按首选后端设置短暂连接，随后断开；不发送测试输入。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="121" />
+        <source>Checking connection...</source>
+        <translation>正在检查连接…</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="120" />
+        <source>Status refreshed at %1.</source>
+        <translation>%1 状态已刷新。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="122" />
+        <source>Connection check passed at %1. The temporary connection is closed.</source>
+        <translation>%1 连接检查通过，临时连接已关闭。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="123" />
+        <source>Connection check failed at %1. See the result below.</source>
+        <translation>%1 连接检查失败，请查看下方结果。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="144" />
+        <source>Currently supports G HUB relative mouse movement only.</source>
+        <translation type="vanished">目前仅支持 G HUB 鼠标相对移动。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="149" />
+        <source>Currently supports G HUB relative mouse movement and basic key output (A-Z, 0-9, F1-F24).</source>
+        <translation>目前支持 G HUB 鼠标相对移动及基础按键输出（A-Z、0-9、F1-F24）。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="214"/>
+        <source>&lt;a href=&quot;https://www.logitechg.com/innovation/g-hub.html&quot;&gt;G HUB&lt;/a&gt; | &lt;a href=&quot;https://github.com/Chaoses-Ib/IbInputSimulator/issues/7&quot;&gt;Razer driver guide&lt;/a&gt;&lt;br&gt;Connection and accepted calls do not prove that an application received input.</source>
+        <translation>&lt;a href="https://www.logitechg.com/innovation/g-hub.html"&gt;G HUB&lt;/a&gt; | &lt;a href="https://github.com/Chaoses-Ib/IbInputSimulator/issues/7"&gt;Razer 驱动说明&lt;/a&gt;&lt;br&gt;连接成功或调用被接受，并不代表应用已收到输入。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="195"/>
+        <source>Razer driver services: %1</source>
+        <translation>Razer 驱动服务：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="196"/>
+        <source>Razer driver for IbInput: %1</source>
+        <translation>Razer 驱动（IbInput）：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="191"/>
+        <source>Not observed</source>
+        <translation>未观察到</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="190"/>
+        <source>Running</source>
+        <translation>运行中</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="190"/>
+        <source>Not running</source>
+        <translation>未运行</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="196"/>
+        <source>Detected</source>
+        <translation>已检测到</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="210"/>
+        <source>QKeyMapper did not detect a Razer driver that IbInput can use. See the installation requirements in the Razer driver guide.</source>
+        <translation>QKeyMapper 未检测到可供 IbInput 使用的 Razer 驱动。请查看“Razer 驱动说明”中的安装条件。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="196"/>
+        <source>Not detected</source>
+        <translation>未检测到</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="208"/>
+        <source>QKeyMapper could not check the Razer driver status. Click Refresh status or Check connection.</source>
+        <translation>QKeyMapper 暂时无法检测 Razer 驱动状态。请点击“刷新状态”或“连接检查”。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="234"/>
+        <source>Logitech G HUB</source>
+        <translation>罗技 G HUB</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="237"/>
+        <source>Razer driver</source>
+        <translation>雷蛇驱动</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="232"/>
+        <source>Current backend: %1 (fallback: %2)</source>
+        <translation>当前后端：%1（回退：%2）</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="233"/>
+        <source>Updated at %1</source>
+        <translation>更新于 %1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="219"/>
+        <source>Driver registered</source>
+        <translation>驱动已登记</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="220"/>
+        <source>Driver not registered</source>
+        <translation>驱动未登记</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="218"/>
+        <source>Query failed</source>
+        <translation>查询失败</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="235"/>
+        <source>Version: %1</source>
+        <translation>版本：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="236"/>
+        <source>Processes: %1</source>
+        <translation>进程：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="238"/>
+        <source>Services: %1</source>
+        <translation>服务：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="191"/>
+        <source>Connection check failed at %1.</source>
+        <translation>%1 连接检查失败。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="195"/>
+        <source>Automatic order: %1</source>
+        <translation>自动顺序：%1</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="182"/>
+        <source>At mapping start, QKeyMapper tries backends in order and uses the first that supports the mapping and connects successfully. Check connection checks connectivity only; mapping start selects again. Refresh status does not connect.</source>
+        <translation>开始映射时，QKeyMapper 按顺序尝试后端，使用首个支持当前映射且连接成功的后端。连接检查只检查能否连接；开始映射时会重新选择。刷新状态不会连接驱动。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="208"/>
+        <source>Connection check passed at %1: automatically selected %2. The temporary connection is closed.</source>
+        <translation>%1 连接检查通过：自动选择了 %2；临时连接已关闭。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="209"/>
+        <source>Connection check passed at %1: %2. The temporary connection is closed.</source>
+        <translation>%1 连接检查通过：%2；临时连接已关闭。</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="170"/>
+        <source>Razer</source>
+        <translation>雷蛇</translation>
+    </message>
+    <message>
+        <location filename="../qkm_ibinput_popup.cpp" line="245"/>
+        <source>%1 (automatic selection)</source>
+        <translation>%1（自动选择）</translation>
     </message>
 </context>
 </TS>

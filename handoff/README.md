@@ -7,8 +7,11 @@
 | 任务 | 唯一计划与进度 |
 |---|---|
 | QKeyMapper MCP 控制与开发验证 | [开发计划](qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md) |
+| QKeyMapper IbInputSimulator 输入方式 | [开发计划](ibinput-simulator/qkeymapper_ibinputsimulator_integration_plan.md) |
 
 本表只提供导航；具体状态和下一步只在各任务主计划中维护。
+
+固定IbInput与MCP核心接纳的源码／范围／原件索引见[选定验证记录](qkeymapper_mcp_control/ibinput_mcp_integration_validation.md)，提交及停止位置仍以两项唯一计划的顶部卡片为准。
 
 工作区工具：[临时 gsudo PID 缓存技能](../.agents/skills/qkeymapper-gsudo-cache/SKILL.md)、[使用与日常运行复查说明](../.agents/skills/qkeymapper-gsudo-cache/references/usage.md)。[公共测试接入](../.agents/skills/qkeymapper-gsudo-cache/references/test-actions.md)。实施状态仍在上述唯一主计划维护；[验证与观察边界](qkeymapper_mcp_control/gsudo_cache_pending_validation.md)只记录证据索引和实际覆盖。
 

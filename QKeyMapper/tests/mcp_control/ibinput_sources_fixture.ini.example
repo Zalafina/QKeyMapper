@@ -1,0 +1,29 @@
+[General]
+SettingSelect=Persist136A
+LanguageIndex=0
+StartupAutoMonitoring=false
+StartupMinimized=false
+VirtualGamepadEnable=false
+MultiInputEnable=false
+CloseToSystemtray=false
+CloseToSystemtray_Decided=true
+NotShow_FilterKeysDisabled=true
+NotShow_VersionUnmatched=true
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false
+HideDisabled=false
+
+[Persist136A]
+MappingTable_TabNameList=Tab1, Common
+MappingTable_TabInternalNameList=IbNormal138, __QKM_COMMON__
+MappingTable_TabIncludeCommonList=ON, OFF
+MappingTable_Common_Enabled=true
+MappingTable_LastTabName=Tab1
+KeyMapData_OriginalKeys=A#C#F8#F9|H#J
+KeyMapData_MappingKeys=B#D#Key2Mouse-Right#Key2Mouse-Left|I#K
+KeyMapData_MappingKeys_KeyUp=B#D#Key2Mouse-Right#Key2Mouse-Left|I#K
+KeyMapData_SendMappingKeyMethod=0#0#3#3|3#0
+KeyMapData_Disabled=OFF#ON#OFF#OFF|OFF#ON
+AutoStartMappingChecked=0
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false
