@@ -6,7 +6,7 @@
 
 ## 当前进度与最新交接卡片
 
-2026-11-09完成IB-MCP-138核心融合及选定验证，进入提交／快进收尾。输入为MCP `94f0bb8485e7e607cff5c73bf6c0a45725e052d9`与固定IbInput `b5b484a63bf97716c407ae9680fd1b63f8d5eb01`；[本轮证据](ibinput_mcp_integration_validation.md)分别记录普通Release、维护目标、替身及历史范围。用户本轮要求接纳后停止，明日本机“继续”从Popup接续，不重复环境恢复或已通过验收；PERSIST-136A及STOP-46等历史结果不扩大。
+2026-11-09完成IB-MCP-138核心融合、选定验证及本地快进接纳，收尾后停止。输入为MCP `94f0bb8485e7e607cff5c73bf6c0a45725e052d9`与固定IbInput `b5b484a63bf97716c407ae9680fd1b63f8d5eb01`；[本轮证据](ibinput_mcp_integration_validation.md)分别记录普通Release、维护目标、替身及历史范围。用户本轮要求接纳后停止，明日本机“继续”从Popup接续，不重复环境恢复或已通过验收；PERSIST-136A及STOP-46等历史结果不扩大。
 
 2026-10-30的PERSIST-136在PC-W11收尾；2026-10-31在PC-W10只执行Forza修复同步，不将其历史结果记成本轮Win11复验。
 
@@ -16,23 +16,23 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | IB-MCP-138：核心选验通过，待本地集成提交／快进收尾；本轮不启动Popup |
+| 当前切片 | IB-MCP-138核心完成并已快进接纳；本轮收尾后停止，未启动Popup |
 | 执行机器 | PC-W11；普通Release配置、Default两后端、组件／实际ASan分别见本轮证据；Win10历史不冒充本轮复验 |
-| 目标分支／检查点 | codex/qkeymapper-mcp-control／94f0bb8485e7e607cff5c73bf6c0a45725e052d9，原工作区及暂存区接续为空 |
-| 集成分支／路径 | codex/ibinput-mcp-integration；D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
+| 目标分支／接纳点 | codex/qkeymapper-mcp-control已从94f0bb8485e7e607cff5c73bf6c0a45725e052d9快进至e73f719b23ee1bd0df99045727acf9554f33959b；随后仅提交本卡及必要证据的收尾记录，实际文档HEAD由Git记录 |
+| 集成提交／路径 | e73f719b23ee1bd0df99045727acf9554f33959b，两父分别为MCP94f0bb84及固定IbInput b5b484a6；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
 | 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
 | 当前已完成 | 方式3全链路、受限行更新、两全局偏好预览／保存事务、被动状态；Common／禁用／隐藏及移动组边界；旧代与零代通知守卫。TS并集后QM均1291 finished，v1.1手册及0009／许可保留 |
 | 当前验证 | 独立GUI和正式MCP冷读74个映射字段及两偏好一致；取消／写失败恢复、Read拒绝、重启旧引用／结果、真实维护入口生命周期和四组Default实际接收通过。Qt6零编译链接警告、Qt5双架构、定向静态项目诊断0、最终实际ASan五项及客户端边界均过 |
-| 当前未提交 | 集成树MERGE_HEAD=b5b484a6；产品／协议／测试／资源及必要文档已解决并暂存，无未合并项、未暂存或未跟踪源码；选定核心门槛已通过，只待提交／快进实录 |
+| 工作区保留 | 核心提交及快进后两树均干净；本次仅补记收尾文档，无待验证产品改动。环境、构建目录与忽略的原始证据原地保留，不做跨机包 |
 | 当前控制器 | 本轮Medium1884于18:36:05按技能off核实closed／缓存不可用／native_sessions=0，scope及五项资源为空；无其他QKeyMapper进程。旧控制器e82b6bcf的未知请求b588469d保留、未重放；当前关闭不冒称旧未知请求已被接管清理 |
 | 授权边界 | 开发／Git／构建／分析／截图普通权限；必要原manifest测试通过公共登记。用户已选两后端约15–20分钟Default自有接收窗回归，先公告协调；不安装驱动或改指针／筛选键设置 |
-| 下一项动作 | 只完成差异／文档检查、集成提交、原分支快进及清理，随后停止；明日本机从ibinput_settings固定Popup角色开始 |
+| 下一项动作 | 已停止，等待用户明日本机“继续”；从ibinput_settings固定Popup角色开始，仅查当前必需身份／状态，不重复环境恢复或已过验收；需要新缓存时再安排 |
 | 后续范围 | Popup发现／打开／捕获／关闭及权限／演示验收未实现；主动MCP连接检查／试发、PERSIST-137、可选Win10实体及Win10 Release PC三包／QQ联调均保留，不把完整M1／M2标完成 |
 | 本机证据 | 集成树out/ibinput_mcp_integration及原工作区out/mcp_product/ibinput138_20261109；身份、桌面、失败轮次、真实图片、FilterKeys及退出结果均在本机。只提交精简索引，不制作跨机包 |
-| 提交策略 | 选定核心门槛已通过，形成聚焦本地集成提交后仅快进接纳，保留父历史；不push、不合并master、不amend已验证提交 |
+| 提交策略 | 本地集成提交及原分支快进已完成；收尾文档独立提交并同步集成分支，保留父历史。不push、不合并master、不amend已验证提交 |
 
-### IB-MCP-138：已批准接纳契约（2026-11-09，进行中）
+### IB-MCP-138：已批准接纳契约（2026-11-09，核心选验及接纳完成）
 
 现有mapping.add增加可选send_method（0–3、缺省0）；mapping.update只改当前source_ref的发送方式。ibinput.preferences.update仅接preferred_backend与unavailable_policy，至少一项，前者auto／logitech_ghub／logitech_legacy／razer，后者block／sendinput_before_start；提交只改内存和dirty，持久化仍须configuration.save。预览绑定实际偏好语义修订；真实变化使旧预览失效，被动刷新／同值不推进。两个INI全局键纳入完整足迹、取消及QSettings失败恢复，不在确认前单独写盘。GUI与MCP共用有效Common／禁用行／移动组合并规则；合法配置不依赖软件安装或连接。
 

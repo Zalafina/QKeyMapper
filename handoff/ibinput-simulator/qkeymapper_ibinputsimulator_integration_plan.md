@@ -1,24 +1,24 @@
 # QKeyMapper IbInputSimulator 集成计划：独立实施、能力验收与 MCP 合流
 
-文档修订：R52，2026-11-09（Asia/Shanghai）。
+文档修订：R53，2026-11-09（Asia/Shanghai）。
 本文是本功能唯一的设计、决策、实施状态和双 PC 接续来源，随功能分支提交；目录规则见 [handoff/README.md](../README.md)，依赖事实见 [依赖来源与本机制品](dependency_provenance.md)。旧 plan/ 文档仅保留导航，不维护第二份进度。
 
 ## 0. 最新交接卡片与本轮停止点
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前阶段 | IB-05／IB-MCP-138核心选验完成，进入本地提交／快进收尾；本卡只更新接纳树副本，来源仓库固定输入保持不动 |
+| 当前阶段 | IB-05／IB-MCP-138核心选验及本地快进接纳完成，收尾后停止；本卡只更新接纳树副本，来源仓库固定输入保持不动 |
 | 当前授权 | 用户已在MCP原会话明确批准接纳固定b5b484a6并继续开发；不以历史手册批准替代当前授权 |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5a4175fdce06a0c2ebeca6b704fc35454，包含f6495e9e9560ac3dd1447da0b9fe99c731f9003f、A3 e88daf6a及V2 06d5a38f |
 | MCP输入 | 94f0bb8485e7e607cff5c73bf6c0a45725e052d9；共同祖先0d053c17590589f9a2b8492b61ab7e77b915456a，不重复合Forza |
-| 集成位置 | codex/ibinput-mcp-integration；D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper；原MCP工作区与来源分支未推进 |
-| 当前状态 | 普通合并保留共同历史；方式3、两偏好／状态／保存、校验、权限及底层演示守卫已实现并选验，TS并集重生QM；提交／快进实录收尾补记 |
-| 核心门槛 | 按8.2／8.3完成方式3、两偏好／状态／保存事务、校验、生命周期、权限及演示逐入口零调用，再核实际合流源码／EXE |
+| 集成提交／位置 | e73f719b23ee1bd0df99045727acf9554f33959b；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper；保留94f0bb84与固定b5b484a6两父历史 |
+| 目标接纳／状态 | 原MCP工作区codex/qkeymapper-mcp-control已从94f0bb84快进至e73f719b23ee1bd0df99045727acf9554f33959b，现场核实干净；随后仅补提交本卡及必要证据，文档HEAD以Git记录。来源工作区未改动 |
+| 核心门槛 | 按8.2／8.3完成方式3、两偏好／状态／保存事务、校验、生命周期、权限及演示逐入口零调用，并核实际合流源码／EXE；只计本轮选定范围 |
 | 已确认保留 | A3有界近似绝对与0009、Razer原生路径及完整v1.1手册保持；第34节历史范围不改写。本轮不追加dwExtraInfo专项、不为FakerInput补造实测 |
 | 工具／Popup | 主动MCP连接检查与试发继续待实现；受限Popup角色为快进后首片，不是快进硬门槛，已公开入口仍须守权限和底层演示边界 |
 | 当前验证 | PC-W11普通Release独立GUI／正式MCP冷读74行字段及两偏好一致，Common／禁用／隐藏／移动组、失败恢复、Read边界、演示计数及两后端Default真实接收通过；最终Qt6、Qt5两架构、静态及实际ASan通过，详见下方证据；不外推完整设备矩阵 |
 | 权限／缓存 | 开发Medium；用户另批的1884窗口已在18:36:05off／status核实关闭、scope及五项资源零、native_sessions=0，无其他QKeyMapper进程。Default已完成且系统设置未变；旧控制器unknown记录保留、未重放 |
-| 下一步 | 核心提交／目标快进后立即停止；明日本机“继续”从ibinput_settings受限角色及权限／演示验收接续，不插入其他新切片 |
+| 下一步 | 已停止，等待明日本机“继续”；从ibinput_settings受限角色及权限／演示验收接续。仅查当前必需身份／状态，不重复环境恢复或已过验收；需要新缓存再安排 |
 | 保留限制 | Win10实体手柄完全可选；三包正式打包仅Win10 Release PC，发行说明／版本和Razer再分发依据按IB-06；不push／master合并／amend |
 | 证据边界 | [本轮选定证据](../qkeymapper_mcp_control/ibinput_mcp_integration_validation.md)；集成树out/ibinput_mcp_integration和MCP原工作区out/mcp_product/ibinput138_20261109均仅本机。普通Release／维护入口／替身／历史及失败轮次分别保留 |
 

@@ -2,7 +2,7 @@
 
 [唯一进度与停止位置](qkeymapper_mcp_automation_plan_codex.md) · [IbInput唯一计划](../ibinput-simulator/qkeymapper_ibinputsimulator_integration_plan.md)。本页仅记录证据，不维护进度。
 
-PC-W11，2026-11-09；MCP输入`94f0bb8485e7e607cff5c73bf6c0a45725e052d9`、固定IbInput输入`b5b484a63bf97716c407ae9680fd1b63f8d5eb01`，共同祖先`0d053c17590589f9a2b8492b61ab7e77b915456a`。检查时为独立集成树的待提交普通合并及本轮局部差异，最终提交由两计划卡片及Git记录。开发／Git／构建／分析／SDK／图片普通权限；仅原manifest产品／固定助手由公共登记提权。
+PC-W11，2026-11-09；MCP输入`94f0bb8485e7e607cff5c73bf6c0a45725e052d9`、固定IbInput输入`b5b484a63bf97716c407ae9680fd1b63f8d5eb01`，共同祖先`0d053c17590589f9a2b8492b61ab7e77b915456a`。验证时为独立集成树的普通合并及本轮局部差异，随后形成集成提交`e73f719b23ee1bd0df99045727acf9554f33959b`并快进接纳至原MCP分支；收尾文档提交不改变产品源码。开发／Git／构建／分析／SDK／图片普通权限；仅原manifest产品／固定助手由公共登记提权。
 
 ## 源码、制品与资源
 
@@ -28,6 +28,8 @@ PC-W11，2026-11-09；MCP输入`94f0bb8485e7e607cff5c73bf6c0a45725e052d9`、固�
 两条独立冷读的A→B行全部74个持久化字段和两项偏好比较相同，原件为QA/gui-mcp-equivalence.json；不称完整INI逐字节相等或全部软件设置等价。Default实测仅当前PC-W11、2560×1440／虚拟原点0、指针速度10／参数6,10,1、FilterKeys flags58且时间参数0。G HUB11个定位点各轴误差≤2px并有后续稳定采样；Razer9点保持其原生路径实测范围。夹具显式光标居中／8px轻移及有条件恢复只用于自有接收窗，不补偿映射算法，不改系统指针／筛选键设置。用户主动改变前台不算产品干扰；失焦时守卫停止后续输入并只清理自有保持。本批不是任意游戏、多屏／DPI或所有驱动版本保证。
 
 本轮PID1884剩余五项授权已按历史中的instance／definition_hash／target_id关联为本任务，撤出后18:36:05技能off及后续status核实closed、scope及五项在途资源零、cache_available=false、native_sessions_observed=0；未观察到其他QKeyMapper进程。历史未知请求仍保留，未接管或重放。
+
+文档收尾核对：本轮修改的UTF-8／无BOM、冲突标记、Python语法、本轮新增相对链接及定向git diff --check通过；固定输入24份受控INI样例逐项与b5b484a6一致，不含本机测试凭据。依赖许可证／补丁／INF的原有空白告警原样保留并核对源blob一致，详见本机final-whitespace-inherited.log；两主计划大小已记录，未为收尾扩大历史归档范围。
 
 ## 失败轮次与边界
 
