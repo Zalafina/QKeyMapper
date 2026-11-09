@@ -3304,7 +3304,8 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
     initAddKeyComboBoxes();
     initWindowInfoMatchComboBoxes();
     connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputStatusChanged_Signal,this,&QKeyMapper::refreshIbInputUi,Qt::QueuedConnection);
-    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputFault_Signal,this,[this](const QString &detail) {
+    connect(QKeyMapper_Worker::getInstance(),&QKeyMapper_Worker::ibInputFault_Signal,this,[this](const QString &detail,quint64 generation) {
+        if (generation && generation!=QkmIbInputClient::instance().requestedGeneration()) return;
         if (m_KeyMapStatus!=KEYMAP_IDLE) MappingSwitch(MAPPINGSTART_BUTTONCLICK);
         showFailurePopup(detail);
         refreshIbInputUi();

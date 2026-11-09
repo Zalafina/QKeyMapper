@@ -149,10 +149,11 @@ bool sendIbEvent(const INPUT &input,quint64 generation,bool stopAction=false) {
             || (input.type==INPUT_MOUSE && (input.mi.dwFlags & (MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XUP)));
         if (active || up) { INPUT event=input; success=SendInput(1,&event,sizeof(INPUT))==1; }
     } else success=client.sendEvent(input,generation,stopAction);
-    if (!success && active && !ibInputFaultReported.exchange(true)) {
-        client.cancelRun();
+    if (!success && active && generation==client.requestedGeneration()
+        && generation==qkmCurrentIbInputGeneration() && !ibInputFaultReported.exchange(true)) {
+        client.cancelRun(generation);
         const QString detail=client.statusSnapshot().detail;
-        emit QKeyMapper_Worker::getInstance()->ibInputFault_Signal(detail.isEmpty() ? QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop.") : detail);
+        emit QKeyMapper_Worker::getInstance()->ibInputFault_Signal(detail.isEmpty() ? QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop.") : detail,generation);
     }
     return success;
 }
@@ -166,8 +167,8 @@ void sendIbAbsolute(INPUT input,POINT point,quint64 generation,bool stopAction,H
         }
         auto &client=QkmIbInputClient::instance();
         if (generation==client.requestedGeneration() && (client.acceptingInput() || (stopAction && client.stopActionAllowed(generation)))) {
-            client.cancelRun();
-            emit QKeyMapper_Worker::getInstance()->ibInputFault_Signal(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."));
+            client.cancelRun(generation);
+            emit QKeyMapper_Worker::getInstance()->ibInputFault_Signal(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."),generation);
         }
     };
     if (window && !ClientToScreen(window,&point)) { reject(); return; }
@@ -195,7 +196,7 @@ bool QKeyMapper_Worker::prepareIbInputRun(quint64 generation) {
     }
     if (!client.prepareRun(generation,requirements)) {
         s_AtomicHookProcState=HOOKPROC_STATE_STOPPED;
-        if (generation==client.requestedGeneration()) emit ibInputFault_Signal(client.statusSnapshot().detail);
+        if (generation==client.requestedGeneration()) emit ibInputFault_Signal(client.statusSnapshot().detail,generation);
         return false;
     }
     { QMutexLocker lock(&ibInputSnapshotMutex); ibInputSnapshot=QSharedPointer<QList<MAP_KEYDATA>>::create(*QKeyMapper::KeyMappingDataList); }

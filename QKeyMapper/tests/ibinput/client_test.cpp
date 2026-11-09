@@ -207,6 +207,21 @@ void failureCase() {
     const auto cancelledToken=cancelled.requestRun();
     check(!cancelled.prepareRun(cancelledToken,{}) && !cancelled.statusSnapshot().connected,"cancelled initialization stayed connected");
 }
+void supersededSendCase() {
+    for (bool mouseInput:{false,true}) {
+        reset(); QkmIbInputClient client;
+        const auto required=needs(mouseInput ? QkmIbInputClient::Buttons : QkmIbInputClient::Keyboard);
+        const auto old=client.requestRun(); check(client.prepareRun(old,required),"Superseded send fixture failed");
+        quint64 latest=0;
+        duringSend=[&] { latest=client.requestRun(); };
+        sendFails=true;
+        check(!client.sendEvent(mouseInput ? mouse(MOUSEEVENTF_LEFTDOWN) : key('F'),old),"Old send failure was hidden");
+        duringSend={}; sendFails=false;
+        check(latest>old && client.acceptingInput(),"Old send failure cancelled the newer intent");
+        check(client.closeAfterDrain(old) && client.acceptingInput(),"Old failed send cleanup cancelled the newer intent");
+        check(client.prepareRun(latest,required) && client.closeAfterDrain(latest),"New intent could not start after failed send");
+    }
+}
 void reportCase() {
     QkmIbInputClient client;
     const auto generation=client.requestRun();
@@ -510,13 +525,13 @@ int main(int argc,char **argv) {
             QSet<quint16> supportedButtons;
             for (const auto &button:mouseButtons) supportedButtons.insert(button.vk);
             for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedButton(vk)==supportedButtons.contains(vk),"mouse button set differs");
-            reset(); razerCase(); reset(); admissionCase(); reset(); restartCase(); reset(); stopActionCase(); reset(); failureCase(); reset(); reportCase(); reset(); modifiersCase();
+            reset(); razerCase(); reset(); admissionCase(); reset(); restartCase(); reset(); stopActionCase(); reset(); failureCase(); reset(); supersededSendCase(); reset(); reportCase(); reset(); modifiersCase();
             reset(); absoluteCase(); reset(); horizontalCase(); reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
             reset(); concurrentCase();
             std::cout<<"PASS simulated production gate: 115 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
 #endif
-        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"razer",razerCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"absolute",absoluteCase},{"horizontal",horizontalCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
+        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"razer",razerCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"superseded_send",supersededSendCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"absolute",absoluteCase},{"horizontal",horizontalCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
     } catch (const std::exception &error) { std::cerr<<error.what()<<'\n'; return 2; }

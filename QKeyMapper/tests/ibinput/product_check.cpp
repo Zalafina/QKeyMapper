@@ -53,6 +53,26 @@ QByteArray savedIni() {
     check(file.open(QIODevice::ReadOnly),"Cannot read isolated product INI");
     return file.readAll();
 }
+void queuedFaultCase(QKeyMapper *window) {
+    auto &client=QkmIbInputClient::instance();
+    QPopupMessageLabel *message=nullptr;
+    for (QWidget *widget:QApplication::topLevelWidgets())
+        if (auto *candidate=qobject_cast<QPopupMessageLabel *>(widget)) { message=candidate; break; }
+    check(message && !client.busy(),"Queued fault fixture is not idle");
+    const auto old=client.requestRun();
+    const auto latest=client.requestRun();
+    const QString stale=QStringLiteral("Owned stale IbInput fault");
+    emit QKeyMapper_Worker::getInstance()->ibInputFault_Signal(stale,old);
+    QCoreApplication::sendPostedEvents(window,QEvent::MetaCall);
+    check(message->text()!=stale && client.requestedGeneration()==latest && client.acceptingInput()
+        && window->m_KeyMapStatus==QKeyMapper::KEYMAP_IDLE,"Stale queued fault reached the newer UI intent");
+    const QString current=QStringLiteral("Owned current IbInput fault");
+    emit QKeyMapper_Worker::getInstance()->ibInputFault_Signal(current,latest);
+    QCoreApplication::sendPostedEvents(window,QEvent::MetaCall);
+    check(message->text()==current,"Current queued fault was incorrectly suppressed");
+    client.cancelRun(latest);
+    message->hide(); message->clear();
+}
 void saveGuardCases(QKeyMapper *window) {
     const QString normalName=QKeyMapper::s_KeyMappingTabInfoList.at(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex).TabName;
     const auto normal=[&]() -> KeyMappingTab_Info & {
@@ -649,6 +669,7 @@ void verifyProduct() {
                 "Method-3 mapping changed during product load");
         }
         if (selectedCase==QStringLiteral("save")) {
+            queuedFaultCase(window);
             saveGuardCases(window);
             configurationRoundTripCases(window);
         }

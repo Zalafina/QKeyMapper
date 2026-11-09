@@ -1313,7 +1313,7 @@ signals:
     void setKeyUnHook_Signal(void);
     void setKeyMappingRestart_Signal(quint64 generation);
     void allMappingKeysReleased_Signal(void);
-    void ibInputFault_Signal(const QString &detail);
+    void ibInputFault_Signal(const QString &detail,quint64 generation=0);
     void ibInputClosed_Signal(bool released, const QString &detail);
     void ibInputRestarted_Signal(quint64 generation);
     void ibInputStatusChanged_Signal();

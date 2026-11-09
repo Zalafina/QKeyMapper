@@ -149,17 +149,17 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
         if (buttonId(input.mi)) needed|=Buttons;
     }
     if ((needed & m_runCapabilities)!=needed || (needed & capabilities(m_status.backend))!=needed)
-        return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput event was not admitted for the current run."));
+        return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput event was not admitted for the current run."),generation);
     if (input.type==INPUT_KEYBOARD) {
-        if (!isSupportedKey(input.ki.wVk) || (input.ki.dwFlags & (KEYEVENTF_UNICODE|KEYEVENTF_SCANCODE))) return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput keyboard event."));
+        if (!isSupportedKey(input.ki.wVk) || (input.ki.dwFlags & (KEYEVENTF_UNICODE|KEYEVENTF_SCANCODE))) return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput keyboard event."),generation);
         const bool up=(input.ki.dwFlags & KEYEVENTF_KEYUP)!=0;
         if (!up) {
             if (m_ownedKeys.contains(input.ki.wVk)) return true;
             int ordinary=0; for (quint16 key:m_ownedKeys) if (!(key>=VK_LSHIFT && key<=VK_RMENU) && key!=VK_LWIN && key!=VK_RWIN) ++ordinary;
-            if (ordinary>=6 && !(input.ki.wVk>=VK_LSHIFT && input.ki.wVk<=VK_RMENU) && input.ki.wVk!=VK_LWIN && input.ki.wVk!=VK_RWIN) return fail(QCoreApplication::translate("QkmIbInputClient","The IbInput keyboard report is full."));
+            if (ordinary>=6 && !(input.ki.wVk>=VK_LSHIFT && input.ki.wVk<=VK_RMENU) && input.ki.wVk!=VK_LWIN && input.ki.wVk!=VK_RWIN) return fail(QCoreApplication::translate("QkmIbInputClient","The IbInput keyboard report is full."),generation);
             m_ownedKeys.insert(input.ki.wVk);
         }
-        if (!sendOne(input)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop without retrying another backend."));
+        if (!sendOne(input)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop without retrying another backend."),generation);
         if (up) m_ownedKeys.remove(input.ki.wVk);
     } else if (input.type==INPUT_MOUSE) {
         const auto &mouse=input.mi;
@@ -173,14 +173,14 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
             || ((mouse.dwFlags & MOUSEEVENTF_VIRTUALDESK) && !(mouse.dwFlags & MOUSEEVENTF_ABSOLUTE))
             || ((mouse.dwFlags & MOUSEEVENTF_ABSOLUTE)
                 ? (mouse.dx<0 || mouse.dx>65535 || mouse.dy<0 || mouse.dy>65535)
-                : (mouse.dx>32767 || mouse.dx< -32767 || mouse.dy>32767 || mouse.dy< -32767))) return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."));
+                : (mouse.dx>32767 || mouse.dx< -32767 || mouse.dy>32767 || mouse.dy< -32767))) return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."),generation);
         const DWORD buttonFlags=mouse.dwFlags & (MOUSEEVENTF_LEFTDOWN|MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTDOWN|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP);
         if ((buttonFlags && (buttonFlags & (buttonFlags-1)))
             || (buttonFlags && ((mouse.dwFlags & wheelFlags) || ((mouse.dwFlags & MOUSEEVENTF_MOVE) && !(mouse.dwFlags & MOUSEEVENTF_ABSOLUTE))))
             || ((mouse.dwFlags & MOUSEEVENTF_MOVE) && (mouse.dwFlags & wheelFlags)))
-            return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported combined IbInput mouse event."));
+            return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported combined IbInput mouse event."),generation);
         const quint16 button=buttonId(mouse);
-        if (button && !isSupportedButton(button)) return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput mouse button still awaits backend validation."));
+        if (button && !isSupportedButton(button)) return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput mouse button still awaits backend validation."),generation);
         const bool up=isRelease(input);
         if (button && !up) m_ownedButtons.insert(button);
         INPUT event=input;
@@ -192,10 +192,10 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
         if (mouse.dwFlags & wheelFlags) {
             const LONG delta=static_cast<LONG>(mouse.mouseData);
             INPUT step=event; step.mi.mouseData=static_cast<DWORD>(delta>0 ? WHEEL_DELTA : -WHEEL_DELTA);
-            for (LONG left=delta/WHEEL_DELTA;left!=0;left+=left>0 ? -1 : 1) if (!sendOne(step)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput wheel send failed; mapping must stop."));
-        } else if (!sendOne(event)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop without retrying another backend."));
+            for (LONG left=delta/WHEEL_DELTA;left!=0;left+=left>0 ? -1 : 1) if (!sendOne(step)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput wheel send failed; mapping must stop."),generation);
+        } else if (!sendOne(event)) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop without retrying another backend."),generation);
         if (button && up) m_ownedButtons.remove(button);
-    } else return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput event type."));
+    } else return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput event type."),generation);
     return true;
 }
 bool QkmIbInputClient::releaseLocked() {
