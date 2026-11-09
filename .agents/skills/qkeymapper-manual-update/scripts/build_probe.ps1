@@ -58,7 +58,7 @@ try {
 Copy-Item -LiteralPath (Join-Path $build 'release/QkmManualProbe.exe') -Destination $runtime
 & (Join-Path $qtRootPath 'bin/windeployqt.exe') --release --translations zh_CN --no-compiler-runtime (Join-Path $runtime 'QkmManualProbe.exe')
 if ($LASTEXITCODE -ne 0) { throw 'Qt deployment failed' }
-foreach ($relative in @('QJoysticks/lib/SDL/lib/x64/SDL2.dll','ViGEm/lib/x64/ViGEmClient.dll','Interception/lib/x64/interception.dll','libusb/lib/x64/libusb-1.0.dll','FakerInput/lib/x64/FakerInputDll.dll')) {
+foreach ($relative in @('QJoysticks/lib/SDL/lib/x64/SDL2.dll','ViGEm/lib/x64/ViGEmClient.dll','Interception/lib/x64/interception.dll','libusb/lib/x64/libusb-1.0.dll','FakerInput/lib/x64/FakerInputDll.dll','IbInputSimulator/lib/x64/IbInputSimulator.dll')) {
     $dependency = Join-Path $repo ('QKeyMapper/' + $relative)
     if (-not (Test-Path -LiteralPath $dependency)) { throw "Missing repository runtime: $dependency" }
     Copy-Item -LiteralPath $dependency -Destination $runtime
