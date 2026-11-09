@@ -2047,7 +2047,7 @@ static QString ibInputSaveConflict()
             appendActiveKeyMappingRowsFromTab(QKeyMapper::findCommonMappingTabIndex(),enabledGroups,rows,sources);
         appendActiveKeyMappingRowsFromTab(tab,enabledGroups,rows,sources);
         QStringList locations;
-        for (const auto &source:sources)
+        for (const auto &source:std::as_const(sources))
             locations.append(QCoreApplication::translate("QkmIbInputClient","Table %1, row %2")
                 .arg(source.SourceTabIndex+1).arg(source.SourceRow+1));
         const QString error=QkmIbInputValidation::mixedMovementError(QkmIbInputValidation::expandedRows(rows),locations);

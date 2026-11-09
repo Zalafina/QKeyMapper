@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <QTemporaryDir>
 #include <algorithm>
+#include <cmath>
 #include <atomic>
 #include <condition_variable>
 #include <functional>
@@ -12,6 +13,58 @@
 #include <stdexcept>
 #include <thread>
 #include <vector>
+
+namespace QkmIbInputSystem {
+std::mutex mutex;
+POINT cursor{};
+double exactX=0,exactY=0,gainX=1,gainY=1;
+int left=0,top=0,width=1920,height=1080,delay=0,reads=0,failReadAt=0;
+quint64 clock=0;
+bool nonlinear=false,frozen=false;
+struct Pending { quint64 due; LONG x,y; };
+std::vector<Pending> pending;
+std::function<void()> onPause;
+std::thread::id advancingThread;
+void reset() {
+    std::lock_guard<std::mutex> lock(mutex);
+    cursor={}; exactX=exactY=0; gainX=gainY=1;
+    left=top=delay=reads=failReadAt=0; width=1920; height=1080; clock=0;
+    nonlinear=frozen=false; pending.clear(); onPause={}; advancingThread={};
+}
+void move(LONG x,LONG y) {
+    std::lock_guard<std::mutex> lock(mutex);
+    pending.push_back({clock+static_cast<quint64>(delay),x,y});
+}
+BOOL cursorPosition(LPPOINT point) {
+    std::lock_guard<std::mutex> lock(mutex);
+    if (++reads==failReadAt) { SetLastError(ERROR_ACCESS_DENIED); return FALSE; }
+    for (auto it=pending.begin();it!=pending.end();) {
+        if (it->due>clock) { ++it; continue; }
+        const auto gain=[&](LONG value,double linear) { return nonlinear ? (std::abs(value)>10 ? 2.6 : 0.55) : linear; };
+        if (!frozen) {
+            exactX=std::clamp(exactX+it->x*gain(it->x,gainX),double(left),double(left+width-1));
+            exactY=std::clamp(exactY+it->y*gain(it->y,gainY),double(top),double(top+height-1));
+            cursor={static_cast<LONG>(std::llround(exactX)),static_cast<LONG>(std::llround(exactY))};
+        }
+        it=pending.erase(it);
+    }
+    *point=cursor; return TRUE;
+}
+int metric(int index) {
+    if (index==SM_XVIRTUALSCREEN) return left;
+    if (index==SM_YVIRTUALSCREEN) return top;
+    if (index==SM_CXSCREEN || index==SM_CXVIRTUALSCREEN) return width;
+    if (index==SM_CYSCREEN || index==SM_CYVIRTUALSCREEN) return height;
+    return 0;
+}
+quint64 ticks() { std::lock_guard<std::mutex> lock(mutex); return clock; }
+void pause() {
+    std::function<void()> callback;
+    { std::lock_guard<std::mutex> lock(mutex); if (advancingThread==std::thread::id{} || advancingThread==std::this_thread::get_id()) ++clock; callback=std::move(onPause); onPause={}; }
+    if (callback) callback();
+    std::this_thread::yield();
+}
+}
 
 namespace {
 std::vector<Send::SendType> attempts;
@@ -34,7 +87,7 @@ INPUT mouse(DWORD flags,LONG x=0,LONG y=0,DWORD data=0) {
     INPUT value{}; value.type=INPUT_MOUSE; value.mi.dwFlags=flags;
     value.mi.dx=x; value.mi.dy=y; value.mi.mouseData=data; return value;
 }
-void reset() { attempts.clear(); events.clear(); initFails=false; sendFails=false; failSendAt=0; duringInit={}; duringSend={}; }
+void reset() { QkmIbInputSystem::reset(); attempts.clear(); events.clear(); initFails=false; sendFails=false; failSendAt=0; duringInit={}; duringSend={}; }
 void settingsCase() {
     QTemporaryDir temporary(QDir::tempPath()+QStringLiteral("/QKeyMapper-ibinput-XXXXXX"));
     check(temporary.isValid(),"temporary INI failed");
@@ -161,7 +214,7 @@ void stopActionCase() {
     check(client.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),token,true),"explicit stop button rejected");
     check(client.sendEvent(mouse(MOUSEEVENTF_MOVE,1,0),token,true)
         && client.sendEvent(mouse(MOUSEEVENTF_WHEEL,0,0,WHEEL_DELTA),token,true),"explicit stop move/wheel rejected");
-    client.cancelRun();
+    client.cancelRun(token);
     check(!client.stopActionAllowed(token) && !client.sendEvent(key('H'),token,true),"cancelled stop scope sent a new DOWN");
     check(client.closeAfterDrain(token) && !client.stopActionAllowed(token),"stop scope did not close");
     const auto next=client.requestRun();
@@ -321,6 +374,8 @@ void horizontalCase() {
 void absoluteCase() {
     QkmIbInputClient client;
     const auto required=needs(QkmIbInputClient::AbsoluteMove|QkmIbInputClient::Buttons);
+    QkmIbInputClient::Preferences native; native.backend=QStringLiteral("razer");
+    check(client.setPreferences(native),"Native absolute fixture failed");
     const auto generation=client.requestRun();
     check(client.prepareRun(generation,required)
         && attempts==std::vector<Send::SendType>{Send::SendType::Razer},"Absolute input did not select Razer only");
@@ -352,6 +407,7 @@ void absoluteCase() {
     check(client.closeAfterDrain(generation),"Absolute close failed");
     reset();
     QkmIbInputClient failed;
+    check(failed.setPreferences(native),"Native failure fixture preference failed");
     const auto token=failed.requestRun(); check(failed.prepareRun(token,required),"Absolute failure fixture failed");
     failSendAt=1;
     check(!failed.sendEvent(mouse(absolute|MOUSEEVENTF_LEFTDOWN,1000,2000),token),"Unknown point-click DOWN was accepted");
@@ -371,7 +427,130 @@ void absoluteCase() {
     reset(); QkmIbInputClient ghub;
     QkmIbInputClient::Preferences manual; manual.backend=QStringLiteral("logitech_ghub");
     check(ghub.setPreferences(manual),"Manual absolute fixture failed");
-    check(!ghub.prepareRun(ghub.requestRun(),required) && attempts.empty(),"G HUB absolute capability changed");
+    const auto run=ghub.requestRun();
+    check(ghub.prepareRun(run,required) && ghub.closeAfterDrain(run),"G HUB absolute candidate was not admitted");
+}
+void ghubPositionCase() {
+    using namespace QkmIbInputSystem;
+    const DWORD absolute=MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK;
+    const auto required=needs(QkmIbInputClient::AbsoluteMove|QkmIbInputClient::Buttons|QkmIbInputClient::Keyboard);
+    for (double scale:{1.0/32.0,0.125,0.5,1.0,2.6,3.5}) for (LONG destination:{LONG(5),LONG(83),LONG(650)}) {
+        ::reset(); gainX=scale; gainY=scale*0.8;
+        QkmIbInputClient client; const auto run=client.requestRun();
+        check(client.prepareRun(run,required),"G HUB position fixture failed");
+        const auto down=mouse(absolute|MOUSEEVENTF_LEFTDOWN);
+        const bool reached=client.sendAbsoluteEvent(down,{destination,destination/2},run);
+        if (!reached) std::cerr<<"scale="<<scale<<" target="<<destination<<" actual="<<cursor.x<<","<<cursor.y<<" sends="<<events.size()<<" ms="<<QkmIbInputSystem::clock<<" detail="<<client.statusSnapshot().detail.toStdString()<<'\n';
+        check(reached,"Linear feedback did not converge");
+        check(std::abs(cursor.x-destination)<=2 && std::abs(cursor.y-destination/2)<=2,"Position exceeded tolerance");
+        check(!events.empty() && events.back().mi.dwFlags==MOUSEEVENTF_LEFTDOWN,"Point click was not separated from movement");
+        for (size_t i=0;i+1<events.size();++i) check(events[i].mi.dwFlags==MOUSEEVENTF_MOVE,"Point button was pressed before movement completed");
+        check(client.closeAfterDrain(run),"Position fixture did not release");
+    }
+    for (int lag:{0,1,3}) {
+        ::reset(); nonlinear=true; delay=lag; left=-1200; top=-700;
+        exactX=cursor.x=-1000; exactY=cursor.y=-600;
+        QkmIbInputClient client; const auto run=client.requestRun(); check(client.prepareRun(run,required),"Delayed fixture failed");
+        check(client.sendAbsoluteEvent(mouse(absolute),{-450,-280},run),"Nonlinear/delayed position did not converge");
+        check(std::abs(cursor.x+450)<=2 && std::abs(cursor.y+280)<=2 && client.closeAfterDrain(run),"Negative-origin feedback failed");
+    }
+    ::reset();
+    QkmIbInputClient normalized; const auto normal=normalized.requestRun();
+    check(normalized.prepareRun(normal,needs(QkmIbInputClient::AbsoluteMove)),"Normalized feedback fixture failed");
+    check(normalized.sendEvent(mouse(absolute,65535,65535),normal)
+        && std::abs(cursor.x-(width-1))<=2 && std::abs(cursor.y-(height-1))<=2,"Normalized event bypassed feedback");
+    check(normalized.closeAfterDrain(normal),"Normalized feedback close failed");
+    for (int failure:{0,1,3,4}) {
+        ::reset(); frozen=failure==0; failReadAt=failure==4 ? 0 : failure;
+        if (failure==4) gainX=gainY=8;
+        QkmIbInputClient client; const auto run=client.requestRun(); check(client.prepareRun(run,required),"Failure fixture failed");
+        check(!client.sendAbsoluteEvent(mouse(absolute|MOUSEEVENTF_LEFTDOWN),failure==4 ? POINT{5,2} : POINT{400,250},run)
+            && client.statusSnapshot().failed,"Failed positioning returned success");
+        if (failure==1 || failure==3) check(client.statusSnapshot().detail.contains(QStringLiteral("5")),"Immediate cursor error was overwritten");
+        for (const auto &event:events) check(event.mi.dwFlags==MOUSEEVENTF_MOVE,"Failed positioning pressed a button");
+        check(events.size()<=32 && client.closeAfterDrain(run),"Position limit or cleanup failed");
+    }
+    ::reset();
+    QkmIbInputClient cancelled; const auto run=cancelled.requestRun(); check(cancelled.prepareRun(run,required),"Cancel fixture failed");
+    check(cancelled.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),run),"Cancel fixture button failed");
+    onPause=[&] { cancelled.cancelRun(run); };
+    check(!cancelled.sendAbsoluteEvent(mouse(absolute|MOUSEEVENTF_LEFTUP),{400,250},run)
+        && !cancelled.statusSnapshot().failed,"Normal position cancellation became a fault");
+    check(events.back().mi.dwFlags==MOUSEEVENTF_LEFTUP && cancelled.closeAfterDrain(run),"Cancelled point UP did not release without movement");
+    ::reset();
+    QkmIbInputClient stopped; const auto stop=stopped.requestRun(); check(stopped.prepareRun(stop,required),"Stop position fixture failed");
+    stopped.cancelRun(stop);
+    check(stopped.releaseOwnedInputs(stop) && stopped.beginStopAction(stop),"Stop position scope failed");
+    check(stopped.sendAbsoluteEvent(mouse(absolute|MOUSEEVENTF_LEFTDOWN),{120,80},stop,true),"Admitted stop position failed");
+    failSendAt=static_cast<int>(events.size())+1;
+    check(!stopped.sendEvent(key('F'),stop,true) && !stopped.stopActionAllowed(stop),"Failed stop send retained stop scope");
+    failSendAt=0; check(stopped.closeAfterDrain(stop),"Stop position did not release");
+}
+void ghubPositionBoundaryCase() {
+    using namespace QkmIbInputSystem;
+    const DWORD absolute=MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK;
+    const auto required=needs(QkmIbInputClient::AbsoluteMove|QkmIbInputClient::Buttons|QkmIbInputClient::Keyboard);
+    for (bool cancel:{false,true}) {
+        ::reset(); QkmIbInputClient client; const auto run=client.requestRun();
+        check(client.prepareRun(run,required) && client.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),run),"Concurrent position fixture failed");
+        std::mutex gate; std::condition_variable condition; bool entered=false,release=false,expired=false;
+        onPause=[&] {
+            std::unique_lock<std::mutex> lock(gate); entered=true; condition.notify_all();
+            if (!condition.wait_for(lock,std::chrono::seconds(3),[&] { return release; })) expired=true;
+        };
+        bool first=false,second=false;
+        std::thread owner([&] {
+            { std::lock_guard<std::mutex> lock(mutex); advancingThread=std::this_thread::get_id(); }
+            first=client.sendAbsoluteEvent(mouse(absolute),{400,250},run);
+            { std::lock_guard<std::mutex> lock(mutex); advancingThread={}; }
+        });
+        bool observed=false;
+        { std::unique_lock<std::mutex> lock(gate); observed=condition.wait_for(lock,std::chrono::seconds(3),[&] { return entered; }); }
+        bool waiting=false;
+        onPause=[&] { std::lock_guard<std::mutex> lock(gate); waiting=true; condition.notify_all(); };
+        std::thread waiter([&] { second=client.sendAbsoluteEvent(mouse(absolute|MOUSEEVENTF_RIGHTDOWN),{600,300},run); });
+        bool waiterObserved=false;
+        { std::unique_lock<std::mutex> lock(gate); waiterObserved=condition.wait_for(lock,std::chrono::seconds(3),[&] { return waiting; }); }
+        const bool keyboard=client.sendEvent(key('F'),run);
+        const bool released=client.sendEvent(mouse(MOUSEEVENTF_LEFTUP),run);
+        if (cancel) client.cancelRun(run);
+        { std::lock_guard<std::mutex> lock(gate); release=true; } condition.notify_all();
+        owner.join(); waiter.join();
+        check(observed && waiterObserved && !expired && keyboard && released,"Position wait blocked keyboard or pure UP");
+        if (cancel) check(!first && !second && !client.statusSnapshot().failed,"Cancelled position transaction became a fault");
+        else check(first && second && std::abs(cursor.x-600)<=2 && std::abs(cursor.y-300)<=2,"Concurrent positions did not serialize");
+        check(client.closeAfterDrain(run),"Concurrent position close failed");
+    }
+    for (bool releaseFails:{false,true}) {
+        ::reset(); QkmIbInputClient client; const auto run=client.requestRun();
+        check(client.prepareRun(run,required) && client.sendEvent(mouse(MOUSEEVENTF_LEFTDOWN),run),"Query failure UP fixture failed");
+        failReadAt=1; sendFails=releaseFails;
+        check(!client.sendAbsoluteEvent(mouse(absolute|MOUSEEVENTF_LEFTUP),{400,250},run)
+            && events.back().mi.dwFlags==MOUSEEVENTF_LEFTUP,"Position read failure omitted pure UP");
+        check(client.closeAfterDrain(run)!=releaseFails,"Failed point-UP cleanup result was hidden");
+        if (releaseFails) {
+            check(client.statusSnapshot().releaseIncomplete && client.busy() && !client.setPreferences({}),"Failed point UP removed the release barrier");
+        }
+    }
+    ::reset(); QkmIbInputClient draining; const auto drainingRun=draining.requestRun();
+    check(draining.prepareRun(drainingRun,required),"Drain-only fixture failed");
+    bool drained=false;
+    onPause=[&] { drained=draining.releaseOwnedInputs(drainingRun); };
+    check(!draining.sendAbsoluteEvent(mouse(absolute|MOUSEEVENTF_LEFTDOWN),{400,250},drainingRun)
+        && drained && !draining.statusSnapshot().failed,"Stopping state without a new intent admitted a click");
+    for (const auto &event:events) check(event.mi.dwFlags==MOUSEEVENTF_MOVE,"Draining position pressed a button");
+    check(draining.closeAfterDrain(drainingRun),"Drain-only close failed");
+    ::reset(); QkmIbInputClient timed; const auto run=timed.requestRun(); check(timed.prepareRun(run,required),"Budget fixture failed");
+    onPause=[] { std::lock_guard<std::mutex> lock(mutex); QkmIbInputSystem::clock+=250; };
+    check(!timed.sendAbsoluteEvent(mouse(absolute|MOUSEEVENTF_LEFTDOWN),{400,250},run)
+        && events.size()==1 && events.front().mi.dwFlags==MOUSEEVENTF_MOVE,"Expired budget clicked or retried");
+    check(timed.closeAfterDrain(run),"Budget fixture cleanup failed");
+    ::reset(); QkmIbInputClient onlyAbsolute; const auto admitted=onlyAbsolute.requestRun();
+    check(onlyAbsolute.prepareRun(admitted,needs(QkmIbInputClient::AbsoluteMove)),"Absolute-only fixture failed");
+    check(onlyAbsolute.sendAbsoluteEvent(mouse(absolute),{100,80},admitted),"Internal relative step was not admitted");
+    const auto count=events.size();
+    check(!onlyAbsolute.sendEvent(mouse(MOUSEEVENTF_MOVE,1),admitted) && events.size()==count,"Internal step widened ordinary relative admission");
+    check(onlyAbsolute.closeAfterDrain(admitted),"Absolute-only fixture cleanup failed");
 }
 void buttonsCase() {
     QkmIbInputClient client;
@@ -480,7 +659,11 @@ DLLAPI Send::Error __stdcall IbSendInit(Send::SendType type,Send::InitFlags flag
 DLLAPI void __stdcall IbSendDestroy() {}
 DLLAPI UINT WINAPI IbSendInput(UINT count,LPINPUT inputs,int size) {
     check(count==1 && size==sizeof(INPUT),"batched or ABI-incompatible input");
-    events.push_back(*inputs); if (duringSend) duringSend(); return sendFails || (failSendAt && events.size()==static_cast<size_t>(failSendAt)) ? 0 : 1;
+    events.push_back(*inputs); if (duringSend) duringSend();
+    const bool success=!sendFails && !(failSendAt && events.size()==static_cast<size_t>(failSendAt));
+    if (success && inputs->type==INPUT_MOUSE && (inputs->mi.dwFlags & MOUSEEVENTF_MOVE)
+        && !(inputs->mi.dwFlags & MOUSEEVENTF_ABSOLUTE)) QkmIbInputSystem::move(inputs->mi.dx,inputs->mi.dy);
+    return success ? 1 : 0;
 }
 int main(int argc,char **argv) {
     QCoreApplication app(argc,argv);
@@ -488,7 +671,7 @@ int main(int argc,char **argv) {
     try {
 #ifndef QKM_IBINPUT_VALIDATION_PROBE
         {
-            check(QkmIbInputClient::capabilities(QStringLiteral("logitech_ghub"))==(QkmIbInputClient::RelativeMove|QkmIbInputClient::Keyboard|QkmIbInputClient::Buttons|QkmIbInputClient::VerticalWheel),"product capabilities differ from implemented primitives");
+            check(QkmIbInputClient::capabilities(QStringLiteral("logitech_ghub"))==(QkmIbInputClient::RelativeMove|QkmIbInputClient::Keyboard|QkmIbInputClient::Buttons|QkmIbInputClient::VerticalWheel|QkmIbInputClient::AbsoluteMove),"product capabilities differ from implemented primitives");
             QSet<quint16> allowed;
             for (WORD vk='A';vk<='Z';++vk) allowed.insert(vk);
             for (WORD vk='0';vk<='9';++vk) allowed.insert(vk);
@@ -526,12 +709,12 @@ int main(int argc,char **argv) {
             for (const auto &button:mouseButtons) supportedButtons.insert(button.vk);
             for (quint16 vk=0;vk<256;++vk) check(QkmIbInputClient::isSupportedButton(vk)==supportedButtons.contains(vk),"mouse button set differs");
             reset(); razerCase(); reset(); admissionCase(); reset(); restartCase(); reset(); stopActionCase(); reset(); failureCase(); reset(); supersededSendCase(); reset(); reportCase(); reset(); modifiersCase();
-            reset(); absoluteCase(); reset(); horizontalCase(); reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
+            reset(); absoluteCase(); reset(); ghubPositionCase(); reset(); ghubPositionBoundaryCase(); reset(); horizontalCase(); reset(); buttonsCase(); reset(); mouseFailureCase(); reset(); mouseBoundsCase();
             reset(); concurrentCase();
             std::cout<<"PASS simulated production gate: 115 keys, five buttons, wheel units, rejected representations, movement, cancellation, failures, slots and concurrent cleanup; no real input.\n"; return 0;
         }
 #endif
-        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"razer",razerCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"superseded_send",supersededSendCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"absolute",absoluteCase},{"horizontal",horizontalCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
+        const std::pair<const char *,void(*)()> cases[]={{"settings",settingsCase},{"razer",razerCase},{"admission",admissionCase},{"restart",restartCase},{"stop_action",stopActionCase},{"fallback",fallbackCase},{"failure",failureCase},{"superseded_send",supersededSendCase},{"report",reportCase},{"modifiers",modifiersCase},{"mouse",mouseCase},{"capability",capabilityCase},{"absolute",absoluteCase},{"ghub_position",ghubPositionCase},{"ghub_position_boundaries",ghubPositionBoundaryCase},{"horizontal",horizontalCase},{"buttons",buttonsCase},{"mouse_failure",mouseFailureCase},{"mouse_bounds",mouseBoundsCase},{"concurrent",concurrentCase}};
         for (const auto &test:cases) { reset(); test.second(); std::cout<<"PASS simulated client "<<test.first<<'\n'; }
         std::cout<<"No driver initialization, hooks or actual input; formal C API substituted.\n"; return 0;
     } catch (const std::exception &error) { std::cerr<<error.what()<<'\n'; return 2; }

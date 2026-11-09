@@ -182,4 +182,9 @@ C:\Python\Python311\python.exe -B -X utf8 scripts/build_ibinput_dependency.py --
 | lib/x86/IbInputSimulator.dll | 173056 | d0a849fcad2d62c3708be74756371916eeba11066e77d63c8667ca7fdda67435 |
 | lib/x86/IbInputSimulator.lib | 4656 | 197fc68a76e35e36a9fb3c8728e1dab9dfbf05bcf3943dfa63200dfb93faa52d |
 
-A2 G HUB实际定位失败，产品AbsoluteMove开放已撤回，当前仍仅Razer支持；用户明确同意按此收敛。0009数值检查不被当作像素精度、增强指针关闭或实机多屏通过。Qt6普通／正式维护及Qt6／Qt5客户端按保留能力重建回归0；相对／Razer旧实际结果按分支未改复用，未重新跑全部实机输入。原日志冻结out/ibinput/a2-w11-20261105/dependency-{x64,x86}-logs，完整范围见主计划31节；其他发布／许可门槛不变。
+A2时G HUB实际定位失败，产品AbsoluteMove开放已撤回，当时仅Razer支持；用户明确同意按此收敛。0009数值检查不被当作像素精度、增强指针关闭或实机多屏通过。Qt6普通／正式维护及Qt6／Qt5客户端按保留能力重建回归0；相对／Razer旧实际结果按分支未改复用，未重新跑全部实机输入。原日志冻结out/ibinput/a2-w11-20261105/dependency-{x64,x86}-logs，完整范围见主计划31节；其他发布／许可门槛不变。
+
+
+## 2026-11-09 A3第一方定位事务（配套DLL不变）
+
+A3在QkmIbInputClient中通过既有G HUB相对报告和实际指针反馈完成绝对定位，产品能力重新开放；Razer仍走原生绝对报告。未新增第三方补丁，继续使用上述0009两架构制品和原ABI／许可材料。0009报告替身只证明数值契约，不能代替A3实际落点；真实产品路径、EXE和当前范围见主计划34.2／34.3。其他系统指针设置、多屏实机及Razer再分发依据仍不因本切片改变。

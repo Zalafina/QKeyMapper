@@ -20,6 +20,7 @@ public:
         bool connected=false;
         bool stopping=false;
         bool fallback=false;
+        bool failed=false;
         bool releaseIncomplete=false;
         quint64 generation=0;
         QString backend;
@@ -42,6 +43,7 @@ public:
     bool acceptingInput() const { const auto generation=m_requested.load(); return generation && m_acceptingGeneration.load()==generation; }
     bool prepareRun(quint64 generation, const Requirements &requirements);
     bool sendEvent(const INPUT &input, quint64 generation, bool stopAction=false);
+    bool sendAbsoluteEvent(const INPUT &input, POINT screenPoint, quint64 generation, bool stopAction=false);
     bool beginStopAction(quint64 generation);
     bool stopActionAllowed(quint64 generation) const { return generation && generation==m_requested.load() && generation==m_stopGeneration.load(); }
     bool releaseOwnedInputs(quint64 generation);
@@ -54,9 +56,15 @@ private:
     bool fail(const QString &detail,quint64 generation=0);
     bool sendOne(const INPUT &input);
     bool releaseLocked();
+    enum class MoveResult { Reached, Cancelled, Failed };
+    bool runActive(quint64 generation,bool stopAction) const;
+    bool sendEventImpl(const INPUT &input,quint64 generation,bool stopAction,const POINT *screenPoint);
+    MoveResult moveGHubTo(POINT target,quint64 generation,bool stopAction);
+    MoveResult positionFailure(const QString &detail,quint64 generation,bool stopAction);
     bool candidateSupports(const QString &backend, const Requirements &requirements) const;
     mutable QMutex m_statusMutex;
     QMutex m_callMutex;
+    QMutex m_mouseMutex;
     Preferences m_preferences;
     Status m_status;
     Status m_published;

@@ -1,5 +1,6 @@
 #include <QRandomGenerator>
 #include <cmath>
+#include <QGlobalStatic>
 #include <QtMath>
 #include "qkeymapper.h"
 #include "interception_worker.h"
@@ -48,8 +49,8 @@ QList<MAP_KEYDATA> expandedRows(const QList<MAP_KEYDATA> &source) {
 namespace {
 std::atomic<quint64> ibInputGeneration{0};
 std::atomic_bool ibInputFaultReported{false};
-QMutex ibInputSnapshotMutex;
-QSharedPointer<QList<MAP_KEYDATA>> ibInputSnapshot;
+Q_GLOBAL_STATIC(QMutex, ibInputSnapshotMutex)
+Q_GLOBAL_STATIC(QSharedPointer<QList<MAP_KEYDATA>>, ibInputSnapshot)
 QString ibRowLocation(int row) {
     if (row>=0 && row<QKeyMapper::s_ActiveKeyMappingRowSourceInfoList.size()) {
         const auto &source=QKeyMapper::s_ActiveKeyMappingRowSourceInfoList.at(row);
@@ -57,7 +58,10 @@ QString ibRowLocation(int row) {
     }
     return QCoreApplication::translate("QkmIbInputClient","Row %1").arg(row+1);
 }
-QString pureIbKey(QString key) { key.remove(QRegularExpression(QStringLiteral("@[0-9]+$"))); return key; }
+QString pureIbKey(QString key) {
+    static const QRegularExpression suffix(QStringLiteral("@[0-9]+$"));
+    key.remove(suffix); return key;
+}
 QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) {
     const auto rows=QkmIbInputValidation::expandedRows(source);
     static const QRegularExpression pointPattern(QStringLiteral("^%1$").arg(QString::fromLatin1(REGEX_PATTERN_MOUSE_POINT_CLICK))),
@@ -137,7 +141,7 @@ QkmIbInputClient::Requirements ibRequirements(const QList<MAP_KEYDATA> &source) 
     }
     return required;
 }
-bool sendIbEvent(const INPUT &input,quint64 generation,bool stopAction=false) {
+bool sendIbEvent(const INPUT &input,quint64 generation,bool stopAction=false,const POINT *screenPoint=nullptr) {
     auto &client=QkmIbInputClient::instance();
     const auto state=client.statusSnapshot();
     if (!generation || generation!=qkmCurrentIbInputGeneration() || generation!=state.generation) return false;
@@ -148,8 +152,8 @@ bool sendIbEvent(const INPUT &input,quint64 generation,bool stopAction=false) {
         const bool up=(input.type==INPUT_KEYBOARD && (input.ki.dwFlags & KEYEVENTF_KEYUP))
             || (input.type==INPUT_MOUSE && (input.mi.dwFlags & (MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XUP)));
         if (active || up) { INPUT event=input; success=SendInput(1,&event,sizeof(INPUT))==1; }
-    } else success=client.sendEvent(input,generation,stopAction);
-    if (!success && active && generation==client.requestedGeneration()
+    } else success=screenPoint ? client.sendAbsoluteEvent(input,*screenPoint,generation,stopAction) : client.sendEvent(input,generation,stopAction);
+    if (!success && active && (state.fallback || client.statusSnapshot().failed) && generation==client.requestedGeneration()
         && generation==qkmCurrentIbInputGeneration() && !ibInputFaultReported.exchange(true)) {
         client.cancelRun(generation);
         const QString detail=client.statusSnapshot().detail;
@@ -182,7 +186,7 @@ void sendIbAbsolute(INPUT input,POINT point,quint64 generation,bool stopAction,H
     input.type=INPUT_MOUSE;
     input.mi.dx=normalize(point.x,left,width); input.mi.dy=normalize(point.y,top,height);
     input.mi.dwFlags|=MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK;
-    (void)sendIbEvent(input,generation,stopAction);
+    (void)sendIbEvent(input,generation,stopAction,&point);
 }
 }
 quint64 qkmCurrentIbInputGeneration() { return ibInputGeneration.load(); }
@@ -199,7 +203,7 @@ bool QKeyMapper_Worker::prepareIbInputRun(quint64 generation) {
         if (generation==client.requestedGeneration()) emit ibInputFault_Signal(client.statusSnapshot().detail,generation);
         return false;
     }
-    { QMutexLocker lock(&ibInputSnapshotMutex); ibInputSnapshot=QSharedPointer<QList<MAP_KEYDATA>>::create(*QKeyMapper::KeyMappingDataList); }
+    { QMutexLocker lock(ibInputSnapshotMutex()); *ibInputSnapshot()=QSharedPointer<QList<MAP_KEYDATA>>::create(*QKeyMapper::KeyMappingDataList); }
     ibInputFaultReported.store(false); ibInputGeneration.store(generation);
     emit ibInputStatusChanged_Signal(); return true;
 }
@@ -221,7 +225,7 @@ bool QKeyMapper_Worker::finishIbInputRun(bool notify) {
     const auto state=client.statusSnapshot();
     const bool released=state.generation ? client.closeAfterDrain(state.generation) : true;
     ibInputGeneration.store(0);
-    { QMutexLocker lock(&ibInputSnapshotMutex); ibInputSnapshot.clear(); }
+    { QMutexLocker lock(ibInputSnapshotMutex()); ibInputSnapshot()->clear(); }
     if (notify) emit ibInputClosed_Signal(released,client.statusSnapshot().detail);
     return released;
 }
@@ -1345,6 +1349,9 @@ QKeyMapper_Worker::QKeyMapper_Worker(QObject *parent) :
     m_GamdpadMotion(),
     m_GamepadTouchpadStateMap()
 {
+    // Construct storage before this singleton so it outlives the worker destructor.
+    (void)ibInputSnapshotMutex();
+    (void)ibInputSnapshot();
     qRegisterMetaType<HWND>("HWND");
     qRegisterMetaType<V_KEYCODE>("V_KEYCODE");
     qRegisterMetaType<V_MOUSECODE>("V_MOUSECODE");
@@ -3180,10 +3187,11 @@ void QKeyMapper_Worker::onSendInputKeys(int rowindex, QStringList inputKeys, int
     }
     if (ibInputGeneration && (ibInputGeneration!=QkmIbInputClient::instance().requestedGeneration()
         || !QkmIbInputClient::instance().acceptingInput()) && keyupdown==KEY_DOWN) {
-        QMutexLocker snapshotLock(&ibInputSnapshotMutex);
-        if (ibInputSnapshot && rowindex>=0 && rowindex<ibInputSnapshot->size()
-            && ibInputSnapshot->at(rowindex).SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT
-            && !(ibInputSnapshot->at(rowindex).Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR)
+        QMutexLocker snapshotLock(ibInputSnapshotMutex());
+        const auto &snapshot=*ibInputSnapshot();
+        if (snapshot && rowindex>=0 && rowindex<snapshot->size()
+            && snapshot->at(rowindex).SendMappingKeyMethod==SENDMAPPINGKEY_METHOD_IBINPUT
+            && !(snapshot->at(rowindex).Original_Key==QLatin1String(SENDON_MAPPINGSTOP_STR)
                 && QkmIbInputClient::instance().stopActionAllowed(ibInputGeneration))) return;
     }
     SendInputTask *sendInputTask = new SendInputTask(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state, keyMappingDataList, ibInputGeneration);
@@ -21826,7 +21834,7 @@ SendInputTask::SendInputTask(int rowindex, const QStringList &inputKeys, int key
     m_sendvirtualkey_state(sendvirtualkey_state),
     m_ibInputGeneration(ibInputGeneration)
 {
-    if (ibInputGeneration) { QMutexLocker lock(&ibInputSnapshotMutex); m_ibInputSnapshot=ibInputSnapshot; }
+    if (ibInputGeneration) { QMutexLocker lock(ibInputSnapshotMutex()); m_ibInputSnapshot=*ibInputSnapshot(); }
     // Set the real original key
     m_real_originalkey = getRealOriginalKey(original_key);
 

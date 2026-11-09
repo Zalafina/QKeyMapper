@@ -117,13 +117,16 @@ int main(int argc,char **argv) {
         QkmIbInputPopup popup(&host);
         QTranslator translator;
         const QPalette light=app.palette();
-        struct Scene { const char *language; qreal scale; bool dark; RazerChannelView view=RazerChannelView::Live; int backendCase=0; };
+        struct Scene { const char *language; qreal scale; bool dark; RazerChannelView view=RazerChannelView::Live; int backendCase=0; int errorCase=0; };
         const Scene scenes[]={{"zh_CN",1.0,false},{"en_US",1.0,false},{"ja_JP",1.0,false},
             {"zh_CN",1.5,true},{"ja_JP",1.5,true},{"zh_CN",1.0,false,RazerChannelView::Missing},
             {"zh_CN",1.0,false,RazerChannelView::QueryFailed},{"zh_CN",1.0,true},{"zh_CN",1.0,true},
             {"zh_CN",1.0,false,RazerChannelView::Live,1},{"zh_CN",1.0,true,RazerChannelView::Live,2},
             {"en_US",1.0,false,RazerChannelView::Live,3},{"ja_JP",1.5,true,RazerChannelView::Live,4},
-            {"zh_CN",1.0,true,RazerChannelView::Live,3},{"zh_CN",1.0,false,RazerChannelView::Live,4}};
+            {"zh_CN",1.0,true,RazerChannelView::Live,3},{"zh_CN",1.0,false,RazerChannelView::Live,4},
+            {"zh_CN",1.0,true,RazerChannelView::Live,0,1},{"en_US",1.0,false,RazerChannelView::Live,0,1},
+            {"ja_JP",1.5,true,RazerChannelView::Live,0,1},{"zh_CN",1.0,true,RazerChannelView::Live,0,2},
+            {"en_US",1.0,false,RazerChannelView::Live,0,2},{"ja_JP",1.5,true,RazerChannelView::Live,0,2}};
         constexpr int sceneCount=sizeof(scenes)/sizeof(*scenes);
         int index=0,changed=0,connectionRequests=0;
         QObject::connect(&popup,&QkmIbInputPopup::preferencesChanged,&host,[&] { ++changed; });
@@ -384,6 +387,19 @@ int main(int argc,char **argv) {
                     popup.adjustSize(); QTest::qWait(30);
                     check(details->horizontalScrollBar()->maximum()==0 && details->verticalScrollBar()->maximum()==0,"Automatic backend status does not fit");
                 }
+                if (scenes[index].errorCase) {
+                    QkmIbInputClient::Requirements rejection;
+                    const char *source=scenes[index].errorCase==1
+                        ? "Logitech G HUB could not reach (%1, %2); last position: (%3, %4). Mapping must stop."
+                        : "IbInput could not read the cursor position (Windows error %1). Mapping must stop.";
+                    const QString translated=QCoreApplication::translate("QkmIbInputClient",source);
+                    check(language==QStringLiteral("en_US") || translated!=QString::fromLatin1(source),"Position error translation is missing");
+                    rejection.rejection=scenes[index].errorCase==1 ? translated.arg(-3456).arg(7890).arg(-1234).arg(5678) : translated.arg(5);
+                    check(!QkmIbInputClient::instance().prepareRun(QkmIbInputClient::instance().requestRun(),rejection),"Position error fixture was accepted");
+                    popup.connectionChecked(false); popup.adjustSize(); QTest::qWait(30);
+                    check(feedbackText().contains(rejection.rejection) && !feedbackText().contains(QLatin1String("%1")),"Position error text or placeholders were lost");
+                    check(feedback->horizontalScrollBar()->maximum()==0,"Position error did not wrap");
+                }
                 check(!popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))->toPlainText().contains(QStringLiteral("checkpoint"),Qt::CaseInsensitive)
                     && !popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))->toPlainText().contains(QStringLiteral("检查点")),"Developer checkpoint text remains visible");
                 for (auto *widget:QList<QWidget *>{combos[0],combos[1],buttons[0],buttons[1],feedback,popup.findChild<QTextEdit *>(QStringLiteral("ibInputDetails"))}) {
@@ -393,7 +409,7 @@ int main(int argc,char **argv) {
                 const QString label=popup.findChildren<QLabel *>().front()->text();
                 check(language==QStringLiteral("en_US") || label!=QStringLiteral("Preferred backend"),"Runtime language remained English");
                 writeJson(root+QStringLiteral("/scene.json"),{{"index",index},{"language",language},
-                    {"scale",scenes[index].scale},{"dark",scenes[index].dark},{"backend_fixture",scenes[index].backendCase},{"interface_simulation",channelView!=RazerChannelView::Live},{"pid",static_cast<int>(GetCurrentProcessId())},
+                    {"scale",scenes[index].scale},{"dark",scenes[index].dark},{"error_fixture",scenes[index].errorCase},{"feedback",feedbackText()},{"backend_fixture",scenes[index].backendCase},{"interface_simulation",channelView!=RazerChannelView::Live},{"pid",static_cast<int>(GetCurrentProcessId())},
                     {"hwnd",QString::number(static_cast<qulonglong>(popup.winId()))},{"desktop",name},
                     {"label",label},{"width",popup.width()},{"height",popup.height()}});
                 awaitingCapture=true; deadline.restart(); timer.start();

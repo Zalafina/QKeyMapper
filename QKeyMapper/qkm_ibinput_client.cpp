@@ -2,13 +2,32 @@
 #include <QCoreApplication>
 #include <QMutexLocker>
 #include <QSettings>
+#include <QThread>
+#include <algorithm>
+#include <cmath>
+#include <mutex>
+#include <utility>
 #ifdef IBINPUT_SUPPORT
 #include <IbInputSimulator/InputSimulator.hpp>
 #endif
 
+namespace QkmIbInputSystem {
+#ifdef QKM_IBINPUT_CLIENT_TEST
+BOOL cursorPosition(LPPOINT point);
+int metric(int index);
+quint64 ticks();
+void pause();
+#else
+BOOL cursorPosition(LPPOINT point) { return GetCursorPos(point); }
+int metric(int index) { return GetSystemMetrics(index); }
+quint64 ticks() { return GetTickCount64(); }
+void pause() { QThread::msleep(1); }
+#endif
+}
+
 namespace {
-const QString backendKey=QStringLiteral("IbInputPreferredBackend");
-const QString policyKey=QStringLiteral("IbInputUnavailablePolicy");
+constexpr char backendKey[]="IbInputPreferredBackend";
+constexpr char policyKey[]="IbInputUnavailablePolicy";
 bool isRelease(const INPUT &input) {
     return (input.type==INPUT_KEYBOARD && (input.ki.dwFlags & KEYEVENTF_KEYUP))
         || (input.type==INPUT_MOUSE && (input.mi.dwFlags & (MOUSEEVENTF_LEFTUP|MOUSEEVENTF_RIGHTUP|MOUSEEVENTF_MIDDLEUP|MOUSEEVENTF_XUP)));
@@ -19,6 +38,10 @@ quint16 buttonId(const MOUSEINPUT &mouse) {
     if (mouse.dwFlags & (MOUSEEVENTF_MIDDLEDOWN|MOUSEEVENTF_MIDDLEUP)) return VK_MBUTTON;
     if (mouse.dwFlags & (MOUSEEVENTF_XDOWN|MOUSEEVENTF_XUP)) return mouse.mouseData==XBUTTON1 ? VK_XBUTTON1 : VK_XBUTTON2;
     return 0;
+}
+QString cursorPositionError() {
+    const DWORD error=GetLastError();
+    return QCoreApplication::translate("QkmIbInputClient","IbInput could not read the cursor position (Windows error %1). Mapping must stop.").arg(error);
 }
 INPUT releaseButton(quint16 button) {
     INPUT input{}; input.type=INPUT_MOUSE;
@@ -66,7 +89,7 @@ bool QkmIbInputClient::isSupportedButton(quint16 button) {
 }
 unsigned QkmIbInputClient::capabilities(const QString &backend) {
     if (backend==QStringLiteral("logitech_ghub") || backend==QStringLiteral("razer")) {
-        return RelativeMove|Keyboard|Buttons|VerticalWheel|(backend==QStringLiteral("razer") ? HorizontalWheel|AbsoluteMove : 0);
+        return RelativeMove|Keyboard|Buttons|VerticalWheel|AbsoluteMove|(backend==QStringLiteral("razer") ? HorizontalWheel : 0);
     }
     return 0;
 }
@@ -80,11 +103,15 @@ bool QkmIbInputClient::setPreferences(const Preferences &preferences) {
 QkmIbInputClient::Status QkmIbInputClient::statusSnapshot() const { QMutexLocker lock(&m_statusMutex); return m_published; }
 bool QkmIbInputClient::busy() const { const auto state=statusSnapshot(); return state.connected || state.stopping || state.releaseIncomplete || (acceptingInput() && m_requested.load()!=0); }
 void QkmIbInputClient::publish() { m_status.sampledAt=QDateTime::currentDateTimeUtc(); QMutexLocker lock(&m_statusMutex); m_published=m_status; }
-bool QkmIbInputClient::fail(const QString &detail,quint64 generation) { m_status.detail=detail; cancelRun(generation); publish(); return false; }
+bool QkmIbInputClient::fail(const QString &detail,quint64 generation) { m_status.detail=detail; m_status.failed=true; cancelRun(generation); publish(); return false; }
 quint64 QkmIbInputClient::requestRun() { m_stopGeneration.store(0); const quint64 generation=m_requested.fetch_add(1)+1; m_acceptingGeneration.store(generation); return generation; }
 void QkmIbInputClient::cancelRun(quint64 generation) {
     if (!generation) { m_acceptingGeneration.store(0); m_stopGeneration.store(0); }
-    else m_acceptingGeneration.compare_exchange_strong(generation,0);
+    else {
+        auto stopping=generation;
+        m_acceptingGeneration.compare_exchange_strong(generation,0);
+        m_stopGeneration.compare_exchange_strong(stopping,0);
+    }
 }
 bool QkmIbInputClient::candidateSupports(const QString &backend,const Requirements &requirements) const {
     if ((capabilities(backend)&requirements.capabilities)!=requirements.capabilities) return false;
@@ -99,14 +126,15 @@ bool QkmIbInputClient::prepareRun(quint64 generation,const Requirements &require
     m_status=Status{}; m_status.generation=generation; m_runCapabilities=0;
     if (!requirements.rejection.isEmpty()) return fail(requirements.rejection,generation);
     const auto prefs=preferences();
+    const auto ordered=candidates(prefs.backend);
     QStringList eligible;
-    for (const QString &backend:candidates(prefs.backend)) if (candidateSupports(backend,requirements)) eligible.append(backend);
+    for (const QString &backend:ordered) if (candidateSupports(backend,requirements)) eligible.append(backend);
     if (eligible.isEmpty()) return fail(QCoreApplication::translate("QkmIbInputClient","The selected IbInput backend does not support this mapping or still awaits validation."),generation);
 #ifndef IBINPUT_SUPPORT
     return fail(QCoreApplication::translate("QkmIbInputClient","IbInput support is not included in this build."),generation);
 #else
     QStringList failures;
-    for (const QString &backend:eligible) {
+    for (const QString &backend:std::as_const(eligible)) {
         if (generation!=m_requested.load() || !acceptingInput()) return fail(QCoreApplication::translate("QkmIbInputClient","IbInput startup was cancelled."),generation);
         IbSendDestroy();
         const Send::SendType type=backend==QStringLiteral("logitech_ghub") ? Send::SendType::LogitechGHubNew
@@ -135,11 +163,32 @@ bool QkmIbInputClient::sendOne(const INPUT &input) {
     Q_UNUSED(input); return false;
 #endif
 }
+bool QkmIbInputClient::runActive(quint64 generation,bool stopAction) const {
+    return generation && generation==m_requested.load()
+        && (acceptingInput() || (stopAction && stopActionAllowed(generation)));
+}
 bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stopAction) {
+    return sendEventImpl(input,generation,stopAction,nullptr);
+}
+bool QkmIbInputClient::sendAbsoluteEvent(const INPUT &input,POINT screenPoint,quint64 generation,bool stopAction) {
+    return sendEventImpl(input,generation,stopAction,&screenPoint);
+}
+bool QkmIbInputClient::sendEventImpl(const INPUT &input,quint64 generation,bool stopAction,const POINT *screenPoint) {
+    const bool up=isRelease(input);
+    std::unique_lock<QMutex> mouseCall(m_mouseMutex,std::defer_lock);
+    if (input.type==INPUT_MOUSE && (!up || (input.mi.dwFlags & MOUSEEVENTF_MOVE))) {
+        while (!mouseCall.try_lock()) {
+            if (!runActive(generation,stopAction)) { if (!up) return false; break; }
+            QkmIbInputSystem::pause();
+        }
+    }
     QMutexLocker calls(&m_callMutex);
     if (!m_status.connected || generation!=m_status.generation || generation!=m_requested.load()
         || m_status.fallback || ((!acceptingInput() || m_status.stopping) && !isRelease(input)
             && !(stopAction && stopActionAllowed(generation)))) return false;
+    if (screenPoint && (input.type!=INPUT_MOUSE
+        || (input.mi.dwFlags & (MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE))!=(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE)))
+        return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."),generation);
     unsigned needed=0;
     if (input.type==INPUT_KEYBOARD) needed=Keyboard;
     else if (input.type==INPUT_MOUSE) {
@@ -152,10 +201,9 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
         return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput event was not admitted for the current run."),generation);
     if (input.type==INPUT_KEYBOARD) {
         if (!isSupportedKey(input.ki.wVk) || (input.ki.dwFlags & (KEYEVENTF_UNICODE|KEYEVENTF_SCANCODE))) return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput keyboard event."),generation);
-        const bool up=(input.ki.dwFlags & KEYEVENTF_KEYUP)!=0;
         if (!up) {
             if (m_ownedKeys.contains(input.ki.wVk)) return true;
-            int ordinary=0; for (quint16 key:m_ownedKeys) if (!(key>=VK_LSHIFT && key<=VK_RMENU) && key!=VK_LWIN && key!=VK_RWIN) ++ordinary;
+            int ordinary=0; for (quint16 key:std::as_const(m_ownedKeys)) if (!(key>=VK_LSHIFT && key<=VK_RMENU) && key!=VK_LWIN && key!=VK_RWIN) ++ordinary;
             if (ordinary>=6 && !(input.ki.wVk>=VK_LSHIFT && input.ki.wVk<=VK_RMENU) && input.ki.wVk!=VK_LWIN && input.ki.wVk!=VK_RWIN) return fail(QCoreApplication::translate("QkmIbInputClient","The IbInput keyboard report is full."),generation);
             m_ownedKeys.insert(input.ki.wVk);
         }
@@ -181,14 +229,43 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
             return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported combined IbInput mouse event."),generation);
         const quint16 button=buttonId(mouse);
         if (button && !isSupportedButton(button)) return fail(QCoreApplication::translate("QkmIbInputClient","This IbInput mouse button still awaits backend validation."),generation);
-        const bool up=isRelease(input);
-        if (button && !up) m_ownedButtons.insert(button);
         INPUT event=input;
         if (up && (!acceptingInput() || m_status.stopping) && !(stopAction && stopActionAllowed(generation))) {
             // A late point-click UP must release without introducing movement during cleanup.
             event.mi.dwFlags &= ~(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK);
             event.mi.dx=event.mi.dy=0;
         }
+        if (m_status.backend==QStringLiteral("logitech_ghub") && (event.mi.dwFlags & MOUSEEVENTF_ABSOLUTE)) {
+            const bool virtualDesktop=(event.mi.dwFlags & MOUSEEVENTF_VIRTUALDESK)!=0;
+            const int left=virtualDesktop ? QkmIbInputSystem::metric(SM_XVIRTUALSCREEN) : 0;
+            const int top=virtualDesktop ? QkmIbInputSystem::metric(SM_YVIRTUALSCREEN) : 0;
+            const int width=QkmIbInputSystem::metric(virtualDesktop ? SM_CXVIRTUALSCREEN : SM_CXSCREEN);
+            const int height=QkmIbInputSystem::metric(virtualDesktop ? SM_CYVIRTUALSCREEN : SM_CYSCREEN);
+            if (width<=1 || height<=1)
+                return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput mouse event."),generation);
+            const auto pixel=[](LONG normalized,int origin,int extent) {
+                return static_cast<LONG>(qint64(origin)+(qint64(normalized)*(extent-1)+32767)/65535);
+            };
+            POINT target=screenPoint ? *screenPoint : POINT{pixel(mouse.dx,left,width),pixel(mouse.dy,top,height)};
+            target.x=static_cast<LONG>(qBound<qint64>(qint64(left),qint64(target.x),qint64(left)+width-1));
+            target.y=static_cast<LONG>(qBound<qint64>(qint64(top),qint64(target.y),qint64(top)+height-1));
+            calls.unlock();
+            const auto result=moveGHubTo(target,generation,stopAction);
+            calls.relock();
+            if (result!=MoveResult::Reached || !m_status.connected || m_status.generation!=generation
+                || !runActive(generation,stopAction) || (m_status.stopping && !(stopAction && stopActionAllowed(generation)))) {
+                if (up && m_status.connected && m_status.generation==generation && generation==m_requested.load()) {
+                    if (sendOne(releaseButton(button))) m_ownedButtons.remove(button);
+                    else return fail(QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop without retrying another backend."),generation);
+                }
+                return false;
+            }
+            // Move without a new DOWN, then apply the button at the observed destination.
+            event.mi.dwFlags &= ~(MOUSEEVENTF_MOVE|MOUSEEVENTF_ABSOLUTE|MOUSEEVENTF_VIRTUALDESK);
+            event.mi.dx=event.mi.dy=0;
+            if (!button) return true;
+        }
+        if (button && !up) m_ownedButtons.insert(button);
         if (mouse.dwFlags & wheelFlags) {
             const LONG delta=static_cast<LONG>(mouse.mouseData);
             INPUT step=event; step.mi.mouseData=static_cast<DWORD>(delta>0 ? WHEEL_DELTA : -WHEEL_DELTA);
@@ -197,6 +274,79 @@ bool QkmIbInputClient::sendEvent(const INPUT &input,quint64 generation,bool stop
         if (button && up) m_ownedButtons.remove(button);
     } else return fail(QCoreApplication::translate("QkmIbInputClient","Unsupported IbInput event type."),generation);
     return true;
+}
+QkmIbInputClient::MoveResult QkmIbInputClient::positionFailure(const QString &detail,quint64 generation,bool stopAction) {
+    QMutexLocker calls(&m_callMutex);
+    if (!runActive(generation,stopAction) || m_status.generation!=generation || !m_status.connected
+        || (m_status.stopping && !(stopAction && stopActionAllowed(generation))))
+        return MoveResult::Cancelled;
+    fail(detail,generation); return MoveResult::Failed;
+}
+QkmIbInputClient::MoveResult QkmIbInputClient::moveGHubTo(POINT target,quint64 generation,bool stopAction) {
+    // shortcut: synchronous vendor I/O can outlive this budget; cancellation needs upstream support.
+    const quint64 started=QkmIbInputSystem::ticks();
+    const auto position=[](POINT &point) {
+        SetLastError(ERROR_SUCCESS);
+        return QkmIbInputSystem::cursorPosition(&point)!=FALSE;
+    };
+    POINT current{};
+    if (!runActive(generation,stopAction)) return MoveResult::Cancelled;
+    if (!position(current)) return positionFailure(cursorPositionError(),generation,stopAction);
+    double gainX=3.2,gainY=3.2;
+    int sends=0;
+    while (QkmIbInputSystem::ticks()-started<200) {
+        if (!runActive(generation,stopAction)) return MoveResult::Cancelled;
+        const qint64 dx=qint64(target.x)-current.x,dy=qint64(target.y)-current.y;
+        if (std::abs(dx)<=2 && std::abs(dy)<=2) {
+            QkmIbInputSystem::pause();
+            if (!runActive(generation,stopAction)) return MoveResult::Cancelled;
+            if (!position(current)) return positionFailure(cursorPositionError(),generation,stopAction);
+            if (QkmIbInputSystem::ticks()-started<200
+                && std::abs(qint64(target.x)-current.x)<=2 && std::abs(qint64(target.y)-current.y)<=2)
+                return MoveResult::Reached;
+            continue;
+        }
+        if (sends>=32) break;
+        const auto step=[&](qint64 error,double gain) {
+            if (std::abs(error)<=2) return LONG{0};
+            const qint64 value=std::max<qint64>(1,static_cast<qint64>(std::llround(std::abs(error)/(gain*1.25))));
+            const qint64 limit=sends==0 ? 128 : 32767;
+            return static_cast<LONG>((error<0 ? -1 : 1)*qMin(value,limit));
+        };
+        INPUT move{}; move.type=INPUT_MOUSE; move.mi.dwFlags=MOUSEEVENTF_MOVE;
+        move.mi.dx=step(dx,gainX); move.mi.dy=step(dy,gainY);
+        const POINT before=current;
+        {
+            QMutexLocker calls(&m_callMutex);
+            if (!m_status.connected || m_status.generation!=generation || !runActive(generation,stopAction)
+                || (m_status.stopping && !(stopAction && stopActionAllowed(generation))))
+                return MoveResult::Cancelled;
+            // This relative report belongs to the already-admitted absolute transaction.
+            if (!sendOne(move)) {
+                fail(QCoreApplication::translate("QkmIbInputClient","IbInput send failed; mapping must stop without retrying another backend."),generation);
+                return MoveResult::Failed;
+            }
+        }
+        ++sends;
+        for (int sample=0;sample<4;++sample) {
+            QkmIbInputSystem::pause();
+            if (!runActive(generation,stopAction)) return MoveResult::Cancelled;
+            if (!position(current)) return positionFailure(cursorPositionError(),generation,stopAction);
+            if (current.x!=before.x || current.y!=before.y || QkmIbInputSystem::ticks()-started>=200) break;
+        }
+        const auto observe=[](LONG command,qint64 actual,qint64 oldError,qint64 newError,double &gain) {
+            if (!command) return;
+            if (!actual) { gain=qMax(1.0/32.0,gain*0.5); return; }
+            const double observed=std::abs(static_cast<double>(actual)/command);
+            gain=std::clamp((gain+observed)*0.5,1.0/32.0,16.0);
+            if ((oldError<0 && newError>0) || (oldError>0 && newError<0))
+                gain=qMin(16.0,qMax(gain,observed)*1.5);
+        };
+        observe(move.mi.dx,qint64(current.x)-before.x,dx,qint64(target.x)-current.x,gainX);
+        observe(move.mi.dy,qint64(current.y)-before.y,dy,qint64(target.y)-current.y,gainY);
+    }
+    return positionFailure(QCoreApplication::translate("QkmIbInputClient","Logitech G HUB could not reach (%1, %2); last position: (%3, %4). Mapping must stop.")
+        .arg(target.x).arg(target.y).arg(current.x).arg(current.y),generation,stopAction);
 }
 bool QkmIbInputClient::releaseLocked() {
     const auto keys=m_ownedKeys;

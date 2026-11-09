@@ -166,15 +166,15 @@ product_check.pro的horizontal固定用例复用开始／停止／重启／退�
 
 接收器--mouse保留wheel_up/down、wheel_delta(y)及wheel_buttons，新增wheel_left/right和wheel_delta_x；按Qt Windows适配约定，Qt横向角度正为左、负为右，与WM_MOUSEHWHEEL原生符号相反。--self-check通过Qt组件派发两个轴各正负120，不能当真实输入；固定实际运行器另核对原始Q/W/E、左右各一格、左键保持的wheel_buttons、停止／退出UP及FilterKeys不变。源码范围、机器、实际EXE及结果仅见主计划29节。
 
-## IbInput Razer绝对坐标
+## IbInput G HUB／Razer绝对坐标
 
-product_check的absolute固定用例使用razer_absolute_verification.ini：Q屏幕移动、W屏幕左键点按、E保存、R第二落点、T恢复、A窗口客户区移动、S窗口左键点按；方式3、偏好auto并断言实际razer。坐标含逗号的INI值须加引号；Qt6／Qt5均读取原完整字符串。协议沿absolute-started/stopped/restarted/exiting.json及absolute-stop/restart/exit/abort。
+product_check的absolute固定用例使用razer_absolute_verification.ini：Q屏幕移动、W屏幕左键点按、E保存、R第二落点、T恢复、A窗口客户区移动、S窗口左键点按；方式3、显式偏好razer并断言实际razer。ghub_absolute_verification.ini复用相同七行，偏好auto并断言实际logitech_ghub；不是把G HUB旧单次换算作为通过依据。坐标含逗号的INI值须加引号；Qt6／Qt5均读取原完整字符串。协议沿absolute-started/stopped/restarted/exiting.json及absolute-stop/restart/exit/abort。
 
-维护目标核验接收PID／HWND／标题，只为本用例绑定该自有窗口，并断开自身周期进程列表刷新以免其清空测试绑定；断言目标不漂移。这是发送路径夹具，不证明自动进程匹配。absolute-clear-target只清空此绑定并写target-cleared.json，用于检验缺失目标后的UP，不等同实际窗口销毁或PID复用。原始键仍由获准的普通固定运行器生成，真实输出来自正式Worker和Razer DLL。
+维护目标核验接收PID／HWND／标题，只为本用例绑定该自有窗口，并断开自身周期进程列表刷新以免其清空测试绑定；断言目标不漂移。这是发送路径夹具，不证明自动进程匹配。absolute-clear-target只清空此绑定并写target-cleared.json，用于检验缺失目标后的UP，不等同实际窗口销毁或PID复用。原始键仍由获准的普通固定运行器生成，真实输出来自正式Worker和指定后端DLL。G HUB固定absolute-switch-1／2请求通过正常MappingTableSwitchByTabName业务入口切换两张自有表，确认代次更新和旧故障失效；此入口不替代T1的原始键SwitchTab指令证据。
 
-运行器先确认屏幕及ClientToScreen后的落点均在接收客户区；首个移动实际落点通过后才点击。定位／保存恢复用GetCursorPos与接收移动核对，点按用接收DOWN／UP计数；保持时小幅自有移动后检查缺失目标UP、停止／重启／退出释放且无清理跳转。客户端替身覆盖归一化边界、五按钮同包、晚到UP及已准入停止源保留坐标；报告替身覆盖实际Razer Flags／LastX/Y，不替代真实接收。范围／机器／EXE／结果见主计划30节。
+运行器先确认屏幕及ClientToScreen后的落点均在接收客户区；首个移动实际落点通过后才点击。定位／保存恢复用GetCursorPos与接收移动核对，点按用接收DOWN／UP计数及mouse_observations中的实际Windows像素位置；接收器以Qt本地坐标、DPR和ClientToScreen转换，自检仅核对合成事件记录，不当成实际点击。保持时小幅自有移动后检查缺失目标UP、停止／重启／退出释放且无清理跳转。客户端替身覆盖归一化边界、五按钮同包、晚到UP及已准入停止源保留坐标；报告替身覆盖实际Razer Flags／LastX/Y，不替代真实接收。范围／机器／EXE／结果见主计划30节。
 
-logitech_report_test的logitech_absolute组将GetSystemMetrics及GetCursorPos也替换为固定查询：验证负原点、尺寸改变、主屏归一化端点、持有按钮和查询失败／非法边界；不读取或修改实际系统设置。该组证明0009报告数值契约，不证明Windows实际落点。A2实际G HUB加速环境定位失败，生产AbsoluteMove仍仅Razer；不要为使测试通过而自动调整指针设置。主计划31节保留失败及用户取舍。
+logitech_report_test的logitech_absolute组将GetSystemMetrics及GetCursorPos也替换为固定查询：验证负原点、尺寸改变、主屏归一化端点、持有按钮和查询失败／非法边界；不读取或修改实际系统设置。该组证明0009报告数值契约，不证明Windows实际落点。A2单次换算的实际失败及当时收敛决定保留在主计划31节。A3在第一方客户端新增像素反馈事务，达到各轴≤2px并再次采样确认后才点击；0009本身和Razer原生路径不变。不能把替身结果当作Windows实际落点，也不要为使测试通过自动调整指针设置。当前实际G HUB／Razer结果与环境边界见主计划34.2／34.3。
 
 ## IbInput 手柄移动来源
 
@@ -193,3 +193,10 @@ ui_test.pro生成普通权限QKeyMapperIbInputUiTest，显式使用--ibinput-ui-
 每场写scene.json，捕获工作进程须通过STARTUPINFO.lpDesktop在同一私有桌面启动，再调用scripts/capture_ui_snapshots.ps1的-ProcessId／-WindowHandle／-PrintWindow／-NoActivate；捕获后写captured-<序号>应答，最终检查原生退出码和result.json。截图线程留在Default会无法访问目标HWND，不能为此静默改用Default测试；私有Popup截图跳过前台激活可避免激活请求引起的原生关闭事件。NoActivate是可选参数，省略时保留原截图激活行为。此入口只证明真实Popup组件和资源，不证明完整主程序、映射输入或驱动释放；具体运行证据只记在唯一主计划。
 
 客户端superseded_send在真实C API替身内让旧发送遇到新requestRun再失败，检查旧清理不取消新意图；不是真实驱动故障。product_check的save另在私有桌面验证排队故障代次过滤及当前故障仍可显示，只预留／取消客户端意图，不启动映射或发送输入。结果见IbInput主计划34.1。
+
+
+A3客户端ghub_position／ghub_position_boundaries使用固定位置、尺寸和时钟替身，覆盖不同增益、非线性、延迟、过冲、负原点、规范化端点、32次／200ms软件预算、查询／发送失败、失败不点击、持有按钮、并发串行、键盘与纯UP旁路、正常取消和释放失败重启屏障。固定8px步长对特定目标无法达到±2px时必须失败，不放宽成功条件。QKM_IBINPUT_CLIENT_TEST仅用于维护构建，正式目标仍调用真实系统查询。
+
+sendinput_lifecycle维护目标的重启调用显式预留代次，晚到admission用例传0表示非IbInput源。A3接纳只选wait_clear、queue_keyup、cancel_reset、exit_wait、borrowers五个实际任务／排空／退出ASan用例，不发送真实输入；客户端ASan使用C API替身。两者不等同真实驱动输入ASan或Forza全套验收。同步修复Forza状态测试中两处旧重启签名，仅作调用兼容，不修改Forza算法。
+
+U42／U43的六个三语错误场景追加在ui_test原十五场之后，使用负目标坐标与Windows错误5经Requirements.rejection进入真实反馈区；检查QM翻译、占位符、换行及窗口边界，不打开驱动。当前共21场景，证据见主计划34.3。

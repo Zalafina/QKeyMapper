@@ -7305,6 +7305,14 @@ Right-click to cancel.</source>
         <source>Row %1</source>
         <translation>第 %1 行</translation>
     </message>
+    <message>
+        <source>Logitech G HUB could not reach (%1, %2); last position: (%3, %4). Mapping must stop.</source>
+        <translation>罗技 G HUB 未能移动到（%1，%2），最后位置为（%3，%4）。映射必须停止。</translation>
+    </message>
+    <message>
+        <source>IbInput could not read the cursor position (Windows error %1). Mapping must stop.</source>
+        <translation>IbInput 无法读取鼠标指针位置（Windows 错误 %1）。映射必须停止。</translation>
+    </message>
 </context>
 <context>
     <name>QkmIbInputPopup</name>

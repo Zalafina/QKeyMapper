@@ -871,3 +871,23 @@ U13为RichText，两个固定网址保持；其他项单行，U14／U15各有一
 | English | Logitech G HUB |
 | 中文 | 罗技 G HUB |
 | 日本語 | Logitech G HUB |
+
+## 2026-11-09 A3 定位失败提示（用户已批准U42／U43）
+
+上下文QkmIbInputClient；仅新增失败时的解释，不新增设置项或改变已批准布局。占位符均为实际坐标／即时Windows错误，不将未到位写成成功。用户批准后已通过lupdate-pro／lrelease更新正式TS／QM；QM回转及六个实际Popup三语错误截图检查通过，详见主计划34.3。G HUB精度说明随IbInput完整手册统一更新。
+
+### U42 — 有界逼近未到位；%1／%2目标像素，%3／%4最后有效位置。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `Logitech G HUB could not reach (%1, %2); last position: (%3, %4). Mapping must stop.` |
+| 中文 | `罗技 G HUB 未能移动到（%1，%2），最后位置为（%3，%4）。映射必须停止。` |
+| 日本語 | `Logitech G HUB で（%1, %2）に移動できませんでした。最終位置：（%3, %4）。マッピングを停止します。` |
+
+### U43 — 读取位置失败；%1为调用失败后立即取得的Windows错误码。
+
+| 语言 | 建议文字 |
+|---|---|
+| English | `IbInput could not read the cursor position (Windows error %1). Mapping must stop.` |
+| 中文 | `IbInput 无法读取鼠标指针位置（Windows 错误 %1）。映射必须停止。` |
+| 日本語 | `IbInput でマウスポインターの位置を取得できません（Windows エラー %1）。マッピングを停止します。` |

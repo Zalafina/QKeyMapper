@@ -8,6 +8,7 @@
 #include <QTimer>
 #include "../../qkeymapper_worker.h"
 #include "../../qkeymapper.h"
+#include "../../qkm_ibinput_client.h"
 
 namespace {
 using namespace QKeyMapperConstants;
@@ -214,7 +215,7 @@ void installRepeatTest(QKeyMapper_Worker *worker, const QString &mode)
                 }
                 if (spec.action == QStringLiteral("retrigger")) { trigger(true); }
                 else if (spec.action == QStringLiteral("stop")) { worker->setWorkerKeyUnHook(); }
-                else if (spec.action == QStringLiteral("restart")) { worker->setKeyMappingRestart(); }
+                else if (spec.action == QStringLiteral("restart")) { worker->setKeyMappingRestart(QkmIbInputClient::instance().requestRun()); }
                 else if (spec.action == QStringLiteral("release")) {
                     QKeyMapper_Worker::pressedRealKeysList.removeAll(original);
                     worker->emit_sendInputKeysSignal_Wrapper(0, data->first().Mapping_Keys, KEY_UP, data->first().Original_Key,
@@ -358,7 +359,7 @@ void installLifecycleTest()
                     SendInputTask::clearSendInputTaskControllerMap();
                 } else if (mode == QStringLiteral("stop") || mode == QStringLiteral("restart")) {
                     if (mode == QStringLiteral("stop")) { worker->setWorkerKeyUnHook(); }
-                    else { worker->setKeyMappingRestart(); }
+                    else { worker->setKeyMappingRestart(QkmIbInputClient::instance().requestRun()); }
                     for (auto &entry : SendInputTask::s_SendInputTaskControllerMap) {
                         result->passed = result->passed && entry.task_threadpool->waitForDone(1000);
                     }
@@ -374,8 +375,8 @@ void installLifecycleTest()
                         SendInputTask::clearSendInputTaskControllerMap();
                     } else if (mode == QStringLiteral("admission")) {
                         result->passed = result->passed && QMetaObject::invokeMethod(worker, "shutdownSendInputTasks", Qt::DirectConnection);
-                        worker->onSendInputKeys(-1, keys, KEY_DOWN, QStringLiteral("QkmLate"), SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, nullptr);
-                        worker->onSendInputKeys(-1, keys, KEY_UP, QStringLiteral("QkmLate"), SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, nullptr);
+                        worker->onSendInputKeys(-1, keys, KEY_DOWN, QStringLiteral("QkmLate"), SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, nullptr, 0);
+                        worker->onSendInputKeys(-1, keys, KEY_UP, QStringLiteral("QkmLate"), SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, nullptr, 0);
                     }
                 }
                 result->cleanupMs = elapsed.elapsed();

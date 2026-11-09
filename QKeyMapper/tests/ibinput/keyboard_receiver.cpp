@@ -14,6 +14,7 @@
 #include <QTimer>
 #include <QWidget>
 #include <Windows.h>
+#include "../../qkeymapper_qt_compat.h"
 
 namespace {
 QString output;
@@ -73,6 +74,7 @@ public:
             {"key_events",m_keyEvents},{"key_observations",m_observations},{"events_truncated",m_eventsTruncated}};
         if (m_mouse) {
             value.insert(QStringLiteral("mouse_down"),m_mouseDown); value.insert(QStringLiteral("mouse_up"),m_mouseUp);
+            value.insert(QStringLiteral("mouse_observations"),m_mouseObservations);
             value.insert(QStringLiteral("mouse_buttons"),static_cast<int>(m_mouseButtons));
             value.insert(QStringLiteral("moves"),m_moves); value.insert(QStringLiteral("move_buttons"),static_cast<int>(m_moveButtons));
             value.insert(QStringLiteral("wheel_up"),m_wheelUp); value.insert(QStringLiteral("wheel_down"),m_wheelDown);
@@ -120,10 +122,24 @@ protected:
         if (!event->isAutoRepeat()) observe(event->nativeVirtualKey(),true,event->nativeScanCode(),event->modifiers());
         event->accept();
     }
+    void observeMouse(const QMouseEvent *event,bool up) {
+        if (m_mouseObservations.size()>=128) { m_eventsTruncated=true; return; }
+        QPoint point=QKeyMapperQtCompat::mouseEventGlobalPos(event);
+        bool valid=true;
+        if (m_live) {
+            POINT origin{};
+            valid=ClientToScreen(reinterpret_cast<HWND>(winId()),&origin)!=FALSE;
+            const QPoint local=QKeyMapperQtCompat::mouseEventLocalPos(event);
+            point=QPoint(origin.x+qRound(local.x()*devicePixelRatioF()),origin.y+qRound(local.y()*devicePixelRatioF()));
+        }
+        m_mouseObservations.append(QJsonObject{{"button",static_cast<int>(event->button())},{"up",up},
+            {"x",point.x()},{"y",point.y()},{"pixel_position_valid",valid},{"buttons",static_cast<int>(event->buttons())}});
+    }
     void mousePressEvent(QMouseEvent *event) override {
         if (!m_mouse) { QWidget::mousePressEvent(event); return; }
         const QString key=QString::number(static_cast<int>(event->button()));
         m_mouseDown[key]=m_mouseDown.value(key).toInt()+1; m_mouseButtons=event->buttons();
+        observeMouse(event,false);
         if (m_live) publish();
         update(); event->accept();
     }
@@ -132,6 +148,7 @@ protected:
         if (!m_mouse) { QWidget::mouseReleaseEvent(event); return; }
         const QString key=QString::number(static_cast<int>(event->button()));
         m_mouseUp[key]=m_mouseUp.value(key).toInt()+1; m_mouseButtons=event->buttons();
+        observeMouse(event,true);
         if (m_live) publish();
         update(); event->accept();
     }
@@ -163,6 +180,7 @@ private:
     QSet<quint32> m_pressed;
     QJsonObject m_down,m_up;
     QJsonArray m_keyEvents,m_observations;
+    QJsonArray m_mouseObservations;
     bool m_eventsTruncated=false;
 };
 }
@@ -231,6 +249,13 @@ int main(int argc,char **argv) {
             QApplication::sendEvent(&mouse,&wheel);
         }
         const auto observed=mouse.state();
+        const auto mouseEvents=observed.value(QStringLiteral("mouse_observations")).toArray();
+        if (mouseEvents.size()!=10) return 2;
+        for (int index=0;index<mouseEvents.size();++index) {
+            const auto event=mouseEvents.at(index).toObject();
+            if (event.value(QStringLiteral("x")).toInt()!=40 || event.value(QStringLiteral("y")).toInt()!=40
+                || event.value(QStringLiteral("up")).toBool()!=(index%2==1)) return 2;
+        }
         const QString snapshot=qEnvironmentVariable("QKM_IBINPUT_RECEIVER_SNAPSHOT");
         if (!snapshot.isEmpty()) {
             QFile desktop(snapshot+QStringLiteral(".desktop"));

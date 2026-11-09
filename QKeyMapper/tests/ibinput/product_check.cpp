@@ -259,6 +259,9 @@ quint64 tableRaceIntent=0;
 struct TableRaceGate { QSemaphore release; std::atomic_bool timedOut{false}; };
 QSharedPointer<TableRaceGate> tableRaceGate;
 bool absoluteTargetCleared=false;
+QString absoluteOriginalTable;
+int absoluteSwitches=0;
+bool absoluteSwitchPending=false;
 struct MotionProbe { std::atomic_bool done{false}; bool valid=false; };
 QSharedPointer<MotionProbe> motionProbe;
 QSharedPointer<QJoystickDevice> motionDevice;
@@ -463,8 +466,20 @@ void verifyInputProduct(QKeyMapper *window) {
             }
             check(detached==1,"Owned HWND fixture could not detach process-list refresh");
         }
-        if (horizontal || absolute) check(client.preferences().backend==QStringLiteral("auto") && expectedBackend==QStringLiteral("razer"),
-            "Fixture must test automatic Razer selection");
+        if (horizontal) check(client.preferences().backend==QStringLiteral("auto") && expectedBackend==QStringLiteral("razer"),
+            "Horizontal fixture must test automatic Razer selection");
+        if (absolute) {
+            check(client.preferences().backend==(expectedBackend==QStringLiteral("logitech_ghub") ? QStringLiteral("auto") : QStringLiteral("razer")),
+                "Absolute fixture preference differs from its expected backend");
+            if (expectedBackend==QStringLiteral("logitech_ghub")) {
+                const auto copy=*rows;
+                const int original=QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+                absoluteOriginalTable=QKeyMapper::s_KeyMappingTabInfoList.at(original).TabName;
+                check(window->addTabToKeyMappingTabWidget(QStringLiteral("IbAbsoluteOther"),false),"Cannot add owned coordinate table");
+                *QKeyMapper::s_KeyMappingTabInfoList.last().KeyMappingData=copy;
+                check(QKeyMapper::s_KeyMappingTabWidgetCurrentIndex==original,"Coordinate fixture changed the initial table");
+            }
+        }
         if (motion) {
             check(client.preferences().backend==expectedBackend,"Motion fixture must use its explicit backend");
             motionDevice=QSharedPointer<QJoystickDevice>::create();
@@ -529,6 +544,28 @@ void verifyInputProduct(QKeyMapper *window) {
         }
         inputRecord(inputPhase==1 ? QStringLiteral("started.json") : QStringLiteral("restarted.json"),started);
         inputPhase=inputPhase==1 ? 2 : 5;
+    }
+    if (absolute && expectedBackend==QStringLiteral("logitech_ghub") && inputPhase==2 && absoluteSwitches<2) {
+        if (!absoluteSwitchPending && QFile::exists(prefix+QStringLiteral("switch-%1").arg(absoluteSwitches+1))) {
+            window->MappingTableSwitchByTabName(absoluteSwitches==0 ? QStringLiteral("IbAbsoluteOther") : absoluteOriginalTable,false);
+            absoluteSwitchPending=true;
+            return;
+        }
+        if (absoluteSwitchPending) {
+            if (status.connected && status.backend==expectedBackend && !status.fallback
+                && status.generation==client.requestedGeneration() && status.generation>inputGeneration
+                && QKeyMapper_Worker::s_AtomicHookProcState==QKeyMapperConstants::HOOKPROC_STATE_STARTED
+                && window->findChild<QToolButton *>(QStringLiteral("keymapButton"))->isEnabled()) {
+                const auto old=inputGeneration;
+                inputGeneration=status.generation; QKeyMapper::s_CurrentMappingHWND=inputReceiver;
+                emit QKeyMapper_Worker::getInstance()->ibInputFault_Signal(QStringLiteral("Owned stale coordinate-table fault"),old);
+                inputRecord(QStringLiteral("switched-%1.json").arg(++absoluteSwitches),
+                    {{"generation",static_cast<qint64>(inputGeneration)},{"backend",status.backend},
+                        {"table",QKeyMapper::s_KeyMappingTabWidgetCurrentIndex},{"released_previous",!status.releaseIncomplete}});
+                absoluteSwitchPending=false;
+            }
+            return;
+        }
     }
     if (absolute && inputPhase==2 && !absoluteTargetCleared && QFile::exists(prefix+QStringLiteral("clear-target"))) {
         QKeyMapper::s_CurrentMappingHWND=nullptr; absoluteTargetCleared=true;
