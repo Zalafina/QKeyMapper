@@ -26,7 +26,7 @@ struct PairCredential {
 
 bool validPairCredential(const PairCredential &credential);
 
-enum class PairStoreError { None, InvalidData, InvalidContext, UnsafeStorage, IoError, ProtectionFailed, Busy };
+enum class PairStoreError { None, InvalidData, InvalidContext, UnsafeStorage, IoError, ProtectionFailed, Busy, Conflict };
 
 class PairCredentialStore {
 public:

@@ -10,6 +10,8 @@ IB-MCP-138（2026-11-09，PC-W11）：[固定接纳的选定验证](ibinput_mcp_
 
 IB-MCP-139（2026-11-10，PC-W11）：[同页Popup续验](ibinput_mcp_integration_validation.md)，含当前Qt6普通产品／真实GUI、独立窗口权限、双Qt组件、中文PNG及私有演示逐API零调用；失败轮次与外部PrintWindow未验证分别保留。无新增Default输入或Win10验收。
 
+PERSIST-137-A（2026-11-10，PC-W11）：[底层共享配对／撤销选验](qkeymapper_mcp_automation_plan_codex.md#persist-137-a)，双Qt普通组件、真实独立子进程与六项认证时点拒绝；正式v2产品／跨登录和PC重启不由该结果证明。
+
 ## MAP-20261025-67-B1：基本添加正式接线
 
 PC-W10／4c5d04f3+本提交；[版本、EXE、结果及缺口](map67b1_validation.md)。双Qt普通Release、维护各11／SDK各12／product warm各26／源共通各12通过；Qt6 Default实际A→B、编辑拒绝、同步组陈旧及中文截图通过。当前12工具／8能力；显式保存／映射冷启动／MCP启停仍未接。DP请求后代表组未见异常，物理电源未知。四态采样有噪声及查询开销，不称完整无退化。

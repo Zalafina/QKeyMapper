@@ -38,7 +38,8 @@ struct AutomationRequest {
 class AutomationSessionServer : public QObject {
     Q_OBJECT
 public:
-    AutomationSessionServer(QString storeDirectory, QByteArray applicationBinding, QObject *parent = nullptr);
+    AutomationSessionServer(QString storeDirectory, QByteArray applicationBinding, QObject *parent = nullptr,
+                            QString pairDirectory = {});
     ~AutomationSessionServer() override;
     bool enable();
     void disable();
@@ -58,7 +59,7 @@ public:
     bool revoke(const QString &pairId);
     bool updatePermissions(const QString &pairId, quint32 scopes);
     void setRequestHandler(std::function<void(AutomationRequest)> handler);
-    bool isRequestCurrent(const AutomationRequest &request) const;
+    bool isRequestCurrent(const AutomationRequest &request);
     bool reply(const QString &connectionId, const QString &requestId, const QJsonObject &result);
     bool replyCapabilities(const QString &connectionId, const QString &requestId,
                            const QJsonArray &businessCapabilities);
@@ -83,9 +84,15 @@ private:
     QJsonObject challengeMessage(bool pairing) const;
     bool sendReply(const QString &connectionId, const QString &requestId, QJsonObject response);
     int findPair(const QString &pairId) const;
+    bool readCredentials(QList<PairCredential> &credentials, PairStoreError &error, bool create = false) const;
+    bool reloadCredentials(bool create = false);
+    bool refreshAuthentication();
+    bool updateCredentials(const std::function<bool(QList<PairCredential> &)> &change);
 
     LocalPipeListener m_listener;
     QString m_directory;
+    QString m_pairDirectory;
+    bool m_sharedStore = false;
     QString m_discoveryInstance;
     HANDLE m_discoveryLease = INVALID_HANDLE_VALUE;
     QString m_demoConfiguration;

@@ -141,6 +141,14 @@ PairCredential storeCredential()
             (std::numeric_limits<quint64>::max)(), KnownScopes, QByteArray(AuthSecretBytes, 'k')};
 }
 
+QString testDesktop()
+{
+    wchar_t name[256]{};
+    DWORD needed = 0;
+    return GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, name, sizeof(name), &needed)
+        ? QString::fromWCharArray(name) : QString();
+}
+
 QByteArray readTestFile(const QString &path)
 {
     QFile file(path);
@@ -167,6 +175,23 @@ int runStoreReader(const QStringList &arguments)
     return actual.pairId == expected.pairId && actual.clientName == expected.clientName
         && actual.permissionEpoch == expected.permissionEpoch && actual.scopes == expected.scopes
         && actual.secret == expected.secret ? 0 : 42;
+}
+
+int runSharedStoreWriter(const QStringList &arguments)
+{
+    if (arguments.size() != 7) return 100;
+    const QString expected = qEnvironmentVariable("QKM_TEST_DESKTOP");
+    if (!expected.isEmpty() && testDesktop() != expected) return 105;
+    AutomationSessionServer server(arguments.at(3), arguments.at(4).toUtf8(), nullptr, arguments.at(2));
+    if (configurationOnlyDemo() && !server.setDemoConfiguration(QStringLiteral("Persist137Shared"))) return 101;
+    if (!server.enable()) return 102;
+    QFile output, input;
+    if (!output.open(stdout, QIODevice::WriteOnly) || output.write("loaded\n") != 7 || !output.flush()
+        || !input.open(stdin, QIODevice::ReadOnly) || input.readLine(32).trimmed() != QByteArray("apply")) return 103;
+    bool valid = false;
+    const quint32 scopes = arguments.at(6).toUInt(&valid);
+    if (!valid || !isLowerHex(arguments.at(5), 32)) return 104;
+    return server.updatePermissions(arguments.at(5), scopes) ? 0 : 100 + int(server.lastStoreError());
 }
 
 int runSessionClient(const QStringList &arguments)
@@ -256,11 +281,17 @@ int runSessionClient(const QStringList &arguments)
     if (mode == QStringLiteral("reflection")) proof = QByteArray::fromHex(proofHex.toLatin1());
     if (mode == QStringLiteral("pair-bad-confirm"))
         proof = authenticationProof(binding, nonce, ProofRole::Client, credential.secret);
+    if (mode == QStringLiteral("changed-before-proof")) {
+        QFile output, input;
+        if (!output.open(stdout, QIODevice::WriteOnly) || output.write("proof\n") != 6 || !output.flush()
+            || !input.open(stdin, QIODevice::ReadOnly) || input.readLine(32).trimmed() != QByteArray("continue")) return 94;
+    }
     if (!send({{QStringLiteral("type"), pairing ? QStringLiteral("pair.confirm") : QStringLiteral("proof")},
                {QStringLiteral("proof"), QString::fromLatin1(proof.toHex())}})) return 76;
     QJsonObject ready;
     const bool rejectProof = mode == QStringLiteral("bad-proof") || mode == QStringLiteral("reflection")
-        || mode == QStringLiteral("pair-bad-confirm") || mode == QStringLiteral("pair-store-failure");
+        || mode == QStringLiteral("pair-bad-confirm") || mode == QStringLiteral("pair-store-failure")
+        || mode == QStringLiteral("changed-before-proof");
     if (!receiveMessage(socket, reader, ready))
         return rejectProof && socket.state() == QLocalSocket::UnconnectedState ? 0 : 77;
     if (rejectProof) return 78;
@@ -509,6 +540,10 @@ private slots:
     void demoRecordLifecycle();
     void discoveryRejectsMetadata();
     void sessionPairAndReconnect();
+    void sessionSharedStore();
+    void sessionSharedStoreWriters();
+    void sessionSharedStoreRevalidation_data();
+    void sessionSharedStoreRevalidation();
     void sessionWindowPermissions();
     void sessionRejectedPairing_data();
     void sessionRejectedPairing();
@@ -1848,6 +1883,238 @@ void McpIpcTest::sessionPairAndReconnect()
     QVERIFY(records.isEmpty());
 }
 
+void McpIpcTest::sessionSharedStore()
+{
+    const QString desktop = testDesktop();
+    QVERIFY(!desktop.isEmpty());
+    if (qEnvironmentVariableIsSet("QKM_TEST_DESKTOP")) QCOMPARE(desktop, qEnvironmentVariable("QKM_TEST_DESKTOP"));
+    qInfo("Shared-store PID %lu, actual desktop %s", GetCurrentProcessId(), qPrintable(desktop));
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/shared-sessions-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString shared = temporary.path() + QStringLiteral("/pairs");
+    AutomationSessionServer first(temporary.path() + QStringLiteral("/runtime-a"), "test-shared", nullptr, shared);
+    AutomationSessionServer second(temporary.path() + QStringLiteral("/runtime-b"), "test-shared", nullptr, shared);
+    if (configurationOnlyDemo()) {
+        QVERIFY(first.setDemoConfiguration(QStringLiteral("Persist137Shared")));
+        QVERIFY(second.setDemoConfiguration(QStringLiteral("Persist137Shared")));
+    }
+    QVERIFY(first.refreshPairings());
+    QVERIFY(!QFileInfo::exists(shared));
+    QVERIFY(first.enable());
+    QVERIFY(second.enable());
+    AutomationSessionServer duplicate(temporary.path() + QStringLiteral("/runtime-a"), "test-shared", nullptr, shared);
+    if (configurationOnlyDemo()) QVERIFY(duplicate.setDemoConfiguration(QStringLiteral("Persist137Shared")));
+    QVERIFY(!duplicate.enable());
+    QCOMPARE(duplicate.lastStoreError(), PairStoreError::Busy);
+    for (auto *server : {&first, &second}) {
+        connect(server, &AutomationSessionServer::pairingRequested, this, [server](const PairingRequest &request) {
+            QVERIFY(server->approvePairing(request.requestId, Read));
+        });
+        server->setRequestHandler([server](const AutomationRequest &request) {
+            QVERIFY(server->isRequestCurrent(request));
+            QVERIFY(server->reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+        });
+    }
+    const QString firstClient = temporary.path() + QStringLiteral("/client-a");
+    const QString secondClient = temporary.path() + QStringLiteral("/client-b");
+    const auto run = [&](AutomationSessionServer &server, const QString &clientDirectory, const QString &mode) {
+        SessionChild child;
+        if (!child.launch(server, clientDirectory, mode)) return false;
+        QElapsedTimer timer; timer.start();
+        while (child.state() != QProcess::NotRunning && timer.elapsed() < 5000) QTest::qWait(10);
+        return child.state() == QProcess::NotRunning && child.exitStatus() == QProcess::NormalExit && child.exitCode() == 0;
+    };
+    QVERIFY(run(first, firstClient, QStringLiteral("pair")));
+    QTRY_VERIFY_WITH_TIMEOUT(first.acceptingConnections(), 3000);
+    const QString firstPair = first.pairings().first().pairId;
+    QVERIFY(run(second, secondClient, QStringLiteral("pair")));
+    QTRY_VERIFY_WITH_TIMEOUT(second.acceptingConnections(), 3000);
+    QCOMPARE(first.pairings().size(), 1);
+    QCOMPARE(second.pairings().size(), 2);
+    QVERIFY(first.updatePermissions(firstPair, Read | ShowWindows));
+    QCOMPARE(first.pairings().size(), 2);
+    QVERIFY(!second.updatePermissions(firstPair, Read | CaptureWindows));
+    QCOMPARE(second.lastStoreError(), PairStoreError::Conflict);
+    QVERIFY(second.isEnabled());
+    QVERIFY(second.refreshPairings());
+    QVERIFY(second.updatePermissions(firstPair, Read | CaptureWindows));
+    PairCredentialStore store(shared, "test-shared");
+    const QByteArray saved = readTestFile(store.filePath());
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    QVERIFY(own.ok());
+    Storage::DirectoryLease busy;
+    QVERIFY(busy.acquire(shared, own.identity.userSid, false));
+    QVERIFY(!first.updatePermissions(firstPair, Read));
+    QCOMPARE(first.lastStoreError(), PairStoreError::Busy);
+    QVERIFY(first.isEnabled());
+    QCOMPARE(readTestFile(store.filePath()), saved);
+    busy.release();
+    AutomationRequest old;
+    first.setRequestHandler([&](const AutomationRequest &request) {
+        old = request;
+        QVERIFY(first.isRequestCurrent(request));
+        QVERIFY(second.revoke(request.pairId));
+        QVERIFY(!first.isRequestCurrent(request));
+        QVERIFY(!first.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+    });
+    QVERIFY(run(first, firstClient, QStringLiteral("disabled-in-handler")));
+    QTRY_VERIFY_WITH_TIMEOUT(first.acceptingConnections(), 3000);
+    QVERIFY(run(first, firstClient, QStringLiteral("revoked")));
+    QTRY_VERIFY_WITH_TIMEOUT(first.acceptingConnections(), 3000);
+    QVERIFY(first.refreshPairings());
+    QCOMPARE(first.pairings().size(), 1);
+    first.setRequestHandler([&](const AutomationRequest &request) {
+        Storage::DirectoryLease held;
+        QVERIFY(held.acquire(shared, own.identity.userSid, false));
+        QVERIFY(!first.isRequestCurrent(old));
+        held.release();
+        QVERIFY(first.isRequestCurrent(request));
+        QVERIFY(first.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+    });
+    QVERIFY(run(first, secondClient, QStringLiteral("auth")));
+    first.disable(); second.disable();
+    AutomationSessionServer offline(temporary.path() + QStringLiteral("/runtime-offline"), "test-shared", nullptr, shared);
+    QVERIFY(offline.refreshPairings());
+    QCOMPARE(offline.pairings().size(), 1);
+    QVERIFY(offline.revoke(offline.pairings().first().pairId));
+    QVERIFY(first.refreshPairings());
+    QVERIFY(first.pairings().isEmpty());
+}
+
+void McpIpcTest::sessionSharedStoreWriters()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/shared-writers-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString shared = temporary.path() + QStringLiteral("/pairs");
+    PairCredential first = storeCredential(), second = first;
+    first.permissionEpoch = second.permissionEpoch = 1;
+    first.scopes = second.scopes = Read;
+    second.pairId = QString(32, QLatin1Char('b'));
+    PairCredentialStore store(shared, "test-shared-writers");
+    PairStoreError error;
+    QVERIFY(store.save({first, second}, error));
+    const auto launch = [&](SessionChild &child, const QString &runtime, const QString &pair, quint32 scopes) {
+        child.start(QCoreApplication::applicationFilePath(), {QStringLiteral("--shared-store-writer"), shared,
+            temporary.path() + runtime, QStringLiteral("test-shared-writers"), pair, QString::number(scopes)});
+        const bool readable = child.waitForStarted(3000) && child.waitForReadyRead(3000);
+        const QByteArray acknowledgement = readable ? child.readLine() : QByteArray();
+        const bool loaded = acknowledgement.trimmed() == QByteArray("loaded");
+        qInfo("Shared writer acknowledgement bytes %s", acknowledgement.toHex().constData());
+        if (!loaded) qWarning("Shared writer did not load: exit=%s, stderr=%s",
+            qPrintable(child.state() == QProcess::NotRunning ? QString::number(child.exitCode()) : QStringLiteral("missing")),
+            child.readAllStandardError().constData());
+        return loaded;
+    };
+    const auto apply = [](SessionChild &child) {
+        if (child.write("apply\n") != 6 || !child.waitForFinished(3000) || child.exitStatus() != QProcess::NormalExit) return -1;
+        return child.exitCode();
+    };
+    SessionChild writerA, writerB;
+    QVERIFY(launch(writerA, QStringLiteral("/writer-a"), first.pairId, Read | ShowWindows));
+    QVERIFY(launch(writerB, QStringLiteral("/writer-b"), second.pairId, Read | CaptureWindows));
+    QCOMPARE(apply(writerA), 0);
+    QCOMPARE(apply(writerB), 0);
+    QList<PairCredential> actual;
+    QVERIFY(store.load(actual, error));
+    QCOMPARE(actual.size(), 2);
+    QCOMPARE(actual.at(0).permissionEpoch, quint64(2));
+    QCOMPARE(actual.at(1).permissionEpoch, quint64(2));
+    QCOMPARE(actual.at(0).scopes, quint32(Read | ShowWindows));
+    QCOMPARE(actual.at(1).scopes, quint32(Read | CaptureWindows));
+    SessionChild stale, blocked;
+    QVERIFY(launch(stale, QStringLiteral("/stale"), first.pairId, Read));
+    AutomationSessionServer newer(temporary.path() + QStringLiteral("/newer"), "test-shared-writers", nullptr, shared);
+    if (configurationOnlyDemo()) QVERIFY(newer.setDemoConfiguration(QStringLiteral("Persist137Shared")));
+    QVERIFY(newer.enable());
+    QVERIFY(newer.updatePermissions(first.pairId, Read | ShowWindows | CaptureWindows));
+    const QByteArray saved = readTestFile(store.filePath());
+    QCOMPARE(apply(stale), 100 + int(PairStoreError::Conflict));
+    QCOMPARE(readTestFile(store.filePath()), saved);
+    QVERIFY(launch(blocked, QStringLiteral("/blocked"), first.pairId, Read));
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    QVERIFY(own.ok());
+    Storage::DirectoryLease held;
+    QVERIFY(held.acquire(shared, own.identity.userSid, false));
+    QCOMPARE(apply(blocked), 100 + int(PairStoreError::Busy));
+    QCOMPARE(readTestFile(store.filePath()), saved);
+}
+
+void McpIpcTest::sessionSharedStoreRevalidation_data()
+{
+    QTest::addColumn<QString>("fault");
+    for (const char *name : {"proof-revoke", "request-revoke", "request-corrupt", "request-busy", "reply-revoke", "async-revoke"})
+        QTest::newRow(name) << QString::fromLatin1(name);
+}
+
+void McpIpcTest::sessionSharedStoreRevalidation()
+{
+    QFETCH(QString, fault);
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/shared-revalidation-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const QString shared = temporary.path() + QStringLiteral("/pairs");
+    const QString client = temporary.path() + QStringLiteral("/client");
+    PairCredential credential = storeCredential();
+    credential.permissionEpoch = 1; credential.scopes = Read;
+    PairStoreError error;
+    PairCredentialStore store(shared, "test-shared-guard"), clientStore(client, "test-session-client");
+    QVERIFY(store.save({credential}, error));
+    QVERIFY(clientStore.save({credential}, error));
+    const QByteArray saved = readTestFile(store.filePath());
+    AutomationSessionServer first(temporary.path() + QStringLiteral("/runtime-a"), "test-shared-guard", nullptr, shared);
+    AutomationSessionServer second(temporary.path() + QStringLiteral("/runtime-b"), "test-shared-guard", nullptr, shared);
+    if (configurationOnlyDemo()) {
+        QVERIFY(first.setDemoConfiguration(QStringLiteral("Persist137Shared")));
+        QVERIFY(second.setDemoConfiguration(QStringLiteral("Persist137Shared")));
+    }
+    QVERIFY(first.enable()); QVERIFY(second.enable());
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    QVERIFY(own.ok());
+    Storage::DirectoryLease held;
+    const auto mutate = [&]() {
+        if (fault == QStringLiteral("request-busy")) QVERIFY(held.acquire(shared, own.identity.userSid, false));
+        else if (fault == QStringLiteral("request-corrupt")) QVERIFY(replaceTestFile(store.filePath(), "corrupt-shared-store"));
+        else QVERIFY(second.revoke(credential.pairId));
+    };
+    int authenticated = 0, handled = 0;
+    connect(&first, &AutomationSessionServer::authenticated, this, [&]() {
+        ++authenticated;
+        if (fault.startsWith(QStringLiteral("request-"))) mutate();
+    });
+    first.setRequestHandler([&](const AutomationRequest &request) {
+        ++handled;
+        QVERIFY(first.isRequestCurrent(request));
+        mutate();
+        if (fault == QStringLiteral("async-revoke")) QVERIFY(!first.isRequestCurrent(request));
+        QVERIFY(!first.reply(request.connectionId, request.requestId, {{QStringLiteral("fixture"), true}}));
+    });
+    SessionChild child;
+    QVERIFY(child.launch(first, client, fault == QStringLiteral("proof-revoke")
+        ? QStringLiteral("changed-before-proof") : QStringLiteral("disabled-in-handler")));
+    if (fault == QStringLiteral("proof-revoke")) {
+        QTRY_VERIFY_WITH_TIMEOUT(child.canReadLine(), 3000);
+        QCOMPARE(child.readLine().trimmed(), QByteArray("proof"));
+        mutate();
+        QCOMPARE(child.write("continue\n"), qint64(9));
+    }
+    QTRY_COMPARE_WITH_TIMEOUT(child.state(), QProcess::NotRunning, 5000);
+    QCOMPARE(child.exitStatus(), QProcess::NormalExit);
+    QCOMPARE(child.exitCode(), 0);
+    QCOMPARE(authenticated, fault == QStringLiteral("proof-revoke") ? 0 : 1);
+    QCOMPARE(handled, fault.startsWith(QStringLiteral("reply-")) || fault.startsWith(QStringLiteral("async-")) ? 1 : 0);
+    QVERIFY(first.isEnabled());
+    if (fault == QStringLiteral("request-busy")) {
+        QCOMPARE(first.lastStoreError(), PairStoreError::Busy);
+        QCOMPARE(readTestFile(store.filePath()), saved);
+    } else if (fault == QStringLiteral("request-corrupt")) {
+        QVERIFY(first.lastStoreError() != PairStoreError::None);
+        QCOMPARE(readTestFile(store.filePath()), QByteArray("corrupt-shared-store"));
+    } else {
+        QList<PairCredential> remaining;
+        QVERIFY(store.load(remaining, error));
+        QVERIFY(remaining.isEmpty());
+    }
+}
+
 void McpIpcTest::sessionWindowPermissions()
 {
     QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/window-scopes-XXXXXX"));
@@ -1992,7 +2259,7 @@ void McpIpcTest::sessionRejectedPairing()
     connect(&server, &AutomationSessionServer::pairingRequested, this, [&](const PairingRequest &request) {
         ++prompted;
         QVERIFY(!server.approvePairing(QString(32, QLatin1Char('x')), Read));
-        QVERIFY(!server.approvePairing(request.requestId, Read | 128));
+        QVERIFY(!server.approvePairing(request.requestId, Read | (KnownScopes + 1)));
         if (mode == QStringLiteral("pair-rejected")) QVERIFY(server.rejectPairing(request.requestId));
         else QVERIFY(server.approvePairing(request.requestId, Read));
     });
@@ -2483,6 +2750,8 @@ int main(int argc, char **argv)
         return runListenerClient(app.arguments());
     if (app.arguments().value(1) == QStringLiteral("--store-reader"))
         return runStoreReader(app.arguments());
+    if (app.arguments().value(1) == QStringLiteral("--shared-store-writer"))
+        return runSharedStoreWriter(app.arguments());
     if (app.arguments().value(1) == QStringLiteral("--session-client"))
         return runSessionClient(app.arguments());
     if (app.arguments().value(1) == QStringLiteral("--lease-holder") && app.arguments().size() == 3) {

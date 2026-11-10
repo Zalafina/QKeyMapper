@@ -3,6 +3,7 @@
 #include "qkm_private_storage.h"
 
 #include <QUuid>
+#include <QDir>
 #include <QTimer>
 #include <QJsonArray>
 #include <QScopeGuard>
@@ -56,8 +57,11 @@ void eraseCredentials(QList<PairCredential> &credentials)
 } // namespace
 
 AutomationSessionServer::AutomationSessionServer(QString storeDirectory, QByteArray applicationBinding,
-                                                 QObject *parent)
-    : QObject(parent), m_directory(std::move(storeDirectory)), m_store(m_directory, std::move(applicationBinding))
+                                                 QObject *parent, QString pairDirectory)
+    : QObject(parent), m_directory(QDir::cleanPath(std::move(storeDirectory))),
+      m_pairDirectory(pairDirectory.isEmpty() ? m_directory : QDir::cleanPath(std::move(pairDirectory))),
+      m_sharedStore(m_directory.compare(m_pairDirectory, Qt::CaseInsensitive) != 0),
+      m_store(m_pairDirectory, std::move(applicationBinding))
 {
     connect(&m_listener, &LocalPipeListener::handshakeReceived, this, &AutomationSessionServer::onHello);
     connect(&m_listener, &LocalPipeListener::messageReceived, this, &AutomationSessionServer::onMessage);
@@ -88,7 +92,7 @@ bool AutomationSessionServer::enable()
         m_storeError = leaseError(m_storeLease.lastError());
         return false;
     }
-    if (!m_store.load(m_credentials, m_storeError)) {
+    if (!reloadCredentials(true)) {
         eraseCredentials(m_credentials);
         m_offlinePairings.clear();
         m_storeLease.release();
@@ -182,12 +186,91 @@ QList<PairingInfo> AutomationSessionServer::pairings() const
 
 bool AutomationSessionServer::refreshPairings()
 {
-    if (m_enabled) return true;
+    if (m_enabled) return !m_sharedStore || reloadCredentials();
     QList<PairCredential> credentials;
     const auto erase = qScopeGuard([&]() { eraseCredentials(credentials); });
     m_offlinePairings.clear();
-    if (!m_store.load(credentials, m_storeError)) return false;
+    if (!readCredentials(credentials, m_storeError)) return false;
     for (const PairCredential &credential : std::as_const(credentials)) m_offlinePairings.append(info(credential));
+    return true;
+}
+
+bool AutomationSessionServer::readCredentials(QList<PairCredential> &credentials, PairStoreError &error, bool create) const
+{
+    Storage::DirectoryLease lease;
+    if (m_sharedStore) {
+        if (!create) {
+            const QString native = QDir::toNativeSeparators(m_pairDirectory);
+            const DWORD attributes = GetFileAttributesW(reinterpret_cast<LPCWSTR>(native.utf16()));
+            if (attributes == INVALID_FILE_ATTRIBUTES
+                && (GetLastError() == ERROR_FILE_NOT_FOUND || GetLastError() == ERROR_PATH_NOT_FOUND))
+                return m_store.load(credentials, error);
+        }
+        const auto own = queryProcessIdentity(GetCurrentProcessId());
+        error = PairStoreError::InvalidContext;
+        if (!own.ok()) return false;
+        if (!lease.acquire(m_pairDirectory, own.identity.userSid, create)) {
+            error = leaseError(lease.lastError());
+            return false;
+        }
+    }
+    return m_store.load(credentials, error);
+}
+
+bool AutomationSessionServer::reloadCredentials(bool create)
+{
+    QList<PairCredential> credentials;
+    const auto erase = qScopeGuard([&]() { eraseCredentials(credentials); });
+    if (!readCredentials(credentials, m_storeError, create)) {
+        eraseCredentials(m_credentials);
+        return false;
+    }
+    eraseCredentials(m_credentials);
+    m_credentials = std::move(credentials);
+    return true;
+}
+
+bool AutomationSessionServer::refreshAuthentication()
+{
+    if (!m_sharedStore) return true;
+    if (reloadCredentials()) {
+        const int index = findPair(m_pair.pairId);
+        if (index >= 0) {
+            const auto &stored = m_credentials.at(index);
+            if (stored.permissionEpoch == m_pair.permissionEpoch
+                && (stored.scopes & startupAllowedScopes()) == m_pair.scopes
+                && equalAuthenticationProof(stored.secret, m_pair.secret)) return true;
+        }
+    }
+    closeSession();
+    return false;
+}
+
+bool AutomationSessionServer::updateCredentials(const std::function<bool(QList<PairCredential> &)> &change)
+{
+    Storage::DirectoryLease lease;
+    QList<PairCredential> updated;
+    const auto erase = qScopeGuard([&]() { eraseCredentials(updated); });
+    if (m_sharedStore || !m_enabled) {
+        const auto own = queryProcessIdentity(GetCurrentProcessId());
+        m_storeError = PairStoreError::InvalidContext;
+        if (!own.ok()) return false;
+        if (!lease.acquire(m_pairDirectory, own.identity.userSid, false)) {
+            m_storeError = leaseError(lease.lastError());
+            return false;
+        }
+        if (!m_store.load(updated, m_storeError)) return false;
+    } else updated = m_credentials;
+    // The caller's snapshot cannot overwrite another runtime's accepted change.
+    m_storeError = PairStoreError::Conflict;
+    if (!change(updated) || !m_store.save(updated, m_storeError)) return false;
+    if (m_enabled) {
+        eraseCredentials(m_credentials);
+        m_credentials = updated;
+    } else {
+        m_offlinePairings.clear();
+        for (const auto &credential : std::as_const(updated)) m_offlinePairings.append(info(credential));
+    }
     return true;
 }
 
@@ -225,6 +308,7 @@ void AutomationSessionServer::closeSession()
 void AutomationSessionServer::onHello(const QJsonObject &message, const ProcessIdentity &peer)
 {
     clearSession();
+    if (m_sharedStore && !reloadCredentials()) { closeSession(); return; }
     m_connection = m_listener.connectionId();
     m_binding.instanceId = m_listener.instanceId();
     m_binding.client = peer;
@@ -331,6 +415,7 @@ void AutomationSessionServer::onMessage(const QString &connectionId, const QJson
         closeSession();
         return;
     }
+    if (!refreshAuthentication()) return;
     const int index = findPair(m_pair.pairId);
     if (index < 0 || m_credentials.at(index).permissionEpoch != m_pair.permissionEpoch) {
         closeSession();
@@ -366,14 +451,16 @@ void AutomationSessionServer::onMessage(const QString &connectionId, const QJson
 bool AutomationSessionServer::becomeReady(bool pairing)
 {
     if (pairing) {
-        QList<PairCredential> updated = m_credentials;
-        updated.append(m_pair);
-        if (!m_store.save(updated, m_storeError)) {
+        if (!updateCredentials([this](QList<PairCredential> &updated) {
+            if (updated.size() >= MaxPairCredentials) return false;
+            for (const auto &pair : std::as_const(updated)) if (pair.pairId == m_pair.pairId) return false;
+            updated.append(m_pair);
+            return true;
+        })) {
             QTimer::singleShot(0, this, [this]() { emit failed(QStringLiteral("pair_store_failure")); });
             return false;
         }
-        m_credentials = updated;
-    }
+    } else if (!refreshAuthentication()) return false;
     m_stage = Stage::Ready;
     if (!m_listener.prepareMessage(m_connection, true, 0, true)
         || !m_listener.sendMessage(m_connection, {{QStringLiteral("type"), QStringLiteral("ready")},
@@ -395,14 +482,16 @@ void AutomationSessionServer::setRequestHandler(std::function<void(AutomationReq
     m_handler = std::move(handler);
 }
 
-bool AutomationSessionServer::isRequestCurrent(const AutomationRequest &request) const
+bool AutomationSessionServer::isRequestCurrent(const AutomationRequest &request)
 {
+    if (!m_enabled || m_stage != Stage::Ready || request.requestId.isEmpty()
+        || request.connectionId != m_connection || request.requestId != m_request
+        || request.pairId != m_pair.pairId || request.permissionEpoch != m_pair.permissionEpoch
+        || request.scopes != m_pair.scopes) return false;
+    if (!refreshAuthentication()) return false;
     const int index = findPair(request.pairId);
     const quint32 required = minimumScopes(request.method);
-    return m_enabled && m_stage == Stage::Ready && !request.requestId.isEmpty()
-        && request.connectionId == m_connection && request.requestId == m_request
-        && request.pairId == m_pair.pairId && request.permissionEpoch == m_pair.permissionEpoch
-        && request.scopes == m_pair.scopes && required != 0 && (m_pair.scopes & required) == required
+    return required != 0 && (m_pair.scopes & required) == required
         && index >= 0 && m_credentials.at(index).permissionEpoch == request.permissionEpoch
         && (m_credentials.at(index).scopes & startupAllowedScopes()) == request.scopes && m_listener.matchesConnection(request.connectionId);
 }
@@ -411,6 +500,7 @@ bool AutomationSessionServer::sendReply(const QString &connectionId, const QStri
 {
     if (m_stage != Stage::Ready || connectionId != m_connection || requestId.isEmpty()
         || requestId != m_request) return false;
+    if (!refreshAuthentication()) return false;
     response.insert(QStringLiteral("id"), requestId);
     if (!m_listener.prepareMessage(connectionId, true, 0, true)
         || !m_listener.sendMessage(connectionId, response)) return false;
@@ -447,38 +537,18 @@ bool AutomationSessionServer::replyError(const QString &connectionId, const QStr
 
 bool AutomationSessionServer::revoke(const QString &pairId)
 {
-    Storage::DirectoryLease offlineLease;
-    QList<PairCredential> updated;
-    const auto erase = qScopeGuard([&]() { eraseCredentials(updated); });
-    if (m_enabled) {
-        updated = m_credentials;
-    } else {
-        const auto owner = queryProcessIdentity(GetCurrentProcessId());
-        m_storeError = PairStoreError::InvalidContext;
-        if (!owner.ok()) return false;
-        if (!offlineLease.acquire(m_directory, owner.identity.userSid, false)) {
-            m_storeError = leaseError(offlineLease.lastError());
-            return false;
+    if (!updateCredentials([&](QList<PairCredential> &updated) {
+        for (int i = 0; i < updated.size(); ++i) {
+            if (updated.at(i).pairId == pairId) { updated.removeAt(i); return true; }
         }
-        if (!m_store.load(updated, m_storeError)) return false;
-        m_offlinePairings.clear();
-        for (const PairCredential &credential : std::as_const(updated)) m_offlinePairings.append(info(credential));
-    }
-    int index = -1;
-    for (int i = 0; i < updated.size(); ++i) if (updated.at(i).pairId == pairId) { index = i; break; }
-    if (index < 0) return false;
-    updated.removeAt(index);
-    if (!m_store.save(updated, m_storeError)) {
-        if (m_enabled) disable();
-        emit failed(QStringLiteral("revocation_not_saved"));
+        return false;
+    })) {
+        if (m_storeError != PairStoreError::Conflict && m_storeError != PairStoreError::Busy) {
+            if (m_enabled) disable();
+            emit failed(QStringLiteral("revocation_not_saved"));
+        }
         return false;
     }
-    if (m_enabled) m_credentials = updated;
-    else {
-        m_offlinePairings.clear();
-        for (const PairCredential &credential : std::as_const(updated)) m_offlinePairings.append(info(credential));
-    }
-    offlineLease.release();
     if (m_pair.pairId == pairId) closeSession();
     return true;
 }
@@ -489,15 +559,24 @@ bool AutomationSessionServer::updatePermissions(const QString &pairId, quint32 s
     if (index < 0 || !(scopes & Read) || (scopes & ~KnownScopes)
         || ((scopes & ~m_credentials.at(index).scopes) & ~startupAllowedScopes())
         || m_credentials.at(index).permissionEpoch == (std::numeric_limits<quint64>::max)()) return false;
-    QList<PairCredential> updated = m_credentials;
-    updated[index].scopes = scopes;
-    ++updated[index].permissionEpoch;
-    if (!m_store.save(updated, m_storeError)) {
-        disable();
-        emit failed(QStringLiteral("permission_change_not_saved"));
+    const quint64 expectedEpoch = m_credentials.at(index).permissionEpoch;
+    const quint32 expectedScopes = m_credentials.at(index).scopes;
+    if (!updateCredentials([&](QList<PairCredential> &updated) {
+        for (auto &pair : updated) {
+            if (pair.pairId != pairId) continue;
+            if (pair.permissionEpoch != expectedEpoch || pair.scopes != expectedScopes) return false;
+            pair.scopes = scopes;
+            ++pair.permissionEpoch;
+            return true;
+        }
+        return false;
+    })) {
+        if (m_storeError != PairStoreError::Conflict && m_storeError != PairStoreError::Busy) {
+            disable();
+            emit failed(QStringLiteral("permission_change_not_saved"));
+        }
         return false;
     }
-    m_credentials = updated;
     if (m_pair.pairId == pairId) closeSession();
     return true;
 }
