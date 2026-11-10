@@ -37,6 +37,7 @@ struct MappingUpdateArguments {
     std::optional<QString> originalKey;
     std::optional<QString> mappingKey;
     std::optional<QString> keyUpMappingKey;
+    std::optional<bool> disabled;
 };
 
 struct IbInputPreferencesArguments {

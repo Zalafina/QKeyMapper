@@ -78,11 +78,13 @@ class ToolResultTests(unittest.TestCase):
                 save = {"action": "configuration.save", "setting_name": "配置95"}
                 update = {"action": "mapping.update", "source_ref": "a" * 64 + ":row:0:0", "send_method": 3}
                 key_update = {"action": "mapping.update", "source_ref": update["source_ref"], "mapping_key": "C"}
+                disabled = {"action": "mapping.update", "source_ref": update["source_ref"], "disabled": True}
                 preferences = {"action": "ibinput.preferences.update", "preferences_revision": "a" * 64,
                                "preferred_backend": "razer"}
                 for valid in (mapping, dict(mapping, action="mapping.add"), dict(mapping, send_method=3), save, update,
                               key_update, dict(update, original_key="A"), dict(key_update, original_key="E"), dict(key_update, key_up_mapping_key=""),
                               dict(key_update, key_up_mapping_key="D", send_method=0),
+                              disabled, dict(disabled, disabled=False),
                               preferences, dict(preferences, unavailable_policy="sendinput_before_start")):
                     self.assertFalse(list(validator.iter_errors(valid)), valid)
                 for invalid in ({}, {"action": "configuration.save"}, dict(save, setting_name=None),
@@ -94,6 +96,11 @@ class ToolResultTests(unittest.TestCase):
                                 dict(key_update, key_up_mapping_key="\n"), dict(key_update, key_up_mapping_key=True),
                                 dict(mapping, key_up_mapping_key="C"), dict(save, key_up_mapping_key=""),
                                 dict(preferences, key_up_mapping_key="C"),
+                                dict(disabled, disabled=0), dict(disabled, disabled=1), dict(disabled, disabled="true"),
+                                dict(disabled, disabled=None), dict(disabled, original_key="A"),
+                                dict(disabled, mapping_key="B"), dict(disabled, key_up_mapping_key=""),
+                                dict(disabled, send_method=0), dict(mapping, disabled=True), dict(save, disabled=False),
+                                dict(preferences, disabled=True),
                                 dict(update, original_key="a"), dict(preferences, preferred_backend=None),
                                 dict(preferences, unavailable_policy="always"), dict(preferences, send_method=3)):
                     self.assertTrue(list(validator.iter_errors(invalid)), invalid)

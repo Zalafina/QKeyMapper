@@ -107,6 +107,8 @@ EDIT-143扩展既有`mapping.update`：传当前可见源行的`source_ref`，�
 
 例如先查询取得当前`source_ref`，再预览`{"action":"mapping.update","source_ref":"实际引用","original_key":"E","mapping_key":"C"}`，核对完整before／after后提交其`preview_id`。提交只改内存及dirty，不隐式保存、停止或开始；完整保存仍另行预览并确认范围。新源引用须重新查询，成功重放只返回原业务结果及新查询时间，不再次修改。原GUI的派生采样行为保持，冷读后按真实加载结果报告，不将旧派生样本当成新实例引用。
 
+EDIT-145另支持独立`disabled`布尔更新，例如`{"action":"mapping.update","source_ref":"实际引用","disabled":true}`；`false`表示启用该行，不开始映射。此字段不能与键值或发送方式混用，不接受0／1、字符串或null代替布尔值。启用若会依原规则禁用他行、要求Common确认或被Common优先规则回退，返回`unsupported_capability`且不修改；完整互斥处理仍用GUI。本片沿既有完整候选校验及源／权限守卫，不自动显示隐藏行。禁用导致行被当前筛选隐藏后，新引用仍不能继续写该行，须用户明确显示；它不关闭接口、撤销配对或运行映射。
+
 `ibinput.preferences.update`须带`qkm_get_state.result.ibinput.preferences_revision`，至少指定`preferred_backend`（auto／logitech_ghub／logitech_legacy／razer）或`unavailable_policy`（block／sendinput_before_start）。未指定项保留。提交仅改全局内存偏好及dirty，持久化仍需显式完整保存；预览说明包含两项共享键。实际语义变化使旧写预览失效，同值和被动状态采样不推进修订。取消保存保留此前草稿；写失败后须查询原operation及状态，不能盲重试。
 
 `qkm_get_state.ibinput`分别报告偏好／语义修订、实际连接后端、各后端已开放能力、当前启动前回退、停止／释放状态和最近历史结果。`sampled_at_utc`是观察时间；未连接时`actual_backend=null`，历史后端不表示当前连接。旧Logitech产品输入能力仍关闭，自动选择先筛当前映射所需能力，再依G HUB→旧Logitech→Razer尝试。主动连接检查／明确试发的MCP工具尚未提供；139增加下述固定`ibinput_settings`窗口角色，动作不触发连接检查。

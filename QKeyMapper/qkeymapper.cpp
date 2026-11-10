@@ -38487,6 +38487,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             const auto &before = KeyMappingDataList->at(update.sourceRow);
             auto after = before;
             if (update.sendMethod >= 0) after.SendMappingKeyMethod = update.sendMethod;
+            if (update.disabled.has_value()) {
+                after.Disabled = *update.disabled;
+                if (before.Disabled && !after.Disabled) {
+                    const QString group = normalizeOriginalKeyForExclusiveGroup(after.Original_Key);
+                    const bool affectsOthers = hasEnabledExclusiveGroupConflict(*KeyMappingDataList, group, update.sourceRow)
+                        || (isCommonMappingTabIndex(tab) && !collectEnabledNormalTabExclusiveGroupConflicts(group).isEmpty());
+                    const bool blockedByCommon = !isCommonMappingTabIndex(tab) && hasCommonExclusiveGroupPresenceForTab(tab, group);
+                    if (affectsOthers || blockedByCommon) {
+                        reject(QStringLiteral("unsupported_capability"), QStringLiteral("Enabling this row would change other rows or invoke Common priority; resolve this change in the GUI."));
+                        return;
+                    }
+                }
+            }
             if (keyUpdate) {
                 static const QRegularExpression simpleKeyboardKey(QStringLiteral("\\A(?:[A-Z0-9]|F(?:[1-9]|1[0-9]|2[0-4]))\\z"));
                 if (!simpleKeyboardKey.match(before.Original_Key).hasMatch() || before.Mapping_Keys.size() != 1
@@ -38545,7 +38558,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             modified = !(before == after);
             updatedRow = after;
             target.insert(QStringLiteral("source_ref"), update.sourceReference);
-            change = {{QStringLiteral("kind"), keyUpdate ? QStringLiteral("update_row_keys") : QStringLiteral("update_send_method")},
+            change = {{QStringLiteral("kind"), update.disabled.has_value() ? QStringLiteral("update_row_disabled")
+                    : keyUpdate ? QStringLiteral("update_row_keys") : QStringLiteral("update_send_method")},
                 {QStringLiteral("before"), automationSourceRow(before)}, {QStringLiteral("after"), automationSourceRow(after)}};
         } else {
             if (preferenceArguments.revision != preferencesRevision) {
@@ -38588,7 +38602,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;
                 ++m_AutomationSourceEpoch;
-                if (keyUpdate) {
+                if (keyUpdate || update.disabled.has_value()) {
                     if (isCommonMappingTabIndex(tab)) refreshTabsForSourceTabChange(tab);
                     else refreshKeyMappingDataTableByTabIndex(tab);
                 }

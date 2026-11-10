@@ -78,3 +78,32 @@ v3的normal及cold已完整结束：普通行完整sources前后与141的qt6-nor
 各kit37项／合计74项，八个实际不同QkmDisabledGui144_*私有桌面，High12288产品／Medium8192控制器、同登录、正常exit0。两类复选框按实际style指标区域点击，所有源逐字段／派生比较；加载代次及INI不变，已接受开关保留dirty，退出work／producers0。FilterKeys前后全字段相同，两次Default前台采样均非本轮产品（不是连续监测）。本片没有配对／客户端凭据或失败轮次；没有截图、普通Release新运行、正式MCP禁用字段、冲突确认／自动禁用、其他实例、真实输入、驱动、Win10或全量ASan／静态结论。
 
 原件仅本机out/mcp_disabled_gui_20261110，包括build／deploy／definition／registration、两份gui日志、runs/*-01完整before／after_item／after_table及closed／INI、summary.json和scope-release.json。后者核实两份固定授权已撤出、owned／unresolved／pending0，原42036缓存仍至19:00；无其他授权被关闭或未知请求重放。主计划141／142仅压缩重复详录，完整压缩前文字在Git c35aa57d，所有本机原件保留。
+
+## EDIT-145：独立禁用字段正式接线
+
+2026-11-10 PC-W11，源码0db06e9f57529394a0bc0441bd73474e682c4489加本片；既有mapping.update新增独立disabled布尔值，不与键值／发送方式混用，不加工具／权限（仍17／23、Read＋Configure）。候选使用原完整行和结构校验，启用前复用原互斥／有效Common分析；需改其他行、Common确认或优先回退时unsupported_capability，零修改。本片没有调用带showPopup=false的互斥提交函数充预览，也未新建字段写入框架。合法提交只改Disabled、原显示刷新及dirty，不保存或开始；同值不刷新／推修订，隐藏后继续写需显式显示。原键值及发送方式合同保持。
+
+生产主窗16增／2删，唯一锚点生成补丁经git apply --check后一次应用；最终main为2424898字节／53263行，UTF-8无BOM／LF，无截断。Qt6普通Release b01增量native0、零警告；实际EXE为out/mcp_product/disabled145_20261110/runtime-中文/QKeyMapperMcpAcceptance_disabled145_qt6.exe，SHA256为3caaafd7880b7d40e6ea3c4a9e15d0d1ae0a947abc88438d9c6f5162e1acd66a，原manifest。六项厂商DLL与当前仓库核对，其余DLL／plugins只取同PC自有137副本，没有INI／凭据复制。随包桥接bridge-b01仍29固定依赖／1614文件，九个源码与组件逐字核对，ZIP SHA256为2b3f13e5a5f74ecedd4351142b6999be1c7061899948be4373dd82c0daf5db14；实际SDK用其独立runtime/python.exe，不是仓库venv充交付证明。
+
+双Qt控制组件构建native0；普通私有进程PID20328／19200，四槽加init／cleanup各6pass、零fail／skip。新增true／false保留、非布尔拒绝及与四类旧字段混用拒绝；原参数／预览存储边界保持。Python正式stdio schema／错误结果组件8pass，含两布尔值、混用／null／数字／字符串拒绝及旧调用回归；固定请求替身不当产品。Clang-Tidy／Clazy对主窗及协议两文件、五实际编译上下文native0、项目诊断0；大型维护上下文实际分析完成后才收敛，没有省略或把未完成当通过。未新增Qt5普通Release运行、ASan或未改Worker／驱动完整门禁。
+
+正式产品八场共167次SDK调用，四组全sources与144独立GUI对照；逐份原始调用另核22次未真实修改时的完整source_snapshot（含dirty、加载上下文及修订）相等。均为实际不同QkmProduct_*私有桌面、原manifest产品High12288／SDK与随包桥接Medium8192、同一登录；GUI实际启用并配对，每场初始专属凭据为空，只授Read／Configure=3或Read=1，不授RunMapping。
+
+| v1场景／PID | 实际结果 |
+|---|---|
+| flag_normal／21356 | 禁用首行，完整前后与144 normal的before／after_item相等；预览／取消、重放、旧引用、no-op及INI不变，随后显式完整保存saved／reloaded |
+| flag_cold／38820 | 新产品及新Read桥接独立冷读保留Disabled=true及整行配置，原键实际加载仍A；旧源stale_source／旧operation unknown，Read修改拒绝 |
+| flag_disabled／16196 | 初始禁用行启用，完整after_item相等；同值修订不变，反向提交再与144 after_table全源相等 |
+| flag_common／30632 | 实际选Common后禁用／启用往返，两入口全源结果均与144相等；普通附加源及其他行／字段／派生不变 |
+| flag_hidden／39044 | 禁用后全源与144隐藏基线相等，新行引用继续写invalid_target，源／上下文／INI不变，不自动改筛选 |
+| flag_conflict／7636 | 合成Normal首行C禁用、另一行C启用；拟启用首行会改他行，unsupported_capability且全源／上下文／INI不变 |
+| flag_common_conflict／42732 | Common C初始禁用，包含Common的Normal C启用；拟启用Common需处理普通冲突，unsupported_capability且零修改／不弹确认 |
+| flag_read／16688 | 独立Read=1对disabled正式预览permission_denied，全源／上下文／INI不变 |
+
+各场GUI仍显示“映射开始”，未请求映射或系统输入；没有逐原生API计数器，不据此补造输出零调用或设备隔离证明。本片未运行只配置演示整轮，底层模式／输入守卫未改，138／139原结果仅按原范围复用；未扩展到完整互斥确认、混合字段、任意映射语法、其他实例、Default、Win10／高DPI、跨Windows登录／PC重启、QQ或干净机三包交付。143原键值路径未变，复用其原版本证据，不称本轮重跑。
+
+八产品均实际exit0；GUI各撤本轮唯一配对，最终客户端凭据不存在。八普通桥接原PID均不再存活；取得不了原退出码时明确null，进程查询的实际87另记，没有推算exit0。FilterKeys全字段前后相等，无本轮测试保持键需要额外注入释放。先前历史未知请求未重放或接管。145选定产品／组件没有失败轮次；只读进程观察的Get-Process无匹配不被记成产品／分析失败。
+
+原件仅本机out/mcp_disabled145_20261110与out/mcp_product/disabled145_20261110/v1，含main.patch、构建／锁组件／分析报告、部署／固定定义、每场topology／GUI／sdk-calls／closed／FilterKeys／完整保存INI、product-evidence.json、bridge-cleanup.json和scope-release.json。双Qt控制原件在out/mcp_persist137/*disabled145-b01*。资源owned／unresolved／pending及授权均0后，仅关闭本任务管理的42036缓存；off返回closed／generation2／native0，后续status再次确认不可用。关闭前无其他活动授权，保留登记元数据及全部历史；closed中的旧last_error来自143，不是本轮off失败。未删除环境、构建、缓存文件或原件。
+
+收尾文档核对UTF-8无BOM／LF、相对链接、主窗完整字节／行数和git diff --check；当前主计划及本事实页在256KiB建议内，任务目录在2MiB内。既有validation.md在本片前已超过256KiB建议，本次仅加短索引，不为本次停止压缩其历史或宣称全部旧文档均符合大小建议。关闭后status实际返回controller=null／native0，普通检查先误按活动控制器形状取cache_available而KeyError；按实际关闭形状复核通过，没有再次off或启动缓存，不是原生关闭失败。

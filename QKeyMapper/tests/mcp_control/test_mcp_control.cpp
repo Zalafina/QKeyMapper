@@ -241,6 +241,26 @@ void McpControlTest::ibInputChangeArguments()
     QVERIFY(!keyUpdate.update.originalKey.has_value());
     QCOMPARE(*keyUpdate.update.mappingKey, QStringLiteral("C"));
     QVERIFY(!keyUpdate.update.keyUpMappingKey.has_value());
+    QVERIFY(!keyUpdate.update.disabled.has_value());
+    const QJsonObject disabled{{QStringLiteral("action"), QStringLiteral("mapping.update")},
+        {QStringLiteral("source_ref"), source}, {QStringLiteral("disabled"), true}};
+    for (const bool choice : {true, false}) {
+        auto arguments = disabled; arguments.insert(QStringLiteral("disabled"), choice);
+        const auto flagUpdate = validate(arguments);
+        QVERIFY(flagUpdate.ok());
+        QVERIFY(flagUpdate.update.disabled.has_value());
+        QCOMPARE(*flagUpdate.update.disabled, choice);
+        QCOMPARE(flagUpdate.update.sendMethod, -1);
+    }
+    for (const auto &bad : QJsonArray{0, 1, QStringLiteral("true"), QJsonValue(QJsonValue::Null)}) {
+        auto arguments = disabled; arguments.insert(QStringLiteral("disabled"), bad);
+        QVERIFY(!validate(arguments).ok());
+    }
+    for (const auto *name : {"original_key", "mapping_key", "key_up_mapping_key", "send_method"}) {
+        auto arguments = disabled;
+        arguments.insert(QString::fromLatin1(name), qstrcmp(name, "send_method") == 0 ? QJsonValue(0) : QJsonValue(QStringLiteral("B")));
+        QVERIFY(!validate(arguments).ok());
+    }
     auto keyUp = keys; keyUp.insert(QStringLiteral("key_up_mapping_key"), QString());
     QVERIFY(validate(keyUp).ok());
     QVERIFY(validate(keyUp).update.keyUpMappingKey->isEmpty());

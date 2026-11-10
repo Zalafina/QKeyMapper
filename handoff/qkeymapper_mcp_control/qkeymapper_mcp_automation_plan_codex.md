@@ -6,7 +6,7 @@
 
 ## 当前进度与最新交接卡片
 
-2026-11-09完成IB-MCP-138核心融合、选定验证及本地快进接纳，收尾后停止。输入为MCP `94f0bb8485e7e607cff5c73bf6c0a45725e052d9`与固定IbInput `b5b484a63bf97716c407ae9680fd1b63f8d5eb01`；[本轮证据](ibinput_mcp_integration_validation.md)分别记录普通Release、维护目标、替身及历史范围。用户本轮要求接纳后停止，明日本机“继续”从Popup接续，不重复环境恢复或已通过验收；PERSIST-136A及STOP-46等历史结果不扩大。
+2026-11-09完成IB-MCP-138核心融合、选定验证及本地快进接纳，收尾后停止。输入为MCP `94f0bb8485e7e607cff5c73bf6c0a45725e052d9`与固定IbInput `b5b484a63bf97716c407ae9680fd1b63f8d5eb01`；[本轮证据](ibinput_mcp_integration_validation.md)分别记录普通Release、维护目标、替身及历史范围。当日接纳后停止，次日本机恢复后已完成139 Popup，不重复环境恢复或已通过验收；PERSIST-136A及STOP-46等历史结果不扩大。
 
 2026-10-30的PERSIST-136在PC-W11收尾；2026-10-31在PC-W10只执行Forza修复同步，不将其历史结果记成本轮Win11复验。
 
@@ -16,21 +16,29 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | EDIT-GUI-144禁用开关GUI基线选定完成；本片父c35aa57d，实际检查点以Git为准，未新增MCP字段 |
+| 当前切片 | EDIT-145独立disabled更新选定完成，以本片本地提交收尾停止，等待明日本机“继续”；未启动下一片 |
 | 执行机器 | PC-W11；普通Release配置、Default两后端、组件／实际ASan分别见本轮证据；Win10历史不冒充本轮复验 |
-| 目标分支／接纳点 | 原MCP树codex/qkeymapper-mcp-control为c35aa57d加144；集成树保持干净8cc889fb。未push |
+| 目标分支／接纳点 | codex/qkeymapper-mcp-control停在本次EDIT-145提交（父0db06e9f57529394a0bc0441bd73474e682c4489，HEAD即检查点）；集成树8cc889fb保留，未push |
 | 集成提交／路径 | e73f719b23ee1bd0df99045727acf9554f33959b，两父分别为MCP94f0bb84及固定IbInput b5b484a6；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
 | 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
-| 当前已完成 | 139固定Popup及138核心结果保留；137-A共享库事务／撤销及137-B默认v2目录、显式persistent-target、独立凭据命名空间已接正式产品／随包桥接。无扫描、密钥迁移或权限扩大 |
-| 当前验证 | 144双Qt构建0、各37项／八实际私有进程共74项全过，全部exit0；Item即时／Escape、表格及Common／隐藏重显、完整sources／INI／加载／FilterKeys与尾计数通过。143原结果保留，见[证据](mapping_edit_validation.md) |
-| 工作区保留 | 144只有维护用例与必要记录；产品仍c35aa57d。141／142重复详录精简，全文保留Git c35aa57d，原件均保留 |
-| 当前控制器 | 普通42036／instance2c169a62c9c54748a1b1ddfc10fdda40至2026-11-10 19:00；143自有产品／配对／客户端凭据已清理，资源0、固定授权撤出，原窗口保留。历史未知不重放；一次发布前stale_controller原因未取得 |
-| 授权边界 | 144仅自有私有桌面真实Qt窗口／鼠标事件，不发送系统输入、不启映射、不新增Default、驱动或全局设置；原manifest走19:00公共缓存，开发／构建／观察普通权限 |
-| 下一项动作 | EDIT-145在现有mapping.update接独立disabled布尔更新；候选沿既有校验，冲突／隐含他行修改明确拒绝，复用144完整GUI基线；先定范围与定向门槛，不增加任意字段或自动显示隐藏行 |
+| 当前已完成 | 145独立布尔更新沿原Read＋Configure／快照／完整校验；143键值、144 GUI、137持久目标、139 Popup及138核心按各自范围保留，完整M1仍待 |
+| 当前验证 | 145双Qt组件各6pass、Python8pass、Qt6普通Release零警告、五上下文分析0诊断；八场167次正式调用、四组144全源GUI对照、22次上下文不变性及保存冷读／隐藏／互斥／Read拒绝通过，见[证据](mapping_edit_validation.md) |
+| 工作区保留 | 本片只提交已验145必要文件，最终暂存／工作区状态以Git核对和回复为准；环境／构建／所有原件保留，无其他开发切片 |
+| 当前控制器 | 本任务42036／instance2c169a62c9c54748a1b1ddfc10fdda40已按用户收尾off：closed／generation2／native0；随后status为controller=null／native0。关闭前无其他授权／活动，资源0；历史未知保留不重放 |
+| 授权边界 | 本片仅自有私有桌面真实GUI／正式MCP配置；未请求映射／系统输入，不新增Default、驱动或全局写入。开发／构建／分析普通权限；缓存已关闭，明日需要提权时再提示安排 |
+| 下一项动作 | 明日本机“继续”后从原键变更互斥／Common确认的GUI基线盘点及定稿接续，再选最小共用操作；当前未开该片。不恢复环境或重复143／144／145选验，只做必要身份／状态检查 |
 | 后续范围 | 137真实跨登录／PC重启、实际客户端接线、主动MCP连接检查／试发、普通用户多实例前台绑定、Win10可选实体／Release三包／QQ联调仍待；完整M1／M2未完成 |
-| 本机证据 | 原MCP树out/mcp_edit143_20261110及out/mcp_product/edit143_20261110_r02；141／142、137／139／138原件保留。实际身份／桌面、失败与退出材料仅本机，详见分项证据页 |
-| 提交策略 | 自选聚焦本地commit，测试产品／输入正常清理后提交已验证切片并仅快进原MCP分支；用户本轮要求持续推进，直至明确收尾。不push、不合并master、不amend已验证提交 |
+| 本机证据 | 原MCP树out/mcp_disabled145_20261110及out/mcp_product/disabled145_20261110/v1；143／144和其他历史原件保留，均仅本机，实际EXE／桌面／范围见分项证据 |
+| 提交策略 | 按本次收尾要求形成一个聚焦145本地commit后停止；不push、不合并master、不amend、不reset／clean／stash，等待用户明日继续 |
+
+### EDIT-145：独立禁用字段更新（选定完成，本机停止）
+
+在既有mapping.update增加可选disabled布尔值，须独立于键值／发送方式更新；不新建工具／权限，仍Read＋Configure、当前可见源、完整快照／偏好修订／清理许可及执行前复核。候选复制真实行，启用若按既有互斥分析需禁用他行或Common优先回退／确认，明确unsupported_capability且零修改；本片不承接复杂冲突决策。沿GUI共用完整候选校验，提交只改Disabled、原显示刷新和dirty，不隐式保存或开始；同值不推进修订。隐藏后不能继续写该行，须用户明确显示，不自动改筛选。
+
+复用144两入口四组完整sources，选双Qt参数／存储及stdio schema，Qt6普通Release／锁依赖桥接的真实GUI配对与正式预览／取消／提交／重放／旧引用／no-op、四组对照、完整保存冷读、同表／Common互斥和Read拒绝；定向分析主窗／协议文件。无新所有权／Worker路径，不加ASan完整门禁。全部自有私有桌面、合成INI／专属配对；仅manifest／固定GUI用原19:00缓存，开发／桥接／构建／分析普通权限。无需Default，无系统输入、映射、驱动安装或全局写入；预计45–75分钟，缺口如实记录。
+
+2026-11-10选定检查全过，无产品失败轮次；八产品exit0、八普通桥接不再存活，配对／凭据清理，FilterKeys不变，固定授权与资源归零后按用户要求关闭缓存并复核。实际源码／EXE、167次正式调用、四组GUI对照、22次上下文检查及未验范围见[145证据](mapping_edit_validation.md#edit-145独立禁用字段正式接线)。实现及选验约半小时，收尾另计；本片提交后停止，不启动下一片，等待明日本机继续。
 
 ### EDIT-GUI-144：禁用开关原GUI基线（选定完成）
 
