@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import tempfile
+import threading
 import unittest
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -51,6 +52,61 @@ class ParserTests(unittest.TestCase):
         for text in ("9" * 250 + "h", "9" * 1000 + "m", None):
             with self.subTest(text=str(text)[:20]), self.assertRaises(CacheError):
                 parse_command(text, self.now)
+
+
+class PublicationTests(unittest.TestCase):
+    def test_windows_reader_lock_can_release_before_atomic_replace_retry(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "state.json"
+            app.write_json(path, {"value": 0})
+            reader = path.open("rb")
+            blocked = threading.Event()
+            errors = []
+            original = Path.replace
+
+            def replace(source, target):
+                try:
+                    return original(source, target)
+                except OSError as error:
+                    errors.append(error.winerror)
+                    blocked.set()
+                    raise
+
+            def release():
+                blocked.wait(2)
+                app.time.sleep(.01)
+                reader.close()
+
+            thread = threading.Thread(target=release)
+            thread.start()
+            try:
+                with patch.object(Path, "replace", replace):
+                    app.write_json(path, {"value": 1})
+            finally:
+                blocked.set()
+                thread.join(2)
+                reader.close()
+            self.assertFalse(thread.is_alive())
+            self.assertTrue(errors)
+            self.assertEqual(set(errors), {5})
+            self.assertEqual(app.read_json(path), {"value": 1})
+
+    def test_persistent_or_other_failure_keeps_the_original_exception(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "state.json"
+            app.write_json(path, {"value": 0})
+            for windows_error, attempts in ((5, 6), (None, 1)):
+                error = PermissionError("synthetic publication failure")
+                if windows_error is not None:
+                    error.winerror = windows_error
+                with self.subTest(winerror=windows_error), patch.object(Path, "replace", side_effect=error) as replace, \
+                        patch.object(app.time, "sleep") as sleep:
+                    with self.assertRaises(PermissionError) as raised:
+                        app.write_json(path, {"value": 1})
+                    self.assertIs(raised.exception, error)
+                    self.assertEqual(replace.call_count, attempts)
+                    self.assertEqual(sleep.call_count, attempts - 1)
+                self.assertEqual(app.read_json(path), {"value": 0})
 
 
 class FakeProcess:
@@ -134,6 +190,34 @@ class ControllerFixture(unittest.TestCase):
 
 
 class ControllerTests(ControllerFixture):
+    def test_publication_retry_does_not_extend_expiry_or_replay_native_work(self):
+        self.set_window(1)
+        self.finish_on()
+        deadline, generation = self.controller.window.deadline, self.controller.window.generation
+        original = Path.replace
+        count = 0
+
+        def replace(source, target):
+            nonlocal count
+            count += 1
+            if count == 1:
+                error = PermissionError("synthetic publication lock")
+                error.winerror = 5
+                raise error
+            return original(source, target)
+
+        def expire(_):
+            self.tick += 2
+
+        with patch.object(Path, "replace", replace), patch.object(app.time, "sleep", expire):
+            self.controller.publish()
+        self.assertEqual(self.controller.window.deadline, deadline)
+        self.assertEqual(self.controller.window.generation, generation)
+        self.assertFalse(self.controller.advance())
+        self.assertEqual(self.backend.closes, 1)
+        self.assertEqual(len(self.backend.opens), 1)
+        self.assertFalse(self.backend.spawned)
+
     def test_no_success_before_cache_is_observed(self):
         request = self.set_window(300)
         self.assertNotIn(request["id"], self.controller.results)

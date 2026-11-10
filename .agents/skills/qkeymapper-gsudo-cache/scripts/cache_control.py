@@ -59,7 +59,15 @@ def read_json(path, limit=65536):
 def write_json(path, value):
     temporary = path.with_name(path.name + "." + uuid.uuid4().hex + ".tmp")
     temporary.write_bytes(json.dumps(value, ensure_ascii=False, indent=2).encode("utf-8"))
-    temporary.replace(path)
+    # A Windows reader can briefly deny replacement; never replay the native action.
+    for attempt in range(6):
+        try:
+            temporary.replace(path)
+            return
+        except PermissionError as error:
+            if getattr(error, "winerror", None) != 5 or attempt == 5:
+                raise
+            time.sleep(.01)
 
 
 def error_result(error):
