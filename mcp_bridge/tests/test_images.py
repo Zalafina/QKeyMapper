@@ -34,6 +34,21 @@ def fixture():
 
 
 class ImageTests(unittest.TestCase):
+    def test_ibinput_popup_requires_explicit_scope_and_preference_revision(self):
+        value, discovery, arguments, _ = fixture()
+        value["role"] = arguments["role"] = "ibinput_settings"
+        value["settings_scope"] = "live_ibinput_preferences_and_passive_status"
+        value["preferences_revision"] = "d" * 64
+        value["settings_editor_unchanged"] = True
+        self.assertTrue(validate_capture(value, discovery, arguments)["settings_editor_unchanged"])
+        for changes in ({"settings_scope": "live_loaded_settings_not_committed_by_source_revision"},
+                        {"preferences_revision": "d" * 63}, {"settings_editor_unchanged": 1}, {"pid": 10}):
+            with self.subTest(changes=changes), self.assertRaises(BridgeError):
+                validate_capture({**value, **changes}, discovery, arguments)
+        del value["preferences_revision"]
+        with self.assertRaises(BridgeError):
+            validate_capture(value, discovery, arguments)
+
     def test_advanced_scope_is_explicit_and_preserves_existing_roles(self):
         original, discovery, arguments, _ = fixture()
         arguments["role"] = original["role"] = "mapping_advanced"

@@ -37,4 +37,31 @@ PC-W11，2026-11-09；MCP输入`94f0bb8485e7e607cff5c73bf6c0a45725e052d9`、固�
 - QA/gui-01部署缺少SDL2等已核实导入依赖，原生Start wrapper退出0／报告PID19664，进程身份复核取得Windows错误87；未取得目标实际退出码，不推算装载错误码。旧控制器以start_result_unknown关闭，原请求`b588469d172e4e4bbff2b4fc1797792a`保留且未重放；用户另批后才创建新控制器1884至19:00。
 - gui-02至11分别保留重复模态打开、venv启动器路径断言、错误的空白草稿前置、Default专用助手边界、Qt完整AutomationId／自定义Combo假设等失败。gui-09固定探针对不支持模式的空指针解引用，实际退出`-1073741819`；已修夹具，不写成产品崩溃。gui-11业务保存和冷读断言通过但最后清理打开顺序失败；12才是完整通过轮次。sources-01误用目录字段is_common，实际契约kind=common；02通过。
 - 只复用未受影响历史证据；本轮无Win10新运行、FakerInput专项、其他后端／物理设备完整矩阵、PC重启／跨Windows登录、三包Release验证或QQ gateway联调。用户转交的指定DLL／低级Hook dwExtraInfo结果仍按IbInput计划§34.7原范围，未重跑或扩展。
-- 主动MCP设备检查／试发工具、ibinput_settings受限窗口角色及其权限／演示验收尚未交付；不把产品自身Popup或维护探针算成正式窗口协议支持。完整M1／M2及PERSIST-137不因本切片完成。
+- 138时点主动MCP设备检查／试发工具和ibinput_settings窗口角色尚未交付；139窗口角色续验见下节。主动工具、完整M1／M2及PERSIST-137仍未因核心合流完成。
+
+## IB-MCP-139：固定 IbInput Popup（2026-11-10，PC-W11）
+
+源码为395e684d之后本切片的窗口／桥接／定向测试差异；普通Qt6 Release为作业树`out/build_qt6/release/QKeyMapper.exe`，精确部署至原MCP树`out/mcp_product/ibinput139_20261110/mcp_runtime/QKeyMapperMcpAcceptance_ibinput_qt6.exe`，SHA256为`7cc600d6589731027593dfbff725f069d5c18e1ae14f302a079f706e8a42cb2e`。原manifest保持，Product启动／固定GUI助手走公共登记，普通控制器／SDK／桥接／截图保持Medium；合成INI独立于个人实例，未授RunMapping、未启动映射、未安装驱动或改全局设置。本节不重计138验收。
+
+| 当前检查 | 实际结果与边界 |
+|---|---|
+| Qt6普通Release | build-product-05原生0／零编译链接警告；GUI助手实际build-gui-qt6-popup139-06原生0，部署身份在QA/deployment-round-06.json。主产品使用原GUI入口，不以维护目标代替普通窗口验收 |
+| 双Qt组件 | Qt6／Qt5.15.2 x64在各自实际QkmPopup139私有桌面，各10项含init／cleanup通过。惰性创建、父窗口、权限epoch、连接归属、关闭重开／销毁与严格解析；Qt5共享JSON take导致原window_ref被清空的旧问题先复现，再以读值后remove修正，两种close输入不变／重复解析断言通过。Qt5横幅windows10不是Win10机器证据 |
+| 定向静态 | main／window_access／window_image共8编译上下文工具exit0；第一轮window_access的4处临时QList循环产生8条项目诊断，改const局部变量后该文件3上下文复验项目0。main／image原轮项目0复用；第三方原始诊断保留。最后能力／错误字符串澄清不改变已测逻辑 |
+| Python | 图片边界10项、正式工具结果8项、原演示编排18项通过；新角色严格元数据／偏好修订、缺省高级角色兼容。没有新增依赖或TS/QM词条 |
+| 普通产品popup-07 | PID37764／实际QkmProduct_b555ce636dbd404ab5c2898cdacaccda，正式GUI配对与认证、Show无Capture拒绝、GUI已开窗口不能接管、MCP真实开关和PNG、旧源／旧窗拒绝、重连不继承关闭权；clean源变化及已dirty源上偏好变化分别阻止关闭。窗口／捕获不改配置／INI或偏好语义修订，同值预览仍可提交且modified=false。正常exit0，GUI撤销专属配对且凭据删除 |
+| 独立权限popup-read-01 | PID33276／自有私有桌面，Read+Capture=257可捕获GUI已开Popup但不能开关；Read+Show+Capture=385无Configure仍可正式开关和捕获，偏好预览permission_denied。状态／源／INI不变，正常exit0／配对和专属凭据清理 |
+| 真实图片 | 普通产品至少GUI打开及MCP打开两种场景的产品内部PNG，460×404、中文可读；自动／雷蛇及启动前回退选项与场景一致。普通仓库PrintWindow尝试无法捕获High产品，保留UNVERIFIED，不提权截图、不写成外部GUI图片对比通过 |
+| 私有演示 | QA/output-demo-01的Qt6维护EXE SHA256 `5e24ea1932867e6a1c0f8178884a498fa6a7436fe847d14672b2aabb7a71d995`，PID38528／实际QkmDemoRecord126_0b38a0b04da44c019c58f7c5ef5fe22d，原生0／25项；正式MCP33条请求完成原两场景／回收，再显式开／捕获／关IbInput Popup。三张高级、C→D单项、IbInput图片均自主检查；sdk-pass的native_images=2指原两场景，第三张另有真实PNG及ibinput_popup_verified=true |
+| 演示输出边界 | 10个原守卫场景分别记录IbSendInit、IbSendInput、IbSendDestroy、SendInput、SetCursorPos全零，包含A3像素／归一化、内部步进、释放和回退；新增Popup后退出总计仍逐API零。它是替换最终原生API的维护计数验证，普通正对照11项按138未变路径复用，不冒称普通Release厂商I/O实测 |
+| 无打扰与清理 | 两普通产品分别61／17组窗口动作前后只读采样均Default且前台PID不是自有产品；允许用户自行换应用。这是离散采样加私有身份及动作边界，不声称全程焦点监控。无Default激活或系统输入调用；两轮FilterKeys前后相同，INI等于合成样例；演示工作／生产者及拥有资源清零、记录正常回收 |
+
+### 本片失败及复用范围
+
+popup-01／02在GUI配对与关闭管理窗native0后，缓存state.json原子发布实际WinError5导致控制器退出；已知自有PID29688／32476另经用户批准未缓存受限Close正常exit0。CACHE-139A单独395e684d修正与99项普通测试另有记录。新控制器42036至原19:00连续支持popup-03至07、read及demo后保持可用；没有记录到现场重试次数，不宣称已复现并恢复真实发布故障。历史未知请求未接管或重放。
+
+popup-03／04的C++ UIA虚拟ListItem枚举为空、05的焦点／Home选择无效；06的DPI有界第一行点击已成功批准准确pair_id，但授权后仍停留通用页，找不到ibInputSettingsButton。固定夹具改为真实ReadMapping选页，07独立通过；这些是GUI夹具失败，产品均正常关闭。先前组件桌面包装／IPC环境缺失、Qt5 close解析和首轮静态诊断日志原样保留，不相加当通过。
+
+本机原件：作业树`out/ibinput_popup_20261110`（component-*-08、static-analysis-01／02、product-popup-01至07、product-popup-read-01、popup-demo-01及图片／工具回归日志）与`out/ibinput_mcp_integration`构建日志；QA指原MCP树`out/mcp_product/ibinput139_20261110`（独立轮次、身份、部署、PNG、desktop-observations、SDK及原生结果）。不提交凭据／原始私有记录。
+
+本片无新增Default输入／前台验收、Win10新运行、完整Qt5产品运行／x86 Popup、Worker／ASan或厂商输入重验、其他语言／DPI全矩阵、QQ gateway或三包Release。受影响窗口生命周期由双Qt组件与当前Qt6产品证明；138的业务／生命周期／设备／ASan证据按未变路径原范围复用。主动连接检查／试发工具、普通用户多实例前台绑定及PERSIST-137仍待。

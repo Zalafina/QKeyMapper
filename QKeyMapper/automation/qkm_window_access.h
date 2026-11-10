@@ -44,13 +44,14 @@ QByteArray windowInputFingerprint(const QWidget *window);
 class WindowAccess : public QObject {
 public:
     WindowAccess(QWidget *main, QWidget *itemSetup, QWidget *mappingAdvanced = nullptr);
+    void trackIbInputSettings(QWidget *window);
     WindowQueryResult query(const QString &instance, const QString &pairId, quint64 permissionEpoch,
         const QJsonObject &arguments) const;
     QWidget *resolve(const QString &role, const QString &reference, const QString &instance,
         const QString &pairId, quint64 permissionEpoch) const;
     void rememberEditor(const QString &sourceReference, const QByteArray &draftFingerprint,
-        const QString &role = QStringLiteral("item_setup"));
-    bool ownsEditor(const QString &sourceReference, const QString &role = QStringLiteral("item_setup")) const;
+        const QString &role = QStringLiteral("item_setup"), const QString &connection = {});
+    bool ownsEditor(const QString &sourceReference, const QString &role = QStringLiteral("item_setup"), const QString &connection = {}) const;
     bool editorDraftMatches(const QByteArray &draftFingerprint) const;
 
 protected:
@@ -58,10 +59,11 @@ protected:
 
 private:
     QJsonObject describe(int index, const QString &instance, const QString &pairId, quint64 permissionEpoch) const;
-    std::array<QPointer<QWidget>, 3> m_windows;
-    std::array<quint64, 3> m_generations{{1, 1, 1}};
+    std::array<QPointer<QWidget>, 4> m_windows;
+    std::array<quint64, 4> m_generations{{1, 1, 1, 1}};
     QString m_editorSourceReference;
     QByteArray m_editorDraftFingerprint;
+    QString m_editorConnection;
     int m_editorIndex = 1;
 };
 

@@ -149,3 +149,11 @@ DELETE-113追加`mappingRemovalArguments／mappingRemovalLifecycle`：mapping.de
 
 
 P3-128同一组件用例另核对正式宿主QDialog：三语实时刷新／实例不变、按钮焦点、Escape、超时后仍可见与恢复、失败标记保留。`QKM_TEST_TRANSLATIONS_DIR` 指向本次三语QM；可选 `QKM_HOST_CAPTURE_DIR` 为独立out目录，会逐语写host-<0..2>.json并等待同名.json.done，控制器须先核验PID／HWND并在相同实际私有桌面运行普通权限 `scripts/capture_ui_snapshots.ps1 -PrintWindow`，抓图后才写完成标记。Default助手对另一桌面的Owner检查失败不能放宽或当作已截图；Source／QQ及Default验收范围仍只见主计划。
+
+## IbInput Popup 受限窗口（IB-MCP-139）
+
+`windowIbInputObservation`覆盖惰性跟踪、错误父窗口、权限上下文、关闭重开及销毁；两个close解析器还断言Qt5共享QJsonObject输入不会因解析改变。`mcp_bridge/tests/ibinput_acceptance.py --phase popup`沿既有自有普通Release／私有桌面入口，使用正式MCP及`ibinput_window_acceptance.py`验证角色、真实GUI开关、Show／Capture拒绝、重连关闭归属、偏好改变和预览不变性；`--phase popup_read`另覆盖Read+Capture无Show及Read+Show+Capture无Configure。两阶段均不启动映射或发送系统输入。
+
+固定原生GUI助手增加IbInput打开／关闭及专属配对的窗口权限批准动作。其参数仍绑定精确EXE／PID／创建时间／私有桌面；授权前要求产品仅有一个测试配对，并核对窗口显示的完整pair_id等于已认证专属凭据中的公开ID。不接收任意控件／路径动作，不点连接检查；每次GUI输出使用独立序号保留失败原件。失败轮次的专属凭据仅可在核实唯一配对并已认证后由GUI撤销重建，不能用于其他实例。
+
+正式PNG由产品自身捕获，普通PrintWindow不能读取High产品时单列未验证；不为此提权截图。演示守卫复用既有sendinput_lifecycle输出计数维护目标，按原生API逐项检查，并与普通Release窗口结果区分。桌面／前台前后只读采样不证明持续全程观测，不替代Default真实交互或QQ渠道验收。

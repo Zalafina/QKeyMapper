@@ -21,7 +21,7 @@
 namespace QkmAutomation {
 namespace {
 
-const char *const Roles[] = {"main", "item_setup", "mapping_advanced"};
+const char *const Roles[] = {"main", "item_setup", "mapping_advanced", "ibinput_settings"};
 
 bool guiThread()
 {
@@ -65,14 +65,19 @@ MappingEditorCloseArguments parseMappingEditorCloseArguments(const QJsonObject &
     if (arguments.size() != 3 || !arguments.value(QStringLiteral("window_ref")).isString()
         || !isLowerHex(arguments.value(QStringLiteral("window_ref")).toString(), 64)) return {};
     auto opening = arguments;
-    const QString window = opening.take(QStringLiteral("window_ref")).toString();
+    // Qt 5.15.2 take() can null a shared request value; read before removing from the copy.
+    const QString window = arguments.value(QStringLiteral("window_ref")).toString();
+    opening.remove(QStringLiteral("window_ref"));
     const auto source = parseMappingEditorArguments(opening);
     return source.ok() ? MappingEditorCloseArguments{source, window} : MappingEditorCloseArguments{};
 }
 
 MappingEditorArguments parseMappingSettingsArguments(const QJsonObject &arguments)
 {
-    if (arguments.size() != 2 || !arguments.value(QStringLiteral("source_tab_ref")).isString()
+    const auto role = arguments.value(QStringLiteral("window_role"));
+    if ((!role.isUndefined() && role != QJsonValue(QStringLiteral("mapping_advanced"))
+            && role != QJsonValue(QStringLiteral("ibinput_settings")))
+        || arguments.size() != (role.isUndefined() ? 2 : 3) || !arguments.value(QStringLiteral("source_tab_ref")).isString()
         || arguments.value(QStringLiteral("presentation")) != QJsonValue(QStringLiteral("private_background"))) return {};
     const QString reference = arguments.value(QStringLiteral("source_tab_ref")).toString();
     const QString revision = reference.section(QLatin1Char(':'), 0, 0);
@@ -83,10 +88,11 @@ MappingEditorArguments parseMappingSettingsArguments(const QJsonObject &argument
 
 MappingEditorCloseArguments parseMappingSettingsCloseArguments(const QJsonObject &arguments)
 {
-    if (arguments.size() != 3 || !arguments.value(QStringLiteral("window_ref")).isString()
+    if ((arguments.size() != 3 && arguments.size() != 4) || !arguments.value(QStringLiteral("window_ref")).isString()
         || !isLowerHex(arguments.value(QStringLiteral("window_ref")).toString(), 64)) return {};
     auto opening = arguments;
-    const QString window = opening.take(QStringLiteral("window_ref")).toString();
+    const QString window = arguments.value(QStringLiteral("window_ref")).toString();
+    opening.remove(QStringLiteral("window_ref"));
     const auto source = parseMappingSettingsArguments(opening);
     return source.ok() ? MappingEditorCloseArguments{source, window} : MappingEditorCloseArguments{};
 }
@@ -94,18 +100,22 @@ MappingEditorCloseArguments parseMappingSettingsCloseArguments(const QJsonObject
 QByteArray windowInputFingerprint(const QWidget *window)
 {
     if (!guiThread() || !window || window->thread() != qApp->thread()) return {};
-    for (const auto *child : window->findChildren<QWidget *>())
+    const auto children = window->findChildren<QWidget *>();
+    for (const auto *child : children)
         if (child->isWindow() && child->isVisible()) return {};
     QJsonObject values;
     const auto key = [](const char *kind, const QObject *object) {
         return QString::fromLatin1(kind) + QLatin1Char(':') + QString::number(quintptr(object), 16);
     };
     // Internal digests only; include control identity so duplicate Qt object names cannot hide a draft.
-    for (const auto *edit : window->findChildren<QLineEdit *>())
+    const auto edits = window->findChildren<QLineEdit *>();
+    for (const auto *edit : edits)
         values.insert(key("line", edit), edit->text());
-    for (const auto *combo : window->findChildren<QComboBox *>())
+    const auto combos = window->findChildren<QComboBox *>();
+    for (const auto *combo : combos)
         values.insert(key("combo", combo), QJsonArray{combo->currentIndex(), combo->currentText()});
-    for (const auto *button : window->findChildren<QAbstractButton *>())
+    const auto buttons = window->findChildren<QAbstractButton *>();
+    for (const auto *button : buttons)
         if (button->isCheckable()) values.insert(key("button", button), button->isChecked());
     // shortcut: these cover the current item dialog; add guards when a new draft control type is introduced.
     return QCryptographicHash::hash(QJsonDocument(values).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256);
@@ -155,6 +165,9 @@ QJsonObject mappingEditorCloseCapability()
 QJsonObject mappingSettingsCapability(bool closing)
 {
     QJsonObject properties{
+        {QStringLiteral("window_role"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("enum"), QJsonArray{QStringLiteral("mapping_advanced"), QStringLiteral("ibinput_settings")}},
+            {QStringLiteral("default"), QStringLiteral("mapping_advanced")}}},
         {QStringLiteral("source_tab_ref"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
             {QStringLiteral("maxLength"), 128},
             {QStringLiteral("pattern"), QStringLiteral("^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")}}},
@@ -171,16 +184,28 @@ QJsonObject mappingSettingsCapability(bool closing)
         {QStringLiteral("required_scopes"), int(Read | ShowWindows)}, {QStringLiteral("read_only"), false},
         {QStringLiteral("arguments_schema"), QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
             {QStringLiteral("additionalProperties"), false}, {QStringLiteral("properties"), properties}, {QStringLiteral("required"), required}}},
-        {QStringLiteral("limitations"), QJsonArray{QStringLiteral("fixed_mapping_advanced_private_non_input_desktop"),
+        {QStringLiteral("limitations"), QJsonArray{QStringLiteral("fixed_settings_roles_private_non_input_desktop"),
+            QStringLiteral("no_connection_check_preference_edits_or_input"),
             QStringLiteral("current_safe_source_tab_only_no_setting_edits"),
             closing ? QStringLiteral("unchanged_window_opened_by_this_owner_only") : QStringLiteral("existing_window_is_not_replaced"),
             QStringLiteral("does_not_request_activation_or_change_mapping")}}};
 }
 
 WindowAccess::WindowAccess(QWidget *main, QWidget *itemSetup, QWidget *mappingAdvanced)
-    : QObject(main), m_windows{{main, itemSetup, mappingAdvanced}}
+    : QObject(main), m_windows{{main, itemSetup, mappingAdvanced, nullptr}}
 {
     for (const auto &window : m_windows) if (window) window->installEventFilter(this);
+}
+
+void WindowAccess::trackIbInputSettings(QWidget *window)
+{
+    if (!guiThread() || !window || window->thread() != qApp->thread() || window->parentWidget() != parent()
+        || m_windows[3] == window) return;
+    if (m_windows[3]) m_windows[3]->removeEventFilter(this);
+    m_windows[3] = window;
+    if (m_generations[3] != (std::numeric_limits<quint64>::max)()) ++m_generations[3];
+    if (m_editorIndex == 3) { m_editorSourceReference.clear(); m_editorDraftFingerprint.clear(); m_editorConnection.clear(); }
+    window->installEventFilter(this);
 }
 
 bool WindowAccess::eventFilter(QObject *watched, QEvent *event)
@@ -189,6 +214,7 @@ bool WindowAccess::eventFilter(QObject *watched, QEvent *event)
         || event->type() == QEvent::Destroy || event->type() == QEvent::WinIdChange)) {
         m_editorSourceReference.clear();
         m_editorDraftFingerprint.clear();
+        m_editorConnection.clear();
     }
     switch (event->type()) {
     case QEvent::WindowStateChange: {
@@ -255,11 +281,12 @@ WindowQueryResult WindowAccess::query(const QString &instance, const QString &pa
     for (auto it = arguments.begin(); it != arguments.end(); ++it) {
         if (it.key() != QStringLiteral("entity") && it.key() != QStringLiteral("offset") && it.key() != QStringLiteral("limit")
             && it.key() != QStringLiteral("window_role"))
-            return fail("invalid_arguments", "Only entity, offset, limit and the fixed advanced window_role are accepted for windows.");
+            return fail("invalid_arguments", "Only entity, offset, limit and an explicitly supported window_role are accepted for windows.");
     }
     const auto selectedRole = arguments.value(QStringLiteral("window_role"));
-    if (!selectedRole.isUndefined() && selectedRole != QJsonValue(QStringLiteral("mapping_advanced")))
-        return fail("invalid_arguments", "The explicit window_role only supports mapping_advanced.");
+    if (!selectedRole.isUndefined() && selectedRole != QJsonValue(QStringLiteral("mapping_advanced"))
+        && selectedRole != QJsonValue(QStringLiteral("ibinput_settings")))
+        return fail("invalid_arguments", "Use an explicitly supported settings window_role.");
     const bool advanced = !selectedRole.isUndefined();
     const int total = advanced ? 1 : 2;
     const auto integer = [&](const char *key, int fallback, int low, int high) {
@@ -280,7 +307,8 @@ WindowQueryResult WindowAccess::query(const QString &instance, const QString &pa
     GetWindowThreadProcessId(GetForegroundWindow(), &foregroundPid);
     QJsonArray items;
     int next = offset;
-    for (; next < total && items.size() < limit; ++next) items.append(describe(advanced ? 2 : next, instance, pairId, permissionEpoch));
+    const int selectedIndex = selectedRole == QJsonValue(QStringLiteral("ibinput_settings")) ? 3 : 2;
+    for (; next < total && items.size() < limit; ++next) items.append(describe(advanced ? selectedIndex : next, instance, pairId, permissionEpoch));
     return {{{QStringLiteral("schema_version"), 1}, {QStringLiteral("entity"), QStringLiteral("windows")},
         {QStringLiteral("sampled_at_utc"), QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs)},
         {QStringLiteral("target"), QJsonObject{{QStringLiteral("instance"), instance},
@@ -306,20 +334,22 @@ QWidget *WindowAccess::resolve(const QString &role, const QString &reference, co
     return nullptr;
 }
 
-void WindowAccess::rememberEditor(const QString &sourceReference, const QByteArray &draftFingerprint, const QString &role)
+void WindowAccess::rememberEditor(const QString &sourceReference, const QByteArray &draftFingerprint, const QString &role, const QString &connection)
 {
-    const int index = role == QStringLiteral("item_setup") ? 1 : role == QStringLiteral("mapping_advanced") ? 2 : -1;
+    const int index = role == QStringLiteral("item_setup") ? 1 : role == QStringLiteral("mapping_advanced") ? 2
+        : role == QStringLiteral("ibinput_settings") ? 3 : -1;
     if (!guiThread() || index < 0) return;
     m_editorIndex = index;
     m_editorSourceReference = sourceReference;
     m_editorDraftFingerprint = draftFingerprint;
+    m_editorConnection = connection;
 }
 
-bool WindowAccess::ownsEditor(const QString &sourceReference, const QString &role) const
+bool WindowAccess::ownsEditor(const QString &sourceReference, const QString &role, const QString &connection) const
 {
     return guiThread() && role == QLatin1String(Roles[m_editorIndex])
         && m_windows[size_t(m_editorIndex)] && m_windows[size_t(m_editorIndex)]->isVisible()
-        && !m_editorSourceReference.isEmpty() && m_editorSourceReference == sourceReference;
+        && !m_editorSourceReference.isEmpty() && m_editorSourceReference == sourceReference && m_editorConnection == connection;
 }
 
 bool WindowAccess::editorDraftMatches(const QByteArray &draftFingerprint) const
@@ -338,12 +368,12 @@ QJsonObject windowQueryCapability()
                 {QStringLiteral("entity"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
                     {QStringLiteral("const"), QStringLiteral("windows")}}},
                 {QStringLiteral("window_role"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
-                    {QStringLiteral("const"), QStringLiteral("mapping_advanced")}}},
+                    {QStringLiteral("enum"), QJsonArray{QStringLiteral("mapping_advanced"), QStringLiteral("ibinput_settings")}}}},
                 {QStringLiteral("offset"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
                     {QStringLiteral("minimum"), 0}, {QStringLiteral("maximum"), 2}}},
                 {QStringLiteral("limit"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
                     {QStringLiteral("minimum"), 1}, {QStringLiteral("maximum"), 100}}}}}}},
-        {QStringLiteral("limitations"), QJsonArray{QStringLiteral("default_main_and_item_setup_explicit_mapping_advanced"),
+        {QStringLiteral("limitations"), QJsonArray{QStringLiteral("default_main_and_item_setup_explicit_settings_roles"),
             QStringLiteral("window_reference_is_not_a_source_or_scene_revision"), QStringLiteral("does_not_show_or_capture_windows"),
             QStringLiteral("foreground_exact_is_observation_not_activation_proof")}}};
 }

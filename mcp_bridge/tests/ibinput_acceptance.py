@@ -22,6 +22,8 @@ import win32con
 import win32event
 import win32file
 import win32process
+import win32service
+import win32gui
 
 
 def filter_keys():
@@ -37,6 +39,8 @@ def filter_keys():
 
 async def run(args):
     source = Path(__file__).resolve().parents[2]
+    popup = args.phase in ("popup", "popup_read")
+    base_scope = 1 if args.phase in ("read", "popup_read") else 3
     host = args.controller_workspace
     assert args.runtime.is_relative_to(host / "out/mcp_product")
     assert args.gui_probe.is_relative_to(host / "out/mcp_product")
@@ -60,7 +64,7 @@ async def run(args):
     # The original public controller and fixed helpers stay in their own checkout.
     sys.path.insert(0, str(host / "mcp_bridge/tests"))
     from test_product_interop import Product, connection_pending
-    from test_sdk_interop import call, connection, integrity, identity, managed_action
+    from test_sdk_interop import call, connection, integrity, identity, managed_action, close_desktop
     import cache_control as control
     from cache_actions import digest, helper_hashes
     from qkeymapper_mcp.credentials import CredentialStore
@@ -70,6 +74,7 @@ async def run(args):
     args.output.mkdir(parents=True)
     calls, peers, grants, completed = [], [], set(), []
     store = None
+    gui_sequence = 0
     original_filter = filter_keys()
     own = identity(os.getpid())
     with closing(win32api.OpenProcess(0x1000, False, own.pid)) as process:
@@ -88,22 +93,30 @@ async def run(args):
         allowed = set(scope.get("test_actions", {}).get("definitions", []))
         approved = digest(value)
         allowed.add(approved)
-        scope["test_actions"] = dict(reason="Approved IB-MCP-138 owned private stock product and fixed native GUI actions; no mapping or system input.", definitions=sorted(allowed))
+        scope["test_actions"] = dict(reason="Approved owned private stock product configuration/window checks and fixed native GUI actions; no mapping or system input.", definitions=sorted(allowed))
         assert control.send(state, dict(op="authorize", scope=scope))["ok"]
         grants.add(approved)
         assert control.send(state, dict(op="register", definition=value))["ok"]
         (args.output / (identifier + ".json")).write_text(json.dumps(value, indent=2), encoding="utf-8")
 
-    register("ibmcp138-" + args.phase, executable, [dict(arguments="", environment={})],
+    register(("ibmcp139-" if popup else "ibmcp138-") + args.phase, executable, [dict(arguments="", environment={})],
              ["OpenAdvanced", "OpenMcp", "Enable", "SaveStartup", "ApproveConfigure", "ApproveRead", "CloseMcp",
               "ReadMapping", "ReadTab1", "ReadCommon", "AddBasicMapping", "Revoke", "Disable"], own.executable)
 
     async def gui(product, action):
-        output = args.runtime / (args.output.name + "-" + product.output.name + "-" + action + ".json")
+        nonlocal gui_sequence
+        gui_sequence += 1
+        suffix = (str(gui_sequence).zfill(2) + "-") if popup else ""
+        output = args.runtime / (args.output.name + "-" + product.output.name + "-" + suffix + action + ".json")
         assert not output.exists()
-        arguments = subprocess.list2cmdline([action, str(product.pid), str(product.started_record["created"]), str(executable), str(output)])
+        values = [action, str(product.pid), str(product.started_record["created"]), str(executable), str(output)]
+        if action.startswith("grant_"):
+            credential = store.load()
+            assert credential is not None
+            values.append(credential.pair_id)
+        arguments = subprocess.list2cmdline(values)
         environment = {"PATH": "C:/Qt/6.8.3/msvc2022_64/bin;C:/Windows/System32;C:/Windows"}
-        register("ibmcp138-gui-probe", args.gui_probe, [dict(arguments=arguments, environment=environment)], [])
+        register("ibmcp139-gui-probe" if popup else "ibmcp138-gui-probe", args.gui_probe, [dict(arguments=arguments, environment=environment)], [])
         response = await asyncio.to_thread(managed_action, dict(Action="Start", Executable=str(args.gui_probe),
             Arguments=arguments, Environment=environment, DesktopName=product.desktop_name))
         pid = response["ProcessId"]
@@ -120,14 +133,20 @@ async def run(args):
             assert win32event.WaitForSingleObject(process, 30000) == win32event.WAIT_OBJECT_0
             native_exit = win32process.GetExitCodeProcess(process)
             process.Close()
-            (args.output / (product.output.name + "-" + action + "-exit.json")).write_text(
+            (args.output / (product.output.name + "-" + suffix + action + "-exit.json")).write_text(
                 json.dumps(dict(pid=pid, exit_code=native_exit)), encoding="utf-8")
         assert native_exit == 0 and value["ok"] and value["target_pid"] == product.pid
         assert value["desktop"] == product.desktop_name
         return value
 
     async def request(client, name, arguments=None, error=None):
-        value = await call(client, name, arguments, error=error)
+        if popup and name == "qkm_capture_window":
+            from window_checks import verify_capture_reply
+            value, png = verify_capture_reply(await client.call_tool(name, arguments), arguments, error=error)
+            if png is not None:
+                (args.output / ("popup-" + str(len(calls)) + ".png")).write_bytes(png)
+        else:
+            value = await call(client, name, arguments, error=error)
         calls.append(dict(tool=name, arguments=arguments, response=value))
         (args.output / "sdk-calls.json").write_text(json.dumps(calls, ensure_ascii=False, indent=2), encoding="utf-8")
         return value
@@ -176,8 +195,18 @@ async def run(args):
                 await connection(client, "pairing_required")
                 await request(client, "qkm_request_pairing")
                 await connection_pending(client)
-                await product.action("ApproveRead" if args.phase == "read" else "ApproveConfigure", own.executable)
+                await product.action("ApproveRead" if base_scope == 1 else "ApproveConfigure", own.executable)
             await connection(client, "connected")
+            if popup and paired and (await request(client, "qkm_get_connection_state"))["scopes"] != base_scope:
+                # Only the sole authenticated fixture pairing may be reset after an incomplete round.
+                await request(client, "qkm_disconnect")
+                await connection(client, "disconnected")
+                await product.action("Revoke")
+                store.forget()
+                await request(client, "qkm_request_pairing")
+                await connection_pending(client)
+                await product.action("ApproveRead" if base_scope == 1 else "ApproveConfigure", own.executable)
+                await connection(client, "connected")
             await product.action("CloseMcp")
             await gui(product, "return_to_mapping")
             await product.action("ReadMapping")
@@ -198,6 +227,61 @@ async def run(args):
                     assert not observed["ibinput"]["connected"] and observed["ibinput"]["last_result"] is None
                 assert (await request(client, "qkm_query", dict(entity="mapping_sources")))["result"] == sources
                 assert (args.runtime / "keymapdata.ini").read_bytes() == before
+                await request(client, "qkm_disconnect")
+                await product.action("OpenAdvanced")
+                await product.action("OpenMcp")
+                await product.action("Disable")
+                await product.action("SaveStartup")
+                await product.action("Revoke")
+                return
+            if popup:
+                from ibinput_window_acceptance import exercise, read_only_exercise
+                desktop_observations = []
+                def desktop_observation():
+                    desktop = win32service.OpenInputDesktop(0, False, win32con.DESKTOP_READOBJECTS)
+                    try:
+                        name = win32service.GetUserObjectInformation(desktop, win32con.UOI_NAME)
+                    finally:
+                        close_desktop(desktop)
+                    foreground = win32gui.GetForegroundWindow()
+                    pid = win32process.GetWindowThreadProcessId(foreground)[1] if foreground else 0
+                    return dict(input_desktop=name, foreground_pid=pid, foreground_observed=bool(foreground))
+                def record_desktop(action, before):
+                    after = desktop_observation()
+                    desktop_observations.append(dict(action=action, before=before, after=after, target_pid=product.pid))
+                    (args.output / "desktop-observations.json").write_text(json.dumps(desktop_observations, indent=2), encoding="utf-8")
+                    assert all(item["input_desktop"] == "Default" and item["foreground_pid"] != product.pid for item in (before, after)), "Record the input desktop/foreground condition separately; do not attribute an external desktop change to the product."
+                async def bound_request(name, arguments=None, error=None):
+                    before_desktop = desktop_observation()
+                    result = await request(client, name, arguments, error)
+                    record_desktop(name, before_desktop)
+                    return result
+                async def bound_gui(action):
+                    before_desktop = desktop_observation()
+                    result = await gui(product, action)
+                    record_desktop(action, before_desktop)
+                    return result
+                async def grant(action, scopes):
+                    await request(client, "qkm_disconnect")
+                    await connection(client, "disconnected")
+                    if action:
+                        await product.action("OpenAdvanced")
+                        pairing_window = await product.action("OpenMcp")
+                        assert pairing_window["pair_count"] == 1
+                        await bound_gui(action)
+                        await product.action("CloseMcp")
+                        await gui(product, "return_to_mapping")
+                        await product.action("ReadMapping")
+                    await request(client, "qkm_connect")
+                    await connection(client, "connected")
+                    assert (await request(client, "qkm_get_connection_state"))["scopes"] == scopes
+                async def capture_gui(window):
+                    await product.capture(int(window), "ibinput-popup-gui")
+                before = (args.runtime / "keymapdata.ini").read_bytes()
+                check = read_only_exercise if args.phase == "popup_read" else exercise
+                result = await check(bound_request, bound_gui, grant, capture_gui)
+                assert (args.runtime / "keymapdata.ini").read_bytes() == before
+                (args.output / "popup-result.json").write_text(json.dumps(result, indent=2), encoding="utf-8")
                 await request(client, "qkm_disconnect")
                 await product.action("OpenAdvanced")
                 await product.action("OpenMcp")
@@ -419,14 +503,16 @@ async def run(args):
                 assert saved.count(b"HideDisabled=false") == 1
                 path.write_bytes(saved.replace(b"HideDisabled=false", b"HideDisabled=true"))
                 await phase("hidden-cold", cold_sources)
-            elif args.phase != "read":
+            elif args.phase not in ("read", "popup", "popup_read"):
                 await phase("cold", cold)
-        assert sum(item["tool"] == "qkm_request_pairing" for item in calls) <= 1 and len(peers) == (1 if args.phase == "read" else 2)
+        assert sum(item["tool"] == "qkm_request_pairing" for item in calls) <= 1 and len(peers) == (1 if args.phase in ("read", "popup", "popup_read") else 2)
         store.forget()
         assert store.load() is None
         (args.output / "passed.json").write_text(json.dumps(dict(phase=args.phase, completed=completed,
             system_input=False, mapping_started=False, peer_count=len(peers), credential_removed=True), indent=2), encoding="utf-8")
-        detail = "Read-only configuration refusals and passive invariance" if args.phase == "read" else "GUI/MCP configuration and independent cold read"
+        detail = ("Private fixed Popup permissions, lifecycle and capture" if popup else
+                  "Read-only configuration refusals and passive invariance" if args.phase == "read" else
+                  "GUI/MCP configuration and independent cold read")
         print("PASS owned stock product", args.phase, detail + "; no mapping started", flush=True)
     finally:
         state = control.verified_controller()
@@ -447,5 +533,5 @@ if __name__ == "__main__":
     parser.add_argument("--runtime", type=lambda value: Path(value).resolve(strict=True), required=True)
     parser.add_argument("--gui-probe", type=lambda value: Path(value).resolve(strict=True), required=True)
     parser.add_argument("--output", type=lambda value: Path(value).resolve(), required=True)
-    parser.add_argument("--phase", choices=("gui", "mcp", "read", "sources"), required=True)
+    parser.add_argument("--phase", choices=("gui", "mcp", "read", "sources", "popup", "popup_read"), required=True)
     asyncio.run(run(parser.parse_args()))

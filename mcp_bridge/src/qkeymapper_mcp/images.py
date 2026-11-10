@@ -20,11 +20,15 @@ def validate_capture(result: dict, discovery, arguments: dict) -> dict:
         fields(result, "target role window_ref source_revision source_tab_ref source_context presentation format pixel_width pixel_height "
                        "device_pixel_ratio bytes captured_at_utc png_base64" + (" edit_target" if result.get("role") == "item_setup"
                            else " settings_scope" + (" settings_editor_unchanged" if "settings_editor_unchanged" in result else "")
-                           if result.get("role") == "mapping_advanced" else ""))
+                           if result.get("role") in ("mapping_advanced", "ibinput_settings") else "")
+                       + (" preferences_revision" if result.get("role") == "ibinput_settings" else ""))
         require(all(result[key] == arguments.get(key) for key in ("role", "window_ref", "source_revision", "source_tab_ref")))
-        require(result["role"] in ("main", "item_setup", "mapping_advanced") and result["format"] == "image/png")
-        if result["role"] == "mapping_advanced":
-            require(result["settings_scope"] == "live_loaded_settings_not_committed_by_source_revision")
+        require(result["role"] in ("main", "item_setup", "mapping_advanced", "ibinput_settings") and result["format"] == "image/png")
+        if result["role"] in ("mapping_advanced", "ibinput_settings"):
+            require(result["settings_scope"] == ("live_ibinput_preferences_and_passive_status"
+                    if result["role"] == "ibinput_settings" else "live_loaded_settings_not_committed_by_source_revision"))
+            if result["role"] == "ibinput_settings":
+                hex_bytes(result["preferences_revision"], 32)
             if "settings_editor_unchanged" in result:
                 require(type(result["settings_editor_unchanged"]) is bool)
         hex_bytes(result["window_ref"], 32)

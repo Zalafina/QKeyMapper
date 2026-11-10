@@ -57,7 +57,7 @@ async def verify_window_query_arguments(request) -> None:
     assert capability["method"] == "qkm_query" and capability["required_scopes"] == 1 and capability["read_only"]
     schema = capability["arguments_schema"]
     assert schema["required"] == ["entity"] and schema["additionalProperties"] is False
-    assert set(schema["properties"]) == {"entity", "offset", "limit"}
+    assert set(schema["properties"]) == {"entity", "offset", "limit", "window_role"}
     assert schema["properties"]["entity"]["const"] == "windows"
     first = (await request("qkm_query", {"entity": "windows", "limit": 1}))["result"]
     second = (await request("qkm_query", {"entity": "windows", "offset": 1, "limit": 1}))["result"]

@@ -1,6 +1,6 @@
 # QKeyMapper MCP 桥接（开发阶段）
 
-官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。P1-121后当前开发产品返回十九项业务能力、十七工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
+官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。IB-MCP-138后当前开发产品返回二十三项业务能力、十七工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
 桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。PKG-123提供下述免全局Python的桥接组件目录包；完整Release集成及干净双系统交付仍属M3-B，原venv入口继续用于开发和回归。
 
@@ -64,7 +64,7 @@ workspace 关联复用客户端已有的 MCP 配置和固定启动参数，参�
 7. 能力包含 `source.read` 时，先查询 mapping_sources，后续页传返回的 source_snapshot.revision 为 source_revision；查询 mappings 必须同时传该 source_revision 和所选 source_tab_ref。源表来自实际普通／共通内存表，包含非当前 Tab，附加显示的共通行不会重复列为普通源行。每个源行含 source_ref、source_row、fields、derived 和 lock_state_sample；fields 沿用现有映射码字段名及类型，派生字段只采样，不重新计算或回写。引用属于本次源快照，不能解析为写入授权；源内容、加载／结构代次、实例或配对权限改变时返回 stale_source，须重新查询。完整快照上限 4 MiB，单页还受现有通信帧限制，使用实际 next_offset 分页；单项超限明确拒绝。
 8. 能力包含 `help.read` 时，`qkm_get_help` 的 topic 为 `basic_mapping`、`original_keys` 或 `mapping_keys`。基础帮助给出 A→B 语法示例、组合／序列分隔符、等待及连发的毫秒范围／默认值、映射项重复模式及次数含义（与宏 xN 的约束分开）；等待控件的 0 表示不追加后缀，字面 ⏱0 非法。键名直接来自产品解析器的有效列表，去空／去重并按大小写敏感顺序分页；offset 从 0 开始，limit 为 1–100、默认 50，使用 next_offset 续页。返回 reference_scope=parser_help_only，不校验完整映射或设备是否可用，不授予编辑权限；实际可调用操作以能力发现为准。此帮助不读取可变映射源，也不停止映射。
 9. `qkm_disconnect` 有界取消等待并断开，保留已存配对。它不启动／停止映射，也不撤销服务器权限。撤销使用 QKeyMapper 的管理窗口；接口关闭时也能查看及撤销持久化配对，无需临时启用接口。
-10. 能力包含 `windows.read` 时，`qkm_query({"entity":"windows"})` 默认观察当前已认证实例的main／item_setup两个固定角色；120另允许window_role="mapping_advanced"，只返回固定高级窗一项。仅接受entity／offset／limit及此可选角色，默认offset为0–2、显式高级窗0–1，limit为1–100。返回实际 EXE／PID／创建时间／GUI 线程桌面、Qt／原生可见、最小化、前台精确采样、逻辑尺寸／DPR及不透明 window_ref。未创建原生窗口时引用为 null，不为查询调用 winId 创建或显示窗口。该查询只需 Read，不授予或调用显示／截图，也不读取其他进程窗口。
+10. 能力包含 `windows.read` 时，`qkm_query({"entity":"windows"})` 默认观察当前已认证实例的main／item_setup两个固定角色；120／139另允许window_role="mapping_advanced"或"ibinput_settings"，只返回所选固定设置窗一项。仅接受entity／offset／limit及此可选角色，默认offset为0–2、显式高级窗0–1，limit为1–100。返回实际 EXE／PID／创建时间／GUI 线程桌面、Qt／原生可见、最小化、前台精确采样、逻辑尺寸／DPR及不透明 window_ref。未创建原生窗口时引用为 null，不为查询调用 winId 创建或显示窗口。该查询只需 Read，不授予或调用显示／截图，也不读取其他进程窗口。
 
 窗口引用仅属于实例／配对权限代次及本角色窗口生命周期，关闭／隐藏重开、呈现／原生窗口重建、销毁或身份／权限改变后失效；正常返回 Agent 导致的焦点变化不使其失效。`foreground_exact` 和 `foreground_in_instance` 是本次采样，不代表已请求激活或已核实前台显示。引用不证明映射源／场景未变，也不授权操作；截图独立核对业务源及源Tab；109提供私有后台单项打开，121补固定高级窗；普通Default显示确认仍待。
 
@@ -100,7 +100,7 @@ IB-MCP-138：`mapping.add`可选`send_method`，0=SendInput、1=SendMessage、2=
 
 `ibinput.preferences.update`须带`qkm_get_state.result.ibinput.preferences_revision`，至少指定`preferred_backend`（auto／logitech_ghub／logitech_legacy／razer）或`unavailable_policy`（block／sendinput_before_start）。未指定项保留。提交仅改全局内存偏好及dirty，持久化仍需显式完整保存；预览说明包含两项共享键。实际语义变化使旧写预览失效，同值和被动状态采样不推进修订。取消保存保留此前草稿；写失败后须查询原operation及状态，不能盲重试。
 
-`qkm_get_state.ibinput`分别报告偏好／语义修订、实际连接后端、各后端已开放能力、当前启动前回退、停止／释放状态和最近历史结果。`sampled_at_utc`是观察时间；未连接时`actual_backend=null`，历史后端不表示当前连接。旧Logitech产品输入能力仍关闭，自动选择先筛当前映射所需能力，再依G HUB→旧Logitech→Razer尝试。主动连接检查／明确试发的MCP工具以及`ibinput_settings`窗口角色尚未提供。
+`qkm_get_state.ibinput`分别报告偏好／语义修订、实际连接后端、各后端已开放能力、当前启动前回退、停止／释放状态和最近历史结果。`sampled_at_utc`是观察时间；未连接时`actual_backend=null`，历史后端不表示当前连接。旧Logitech产品输入能力仍关闭，自动选择先筛当前映射所需能力，再依G HUB→旧Logitech→Razer尝试。主动连接检查／明确试发的MCP工具尚未提供；139增加下述固定`ibinput_settings`窗口角色，动作不触发连接检查。
 
 先核对目标声明`configuration.save.preview`，再调用`qkm_preview_changes`，例如`{"action":"configuration.save","setting_name":"Demo"}`；setting_name是明确配置组名，其他映射字段省略。普通／新建／覆盖目标及当前已选全局组均由产品校验，不切换GUI配置或改名称控件决定目标。须Read＋Configure、成功加载及初始静止或仍有效的完整清理许可、无打开编辑窗或未结算热键输入；Worker STOPPED本身不够。schema以oneOf保留原映射四个必填字段与保存分支，SDK拒绝未知字段，C++另独立校验组合及业务规则。
 
@@ -157,7 +157,7 @@ Qt5 使用其维护 EXE、Qt bin 和独立 output。`--approval-timeout` 实际�
 
 ## 受限真实窗口图片（P1-108）
 
-先查询 `mapping_sources`／`mappings` 取得当前 `source_revision`、所选 `source_tab_ref`，再查询 `windows` 取得非空 `window_ref`。能力包含 `windows.capture` 且配对有 **Read+CaptureWindows** 时，调用 `qkm_capture_window(role, window_ref, source_revision, source_tab_ref)`；role固定main／item_setup／mapping_advanced，四项均必填，无PID／HWND／输出路径。main须显示所选源Tab，单项窗须对应实际源Tab／行；窗口必须已显示且非最小化。截图工具不打开、恢复或激活窗口；单项窗可由下述私有后台正式入口或原GUI打开。
+先查询 `mapping_sources`／`mappings` 取得当前 `source_revision`、所选 `source_tab_ref`，再查询 `windows` 取得非空 `window_ref`。能力包含 `windows.capture` 且配对有 **Read+CaptureWindows** 时，调用 `qkm_capture_window(role, window_ref, source_revision, source_tab_ref)`；role固定main／item_setup／mapping_advanced／ibinput_settings，四项均必填，无PID／HWND／输出路径。main须显示所选源Tab，单项窗须对应实际源Tab／行；窗口必须已显示且非最小化。截图工具不打开、恢复或激活窗口；单项窗可由下述私有后台正式入口或原GUI打开。
 
 成功的 `CallToolResult.content` 含一项原生 `ImageContent(type="image", mime_type="image/png", data=<Base64>)` 及不重复图片Base64的JSON文本；`structured_content.result`为相同元数据。包括准确实例／进程创建身份、实际桌面、角色／窗口引用、源及源Tab／单项行、像素／DPR／PNG字节数、UTC时间和桥接计算的SHA256。Agent可直接查看原生图像；gateway应按其SDK取出image内容或解码成自己的受控附件，再关联QQ会话发送。MCP返回图片不证明QQ发送或送达，本机没有gateway联调环境。
 
@@ -253,7 +253,7 @@ Win11双Qt正式图片与同次原GUI客户区PNG字节相同，Agent已查看�
 
 ## 私有后台高级窗安全开关（P1-121）
 
-先查询实际能力mapping.settings.open／close及当前mapping_sources，使用当前附着源的source_tab_ref调用`qkm_open_mapping_settings(source_tab_ref=..., presentation="private_background")`。仅Read+ShowWindows，在实际非输入私有桌面复用原GUI入口显示固定高级窗，不切主窗设置页或请求激活；不提供任意PID／HWND／role／路径或设置编辑。已有编辑窗／子窗／popup、非空闲或不稳定数字拒绝。普通Default前台显示与人工确认仍属于另一个待交付流程。
+先查询实际能力mapping.settings.open／close及当前mapping_sources，使用当前附着源的source_tab_ref调用`qkm_open_mapping_settings(source_tab_ref=..., presentation="private_background")`。仅Read+ShowWindows，在实际非输入私有桌面复用原GUI入口显示固定高级窗，不切主窗设置页或请求激活；不提供任意PID／HWND／路径或设置编辑；139仅增加下述固定角色选择。已有编辑窗／子窗／popup、非空闲或不稳定数字拒绝。普通Default前台显示与人工确认仍属于另一个待交付流程。
 
 成功返回目标／源／窗口摘要；用返回window_ref和同一source_tab_ref调用`qkm_close_mapping_settings(..., presentation="private_background")`。只关闭本owner正式打开、完整源及全部输入摘要未变化的窗；GUI打开的窗为editor_not_owned，数值或未提交数字变化为editor_draft_changed，保留现场，不提供discard。旧源／旧窗及权限／身份变化拒绝；失败／断线先查询实际状态，不能自动重发、清草稿或换目标。
 
@@ -329,3 +329,13 @@ P3-125 起上述演示入口仅接受version2和已认证只配置产品；缺�
 已存配对可在同一可信路径／登录上下文重连；MCP仍需用户显式启用，新实例必须重新核验，旧引用／预览不能复用。只批准Read时不会自动扩大为配置权限；须操作者明确处理新的配对，窗口追加权限仍沿原独立批准入口。
 
 132实际两图在cf56普通产品完成，随后修正返回线程的多余桌面迁移并单独复验返回／重连，未重复图片。真实返回失败／15分钟实等／锁屏／宿主意外死亡与完整Release／Win10／QQ仍待；异常宿主死亡或恢复界面不可用仍可能需要人工Windows桌面恢复。
+
+## IbInput 固定设置 Popup（IB-MCP-139）
+
+此角色复用现有窗口协议，不增加工具或连接检查／输入权限。先以Read查询`qkm_query(entity="windows", window_role="ibinput_settings")`；只观察已核验实例，未创建时不创建窗口。默认windows查询仍只返回main／item_setup。
+
+在实际私有非输入桌面的安全当前源上下文中，以Read+ShowWindows调用`qkm_open_mapping_settings(source_tab_ref=..., presentation="private_background", window_role="ibinput_settings")`，复用原IbInput设置按钮入口，不请求激活。不传window_role仍保持mapping_advanced。已显示的GUI窗口不被替换或接管。使用返回的window_ref及当前source_revision／source_tab_ref，以Read+CaptureWindows调用`qkm_capture_window(role="ibinput_settings", ...)`取得真实PNG；Capture不要求Configure或Show，但窗口必须已显示。
+
+`qkm_close_mapping_settings(..., window_role="ibinput_settings")`需要Read+ShowWindows，只关闭同一认证连接正式打开且窗口代次、源上下文和偏好语义修订未变的Popup。重连可以查询／捕获，不能继承旧连接的关闭权；GUI自行打开或偏好已变时保留现场并报原因。权限不足、旧引用、其他模态／下拉弹窗或非私有桌面明确拒绝，不自动重试。
+
+图片元数据`settings_scope="live_ibinput_preferences_and_passive_status"`及`preferences_revision`区分实时全局偏好与映射源修订；`settings_editor_unchanged`仅在本连接仍拥有该窗口／源时出现。窗口展示不点击刷新或连接检查、不修改偏好、不初始化IbInput或发送输入。`qkm_demo_mapping`的自动view集合仍为main／item_setup／mapping_advanced，IbInput Popup须显式使用上述窗口工具；结果图片供Agent消费，不代表QQ已发送。当前定向验收范围和未验项以唯一主计划为准。

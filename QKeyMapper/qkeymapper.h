@@ -1301,7 +1301,7 @@ public:
     static bool isWindowInIgnoreList(QString &processname, QString &windowtitle, QString &classname);
     static bool isViGEmBusInstalled(void);
     static bool isFakerInputInstalled(void);
-    void showIbInputSettings(QWidget *anchor);
+    void showIbInputSettings(QWidget *anchor, bool background = false);
     void refreshIbInputUi();
     static bool checkForSysDevice(const wchar_t* searchHardwareId);
 

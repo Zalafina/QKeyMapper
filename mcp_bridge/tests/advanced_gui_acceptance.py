@@ -36,7 +36,7 @@ async def exercise(client, request, variant, output, exe, *, capture=False):
     if capture:
         capabilities = (await request("qkm_get_capabilities"))["result"]["business_capabilities"]
         window_cap = next(value for value in capabilities if value["id"] == "windows.read")
-        assert window_cap["arguments_schema"]["properties"]["window_role"]["const"] == "mapping_advanced"
+        assert set(window_cap["arguments_schema"]["properties"]["window_role"]["enum"]) == {"mapping_advanced", "ibinput_settings"}
         hidden = (await request("qkm_query", dict(entity="windows", window_role="mapping_advanced")))["result"]
         assert hidden["total"] == 1 and hidden["items"][0]["role"] == "mapping_advanced" and not hidden["items"][0]["qt_visible"]
         await request("qkm_query", dict(entity="mapping_sources", window_role="mapping_advanced"), error="invalid_arguments")

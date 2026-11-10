@@ -228,11 +228,17 @@ class Bridge:
     async def close_mapping_editor(self, source_ref: str, window_ref: str, presentation: str) -> dict:
         return await self._call("qkm_close_mapping_editor", dict(source_ref=source_ref, window_ref=window_ref, presentation=presentation))
 
-    async def open_mapping_settings(self, source_tab_ref: str, presentation: str) -> dict:
-        return await self._call("qkm_open_mapping_settings", dict(source_tab_ref=source_tab_ref, presentation=presentation))
+    async def open_mapping_settings(self, source_tab_ref: str, presentation: str, window_role: str = "mapping_advanced") -> dict:
+        arguments = dict(source_tab_ref=source_tab_ref, presentation=presentation)
+        if window_role != "mapping_advanced":
+            arguments["window_role"] = window_role
+        return await self._call("qkm_open_mapping_settings", arguments)
 
-    async def close_mapping_settings(self, source_tab_ref: str, window_ref: str, presentation: str) -> dict:
-        return await self._call("qkm_close_mapping_settings", dict(source_tab_ref=source_tab_ref, window_ref=window_ref, presentation=presentation))
+    async def close_mapping_settings(self, source_tab_ref: str, window_ref: str, presentation: str, window_role: str = "mapping_advanced") -> dict:
+        arguments = dict(source_tab_ref=source_tab_ref, window_ref=window_ref, presentation=presentation)
+        if window_role != "mapping_advanced":
+            arguments["window_role"] = window_role
+        return await self._call("qkm_close_mapping_settings", arguments)
 
     async def demo_state(self) -> dict:
         return await self._perform(self._demo_state)

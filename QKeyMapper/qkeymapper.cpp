@@ -39049,29 +39049,43 @@ void QKeyMapper::handleAutomationMappingSettings(const QkmAutomation::Automation
     if (!selected.value(QStringLiteral("attached_to_ui")).toBool() || tab != s_KeyMappingTabWidgetCurrentIndex) {
         reject(QStringLiteral("stale_source")); return;
     }
-    if (!m_MappingAdvancedDialog || !m_AutomationWindows || !mappingAdditionAllowed(tab)
-        || hasOpenMappingEditor(closing ? m_MappingAdvancedDialog : nullptr)
-        || QApplication::activeModalWidget() || QApplication::activePopupWidget() || m_KeyMappingDataTable->hasActiveEditor()
+    const QString role = request.arguments.value(QStringLiteral("window_role")).toString(QStringLiteral("mapping_advanced"));
+    const bool ibInput = role == QStringLiteral("ibinput_settings");
+    QWidget *editor = ibInput ? static_cast<QWidget *>(m_IbInputPopup) : m_MappingAdvancedDialog;
+    QWidget *popup = QApplication::activePopupWidget();
+    if ((!ibInput && !m_MappingAdvancedDialog) || !m_AutomationWindows || !mappingAdditionAllowed(tab)
+        || hasOpenMappingEditor(closing ? editor : nullptr)
+        || (!closing && editor && editor->isVisible())
+        || QApplication::activeModalWidget() || (popup && !(closing && ibInput && popup == editor))
+        || m_KeyMappingDataTable->hasActiveEditor()
         || (m_CustomNotificationSetupDialog && m_CustomNotificationSetupDialog->isVisible())) {
         reject(QStringLiteral("context_busy")); return;
     }
-    const QString role = QStringLiteral("mapping_advanced");
     if (closing) {
         QWidget *window = m_AutomationWindows->resolve(role, closeArguments.windowReference,
             server.instanceId(), request.pairId, request.permissionEpoch);
-        if (window != m_MappingAdvancedDialog) { reject(QStringLiteral("stale_window")); return; }
+        if (!editor || window != editor) { reject(QStringLiteral("stale_window")); return; }
         if (!window->isVisible() || window->isMinimized()
             || !IsWindowVisible(reinterpret_cast<HWND>(window->internalWinId()))) { reject(QStringLiteral("window_unavailable")); return; }
-        if (!m_AutomationWindows->ownsEditor(arguments.sourceReference, role)) { reject(QStringLiteral("editor_not_owned")); return; }
+        if (!m_AutomationWindows->ownsEditor(arguments.sourceReference, role, ibInput ? request.connectionId : QString())) {
+            reject(QStringLiteral("editor_not_owned")); return;
+        }
     } else if (!isVisible() || isMinimized() || !IsWindowVisible(reinterpret_cast<HWND>(internalWinId()))) {
         reject(QStringLiteral("window_unavailable")); return;
     }
-    const QByteArray before = m_MappingAdvancedDialog->automationEditorFingerprint();
+    const auto fingerprint = [this, ibInput]() {
+        return ibInput ? QCryptographicHash::hash(automationIbInputPreferencesRevision().toUtf8(), QCryptographicHash::Sha256)
+            : m_MappingAdvancedDialog->automationEditorFingerprint();
+    };
+    const QByteArray before = fingerprint();
     if (before.size() != 32 || (closing && !m_AutomationWindows->editorDraftMatches(before))) {
         reject(closing ? QStringLiteral("editor_draft_changed") : QStringLiteral("context_busy")); return;
     }
     if (!server.isRequestCurrent(request)) return;
-    if (closing) closeMappingAdvancedDialog();
+    if (closing) {
+        if (ibInput) m_IbInputPopup->close();
+        else closeMappingAdvancedDialog();
+    } else if (ibInput) showIbInputSettings(ui->ibInputSettingsButton, true);
     else {
         const QPointer<QWidget> editor = m_MappingAdvancedDialog;
         const bool previousNoActivate = editor->testAttribute(Qt::WA_ShowWithoutActivating);
@@ -39096,9 +39110,9 @@ void QKeyMapper::handleAutomationMappingSettings(const QkmAutomation::Automation
         || (closing && (window.value(QStringLiteral("qt_visible")).toBool() || window.value(QStringLiteral("native_visible")).toBool()))) {
         reject(QStringLiteral("window_unavailable")); return;
     }
-    const QByteArray fingerprint = m_MappingAdvancedDialog->automationEditorFingerprint();
-    if (fingerprint != before) { reject(QStringLiteral("editor_draft_changed")); return; }
-    if (!closing) m_AutomationWindows->rememberEditor(arguments.sourceReference, fingerprint, role);
+    const QByteArray afterFingerprint = fingerprint();
+    if (afterFingerprint != before) { reject(QStringLiteral("editor_draft_changed")); return; }
+    if (!closing) m_AutomationWindows->rememberEditor(arguments.sourceReference, afterFingerprint, role, ibInput ? request.connectionId : QString());
     server.reply(request.connectionId, request.requestId, {{QStringLiteral("target"), windows.page.value(QStringLiteral("target"))},
         {QStringLiteral("role"), role}, {QStringLiteral("presentation"), QStringLiteral("private_background")},
         {QStringLiteral("activation_requested"), false}, {closing ? QStringLiteral("closed") : QStringLiteral("opened"), true},
@@ -39126,12 +39140,16 @@ void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRe
     const auto validate = [this, request, arguments](QPointer<QWidget> &window, QJsonObject &metadata) -> QString {
         auto &current = m_McpControlDialog->server();
         if (!current.isRequestCurrent(request)) return QStringLiteral("request_not_current");
+        if (arguments.role == QStringLiteral("ibinput_settings") && !privateBackgroundDesktopAvailable())
+            return QStringLiteral("unsupported_desktop");
         window = m_AutomationWindows ? m_AutomationWindows->resolve(arguments.role, arguments.windowReference,
             current.instanceId(), request.pairId, request.permissionEpoch) : nullptr;
         if (!window) return QStringLiteral("stale_window");
         if (!window->isVisible() || window->isMinimized()
             || !IsWindowVisible(reinterpret_cast<HWND>(window->internalWinId()))) return QStringLiteral("window_unavailable");
-        if (QApplication::activeModalWidget() || QApplication::activePopupWidget()) return QStringLiteral("context_busy");
+        const auto popup = QApplication::activePopupWidget();
+        if (QApplication::activeModalWidget() || (popup && !(arguments.role == QStringLiteral("ibinput_settings")
+                && popup == window.data()))) return QStringLiteral("context_busy");
         QString sourceError;
         const QJsonObject snapshot = collectAutomationSourceSnapshot(sourceError);
         if (snapshot.isEmpty()) return sourceError.isEmpty() ? QStringLiteral("context_busy") : sourceError;
@@ -39161,6 +39179,13 @@ void QKeyMapper::handleAutomationWindowCapture(const QkmAutomation::AutomationRe
                 metadata.insert(QStringLiteral("settings_editor_unchanged"),
                     m_AutomationWindows->editorDraftMatches(m_MappingAdvancedDialog->automationEditorFingerprint()));
             }
+        }
+        if (arguments.role == QStringLiteral("ibinput_settings")) {
+            metadata.insert(QStringLiteral("settings_scope"), QStringLiteral("live_ibinput_preferences_and_passive_status"));
+            metadata.insert(QStringLiteral("preferences_revision"), automationIbInputPreferencesRevision());
+            if (m_AutomationWindows->ownsEditor(arguments.sourceTabReference, arguments.role, request.connectionId))
+                metadata.insert(QStringLiteral("settings_editor_unchanged"), m_AutomationWindows->editorDraftMatches(
+                    QCryptographicHash::hash(automationIbInputPreferencesRevision().toUtf8(), QCryptographicHash::Sha256)));
         }
         if (arguments.role == QStringLiteral("item_setup")) {
             const int tab = m_ItemSetupDialog->getTabIndex(), row = m_ItemSetupDialog->getItemRow();
@@ -53115,10 +53140,11 @@ void QKeyMapper::onLastAutoMatchedSettingTimerTimeout()
 #endif
 }
 
-void QKeyMapper::showIbInputSettings(QWidget *anchor)
+void QKeyMapper::showIbInputSettings(QWidget *anchor, bool background)
 {
     if (!m_IbInputPopup) {
         m_IbInputPopup=new QkmIbInputPopup(this);
+        if (m_AutomationWindows) m_AutomationWindows->trackIbInputSettings(m_IbInputPopup);
         connect(m_IbInputPopup,&QkmIbInputPopup::preferencesChanged,this,[this] { requestSaveSettingDirty(); refreshIbInputUi(); });
         connect(m_IbInputPopup,&QkmIbInputPopup::connectionCheckRequested,this,[this] {
             QPointer<QkmIbInputPopup> popup(m_IbInputPopup);
@@ -53132,6 +53158,9 @@ void QKeyMapper::showIbInputSettings(QWidget *anchor)
         });
     }
     m_IbInputPopup->setRunning(m_KeyMapStatus!=KEYMAP_IDLE || m_IbInputStopPending);
+    const bool noActivate = m_IbInputPopup->testAttribute(Qt::WA_ShowWithoutActivating);
+    const auto restore = qScopeGuard([this, noActivate] { m_IbInputPopup->setAttribute(Qt::WA_ShowWithoutActivating, noActivate); });
+    if (background) m_IbInputPopup->setAttribute(Qt::WA_ShowWithoutActivating, true);
     m_IbInputPopup->showAt(anchor,m_uiScale ? m_uiScale->ratio() : 1.0);
 }
 

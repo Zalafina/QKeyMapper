@@ -4,7 +4,7 @@
 
 ## 当前状态与填写规则
 
-IB-MCP-138新增并选验四项能力：mapping.update.preview／apply、ibinput.preferences.update.preview／apply；工具数仍17，业务能力23。mapping.add的send_method纳入0–3并保留默认0；受限更新只改当前可见源行的发送方式，合法Common及可见禁用行可用，隐藏／非当前源拒绝，同移动组冲突不产生修改。两项全局偏好参与预览语义修订、非行足迹、显式完整保存、取消与写失败恢复；被动采样不写配置。Read／Configure正反例、普通Release独立GUI和正式MCP保存冷读、生命周期及私有演示／Default两后端代表结果见[独立证据页](ibinput_mcp_integration_validation.md)。完整M1／M2未完成；主动连接检查／试发工具、ibinput_settings受限角色仍未交付。
+IB-MCP-138新增并选验四项能力：mapping.update.preview／apply、ibinput.preferences.update.preview／apply；工具数仍17，业务能力23。mapping.add的send_method纳入0–3并保留默认0；受限更新只改当前可见源行的发送方式，合法Common及可见禁用行可用，隐藏／非当前源拒绝，同移动组冲突不产生修改。两项全局偏好参与预览语义修订、非行足迹、显式完整保存、取消与写失败恢复；被动采样不写配置。Read／Configure正反例、普通Release独立GUI和正式MCP保存冷读、生命周期及私有演示／Default两后端代表结果见[独立证据页](ibinput_mcp_integration_validation.md)。完整M1／M2未完成；主动连接检查／试发工具仍未交付。139增加下述固定Popup角色，工具／能力数仍17／23。
 
 日期：2026-10-28；初始源码基线：`d49a9f57`。**逐控件入口及68条关键链路已盘点。通信／配对、选定状态／目录／源查询／帮助已接；MAP-67-B1增加基本映射内存添加预览／提交／取消／结果查询，SAVE-95接保存只读预览、SAVE-97接完整范围／覆盖确认后的正式保存提交与分段结果，当前共15工具、14项业务能力（107增加windows.read，108增加windows.capture，109／110增加mapping.editor.open／close）。完整增改删、完整保存生命周期、MCP启停及全量GUI等价性仍未完成。** Python字节锁与PC-W11接续见ENV-39，缓存见CACHE-40／CACHE72；入口和链路数量不等于已支持能力数。
 
@@ -1108,3 +1108,9 @@ demo.context.read／qkm_query(demo_context)需Read+Configure和实际私有后�
 ## PERSIST-136A：真实普通Release启动选择与同登录复用
 
 修复完整EXE applicationName污染默认启动目录；不改配对／权限／协议，仅稳定的用户本机根。双Qt默认构造各3项、最终普通Qt6及双Qt control构建通过；真实普通Qt6 GUI保存开／关、同路径产品重启、一次Read＋Configure配对、新桥接认证、A→B正式预览／提交／完整保存／冷读及旧源／预览拒绝、旧操作unknown已选验。失败、只读重建／续接和八次actual0见[同一C1](map67c1_validation.md#persist-136a真实普通release启动选择与同登录复用2026-11-02pc-w11)。本轮不启动映射／系统输入、不切Default；Qt5产品／Win10／跨登录／PC重启、完整交付／QQ仍待。IbInput合流与137未实施，未合流发送方式回落风险仅登记主计划。
+
+## IB-MCP-139：IbInput 固定 Popup
+
+已实现并在PC-W11选定验收：windows.read显式window_role=ibinput_settings惰性观察；mapping.settings.open／close可选该固定角色，省略仍为mapping_advanced；windows.capture允许其自身Qt客户区。仅后台私有非输入桌面及当前安全源。Read查询；Read+ShowWindows开关；Read+CaptureWindows捕获，均不附带Configure、主动连接检查或输入权限。只关闭当前认证连接正式打开、源／窗口／偏好修订未变的Popup；GUI窗口与旧连接不能接管。
+
+普通Release的独立GUI动作／正式MCP、Show／Capture／Configure分离、陈旧窗口及偏好变化拒绝、配置／INI不变与中文PNG通过；双Qt窗口组件、Qt6只配置演示三张图及逐API零调用选验见[同一证据页](ibinput_mcp_integration_validation.md)。qkm_demo_mapping自动view集合未增加IbInput，须显式窗口工具。普通外部PrintWindow捕获High失败单列；无新Default／Win10或QQ渠道通过。

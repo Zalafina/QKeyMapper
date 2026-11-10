@@ -4,6 +4,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QSaveFile>
+#include <QScopeGuard>
 #include <QThread>
 #include <Windows.h>
 #include <ole2.h>
@@ -101,7 +102,7 @@ public:
             }
             QThread::msleep(30);
         }
-        throw std::runtime_error("The fixed owned control did not appear.");
+        throw std::runtime_error("The fixed owned control did not appear: " + QString::fromWCharArray(id).toStdString());
     }
     void invoke(const wchar_t *id)
     {
@@ -126,15 +127,46 @@ public:
         require(window && owner == m_pid && desktopName(thread) == m_desktop, "Owned window identity changed.");
         return window;
     }
-    void click(IUIAutomationElement *element)
+    void click(IUIAutomationElement *element, bool firstPairRow = false)
     {
         const HWND window = ownedWindow(element);
         RECT bounds{}; checked(element->get_CurrentBoundingRectangle(&bounds), "Fixed control bounds");
         require(bounds.right > bounds.left && bounds.bottom > bounds.top, "Empty fixed control bounds.");
-        POINT point{(bounds.left + bounds.right) / 2, (bounds.top + bounds.bottom) / 2};
+        // The dedicated list has one row; verify its actual pair ID before granting permissions.
+        const LONG firstRow = qMin(bounds.bottom - 1, bounds.top + qMax(1, MulDiv(8, int(GetDpiForWindow(window)), 96)));
+        POINT point{(bounds.left + bounds.right) / 2, firstPairRow ? firstRow : (bounds.top + bounds.bottom) / 2};
         require(ScreenToClient(window, &point), "Cannot locate the owned GUI control.");
         const LPARAM position = MAKELPARAM(point.x, point.y);
         require(PostMessageW(window, WM_LBUTTONDOWN, MK_LBUTTON, position) && PostMessageW(window, WM_LBUTTONUP, 0, position), "Cannot click the owned GUI control.");
+    }
+    void grantWindows(bool show, bool capture, const QString &pairId)
+    {
+        auto list = find(L"mcpPairings");
+        click(list.Get(), true);
+        click(find(L"mcpWindowPermissions").Get());
+        bool approved = false;
+        const auto closeOnError = qScopeGuard([&] {
+            if (!approved) { try { click(find(L"mcpWindowClose").Get()); } catch (...) {} }
+        });
+        const QString actualPair = nameOf(find(L"mcpWindowPair").Get()).trimmed().section(QLatin1Char('\n'), -1);
+        require(actualPair.endsWith(pairId), "The selected pairing ID does not match the dedicated authenticated client.");
+        for (const wchar_t *id : {show ? L"mcpWindowShow" : nullptr, capture ? L"mcpWindowCapture" : nullptr}) {
+            if (!id) continue;
+            auto box = find(id);
+            ComPtr<IUIAutomationTogglePattern> pattern;
+            checked(box->GetCurrentPatternAs(UIA_TogglePatternId, IID_PPV_ARGS(&pattern)), "Window permission toggle");
+            require(bool(pattern), "Missing permission checkbox pattern.");
+            ToggleState state;
+            checked(pattern->get_CurrentToggleState(&state), "Window permission state");
+            require(state == ToggleState_Off, "The requested test permission is already granted.");
+            click(box.Get());
+            for (int attempt = 0; attempt < 100 && state != ToggleState_On; ++attempt) {
+                QThread::msleep(20); checked(pattern->get_CurrentToggleState(&state), "Observed permission click");
+            }
+            require(state == ToggleState_On, "The permission checkbox did not change.");
+        }
+        click(find(L"mcpWindowApprove").Get());
+        approved = true;
     }
     QString choose(const wchar_t *id, int index, int count)
     {
@@ -323,13 +355,20 @@ int main(int argc, char **argv)
 {
     QCoreApplication app(argc, argv);
     const auto arguments = app.arguments();
-    if (arguments.size() != 6) return 2;
+    if (arguments.size() != 6 && arguments.size() != 7) return 2;
     const QString action = arguments.at(1), executable = arguments.at(4);
     const QFileInfo output(arguments.at(5));
     if ((action != QStringLiteral("row_ibinput") && action != QStringLiteral("preferences_razer_fallback")
-         && action != QStringLiteral("return_to_mapping") && action != QStringLiteral("save"))
+         && action != QStringLiteral("return_to_mapping") && action != QStringLiteral("save")
+         && action != QStringLiteral("ibinput_open") && action != QStringLiteral("ibinput_close")
+         && action != QStringLiteral("ibinput_preferences_live") && action != QStringLiteral("grant_show")
+         && action != QStringLiteral("grant_capture") && action != QStringLiteral("grant_both"))
         || output.exists() || output.suffix() != QStringLiteral("json")
         || output.absolutePath() != QFileInfo(executable).absolutePath()) return 2;
+    const bool grant = action.startsWith(QStringLiteral("grant_"));
+    if (grant != (arguments.size() == 7)) return 2;
+    const QString pairId = grant ? arguments.at(6) : QString();
+    if (grant && (pairId.size() != 32 || QByteArray::fromHex(pairId.toLatin1()).toHex() != pairId.toLatin1())) return 2;
     bool pidOk = false, createdOk = false;
     const DWORD pid = arguments.at(2).toUInt(&pidOk);
     const quint64 created = arguments.at(3).toULongLong(&createdOk);
@@ -342,7 +381,17 @@ int main(int argc, char **argv)
         Target target(pid, created, executable);
         result.insert(QStringLiteral("desktop"), target.desktop());
         require(nameOf(target.find(L"keymapButton").Get()) == QStringLiteral("映射开始"), "Mapping must remain idle.");
-        if (action == QStringLiteral("return_to_mapping")) {
+        if (action.startsWith(QStringLiteral("grant_"))) {
+            target.grantWindows(action != QStringLiteral("grant_capture"), action != QStringLiteral("grant_show"), pairId);
+        } else if (action == QStringLiteral("ibinput_open")) {
+            target.invoke(L"ibInputSettingsButton");
+            result.insert(QStringLiteral("window"), QString::number(quintptr(target.ownedWindow(target.find(L"ibInputBackendComboBox").Get()))));
+        } else if (action == QStringLiteral("ibinput_close")) {
+            target.escape(target.find(L"ibInputBackendComboBox").Get());
+        } else if (action == QStringLiteral("ibinput_preferences_live")) {
+            result.insert(QStringLiteral("backend_label"), target.choose(L"ibInputBackendComboBox", 3, 4));
+            result.insert(QStringLiteral("policy_label"), target.choose(L"ibInputPolicyComboBox", 1, 2));
+        } else if (action == QStringLiteral("return_to_mapping")) {
             target.closeGeneral();
         } else if (action == QStringLiteral("row_ibinput")) {
             target.openFirstMapping();

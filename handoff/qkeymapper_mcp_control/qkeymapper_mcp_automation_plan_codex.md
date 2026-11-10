@@ -16,35 +16,39 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | IB-MCP-139：同机从1007e1da恢复，正在实现ibinput_settings受限Popup角色；138已完成的核心证据原范围复用 |
+| 当前切片 | IB-MCP-139固定IbInput Popup完成选定实现／验证，准备聚焦本地提交；138核心结果继续按原范围复用 |
 | 执行机器 | PC-W11；普通Release配置、Default两后端、组件／实际ASan分别见本轮证据；Win10历史不冒充本轮复验 |
-| 目标分支／接纳点 | codex/qkeymapper-mcp-control已从94f0bb8485e7e607cff5c73bf6c0a45725e052d9快进至e73f719b23ee1bd0df99045727acf9554f33959b；随后仅提交本卡及必要证据的收尾记录，实际文档HEAD由Git记录 |
+| 目标分支／接纳点 | codex/qkeymapper-mcp-control当前395e684d672b6cbc737da3c1c72c0225ff4b5221（138核心e73f719b／收尾1007e1da＋CACHE-139A）；139提交后仅在原树仍干净且未推进时快进，实际提交完整SHA以Git记录为准 |
 | 集成提交／路径 | e73f719b23ee1bd0df99045727acf9554f33959b，两父分别为MCP94f0bb84及固定IbInput b5b484a6；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
 | 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
-| 当前已完成 | 方式3全链路、受限行更新、两全局偏好预览／保存事务、被动状态；Common／禁用／隐藏及移动组边界；旧代与零代通知守卫。TS并集后QM均1291 finished，v1.1手册及0009／许可保留 |
-| 当前验证 | 独立GUI和正式MCP冷读74个映射字段及两偏好一致；取消／写失败恢复、Read拒绝、重启旧引用／结果、真实维护入口生命周期和四组Default实际接收通过。Qt6零编译链接警告、Qt5双架构、定向静态项目诊断0、最终实际ASan五项及客户端边界均过 |
-| 工作区保留 | 原MCP分支仍为1007e1da；作业树保留139产品／桥接／原生助手及测试草稿，尚未完成真实Popup验收，不随CACHE-139A工具提交。只提交已验证缓存修正及必要记录，再仅快进同步原公共入口 |
-| 当前控制器 | 当前无可用缓存。38116和恢复后的6184均因state.json原子替换取得WinError5后退出；两轮已知自有PID29688／32476均经已批准未缓存受限Close正常exit0。用户已批准CACHE-139A定向修正后新建至2026-11-10 19:00；未恢复旧控制器或重放未知请求 |
-| 授权边界 | 开发／Git／构建／分析／截图普通权限；必要原manifest测试通过公共登记。用户已选两后端约15–20分钟Default自有接收窗回归，先公告协调；不安装驱动或改指针／筛选键设置 |
-| 下一项动作 | 完成固定Popup的发现／打开／PNG／归属关闭与权限、陈旧窗口、配置不变及演示验证，聚焦本地提交后继续唯一计划；不push，不重复环境恢复或核心完整验收 |
-| 后续范围 | Popup发现／打开／捕获／关闭及权限／演示验收未实现；主动MCP连接检查／试发、PERSIST-137、可选Win10实体及Win10 Release PC三包／QQ联调均保留，不把完整M1／M2标完成 |
-| 本机证据 | 集成树out/ibinput_mcp_integration及原工作区out/mcp_product/ibinput138_20261109；身份、桌面、失败轮次、真实图片、FilterKeys及退出结果均在本机。只提交精简索引，不制作跨机包 |
-| 提交策略 | 本地集成提交及原分支快进已完成；收尾文档独立提交并同步集成分支，保留父历史。不push、不合并master、不amend已验证提交 |
+| 当前已完成 | 138的方式3／偏好全链路与生命周期保留；139在现有窗口工具增加ibinput_settings，按连接／窗口代次／源／偏好修订限制关闭，显示和捕获权限独立，无主动设备／输入工具 |
+| 当前验证 | 139 Qt6普通Release popup-07／popup-read-01完整通过并正常退出；独立GUI／正式MCP／Show-Capture-Configure分离、中文PNG与配置不变；双Qt组件各10、Python10+8+18、定向静态最终项目0。私有演示native0／25项、33条正式请求、三张实图及逐API零调用通过，维护替身／历史证据分别见同页 |
+| 工作区保留 | 双分支已同步CACHE-139A 395e684d；139产品／桥接／固定原生助手、定向测试和必要文档待本次独立提交，原MCP跟踪内容干净。所有环境／构建及失败原件保留，无reset／clean／stash |
+| 当前控制器 | 普通42036／instance2c169a62c9c54748a1b1ddfc10fdda40至2026-11-10 19:00；已串行支持普通产品与演示，拥有／未定资源正常清零。先前38116／6184的WinError5与两次独立Close记录保留，不重放历史未知请求；持续开发沿原窗口，不关闭其他任务资源 |
+| 授权边界 | 开发／Git／构建／分析／截图普通权限，原manifest测试走公共登记。139仅自有私有桌面GUI／MCP，不新增Default激活／输入、驱动安装或全局设置；138两后端Default结果原范围复用 |
+| 下一项动作 | 完成本片必要文档／编码／差异检查和139聚焦本地提交，原分支符合条件则快进；随后先盘点PERSIST-137双边稳定存储上下文、旧入口兼容与跨Session写锁／撤销，定稿最小方案后分片实现。PC重启／登录／新增Default或UAC范围另排，不重复恢复或旧验收 |
+| 后续范围 | 主动MCP连接检查／试发、PERSIST-137、普通用户多实例前台绑定、Win10可选实体／Release三包／QQ联调待后续；139不把完整M1／M2标完成 |
+| 本机证据 | 集成树out/ibinput_mcp_integration与out/ibinput_popup_20261110；原MCP树out/mcp_product/ibinput138_20261109及ibinput139_20261110。失败、身份／桌面、真实PNG、FilterKeys及退出原件仅本机，不制作跨机包 |
+| 提交策略 | 自选聚焦本地commit，测试产品／输入正常清理后提交已验证切片并仅快进原MCP分支；用户本轮要求持续推进，直至明确收尾。不push、不合并master、不amend已验证提交 |
 
 ### CACHE-139A：状态文件共享冲突的有界原子替换（2026-11-10，选定普通检查完成）
 
 139两轮真实产品均完成GUI配对／重认证与关闭MCP管理窗，最后GUI动作native0／有效成功；但控制器publish替换state.json实际取得Windows错误5并关闭缓存，未进入Popup业务验证。两已知自有产品分别独立受限Close exit0，无强杀；原始错误、controller_finish清理未完成及后续正常退出分别保留，不把缓存关闭当产品清理成功。本机普通临时NTFS文件证实读句柄可阻止原子替换、关闭后成功；包括共享删除读法也未通过，不将该标志冒充修正或断言现场只有此一原因。
 
-用户已批准最小write_json修正：仅PermissionError.winerror=5时最多6次同一临时文件替换、最多5次10ms等待，持续失败仍原错抛出，其他错误不重试；不重放gsudo／GUI／MCP请求，不改准入、权限、模式、单调截止及关闭合同。正式99项普通测试通过，包含实际独立NTFS短锁恢复、模拟持续／其他错误原样保留、重试期间跨截止后不续期／不新派发；skill-creator基础结构检查通过，不代替行为验收。新控制器及真实Popup复验仍待执行；本片只独立提交缓存工具／定向测试／说明与本记录，139产品草稿保留未提交，随后普通快进同步原公共入口再按已批19:00窗口接续。
+用户已批准最小write_json修正：仅PermissionError.winerror=5时最多6次同一临时文件替换、最多5次10ms等待，持续失败仍原错抛出，其他错误不重试；不重放gsudo／GUI／MCP请求，不改准入、权限、模式、单调截止及关闭合同。正式99项普通测试通过，包含实际独立NTFS短锁恢复、模拟持续／其他错误原样保留、重试期间跨截止后不续期／不新派发；skill-creator基础结构检查通过，不代替行为验收。上述修正独立提交395e684d并快进同步公共入口后，新建42036至原19:00截止；popup-03至07多次受限原生动作／产品正常清理后仍可用，尚未复发发布退出。现场没有记录到重试计数，不宣称已在真实故障中证明恢复，长期／到期行为也未由本段证明。139产品和测试仍独立未提交。
 
 本机原件：作业树out/ibinput_popup_20261110（file-sharing-probe、cache-io-candidate、cache-formal-tests-01.log），原MCP树out/mcp_product/ibinput139_20261110（popup-01／02及两次uncached-owned-close-result）。历史未知请求原样保留，当前清理不接管该记录。
 
-### IB-MCP-139：IbInput固定Popup窗口角色（2026-11-10，进行中）
+### IB-MCP-139：IbInput固定Popup窗口角色（2026-11-10，选定范围完成）
 
 复用qkm_query(windows)显式window_role、qkm_capture_window及现有qkm_open_mapping_settings／qkm_close_mapping_settings，增加可选window_role=ibinput_settings；省略时保持mapping_advanced兼容。仅本实例原showIbInputSettings入口、当前安全源／会话／权限和实际后台私有非输入桌面，不提供任意窗口、控件、路径或设备动作。查询Read，开关Read+ShowWindows，PNG另须CaptureWindows；只关闭本会话打开且源／偏好语义修订及窗口代次未变的Popup。自身Popup可被捕获，其下拉子窗／其他Popup仍拒绝。被动刷新不改偏好、dirty、配置修订或磁盘，不触发连接检查或真实输入；演示仍受既有底层守卫。
 
-本片选择Qt6普通Release与正式认证MCP私有桌面验证，覆盖允许／拒绝、仅GUI窗口不能接管、旧引用、重开／关闭、偏好变化拒绝关闭、重复被动刷新／捕获及配置／INI不变；以仓库截图工具和原生PNG自主查看中文。复用原维护计数入口核演示显示无初始化／输入，Qt5定向组件兼容及窗口跟踪生命周期检查；原Worker／驱动完整门槛无受影响变化不重跑。此片无需Default桌面、不注入系统输入、不安装驱动或改全局设置。实现、原生构建、真实产品及替身结果分别记录，未验项不计完成。
+本片Qt6普通Release与正式认证MCP私有桌面选验通过：popup-07／popup-read-01覆盖允许／拒绝、仅GUI窗口不能接管、旧连接／旧引用、重开／关闭、偏好变化拒绝关闭、被动刷新／捕获、预览及配置／INI不变；独立Read+Capture和Read+Show+Capture无Configure均已实测。产品内部中文PNG已自主查看；普通仓库PrintWindow读取High失败单列未验证，不提权截图。复用原维护计数入口核演示显示无初始化／输入，Qt5定向组件兼容及窗口跟踪生命周期检查；原Worker／驱动完整门槛无受影响变化不重跑。此片无需Default前台／输入场景；普通父进程只读记录各窗口动作前后输入桌面名及前台PID，要求仍为Default且不是本轮产品，允许用户在其他应用间正常切换。不截Default、不激活、不注入系统输入、不安装驱动或改全局设置。实现、原生构建、真实产品及替身结果分别记录，未验项不计完成。
+
+选定结果：Qt6／Qt5 x64窗口组件各10项，真实Qt6两产品PID37764／33276均GUI撤销专属配对、移除凭据并正常exit0；61／17组动作前后只读桌面采样均为Default且前台不归本实例，允许用户自行换应用，不冒称全程监控。演示维护PID38528实际私有桌面，原生0／25项、正式MCP33条请求、原两场景／回收和新增Popup第三张PNG通过；10场景与退出逐项IbSendInit／IbSendInput／IbSendDestroy／SendInput／SetCursorPos全零，正对照按138未变路径复用，不当作普通Release厂商I/O验收。
+
+Qt5共享JSON take破坏原close输入已由组件先复现后局部修正，两close解析器输入不变／重复解析通过。静态首轮4处临时QList循环诊断修正后该文件3上下文项目0，主窗／图片原轮未受影响项目0复用；Python图片10／工具结果8／原场景编排18项通过。缓存故障01／02、UIA夹具03至06及修正后07独立通过的失败边界见[同一选定证据页](ibinput_mcp_integration_validation.md)。无新文案或TS/QM变更，不新增Default／Win10／Worker ASan／QQ结论；本片实现与验证实耗约3小时，已含缓存故障和夹具定位，后续137先按代码盘点再估算。
 
 ### IB-MCP-138：已批准接纳契约（2026-11-09，核心选验及接纳完成）
 

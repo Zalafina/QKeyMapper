@@ -169,6 +169,7 @@ private slots:
     void windowPermissions();
     void windowObservation();
     void windowAdvancedObservation();
+    void windowIbInputObservation();
     void windowCaptureBoundaries();
     void mappingEditorArguments();
     void mappingSettingsArguments();
@@ -1693,8 +1694,10 @@ void McpControlTest::mappingEditorArguments()
     QCOMPARE(capability.value(QStringLiteral("read_only")), QJsonValue(false));
     auto closing = valid;
     closing[QStringLiteral("window_ref")] = QString(64, QLatin1Char('b'));
+    const QByteArray closeInput = QJsonDocument(closing).toJson(QJsonDocument::Compact);
     const auto parsedClose = parseMappingEditorCloseArguments(closing);
     QVERIFY(parsedClose.ok());
+    QCOMPARE(QJsonDocument(closing).toJson(QJsonDocument::Compact), closeInput);
     QCOMPARE(parsedClose.source.sourceReference, parsed.sourceReference);
     for (const auto &extra : QList<QJsonObject>{
             {{QStringLiteral("window_ref"), 1}}, {{QStringLiteral("window_ref"), QString(63, QLatin1Char('b'))}},
@@ -1731,6 +1734,27 @@ void McpControlTest::mappingSettingsArguments()
     }
     auto closing = valid; closing.insert(QStringLiteral("window_ref"), QString(64, QLatin1Char('b')));
     QVERIFY(parseMappingSettingsCloseArguments(closing).ok());
+    for (const auto &role : {QStringLiteral("mapping_advanced"), QStringLiteral("ibinput_settings")}) {
+        auto opening = valid; opening.insert(QStringLiteral("window_role"), role);
+        const QByteArray original = QJsonDocument(opening).toJson(QJsonDocument::Compact);
+        QVERIFY(parseMappingSettingsArguments(opening).ok());
+        QCOMPARE(QJsonDocument(opening).toJson(QJsonDocument::Compact), original);
+        opening.insert(QStringLiteral("window_ref"), QString(64, QLatin1Char('b')));
+        auto withoutWindow = opening;
+        QCOMPARE(withoutWindow.value(QStringLiteral("window_ref")).toString(), QString(64, QLatin1Char('b')));
+        withoutWindow.remove(QStringLiteral("window_ref"));
+        QVERIFY2(parseMappingSettingsArguments(withoutWindow).ok(), QJsonDocument(withoutWindow).toJson(QJsonDocument::Compact).constData());
+        const QByteArray closeInput = QJsonDocument(opening).toJson(QJsonDocument::Compact);
+        QVERIFY2(parseMappingSettingsCloseArguments(opening).ok(), QJsonDocument(opening).toJson(QJsonDocument::Compact).constData());
+        QCOMPARE(QJsonDocument(opening).toJson(QJsonDocument::Compact), closeInput);
+        QVERIFY(parseMappingSettingsCloseArguments(opening).ok());
+    }
+    for (const auto &role : {QJsonValue(true), QJsonValue(QJsonValue::Null), QJsonValue(QStringLiteral("main"))}) {
+        auto opening = valid; opening.insert(QStringLiteral("window_role"), role);
+        QVERIFY(!parseMappingSettingsArguments(opening).ok());
+        opening.insert(QStringLiteral("window_ref"), QString(64, QLatin1Char('b')));
+        QVERIFY(!parseMappingSettingsCloseArguments(opening).ok());
+    }
     QVERIFY(!parseMappingSettingsCloseArguments(valid).ok());
     closing.insert(QStringLiteral("window_ref"), QString(64, QLatin1Char('B')));
     QVERIFY(!parseMappingSettingsCloseArguments(closing).ok());
@@ -2295,6 +2319,51 @@ void McpControlTest::windowAdvancedObservation()
     QVERIFY(reference() != first);
 }
 
+void McpControlTest::windowIbInputObservation()
+{
+    QWidget main, other;
+    QDialog item(&main);
+    WindowAccess access(&main, &item);
+    const QString instance(32, QLatin1Char('a')), pair(32, QLatin1Char('b'));
+    const QString role = QStringLiteral("ibinput_settings"), source = QStringLiteral("owned-source");
+    const auto query = [&] { return access.query(instance, pair, 1,
+        {{QStringLiteral("entity"), QStringLiteral("windows")}, {QStringLiteral("window_role"), role}}); };
+    const auto window = [&] { return query().page.value(QStringLiteral("items")).toArray().first().toObject(); };
+    QVERIFY(query().ok());
+    QVERIFY(!window().value(QStringLiteral("exists")).toBool());
+    auto *popup = new QDialog(&other, Qt::Popup);
+    access.trackIbInputSettings(popup);
+    QVERIFY(!window().value(QStringLiteral("exists")).toBool());
+    delete popup;
+    popup = new QDialog(&main, Qt::Popup);
+    access.trackIbInputSettings(popup);
+    QVERIFY(window().value(QStringLiteral("exists")).toBool());
+    QCOMPARE(popup->internalWinId(), WId(0));
+    main.show();
+    popup->show();
+    QVERIFY(QTest::qWaitForWindowExposed(popup));
+    const auto reference = window().value(QStringLiteral("window_ref")).toString();
+    QCOMPARE(reference.size(), 64);
+    QCOMPARE(access.resolve(role, reference, instance, pair, 1), popup);
+    QVERIFY(!access.resolve(role, reference, instance, QString(32, QLatin1Char('c')), 1));
+    QVERIFY(!access.resolve(role, reference, instance, pair, 2));
+    access.rememberEditor(source, QByteArray(32, 'k'), role, QStringLiteral("current-connection"));
+    QVERIFY(access.ownsEditor(source, role, QStringLiteral("current-connection")));
+    QVERIFY(!access.ownsEditor(source, role));
+    QVERIFY(!access.ownsEditor(source, role, QStringLiteral("other-connection")));
+    QVERIFY(access.editorDraftMatches(QByteArray(32, 'k')));
+    popup->close();
+    QVERIFY(!access.resolve(role, reference, instance, pair, 1));
+    QVERIFY(!access.ownsEditor(source, role));
+    popup->show();
+    QVERIFY(QTest::qWaitForWindowExposed(popup));
+    QVERIFY(window().value(QStringLiteral("window_ref")).toString() != reference);
+    delete popup;
+    QVERIFY(!window().value(QStringLiteral("exists")).toBool());
+    QCOMPARE(access.query(instance, pair, 1, {{QStringLiteral("entity"), QStringLiteral("windows")}})
+        .page.value(QStringLiteral("total")).toInt(), 2);
+}
+
 void McpControlTest::windowCaptureBoundaries()
 {
     const QJsonObject valid{{QStringLiteral("role"), QStringLiteral("main")},
@@ -2306,6 +2375,8 @@ void McpControlTest::windowCaptureBoundaries()
     item[QStringLiteral("role")] = QStringLiteral("item_setup");
     QVERIFY(parseWindowCaptureArguments(item).ok());
     item[QStringLiteral("role")] = QStringLiteral("mapping_advanced");
+    QVERIFY(parseWindowCaptureArguments(item).ok());
+    item[QStringLiteral("role")] = QStringLiteral("ibinput_settings");
     QVERIFY(parseWindowCaptureArguments(item).ok());
     for (const auto &extra : QList<QJsonObject>{
             {{QStringLiteral("role"), QStringLiteral("other")}}, {{QStringLiteral("role"), true}},

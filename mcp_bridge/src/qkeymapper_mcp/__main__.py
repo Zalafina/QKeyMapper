@@ -197,10 +197,10 @@ def main() -> None:
             catalog_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
             source_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
             source_tab_ref: Annotated[str | None, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")] = None,
-            window_role: Literal["mapping_advanced"] | None = None,
+            window_role: Literal["mapping_advanced", "ibinput_settings"] | None = None,
             offset: Annotated[StrictInt, Field(ge=0, le=2147483647)] = 0,
             limit: Annotated[StrictInt, Field(ge=1, le=100)] = 50) -> ToolResult:
-        """只读查询，目录／源分页，demo_context为单条观察。configurations/tabs 使用 catalog_revision，catalog_ref 不能作为编辑目标。mapping_sources 返回当前实际普通/共通源表的不透明引用；mappings 必须同时传该 source_revision 和 source_tab_ref，返回源行及完整字段。源查询要求加载成功、GUI 空闲且 Worker 停止，并且是初始静止或已有仍有效的完整清理读取许可；新运行活动使许可失效，运行中和停止清理中拒绝，不主动停止。completed_cleanup 及清理代次仅证明只读上下文，不授予编辑权限或替代异步操作结果。来源只证明当前内存源，不证明磁盘保存或共通备份加载自哪组。源修订不是完整业务修订，引用不授予写入权限；变化后重新查询。windows 仅需 Read，观察本实例 main/item_setup 的身份、可见／最小化／前台采样和不透明窗口生命周期引用；不创建、显示或截取窗口，不证明映射源／场景未变。默认返回main／item_setup；显式window_role=mapping_advanced只观察固定高级窗，不显示或激活。windows仅接收entity/offset/limit及此可选角色，目录／源参数须省略；其他实体不接受window_role。demo_context另须Read+Configure及实际后台私有桌面，观察当前普通配置的非行保存足迹签名和GUI保存名；仅排除74项源行存储键，须另用完整源修订核验行，不能作写入许可、场景租约或完整重置证明。只接受entity/offset/limit，offset须0；不创建保存预览、不写配置或重载。未加载配置内容尚未接入。"""
+        """只读查询，目录／源分页，demo_context为单条观察。configurations/tabs 使用 catalog_revision，catalog_ref 不能作为编辑目标。mapping_sources 返回当前实际普通/共通源表的不透明引用；mappings 必须同时传该 source_revision 和 source_tab_ref，返回源行及完整字段。源查询要求加载成功、GUI 空闲且 Worker 停止，并且是初始静止或已有仍有效的完整清理读取许可；新运行活动使许可失效，运行中和停止清理中拒绝，不主动停止。completed_cleanup 及清理代次仅证明只读上下文，不授予编辑权限或替代异步操作结果。来源只证明当前内存源，不证明磁盘保存或共通备份加载自哪组。源修订不是完整业务修订，引用不授予写入权限；变化后重新查询。windows 仅需 Read，观察本实例 main/item_setup 的身份、可见／最小化／前台采样和不透明窗口生命周期引用；不创建、显示或截取窗口，不证明映射源／场景未变。默认返回main／item_setup；显式window_role=mapping_advanced或ibinput_settings只观察对应固定窗口，不创建、显示或激活。windows仅接收entity/offset/limit及此可选角色，目录／源参数须省略；其他实体不接受window_role。demo_context另须Read+Configure及实际后台私有桌面，观察当前普通配置的非行保存足迹签名和GUI保存名；仅排除74项源行存储键，须另用完整源修订核验行，不能作写入许可、场景租约或完整重置证明。只接受entity/offset/limit，offset须0；不创建保存预览、不写配置或重载。未加载配置内容尚未接入。"""
         # Window and demo-context observations accept no catalog/source parameters.
         return tool_result(await bridge.query(entity, catalog_revision=catalog_revision, source_revision=source_revision,
                                              source_tab_ref=source_tab_ref, window_role=window_role, offset=offset, limit=limit))
@@ -281,11 +281,11 @@ def main() -> None:
 
     @tool(read)
     async def qkm_capture_window(
-            role: Literal["main", "item_setup", "mapping_advanced"],
+            role: Literal["main", "item_setup", "mapping_advanced", "ibinput_settings"],
             window_ref: Annotated[str, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")],
             source_revision: Annotated[str, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")],
             source_tab_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")]) -> ToolResult:
-        """截取本实例当前已显示、非最小化的受支持Qt窗口，必须另获CaptureWindows；Read、Configure或ShowWindows不能代替。先查询windows取得本角色window_ref（mapping_advanced须显式window_role查询），并查询mapping_sources取得当前source_revision及所选source_tab_ref；窗口须正展示该源，不自动切换Tab。绘制等待前后复核请求、窗口、完整源及安全停止上下文；单项窗存在未应用键文本、弹窗、陈旧或超时明确失败。不会显示、恢复、激活、开始映射或注入输入。返回160KiB内PNG原生图片和不含Base64的实例／源／窗口／尺寸元数据；仅Qt客户区，独立弹窗／原生边框不包含，实时UI可能显示其他未提交控件。没有文件路径参数，不落盘；高级窗另含settings_scope，明确实时设定未由行source_revision提交；本接口不提供高级窗显示／关闭或设置编辑。图片不代表已保存，也不代表QQ已发送。"""
+        """截取本实例当前已显示、非最小化的受支持Qt窗口，必须另获CaptureWindows；Read、Configure或ShowWindows不能代替。先查询windows取得本角色window_ref（mapping_advanced及ibinput_settings须显式window_role查询），并查询mapping_sources取得当前source_revision及所选source_tab_ref；窗口须正展示该源，不自动切换Tab。绘制等待前后复核请求、窗口、完整源及安全停止上下文；单项窗存在未应用键文本、弹窗、陈旧或超时明确失败。不会显示、恢复、激活、开始映射或注入输入。返回160KiB内PNG原生图片和不含Base64的实例／源／窗口／尺寸元数据；仅Qt客户区，独立弹窗／原生边框不包含，实时UI可能显示其他未提交控件。没有文件路径参数，不落盘；高级窗另含settings_scope，明确实时设定未由行source_revision提交；ibinput_settings为独立固定Popup的自身Qt客户区，另含偏好修订及本owner未变标记，允许该Popup本身存在但不含其下拉子窗。不执行连接检查或偏好编辑；本接口不显示或关闭窗口。图片不代表已保存，也不代表QQ已发送。"""
         return image_tool_result(await bridge.capture_window(role, window_ref, source_revision, source_tab_ref))
 
     @tool(connection)
@@ -299,17 +299,19 @@ def main() -> None:
     @tool(connection)
     async def qkm_open_mapping_settings(
             source_tab_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")],
-            presentation: Literal["private_background"]) -> ToolResult:
-        """只在已核验后台私有非输入桌面，通过原入口打开本实例固定映射高级设定窗，需要Read+ShowWindows。source_tab_ref须为当前已加载、安全空闲的附着源；不切换主窗设置页、不请求激活、不修改参数或启动映射。已有编辑窗／菜单／通知子窗、表格编辑或未稳定数字拒绝，不替换已有窗口。成功返回实际源／窗口引用并记录本owner的输入摘要；截图另需CaptureWindows。失败或断线先query固定mapping_advanced，勿盲目重发。"""
-        return tool_result(await bridge.open_mapping_settings(source_tab_ref, presentation))
+            presentation: Literal["private_background"],
+            window_role: Literal["mapping_advanced", "ibinput_settings"] = "mapping_advanced") -> ToolResult:
+        """只在已核验后台私有非输入桌面，通过原入口打开本实例固定设定窗（window_role默认mapping_advanced；ibinput_settings为IbInput Popup），需要Read+ShowWindows。source_tab_ref须为当前已加载、安全空闲的附着源；不切换主窗设置页、不请求激活、不修改参数或启动映射；IbInput角色只显示已有偏好和被动状态，不执行连接检查或试发。已有编辑窗／菜单／通知子窗、表格编辑或未稳定数字拒绝，不替换已有窗口。成功返回实际源／窗口引用并记录本owner的输入／偏好修订摘要；截图另需CaptureWindows。失败或断线先query对应固定window_role，勿盲目重发。"""
+        return tool_result(await bridge.open_mapping_settings(source_tab_ref, presentation, window_role))
 
     @tool(connection)
     async def qkm_close_mapping_settings(
             source_tab_ref: Annotated[str, Field(max_length=128, pattern="^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$")],
             window_ref: Annotated[str, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")],
-            presentation: Literal["private_background"]) -> ToolResult:
-        """安全关闭本owner正式打开且输入未变的固定映射高级设定窗，需要Read+ShowWindows及当前source_tab_ref／window_ref。实际后台私有桌面、完整安全源、当前Tab／权限和打开记录再次核验；仅GUI打开、参数／待输入数字或子窗变化时拒绝并保留，不提供discard或自动应用。成功核实隐藏、输入和源不变；不保存、不删除映射、不改配对或启动状态。失败或断线先query实际窗口；旧引用、操作结果未知都不能据此自动重试。"""
-        return tool_result(await bridge.close_mapping_settings(source_tab_ref, window_ref, presentation))
+            presentation: Literal["private_background"],
+            window_role: Literal["mapping_advanced", "ibinput_settings"] = "mapping_advanced") -> ToolResult:
+        """安全关闭本owner正式打开且输入未变的固定设定窗（window_role默认mapping_advanced；ibinput_settings为IbInput Popup），需要Read+ShowWindows及当前source_tab_ref／window_ref。实际后台私有桌面、完整安全源、当前Tab／权限和打开记录再次核验；仅GUI打开、参数／待输入数字或子窗变化时拒绝并保留，不提供discard或自动应用。成功核实隐藏、输入和源不变；不保存、不删除映射、不改配对或启动状态。失败或断线先query实际窗口；旧引用、操作结果未知都不能据此自动重试。"""
+        return tool_result(await bridge.close_mapping_settings(source_tab_ref, window_ref, presentation, window_role))
 
     @tool(read)
     async def qkm_get_operation(
