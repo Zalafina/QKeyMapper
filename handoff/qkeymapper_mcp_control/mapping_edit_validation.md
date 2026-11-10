@@ -61,3 +61,20 @@ v3的normal及cold已完整结束：普通行完整sources前后与141的qt6-nor
 不证明完整M1／M2、任意映射语法、原键冲突确认、附加Common行／非当前或隐藏源行编辑、主表内联编辑、全部运行后编辑或实际映射输出。未新增Default激活／真实系统输入、Hook／驱动专项、跨Windows登录／PC重启、Win10／高DPI、QQ或干净机交付验收。137／138／139和141／142未受影响的结果仅按原版本／机器／路径复用。
 
 原GUI原键改动后Pure_OriginalKeys仍暂保留A／F13，本片保持这一配置观察；冷读后按实际加载变E。没有启动映射，不据此宣布运行错误或已修复。
+
+## EDIT-GUI-144：禁用开关原GUI基线
+
+2026-11-10 PC-W11，产品源码仍c35aa57de522b445c7531c0fe890e314ee0ad195，仅维护用例增加settings_disabled_gui及必要登记；未修改产品。复用141合成INI，四组normal／disabled／common／hidden，其中Common组启用普通表的Common附加，隐藏组启用HideDisabled。初始值经独立INI正常启动，业务动作均为真实Qt双击、复选框鼠标事件和Escape；未用控件赋值或直接槽建立GUI结果。
+
+双Qt维护b01均native0，Qt6零警告、Qt5仅官方qtmain缺PDB的精确LNK4099例外。自有EXE分别为out/mcp_disabled_gui_20261110/{qt6,qt5}-runtime-b01/QKeyMapperDisabledGui144_<kit>_runtime.exe；SHA256分别63aad426235df0d9735602817d2f4370351221ab3c6e762a1c20603879ece365、ab59b1a20d2c2845dfeda7220fbc03b3baa112f95d035728b2e8f3ba6a158395。保留正式manifest，六项厂商DLL逐项核对，各Qt按对应kit部署，不复制个人INI／凭据。
+
+| 场景 | Qt6 PID／项数 | Qt5 PID／项数 | 实际结果 |
+|---|---|---|---|
+| normal | 25336／9 | 39608／9 | Item禁用立即只改首行Disabled及dirty；Escape不回滚；表格重新启用恢复完整源数据 |
+| disabled | 32016／9 | 37360／9 | 初始禁用行由Item启用、Escape保留，再由表格禁用；完整其他字段／派生／源保持 |
+| common | 21836／9 | 26188／9 | 真实选择Common后同样两入口往返；附加Common的普通表源数据未被修改 |
+| hidden | 18840／10 | 9120／10 | Item禁用立即隐藏首行；仍打开的Item可重新启用并重显；关闭后表格禁用再次隐藏，完整非Disabled字段保持 |
+
+各kit37项／合计74项，八个实际不同QkmDisabledGui144_*私有桌面，High12288产品／Medium8192控制器、同登录、正常exit0。两类复选框按实际style指标区域点击，所有源逐字段／派生比较；加载代次及INI不变，已接受开关保留dirty，退出work／producers0。FilterKeys前后全字段相同，两次Default前台采样均非本轮产品（不是连续监测）。本片没有配对／客户端凭据或失败轮次；没有截图、普通Release新运行、正式MCP禁用字段、冲突确认／自动禁用、其他实例、真实输入、驱动、Win10或全量ASan／静态结论。
+
+原件仅本机out/mcp_disabled_gui_20261110，包括build／deploy／definition／registration、两份gui日志、runs/*-01完整before／after_item／after_table及closed／INI、summary.json和scope-release.json。后者核实两份固定授权已撤出、owned／unresolved／pending0，原42036缓存仍至19:00；无其他授权被关闭或未知请求重放。主计划141／142仅压缩重复详录，完整压缩前文字在Git c35aa57d，所有本机原件保留。

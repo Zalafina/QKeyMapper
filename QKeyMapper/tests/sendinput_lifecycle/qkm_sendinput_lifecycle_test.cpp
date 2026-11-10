@@ -17,6 +17,8 @@
 #include <QLineEdit>
 #include <QComboBox>
 #include <QPushButton>
+#include <QCheckBox>
+#include <QStyleOption>
 #include <QTabWidget>
 #include <QTabBar>
 #include <QScopedValueRollback>
@@ -105,6 +107,7 @@ public:
     static QJsonObject saveExecution(QKeyMapper *mapper, const QkmAutomation::AutomationRequest &request);
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject mappingEditGui(QKeyMapper *mapper);
+    static QJsonObject mappingDisabledGui(QKeyMapper *mapper);
     static QJsonObject mappingRemovalGui(QKeyMapper *mapper);
     static QJsonObject mappingRemovalShared(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
@@ -1320,6 +1323,13 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_disabled_gui")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::mappingDisabledGui(QKeyMapper::getInstance());
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2762,6 +2772,112 @@ QJsonObject QkmMappingAdditionTestAccess::windowMatchSave(QKeyMapper *mapper, bo
     return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
         {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
+QJsonObject QkmMappingAdditionTestAccess::mappingDisabledGui(QKeyMapper *mapper)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
+    const bool common = variant == QStringLiteral("common"), hidden = variant == QStringLiteral("hidden");
+    const bool initialDisabled = variant == QStringLiteral("disabled");
+    if (!mapper || (!common && !hidden && !initialDisabled && variant != QStringLiteral("normal")))
+        return {{QStringLiteral("passed"), false}};
+    const auto click = [](QWidget *target, const QPoint &point, bool twice = false) {
+        const QPointF top = target->mapTo(target->window(), point), screen = target->mapToGlobal(point);
+        for (const auto type : {QEvent::MouseButtonPress, QEvent::MouseButtonRelease,
+                               QEvent::MouseButtonDblClick, QEvent::MouseButtonRelease}) {
+            if (!twice && type == QEvent::MouseButtonDblClick) break;
+            QMouseEvent event(type, point, top, screen, Qt::LeftButton,
+                type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton, Qt::NoModifier);
+            QCoreApplication::sendEvent(target, &event);
+        }
+    };
+    const auto escape = [](QWidget *target) {
+        QKeyEvent press(QEvent::KeyPress, Qt::Key_Escape, Qt::NoModifier), release(QEvent::KeyRelease, Qt::Key_Escape, Qt::NoModifier);
+        QCoreApplication::sendEvent(target, &press); QCoreApplication::sendEvent(target, &release);
+    };
+    const auto disk = [] { QFile file(QString::fromLatin1(CONFIG_FILENAME));
+        return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray ini = disk();
+    const quint64 load = mapper->m_MappingLoadGeneration;
+    const int target = common ? QKeyMapper::findCommonMappingTabIndex() : QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (common) {
+        auto *tabs = mapper->findChild<QTabWidget *>(QStringLiteral("keyMappingTabWidget"));
+        if (!tabs || target < 0) return {{QStringLiteral("passed"), false}};
+        click(tabs->tabBar(), tabs->tabBar()->tabRect(target).center());
+    }
+    QString error;
+    const auto before = mapper->collectAutomationSourceSnapshot(error);
+    if (!error.isEmpty() || target < 0 || !QKeyMapper::KeyMappingDataList || QKeyMapper::KeyMappingDataList->size() != 2)
+        return {{QStringLiteral("passed"), false}};
+    check(!ini.isEmpty() && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && !mapper->m_SaveSettingDirty
+        && QKeyMapper::s_KeyMappingTabWidgetCurrentIndex == target && mapper->m_HideDisabled == hidden,
+        "normal startup has the intended clean idle source and visibility policy");
+    const auto old = QKeyMapper::KeyMappingDataList->first();
+    check(old.Disabled == initialDisabled && old.SendMappingKeyMethod == 3
+        && old.Original_Key == (common ? QStringLiteral("F13") : QStringLiteral("A")),
+        "the dedicated source has the expected disabled flag and unused IbInput method");
+    auto expectedSources = before.value(QStringLiteral("sources")).toArray();
+    auto source = expectedSources.at(target).toObject();
+    auto rows = source.value(QStringLiteral("rows")).toArray();
+    auto row = rows.first().toObject(), fields = row.value(QStringLiteral("fields")).toObject();
+    fields.insert(QString::fromLatin1(KEYMAPDATA_DISABLED), !initialDisabled);
+    row.insert(QStringLiteral("fields"), fields); rows[0] = row;
+    source.insert(QStringLiteral("rows"), rows); expectedSources[target] = source;
+    auto *table = mapper->m_KeyMappingDataTable;
+    if (!table || table->isRowHidden(0)) return {{QStringLiteral("passed"), false}};
+    click(table->viewport(), table->visualRect(table->model()->index(0, ORIGINAL_KEY_COLUMN)).center(), true);
+    auto *dialog = mapper->m_ItemSetupDialog;
+    auto *box = dialog->findChild<QCheckBox *>(QStringLiteral("disabledCheckBox"));
+    const auto close = qScopeGuard([&] { if (dialog->isVisible()) escape(dialog); });
+    if (!dialog->isVisible() || !box) return {{QStringLiteral("passed"), false}};
+    check(box->isChecked() == initialDisabled && mapper->collectAutomationSourceSnapshot(error) == before && error.isEmpty(),
+        "real table double click opens the source without changing data or dirty");
+    QStyleOptionButton option;
+    option.initFrom(box); option.text = box->text();
+    const QPoint indicator = box->style()->subElementRect(QStyle::SE_CheckBoxIndicator, &option, box).center();
+    click(box, indicator);
+    const auto afterItem = mapper->collectAutomationSourceSnapshot(error);
+    check(error.isEmpty() && afterItem.value(QStringLiteral("sources")).toArray() == expectedSources
+        && mapper->m_SaveSettingDirty && box->isChecked() != initialDisabled,
+        "the actual Item checkbox immediately changes only Disabled without pressing Update");
+    check(table->item(0, DISABLED_COLUMN)->checkState() == (initialDisabled ? Qt::Unchecked : Qt::Checked)
+        && table->isRowHidden(0) == hidden, "the Item action synchronizes the table checkbox and row visibility");
+    if (hidden) {
+        click(box, indicator);
+        check(mapper->collectAutomationSourceSnapshot(error).value(QStringLiteral("sources")) == before.value(QStringLiteral("sources"))
+            && error.isEmpty() && !table->isRowHidden(0), "the still-open Item can re-enable and redisplay its hidden row");
+    }
+    const auto beforeEscape = mapper->collectAutomationSourceSnapshot(error);
+    escape(dialog);
+    check(!dialog->isVisible() && mapper->collectAutomationSourceSnapshot(error) == beforeEscape && error.isEmpty(),
+        "Escape preserves the checkbox's already accepted state");
+    table = mapper->m_KeyMappingDataTable;
+    const auto index = table->model()->index(0, DISABLED_COLUMN);
+    QStyleOptionViewItem cell;
+    cell.initFrom(table); cell.rect = table->visualRect(index); cell.features = QStyleOptionViewItem::HasCheckIndicator;
+    cell.checkState = table->item(0, DISABLED_COLUMN)->checkState();
+    const QRect hit = table->style()->subElementRect(QStyle::SE_ItemViewItemCheckIndicator, &cell, table);
+    if (hit.isEmpty() || !cell.rect.contains(hit.center()) || table->isRowHidden(0)) return {{QStringLiteral("passed"), false}};
+    click(table->viewport(), hit.center());
+    const auto afterTable = mapper->collectAutomationSourceSnapshot(error);
+    const auto finalSources = hidden ? expectedSources : before.value(QStringLiteral("sources")).toArray();
+    check(error.isEmpty() && afterTable.value(QStringLiteral("sources")).toArray() == finalSources,
+        "the real table checkbox changes only Disabled, retaining all other rows, fields and derived values");
+    check(QKeyMapper::KeyMappingDataList->first().Disabled == (hidden || initialDisabled)
+        && table->isRowHidden(0) == hidden, "the table action applies its actual flag and visibility result");
+    check(mapper->m_SaveSettingDirty && mapper->m_MappingLoadGeneration == load && disk() == ini
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE,
+        "accepted GUI toggles dirty memory without save, reload or mapping startup");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("before"), before}, {QStringLiteral("after_item"), afterItem}, {QStringLiteral("after_table"), afterTable},
+        {QStringLiteral("target_source"), target}, {QStringLiteral("formal_mcp_update"), false}};
 }
 
 QJsonObject QkmMappingAdditionTestAccess::mappingEditGui(QKeyMapper *mapper)
@@ -6294,7 +6410,8 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_result_save"), QStringLiteral("settings_result_cold"), QStringLiteral("settings_save_context"),
         QStringLiteral("settings_prepared_save"), QStringLiteral("settings_save_preview"), QStringLiteral("settings_save_execution"),
         QStringLiteral("settings_save_apply"), QStringLiteral("settings_save_gui"), QStringLiteral("settings_remove_gui"),
-        QStringLiteral("settings_remove_shared"), QStringLiteral("settings_edit_gui"), QStringLiteral("demo_management_probe")};
+        QStringLiteral("settings_remove_shared"), QStringLiteral("settings_edit_gui"), QStringLiteral("settings_disabled_gui"),
+        QStringLiteral("demo_management_probe")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
     if (!knownCase || path.isEmpty()) { return 2; }

@@ -20,6 +20,8 @@ EDIT-142（2026-11-10，PC-W11）：[键值候选的共用提取](qkeymapper_mcp
 
 EDIT-143（2026-11-10，PC-W11）：[简单键值正式合同与分项证据](mapping_edit_validation.md)，普通Release与141独立GUI对照、正式MCP配置／保存冷读、双Qt参数存储／stdio schema和定向分析分别记录；驱动失败、未发布动作及独立清理保留，不扩展为完整M1／输入／跨系统验收。
 
+EDIT-GUI-144（2026-11-10，PC-W11）：[同页禁用开关GUI基线](mapping_edit_validation.md#edit-gui-144禁用开关原gui基线)，双Qt四场各37项／共74项，实际私有High产品维护进程全部exit0；Item即时生效／Escape、表格开关、Common及隐藏重显和全源不变性通过。产品未改，不是正式MCP禁用字段或互斥确认验收。
+
 ## MAP-20261025-67-B1：基本添加正式接线
 
 PC-W10／4c5d04f3+本提交；[版本、EXE、结果及缺口](map67b1_validation.md)。双Qt普通Release、维护各11／SDK各12／product warm各26／源共通各12通过；Qt6 Default实际A→B、编辑拒绝、同步组陈旧及中文截图通过。当前12工具／8能力；显式保存／映射冷启动／MCP启停仍未接。DP请求后代表组未见异常，物理电源未知。四态采样有噪声及查询开销，不称完整无退化。

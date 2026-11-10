@@ -16,21 +16,29 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | EDIT-143简单键值更新选定完成；143本片提交父a4270951，实际检查点以Git为准。完整M1仍待 |
+| 当前切片 | EDIT-GUI-144禁用开关GUI基线选定完成；本片父c35aa57d，实际检查点以Git为准，未新增MCP字段 |
 | 执行机器 | PC-W11；普通Release配置、Default两后端、组件／实际ASan分别见本轮证据；Win10历史不冒充本轮复验 |
-| 目标分支／接纳点 | 原MCP树codex/qkeymapper-mcp-control接143；集成树保持干净8cc889fb。未push |
+| 目标分支／接纳点 | 原MCP树codex/qkeymapper-mcp-control为c35aa57d加144；集成树保持干净8cc889fb。未push |
 | 集成提交／路径 | e73f719b23ee1bd0df99045727acf9554f33959b，两父分别为MCP94f0bb84及固定IbInput b5b484a6；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
 | 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
 | 当前已完成 | 139固定Popup及138核心结果保留；137-A共享库事务／撤销及137-B默认v2目录、显式persistent-target、独立凭据命名空间已接正式产品／随包桥接。无扫描、密钥迁移或权限扩大 |
-| 当前验证 | 143双Qt组件各6pass、Python8pass、Qt6普通Release零警告、两文件五上下文定向分析0诊断；八场179次正式MCP、四组完整sources对照141、23次上下文不变性及保存冷读／拒绝通过。失败与清理例外见[证据](mapping_edit_validation.md) |
-| 工作区保留 | 本片仅原mapping.update键值合同／候选、桥接schema、定向测试与必要文档；环境／构建／全部失败原件保留 |
+| 当前验证 | 144双Qt构建0、各37项／八实际私有进程共74项全过，全部exit0；Item即时／Escape、表格及Common／隐藏重显、完整sources／INI／加载／FilterKeys与尾计数通过。143原结果保留，见[证据](mapping_edit_validation.md) |
+| 工作区保留 | 144只有维护用例与必要记录；产品仍c35aa57d。141／142重复详录精简，全文保留Git c35aa57d，原件均保留 |
 | 当前控制器 | 普通42036／instance2c169a62c9c54748a1b1ddfc10fdda40至2026-11-10 19:00；143自有产品／配对／客户端凭据已清理，资源0、固定授权撤出，原窗口保留。历史未知不重放；一次发布前stale_controller原因未取得 |
-| 授权边界 | 开发／Git／构建／分析／截图普通权限，原manifest测试走公共登记。139仅自有私有桌面GUI／MCP，不新增Default激活／输入、驱动安装或全局设置；138两后端Default结果原范围复用 |
-| 下一项动作 | EDIT-GUI-144先建立禁用开关原GUI基线：Item即时生效与表格入口、普通／Common／初始禁用／隐藏后显示；不直接设控件值，不开始正式MCP禁用字段或互斥扩展，按结果再提最小共用操作 |
+| 授权边界 | 144仅自有私有桌面真实Qt窗口／鼠标事件，不发送系统输入、不启映射、不新增Default、驱动或全局设置；原manifest走19:00公共缓存，开发／构建／观察普通权限 |
+| 下一项动作 | EDIT-145在现有mapping.update接独立disabled布尔更新；候选沿既有校验，冲突／隐含他行修改明确拒绝，复用144完整GUI基线；先定范围与定向门槛，不增加任意字段或自动显示隐藏行 |
 | 后续范围 | 137真实跨登录／PC重启、实际客户端接线、主动MCP连接检查／试发、普通用户多实例前台绑定、Win10可选实体／Release三包／QQ联调仍待；完整M1／M2未完成 |
 | 本机证据 | 原MCP树out/mcp_edit143_20261110及out/mcp_product/edit143_20261110_r02；141／142、137／139／138原件保留。实际身份／桌面、失败与退出材料仅本机，详见分项证据页 |
 | 提交策略 | 自选聚焦本地commit，测试产品／输入正常清理后提交已验证切片并仅快进原MCP分支；用户本轮要求持续推进，直至明确收尾。不push、不合并master、不amend已验证提交 |
+
+### EDIT-GUI-144：禁用开关原GUI基线（选定完成）
+
+原Item禁用复选框stateChanged立即改源并刷新／dirty，Escape不回滚；主表cellChanged亦处理样式、互斥和隐藏。复用维护目标及141合成样例，真实Qt双击／复选框点击／Escape建立普通、初始禁用、Common和隐藏四场，比较完整sources／派生／其他行、显示状态、加载／INI和退出。合法无冲突开关先覆盖，互斥确认／附加Common及正式MCP禁用字段仍待后续切片。不得用setChecked／setCheckState或直接槽调用充GUI基线。
+
+本片不改产品实现；双Qt受影响维护增量构建与上述八私有进程足够，无新增普通Release／全量静态／ASan门禁。无需Default，不切输入桌面、不发送系统输入或开始映射、不安装驱动／改全局设置；复用原19:00缓存仅原manifest启动／关闭，普通观察核实际桌面／FilterKeys／自有前台归属及资源。预计30–50分钟含构建，原件仅本机out/mcp_disabled_gui_20261110。
+
+双Qt各四场37项／合计74项通过、八实际私有High维护进程exit0；两构建native0（Qt6零警告／Qt5原精确qtmain例外），完整源／派生、即时dirty／Escape、表格、Common和隐藏重显、INI／加载／FilterKeys及尾部work／producers0通过。没有失败轮次；两份固定授权已撤出、资源0，原19:00窗口保留。产品未改，原件和完整范围见[144证据](mapping_edit_validation.md#edit-gui-144禁用开关原gui基线)，不标正式MCP禁用能力或完整M1完成。
 
 ### EDIT-143：正式简单键值更新（选定完成）
 
@@ -40,35 +48,15 @@
 
 仅自有EXE目录／合成INI／专属配对与既有私有公共入口，开发／桥接／构建／分析普通权限。原19:00缓存仅供manifest及固定GUI；无新增Default、系统输入、映射、驱动或全局设置写入。
 
-2026-11-10选定验证及自有清理完成，八普通Release场／179次正式调用、四组全源GUI对照及23次含dirty／加载的上下文不变性通过；全部exit0。原GUI派生样本保持，冷读按实际加载更新。夹具／驱动失败、未发布的Disable、凭据补清理及未覆盖范围见[唯一事实页](mapping_edit_validation.md)，不标完整M1完成，不新增输入或设备验收。下一片只建禁用开关GUI基线。
+2026-11-10选定验证及自有清理完成，八普通Release场／179次正式调用、四组全源GUI对照及23次含dirty／加载的上下文不变性通过；全部exit0。原GUI派生样本保持，冷读按实际加载更新。夹具／驱动失败、未发布的Disable、凭据补清理及未覆盖范围见[分项证据](mapping_edit_validation.md)，不标完整M1完成，不新增输入或设备验收。下一片只建禁用开关GUI基线。
 
 ### EDIT-142：键值候选的最小共用数据提取（选定完成）
 
-当前两个updateKeyMappingDataList*函数直接依赖全局当前行，预览不能借它们临时改真实模型。只提取原splitMappingKeyString分段／纯键去重及对应按下或抬起两字段赋值为updateMappingKeyValues(MAP_KEYDATA&,text,keyUp)，由原GUI行setter与后续MCP副本候选共用；原索引拒绝、校验／规范化、Item备注对齐、原键互斥、刷新／dirty及其他字段不动，不引入配置模型或任意字段写入。
-
-选验为双Qt维护增量构建、明确副本的分段／重复纯键／两侧不互改／往返保留及负索引不变性，再复用141四组真实GUI事件并与其完整sources前后值比较。维护与产品边界沿141，无Default场景／映射／系统输入／驱动或新UAC；缓存仍仅原manifest测试启动／清理，普通开发不提权。此片没有正式MCP键值修改、不推进M1完成；不重跑未受影响的137／生命周期／ASan完整矩阵，预计45–75分钟含构建。
-
-2026-11-10 PC-W11，1d0281f3加本片；生产cpp仅13增／12删，header一声明，逆变换可逐字还原整份原cpp；53190行／2419088字节及UTF-8无BOM／LF核对通过，无截断。两个原行setter保留原边界与调用位置，共用助手保持原分段、先写段列表、再去重并写纯键的顺序，不更新原键样本／备注／dirty或持久化。
-
-双Qt维护构建b01 native0，Qt6零警告／Qt5仅原精确qtmain LNK4099例外；各四组45项，八High私有进程PID25128／40404／39108／40240／21352／38800／8700／7512正常exit0。新增四项候选检查只在normal组运行，其他十／十一项是真实GUI复验；全部before／after的完整sources与141同kit／同组原始基线一致，其他字段／派生／源、INI／FilterKeys及退出work／producers0保持。没有失败运行；首补丁生成用错Git大小写路径时在编辑前拒绝，改实际qkeymapper.h后一次检查并应用，无产品故障或未知启动。
-
-原件仅原MCP树out/mcp_edit_values_20261110：values.patch／check_extraction、build-*-b01、{qt6,qt5}-runtime-b02/QKeyMapperEditValues142_<kit>_runtime.exe、deployment、gui-*／runs及逐场原GUI比较。目录b02仅沿141部署命名，实际本片构建为b01，身份文件注明1d0281f3加142。两份固定定义授权已撤出、资源0，缓存仍原42036至19:00，历史未知不重放。实耗约15分钟；这是局部提取／组件和真实GUI检查，不是普通Release新运行、正式键值修改、ASan／静态全门禁或输入／设备／跨系统验收，工具／能力仍17／23。
+a4270951／2026-11-10，原行setter保留边界，只提取updateMappingKeyValues(MAP_KEYDATA&,text,keyUp)供原GUI及候选共用；分段、纯键去重和赋值顺序保持，不更新原键样本／备注／dirty。生产cpp13增12删／header一声明，逆变换逐字还原；53190行／2419088字节及UTF-8无BOM／LF通过。双Qt维护构建0（Qt6零警告、Qt5精确qtmain例外），八High私有进程正常退出、各45项／共90项，四场完整sources与141同kit基线一致；副本两侧不互改、分段去重、往返及负索引保持通过。INI／FilterKeys不变、退出work／producers0，授权撤出、资源0。原件out/mcp_edit_values_20261110；没有普通Release／正式MCP、ASan／静态全门禁、输入设备或跨系统结论。完整逐场身份与日志索引保留Git c35aa57d本节；143正式接线另记。
 
 ### EDIT-GUI-141：普通单行键值修改原GUI基线（选定完成）
 
-137-B及DOC-140后回到M1剩余行修改。已核对两种原入口：主表原键／映射单元格编辑分别调用QItemSetupDialog静态校验及各自刷新；Item窗口的Update／三个Enter入口先按焦点顺序校验，再经updateAllMappingInfoFinally处理原键互斥、按下／抬起键、序列备注对齐、界面刷新和dirty。两者存在独立行为，不能直接调用最后函数或设置控件值冒充GUI基线；本片仅选Item入口，不宣称主表内联编辑等价。
-
-复用sendinput_lifecycle真实产品维护目标，在自有EXE目录／合成INI、实际私有桌面选择普通、抬起键清空、已禁用及Common当前源四组，真实双击开窗、Qt Ctrl+A／字符事件形成草稿、点击原Update；覆盖非法原键／映射拒绝、合法修改、未清空的抬起键保持／清空后原回退规则、完整其他字段／其他源不变、Escape、dirty、加载／INI及退出排空。只配置，不启动映射；Read／Configure或测试夹具不会得到运行权限。Common冲突确认／附着源编辑、主表内联、完整序列参数及正式MCP修改留后续针对性切片。
-
-双Qt维护增量构建与上述真实Qt窗口检查足以建立本片基线；无产品实现变化，不重跑普通Release／静态／ASan／驱动完整矩阵。无需Default场景，不切输入桌面、不激活Default或发系统输入，不安装驱动／改全局设置；原manifest启动／必要关闭经已有19:00公共缓存登记，开发／构建／观察普通权限。运行预计双Qt各约半分钟，构建另计；逐场核实际桌面及FilterKeys不变，只清理自有进程。原件留本机out/mcp_edit_gui_20261110，维护结果不冒充普通Release／真实输入或正式MCP更新验收。
-
-2026-11-10 PC-W11选定完成，源987e840f加本片维护差异，产品实现仍0ce665c0。Qt6／Qt5 b02构建native0；Qt6零警告，Qt5仅已批准qtmain缺PDB的精确LNK4099。两套实际EXE为out/mcp_edit_gui_20261110/{qt6,qt5}-runtime-b02/QKeyMapperEditGui141_<kit>_runtime.exe，六项随包DLL逐项与本机仓库核对，Qt按对应kit部署；部署身份在同根deployment-<kit>.json。
-
-gui-qt6-02／gui-qt5-02各四进程／41项，八进程PID8004／27396／40912／26244／35616／23812／9824／6240均High、实际不同QkmEditGui141_*私有桌面、同真实登录且正常exit0。普通、禁用行及Common的新E→C、原抬起键B／H保持；独立KEYDOWN_AND_KEYUP初始行真实清空后沿用C。非法原键、提交前草稿、非法映射／Escape、完整非目标字段／其他行及源、INI字节、加载代次、dirty与尾部work／producers归零通过。普通观察器Medium，前后FilterKeys全字段相同、前台不归测试产品；不是连续全程监测或Default截图。原Pure_OriginalKeys在改原键后仍为A／F13，作为原GUI派生观察保留；未启动映射，不据此宣布运行错误或已修复。
-
-首轮gui-qt6-01普通行10项／exit0；清空组10项中一项失败／exit2，实际抬起仍B。原因是初始NORMAL发送时机按原规则禁用了抬起输入，Qt清空事件未生效；无产品代码修正。夹具改合法初始KEYDOWN_AND_KEYUP并新增“字段enabled且文本实际空”断言，b02修正后双Qt清空组各11项，另外三组各10项。旧b01 EXE、补丁、失败INI／结果及实际退出码保留，不将失败归入通过。
-
-本片原件仅上述本机目录（build-*-b01／b02、gui-*、runs/*-01／02、部署／公共定义、scope-release）。全部自有产品退出，缓存拥有／未定／待处理0，三个本片定义授权已撤出、保留其他授权及原19:00窗口，不接管历史未知。无MCP配对／密钥、本轮输入注入或个人配置操作；没有截图或普通Release／正式MCP键值修改、Common冲突／附着行、完整序列／设备／Win10结论。实耗约半小时，含首夹具调查；下一片仅最小数据提取，完整M1仍未完成。
+1d0281f3／2026-11-10，产品实现仍0ce665c0。Item原入口由真实Qt双击、Ctrl+A／字符／Backspace、Update／Escape建立普通、合法抬起清空、禁用和Common四组；主表内联、复杂语法及冲突确认未纳入。双Qt b02维护构建0，八High私有进程各四场41项／共82项、全部exit0；新E→C、抬起B／H保持或清空后C、非法草稿拒绝、未提交不改模型、完整其他字段／行／源及INI／加载保持、dirty和work／producers0通过。Qt6零警告、Qt5精确qtmain例外。首b01普通10项通过，清空组9／10通过／exit2：NORMAL时机禁用抬起字段，输入事件未生效；只修夹具为KEYDOWN_AND_KEYUP并加实际enabled／空文本断言，不改产品。旧EXE、失败和成功原件均留out/mcp_edit_gui_20261110。原Pure_OriginalKeys改原键后仍A／F13，仅保留观察，不据此宣布运行故障或修复。FilterKeys前后相同、两次前台采样非自有PID（非连续监测），资源0、授权撤出，无配对、系统输入或个人配置。完整逐场PID／文件索引见Git c35aa57d本节；不是普通Release、正式MCP或完整M1验收。
 
 ### DOC-140：历史记录压缩与接续校准（2026-11-10）
 

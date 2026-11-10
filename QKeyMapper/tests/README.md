@@ -1,5 +1,7 @@
 # 第一方测试
 
+EDIT-GUI-144：生命周期目标的`settings_disabled_gui`复用141样例，`QKM_CONTEXT_VARIANT=normal／disabled／common／hidden`。准备各自独立运行副本，disabled只在合成INI设首行初始禁用，common设普通表包含Common，hidden设HideDisabled=true；所有实际开关均经真实Qt Item／表格复选框事件，不能用setChecked／setCheckState或直接调用槽替代。比较完整源／派生／其他行、即时dirty、Escape、隐藏后重新显示、INI／加载及退出排空。它是配置GUI基线，不新增正式MCP字段、映射或真实系统输入验收。
+
 EDIT-143：[普通Release键值更新驱动](../../mcp_bridge/tests/test_product_mapping_update.py)复用独立Item GUI的`settings_edit_gui`／[合成样例](sendinput_lifecycle/mapping_edit_fixture.ini.example)完整sources基线。参数为`--executable`自有隔离产品、`--bridge-python`锁依赖随包桥接、`--gui-baseline`本机141结果目录及`--output`全新证据目录；先按公共入口登记精确EXE／助手摘要和固定GUI动作，不用于用户实例。普通SDK／桥接执行，原manifest产品在私有桌面，GUI只配Read／Configure，验证普通／合法抬起／禁用／Common、取消／重放／陈旧引用／no-op、完整保存冷读及权限拒绝。专属凭据须初始为空，结束后只撤销该轮唯一测试配对；失败先查原请求与实际退出，不盲重放。该驱动不启动映射、不发系统输入、不证明完整GUI／MCP或真实设备等价性。
 
 IB-MCP-138接纳用例：[普通Release的GUI／正式MCP驱动](../../mcp_bridge/tests/ibinput_acceptance.py)支持gui、mcp、read、sources四组，使用已有公共缓存控制器及固定原生[GUI探针](mcp_control/ibinput_product_gui.pro)，专用EXE／目录、合成INI和凭据，禁止用于用户实例。sources样例见[合成Common／禁用行配置](mcp_control/ibinput_sources_fixture.ini.example)；隐藏冷读组只在自有产品正常退出后修改样例中的HideDisabled，另存原件。GUI基线使用真实窗口消息／UIA动作，不通过产品内设置控件值建立；维护product_check里的直接C++通知和控件设定只作组件验证。
