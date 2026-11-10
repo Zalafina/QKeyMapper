@@ -16,21 +16,31 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | EDIT-142最小键值候选数据提取已通过选定双Qt检查，准备聚焦本地提交；没有新增正式MCP能力 |
+| 当前切片 | EDIT-143简单键值更新选定完成；143本片提交父a4270951，实际检查点以Git为准。完整M1仍待 |
 | 执行机器 | PC-W11；普通Release配置、Default两后端、组件／实际ASan分别见本轮证据；Win10历史不冒充本轮复验 |
-| 目标分支／接纳点 | 原MCP树codex/qkeymapper-mcp-control为1d0281f369f6aeb4992676f6e82b2b4c0c91b0b2加142差异；集成树保持干净8cc889fb。未push |
+| 目标分支／接纳点 | 原MCP树codex/qkeymapper-mcp-control接143；集成树保持干净8cc889fb。未push |
 | 集成提交／路径 | e73f719b23ee1bd0df99045727acf9554f33959b，两父分别为MCP94f0bb84及固定IbInput b5b484a6；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
 | 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
 | 当前已完成 | 139固定Popup及138核心结果保留；137-A共享库事务／撤销及137-B默认v2目录、显式persistent-target、独立凭据命名空间已接正式产品／随包桥接。无扫描、密钥迁移或权限扩大 |
-| 当前验证 | 142双Qt各45项／八进程90项通过；八组before／after完整sources均与141独立GUI基线相同，候选副本／两侧分段去重／往返及负索引不变性通过。两构建0，Qt6零警告；实际退出／FilterKeys／INI和公共清理正常。137／139／138按未变范围复用 |
-| 工作区保留 | 137-B／DOC-140／141均已提交；142只有共用数据助手、原setter委托、维护副本检查及必要文档差异。原环境／构建／证据保留 |
-| 当前控制器 | 普通42036／instance2c169a62c9c54748a1b1ddfc10fdda40至2026-11-10 19:00；已串行支持普通产品与演示，拥有／未定资源正常清零。先前38116／6184的WinError5与两次独立Close记录保留，不重放历史未知请求；持续开发沿原窗口，不关闭其他任务资源 |
+| 当前验证 | 143双Qt组件各6pass、Python8pass、Qt6普通Release零警告、两文件五上下文定向分析0诊断；八场179次正式MCP、四组完整sources对照141、23次上下文不变性及保存冷读／拒绝通过。失败与清理例外见[证据](mapping_edit_validation.md) |
+| 工作区保留 | 本片仅原mapping.update键值合同／候选、桥接schema、定向测试与必要文档；环境／构建／全部失败原件保留 |
+| 当前控制器 | 普通42036／instance2c169a62c9c54748a1b1ddfc10fdda40至2026-11-10 19:00；143自有产品／配对／客户端凭据已清理，资源0、固定授权撤出，原窗口保留。历史未知不重放；一次发布前stale_controller原因未取得 |
 | 授权边界 | 开发／Git／构建／分析／截图普通权限，原manifest测试走公共登记。139仅自有私有桌面GUI／MCP，不新增Default激活／输入、驱动安装或全局设置；138两后端Default结果原范围复用 |
-| 下一项动作 | 142文档检查／提交后，143定稿并接正式mapping.update的简单键值参数及候选／提交，沿已有Read+Configure、source_ref／预览／保存机制；先明确原键冲突及支持边界，再选GUI／正式MCP对照。不重做B1／保存／持久化门槛 |
+| 下一项动作 | EDIT-GUI-144先建立禁用开关原GUI基线：Item即时生效与表格入口、普通／Common／初始禁用／隐藏后显示；不直接设控件值，不开始正式MCP禁用字段或互斥扩展，按结果再提最小共用操作 |
 | 后续范围 | 137真实跨登录／PC重启、实际客户端接线、主动MCP连接检查／试发、普通用户多实例前台绑定、Win10可选实体／Release三包／QQ联调仍待；完整M1／M2未完成 |
-| 本机证据 | 集成树out/ibinput_mcp_integration与out/ibinput_popup_20261110；原MCP树out/mcp_persist137及out/mcp_product/persist137_20261110，另保留138／139原件。实际身份／桌面、失败、PNG、FilterKeys和退出材料仅本机，不制作跨机包 |
+| 本机证据 | 原MCP树out/mcp_edit143_20261110及out/mcp_product/edit143_20261110_r02；141／142、137／139／138原件保留。实际身份／桌面、失败与退出材料仅本机，详见分项证据页 |
 | 提交策略 | 自选聚焦本地commit，测试产品／输入正常清理后提交已验证切片并仅快进原MCP分支；用户本轮要求持续推进，直至明确收尾。不push、不合并master、不amend已验证提交 |
+
+### EDIT-143：正式简单键值更新（选定完成）
+
+沿现有mapping.update增加可选original_key／mapping_key／key_up_mapping_key及原send_method，至少明确一项；新键限单个大写字母／数字，抬起键可空表示沿用候选按下键，省略保持原值。抬起编辑仅原SendTiming=2／3／4允许，不能绕过GUI禁用状态。原键变更若按现有互斥分析会禁用本行／其他行或弹确认，本片明确不支持并零修改，不弹窗或借其他确认扩权；完整冲突更新仍待。
+
+复用Read+Configure、当前可见source_ref、完整快照／偏好修订、预览到期／消费／重放和执行前复核；候选用GUI共用验证及142值助手／既有备注对齐，提交更新数据、原显示刷新及dirty，仍不保存或开始。17工具／23能力不变，现有仅send_method调用兼容。选定双Qt参数／schema组件、Qt6普通Release与锁依赖桥接组件、原141 GUI对照及正式MCP预览／取消／提交／重放／旧引用、完整保存／一次独立冷读与Read拒绝；覆盖普通／合法抬起／禁用／Common当前源及不支持冲突。定向分析修改的主窗／协议文件；无新增所有权／Worker路径，不加ASan完整门禁。
+
+仅自有EXE目录／合成INI／专属配对与既有私有公共入口，开发／桥接／构建／分析普通权限。原19:00缓存仅供manifest及固定GUI；无新增Default、系统输入、映射、驱动或全局设置写入。
+
+2026-11-10选定验证及自有清理完成，八普通Release场／179次正式调用、四组全源GUI对照及23次含dirty／加载的上下文不变性通过；全部exit0。原GUI派生样本保持，冷读按实际加载更新。夹具／驱动失败、未发布的Disable、凭据补清理及未覆盖范围见[唯一事实页](mapping_edit_validation.md)，不标完整M1完成，不新增输入或设备验收。下一片只建禁用开关GUI基线。
 
 ### EDIT-142：键值候选的最小共用数据提取（选定完成）
 

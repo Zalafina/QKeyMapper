@@ -33,7 +33,10 @@ struct MappingUpdateArguments {
     QString sourceRevision;
     QString sourceTabRef;
     int sourceRow = -1;
-    int sendMethod = 0;
+    int sendMethod = -1;
+    std::optional<QString> originalKey;
+    std::optional<QString> mappingKey;
+    std::optional<QString> keyUpMappingKey;
 };
 
 struct IbInputPreferencesArguments {

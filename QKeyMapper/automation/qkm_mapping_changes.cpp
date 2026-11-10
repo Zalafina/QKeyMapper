@@ -55,7 +55,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")}
         : preferencesPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("preferences_revision"),
             QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")}
-        : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method")}
+        : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method"),
+            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key")}
         : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
             QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")} : preview
         ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
@@ -73,6 +74,12 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             || value.toDouble() != value.toInt(-1)) return -1;
         return value.toInt();
     };
+    const auto basicKey = [](const QJsonValue &value) {
+        if (!value.isString()) return false;
+        const QString text = value.toString();
+        return text.size() == 1 && ((text.at(0) >= QLatin1Char('A') && text.at(0) <= QLatin1Char('Z'))
+            || (text.at(0) >= QLatin1Char('0') && text.at(0) <= QLatin1Char('9')));
+    };
     if (preferencesPreview) {
         const auto revision = arguments.value(QStringLiteral("preferences_revision"));
         const auto backend = arguments.value(QStringLiteral("preferred_backend"));
@@ -89,16 +96,28 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     }
     if (updatePreview) {
         const auto reference = arguments.value(QStringLiteral("source_ref"));
+        const auto original = arguments.value(QStringLiteral("original_key"));
+        const auto mapping = arguments.value(QStringLiteral("mapping_key"));
+        const auto keyUp = arguments.value(QStringLiteral("key_up_mapping_key"));
+        if ((!original.isUndefined() && !basicKey(original)) || (!mapping.isUndefined() && !basicKey(mapping))
+            || (!keyUp.isUndefined() && !(keyUp.isString() && keyUp.toString().isEmpty()) && !basicKey(keyUp))
+            || (arguments.contains(QStringLiteral("send_method")) && sendMethod() < 0))
+            return fail("Updates accept uppercase single keys, an optional empty key-up key, and send method 0 to 3.");
+        if (original.isUndefined() && mapping.isUndefined() && keyUp.isUndefined() && sendMethod() < 0)
+            return fail("At least one mapping field must be specified.");
         const auto parts = reference.toString().split(QLatin1Char(':'));
         bool tabOk = false, rowOk = false;
         const int tab = parts.size() == 4 ? parts.at(2).toInt(&tabOk) : -1;
         const int row = parts.size() == 4 ? parts.at(3).toInt(&rowOk) : -1;
         if (!reference.isString() || reference.toString().size() > 128 || parts.size() != 4
             || !isLowerHex(parts.at(0), 64) || parts.at(1) != QStringLiteral("row") || !tabOk || !rowOk
-            || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3)
-            || sendMethod() < 0) return fail("A canonical current source row and send method 0 to 3 are required.");
+            || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3))
+            return fail("A canonical current source row is required.");
         result.action = MappingChangeAction::UpdateMapping;
         result.update = {reference.toString(), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, sendMethod()};
+        if (!original.isUndefined()) result.update.originalKey = original.toString();
+        if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
+        if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
         return result;
     }
     if (savePreview) {
@@ -156,12 +175,6 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     }
     if (sendMethod() < 0) return fail("Send method must be an integer from 0 to 3.");
     result.addition.sendMethod = sendMethod();
-    const auto basicKey = [](const QJsonValue &value) {
-        if (!value.isString()) return false;
-        const QString text = value.toString();
-        return text.size() == 1 && ((text.at(0) >= QLatin1Char('A') && text.at(0) <= QLatin1Char('Z'))
-            || (text.at(0) >= QLatin1Char('0') && text.at(0) <= QLatin1Char('9')));
-    };
     if (!basicKey(arguments.value(QStringLiteral("original_key"))) || !basicKey(arguments.value(QStringLiteral("mapping_key")))) {
         return fail("This capability accepts one uppercase letter or digit for each key; full mapping syntax is not connected yet.");
     }
@@ -271,10 +284,18 @@ QJsonArray mappingChangeCapabilities()
         schema({{QStringLiteral("operation_id"), identifierSchema}}, {QStringLiteral("operation_id")}));
     operation.insert(QStringLiteral("result_ttl_ms"), double(MappingChangeStore::ResultTtlMs));
     operation.insert(QStringLiteral("max_results"), MappingChangeStore::MaxResults);
-    auto updatePreview = capability("mapping.update.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
-            {QStringLiteral("source_ref"), rowReference}, {QStringLiteral("send_method"), sendMethodSchema}},
-            {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method")}));
+    auto updateSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
+        {QStringLiteral("source_ref"), rowReference}, {QStringLiteral("send_method"), sendMethodSchema},
+        {QStringLiteral("original_key"), key}, {QStringLiteral("mapping_key"), key},
+        {QStringLiteral("key_up_mapping_key"), QJsonObject{{QStringLiteral("anyOf"), QJsonArray{key,
+            QJsonObject{{QStringLiteral("const"), QString()}}}}}}}, {QStringLiteral("action"), QStringLiteral("source_ref")});
+    QJsonArray updateFields;
+    for (const auto *name : {"send_method", "original_key", "mapping_key", "key_up_mapping_key"})
+        updateFields.append(QJsonObject{{QStringLiteral("required"), QJsonArray{QString::fromLatin1(name)}}});
+    updateSchema.insert(QStringLiteral("anyOf"), updateFields);
+    auto updatePreview = capability("mapping.update.preview", "qkm_preview_changes", Read | Configure, true, updateSchema);
+    updatePreview.insert(QStringLiteral("key_up_send_timings"), QJsonArray{2, 3, 4});
+    updatePreview.insert(QStringLiteral("original_key_conflicts_supported"), false);
     QJsonObject preferencesSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ibinput.preferences.update")}}},
         {QStringLiteral("preferences_revision"), revision},
         {QStringLiteral("preferred_backend"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
@@ -298,6 +319,13 @@ QJsonArray mappingChangeCapabilities()
             QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("semantic_preferences_revision_bound"),
             QStringLiteral("no_open_editor_or_popup"), QStringLiteral("declared_fields_only")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    for (auto *item : {&updatePreview, &updateApply}) {
+        auto limits = item->value(QStringLiteral("limitations")).toArray();
+        limits.append(QStringLiteral("key_updates_single_keyboard_row_only"));
+        limits.append(QStringLiteral("original_key_conflict_updates_not_supported"));
+        limits.append(QStringLiteral("key_up_edit_requires_send_timing_2_3_4"));
+        item->insert(QStringLiteral("limitations"), limits);
     }
     return {previewCapability, saveCapability, addApply,
         saveApplyCapability, deleteCapability, deleteApply, updatePreview, updateApply, preferencesPreview, preferencesApply,

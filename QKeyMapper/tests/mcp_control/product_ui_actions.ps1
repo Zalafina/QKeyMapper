@@ -593,7 +593,7 @@ if ($Action -eq 'AddBasicMapping') {
     $stopShortcut = $stopKey.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
     $startButton = Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'keymapButton' @()
     $mappingButtonText = $startButton.Current.Name
-    $sourceTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('Tab1')
+    $sourceTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('Tab1','Normal')
     $sourceTabName = $sourceTab.Current.Name
     $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
     $configurationDisplay = $configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value

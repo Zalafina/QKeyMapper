@@ -38465,6 +38465,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonObject target{{QStringLiteral("instance_id"), owner.instance}};
         QJsonObject change;
         bool modified = false;
+        std::optional<MAP_KEYDATA> updatedRow;
+        const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
+            || update.keyUpMappingKey.has_value());
         if (updating) {
             const auto page = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
                 {{QStringLiteral("entity"), QStringLiteral("mappings")}, {QStringLiteral("source_revision"), update.sourceRevision},
@@ -38483,14 +38486,66 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             }
             const auto &before = KeyMappingDataList->at(update.sourceRow);
             auto after = before;
-            after.SendMappingKeyMethod = update.sendMethod;
+            if (update.sendMethod >= 0) after.SendMappingKeyMethod = update.sendMethod;
+            if (keyUpdate) {
+                static const QRegularExpression simpleKeyboardKey(QStringLiteral("\\A(?:[A-Z0-9]|F(?:[1-9]|1[0-9]|2[0-4]))\\z"));
+                if (!simpleKeyboardKey.match(before.Original_Key).hasMatch() || before.Mapping_Keys.size() != 1
+                    || !simpleKeyboardKey.match(before.Mapping_Keys.first()).hasMatch() || before.MappingKeys_KeyUp.size() != 1
+                    || !simpleKeyboardKey.match(before.MappingKeys_KeyUp.first()).hasMatch()) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("Key updates currently require an existing single keyboard-key row; use the GUI for other mapping syntax."));
+                    return;
+                }
+                if (update.keyUpMappingKey && before.SendTiming != SENDTIMING_KEYUP
+                    && before.SendTiming != SENDTIMING_KEYDOWN_AND_KEYUP && before.SendTiming != SENDTIMING_NORMAL_AND_KEYUP) {
+                    reject(QStringLiteral("invalid_mapping"), QStringLiteral("The current send timing does not allow editing key-up mapping keys."));
+                    return;
+                }
+                if (update.originalKey) after.Original_Key = *update.originalKey;
+                if (update.mappingKey && *update.mappingKey != before.Mapping_Keys.join(SEPARATOR_NEXTARROW)) {
+                    updateMappingKeyValues(after, *update.mappingKey, false);
+                    after.MappingKeys_Comments = reconcileMappingKeyComments(before.Mapping_Keys, before.MappingKeys_Comments, after.Mapping_Keys);
+                }
+                if (update.keyUpMappingKey) {
+                    if (update.keyUpMappingKey->isEmpty()) {
+                        after.MappingKeys_KeyUp = after.Mapping_Keys;
+                        after.Pure_MappingKeys_KeyUp = after.Pure_MappingKeys;
+                        after.MappingKeys_KeyUp_Comments.clear();
+                    } else if (*update.keyUpMappingKey != before.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW)) {
+                        updateMappingKeyValues(after, *update.keyUpMappingKey, true);
+                        after.MappingKeys_KeyUp_Comments = reconcileMappingKeyComments(before.MappingKeys_KeyUp,
+                            before.MappingKeys_KeyUp_Comments, after.MappingKeys_KeyUp);
+                    }
+                }
+                const auto originalValidation = validateOriginalKeyString(after.Original_Key, update.sourceRow,
+                    after.Mapping_Keys.join(SEPARATOR_NEXTARROW));
+                const auto mappingValidation = validateMappingKeyString(after.Mapping_Keys.join(SEPARATOR_NEXTARROW),
+                    after.Mapping_Keys, update.sourceRow, after.Original_Key);
+                const auto upValidation = validateMappingKeyString(after.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW),
+                    after.MappingKeys_KeyUp, update.sourceRow, after.Original_Key);
+                if (!originalValidation.isValid || !mappingValidation.isValid || !upValidation.isValid) {
+                    reject(QStringLiteral("invalid_mapping"), !originalValidation.isValid ? originalValidation.errorMessage
+                        : !mappingValidation.isValid ? mappingValidation.errorMessage : upValidation.errorMessage);
+                    return;
+                }
+                if (after.Original_Key != before.Original_Key) {
+                    const QString group = normalizeOriginalKeyForExclusiveGroup(after.Original_Key);
+                    const bool affectsOthers = isCommonMappingTabIndex(tab) && !collectEnabledNormalTabExclusiveGroupConflicts(group).isEmpty();
+                    const bool disablesCurrent = !after.Disabled && (hasEnabledExclusiveGroupConflict(*KeyMappingDataList, group, update.sourceRow)
+                        || (!isCommonMappingTabIndex(tab) && hasCommonExclusiveGroupPresenceForTab(tab, group)));
+                    if (affectsOthers || disablesCurrent) {
+                        reject(QStringLiteral("unsupported_capability"), QStringLiteral("Original-key updates that disable rows or require conflict confirmation are not supported; resolve this change in the GUI."));
+                        return;
+                    }
+                }
+            }
             QHash<int, QList<MAP_KEYDATA>> overrides{{tab, *KeyMappingDataList}};
             overrides[tab][update.sourceRow] = after;
             const auto conflict = ibInputSaveConflict(overrides);
             if (!conflict.isEmpty()) { reject(QStringLiteral("invalid_mapping"), conflict); return; }
-            modified = before.SendMappingKeyMethod != after.SendMappingKeyMethod;
+            modified = !(before == after);
+            updatedRow = after;
             target.insert(QStringLiteral("source_ref"), update.sourceReference);
-            change = {{QStringLiteral("kind"), QStringLiteral("update_send_method")},
+            change = {{QStringLiteral("kind"), keyUpdate ? QStringLiteral("update_row_keys") : QStringLiteral("update_send_method")},
                 {QStringLiteral("before"), automationSourceRow(before)}, {QStringLiteral("after"), automationSourceRow(after)}};
         } else {
             if (preferenceArguments.revision != preferencesRevision) {
@@ -38531,8 +38586,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (store.expired(*applyingPreview)) { reject(QStringLiteral("preview_expired"), QStringLiteral("The settings preview expired before commit.")); return; }
         if (modified) {
             if (updating) {
-                (*KeyMappingDataList)[update.sourceRow].SendMappingKeyMethod = update.sendMethod;
+                (*KeyMappingDataList)[update.sourceRow] = *updatedRow;
                 ++m_AutomationSourceEpoch;
+                if (keyUpdate) {
+                    if (isCommonMappingTabIndex(tab)) refreshTabsForSourceTabChange(tab);
+                    else refreshKeyMappingDataTableByTabIndex(tab);
+                }
             } else if (!client.setPreferences(candidatePreferences)) {
                 reject(QStringLiteral("context_busy"), QStringLiteral("The IbInput client no longer admits preference changes.")); return;
             }

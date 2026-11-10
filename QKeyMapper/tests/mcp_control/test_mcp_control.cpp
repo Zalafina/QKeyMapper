@@ -231,7 +231,33 @@ void McpControlTest::ibInputChangeArguments()
         QVERIFY(!validate(arguments).ok());
     }
     auto extra = update; extra.insert(QStringLiteral("original_key"), QStringLiteral("B"));
-    QVERIFY(!validate(extra).ok());
+    QVERIFY(validate(extra).ok());
+    QCOMPARE(*validate(extra).update.originalKey, QStringLiteral("B"));
+    const QJsonObject keys{{QStringLiteral("action"), QStringLiteral("mapping.update")},
+        {QStringLiteral("source_ref"), source}, {QStringLiteral("mapping_key"), QStringLiteral("C")}};
+    const auto keyUpdate = validate(keys);
+    QVERIFY(keyUpdate.ok());
+    QCOMPARE(keyUpdate.update.sendMethod, -1);
+    QVERIFY(!keyUpdate.update.originalKey.has_value());
+    QCOMPARE(*keyUpdate.update.mappingKey, QStringLiteral("C"));
+    QVERIFY(!keyUpdate.update.keyUpMappingKey.has_value());
+    auto keyUp = keys; keyUp.insert(QStringLiteral("key_up_mapping_key"), QString());
+    QVERIFY(validate(keyUp).ok());
+    QVERIFY(validate(keyUp).update.keyUpMappingKey->isEmpty());
+    for (const auto *name : {"original_key", "mapping_key", "key_up_mapping_key"}) {
+        for (const auto &bad : QJsonArray{true, 1, QStringLiteral("AB"), QStringLiteral("a"), QStringLiteral("\n"),
+                                        QJsonValue(QJsonValue::Null)}) {
+            auto invalidKey = keys; invalidKey.insert(QString::fromLatin1(name), bad);
+            QVERIFY(!validate(invalidKey).ok());
+        }
+    }
+    auto noFields = keys; noFields.remove(QStringLiteral("mapping_key"));
+    QVERIFY(!validate(noFields).ok());
+    auto unknown = keys; unknown.insert(QStringLiteral("field"), QStringLiteral("C"));
+    QVERIFY(!validate(unknown).ok());
+    auto wrongAction = keys; wrongAction.insert(QStringLiteral("action"), QStringLiteral("mapping.add"));
+    wrongAction.insert(QStringLiteral("key_up_mapping_key"), QString());
+    QVERIFY(!validate(wrongAction).ok());
     const QJsonObject preferences{{QStringLiteral("action"), QStringLiteral("ibinput.preferences.update")},
         {QStringLiteral("preferences_revision"), revision}, {QStringLiteral("preferred_backend"), QStringLiteral("razer")}};
     const auto settings = validate(preferences);

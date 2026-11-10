@@ -225,13 +225,17 @@ def main() -> None:
                 pattern="^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$")] = None,
             preferences_revision: Annotated[str | None, Field(min_length=64, max_length=64, pattern="^[0-9a-f]{64}$")] = None,
             preferred_backend: Literal["auto", "logitech_ghub", "logitech_legacy", "razer"] | None = None,
-            unavailable_policy: Literal["block", "sendinput_before_start"] | None = None) -> ToolResult:
-        """只读预览，先查询实际能力。mapping.add可传send_method=0..3，缺省0；mapping.update仅传source_ref与send_method，受限修改当前可见源行的发送方式。ibinput.preferences.update传get_state.ibinput中的preferences_revision及至少一项preferred_backend/unavailable_policy，仅改内存草稿；持久化另用configuration.save。偏好真实变化使旧预览失效，被动观察不使其失效。mapping.delete传source_revision、source_tab_ref及1–100个同源source_refs，只接受当前附着源的可见行，去重并逐条列完整删除内容；不接受显示行号、跨源批次或任意目标。提交须另传confirm_delete=true。默认mapping.add保持基本映射调用：四个源／键字段必填，每键限单个大写字母或数字；先qkm_query(mapping_sources)获取真实源引用，insert_row从0开始、缺省追加。configuration.save仅传action及明确setting_name，要求Read＋Configure、加载成功／空闲且清理许可有效、无打开编辑窗；返回完整加载／共享草稿的保存足迹、名称效果及明确目标，不能理解为只保存一行。保存另须qkm_apply_changes明确确认完整范围及独立覆盖；不自动开始映射。各类预览最多120秒，新预览替换本客户端旧预览，不改配置、dirty或磁盘，不自动停止、切表或关闭编辑窗。"""
+            unavailable_policy: Literal["block", "sendinput_before_start"] | None = None,
+            key_up_mapping_key: Annotated[str | None, Field(max_length=1)] = None) -> ToolResult:
+        """只读预览，先查询实际能力。mapping.add可传send_method=0..3，缺省0；mapping.update传source_ref及至少一项original_key/mapping_key/key_up_mapping_key/send_method；省略字段保持，指定新键仅单个大写字母或数字，抬起键可空表示沿用按下键，但仅发送时机2/3/4可编辑。键值修改限现有单个普通键盘键行（原键/按下/抬起为字母、数字或F1–F24），原键冲突会禁用本行/他行或需要确认时明确拒绝，不弹窗；仅send_method调用保持原范围。ibinput.preferences.update传get_state.ibinput中的preferences_revision及至少一项preferred_backend/unavailable_policy，仅改内存草稿；持久化另用configuration.save。偏好真实变化使旧预览失效，被动观察不使其失效。mapping.delete传source_revision、source_tab_ref及1–100个同源source_refs，只接受当前附着源的可见行，去重并逐条列完整删除内容；不接受显示行号、跨源批次或任意目标。提交须另传confirm_delete=true。默认mapping.add保持基本映射调用：四个源／键字段必填，每键限单个大写字母或数字；先qkm_query(mapping_sources)获取真实源引用，insert_row从0开始、缺省追加。configuration.save仅传action及明确setting_name，要求Read＋Configure、加载成功／空闲且清理许可有效、无打开编辑窗；返回完整加载／共享草稿的保存足迹、名称效果及明确目标，不能理解为只保存一行。保存另须qkm_apply_changes明确确认完整范围及独立覆盖；不自动开始映射。各类预览最多120秒，新预览替换本客户端旧预览，不改配置、dirty或磁盘，不自动停止、切表或关闭编辑窗。"""
         return tool_result(await bridge.preview_changes(source_revision, source_tab_ref, original_key, mapping_key, insert_row,
             action=action, setting_name=setting_name, source_refs=source_refs, send_method=send_method, source_ref=source_ref,
-            preferences_revision=preferences_revision, preferred_backend=preferred_backend, unavailable_policy=unavailable_policy))
+            preferences_revision=preferences_revision, preferred_backend=preferred_backend, unavailable_policy=unavailable_policy,
+            key_up_mapping_key=key_up_mapping_key))
 
     preview_definition = next(definition for definition in tools if definition.name == "qkm_preview_changes")
+    preview_definition.parameters["properties"]["key_up_mapping_key"]["anyOf"] = [
+        {"type": "null"}, {"const": ""}, {"type": "string", "maxLength": 1, "pattern": "^[A-Z0-9]$"}]
     preview_definition.parameters["oneOf"] = [
         {"required": ["source_revision", "source_tab_ref", "original_key", "mapping_key"],
          "properties": {"action": {"const": "mapping.add"}, "setting_name": {"type": "null"}, "source_refs": {"type": "null"},
@@ -244,19 +248,22 @@ def main() -> None:
             **{name: {"type": "string"} for name in ("source_revision", "source_tab_ref")},
             **{name: {"type": "null"} for name in ("setting_name", "original_key", "mapping_key", "insert_row")}}}]
 
-    update_fields = ("source_ref", "preferences_revision", "preferred_backend", "unavailable_policy")
+    update_fields = ("source_ref", "preferences_revision", "preferred_backend", "unavailable_policy", "key_up_mapping_key")
     old_fields = ("source_revision", "source_tab_ref", "original_key", "mapping_key", "insert_row", "setting_name", "source_refs")
     for variant in preview_definition.parameters["oneOf"]:
         variant["properties"].update({name: {"type": "null"} for name in update_fields})
         if variant["properties"]["action"]["const"] != "mapping.add":
             variant["properties"]["send_method"] = {"type": "null"}
     preview_definition.parameters["oneOf"].extend([
-        {"required": ["action", "source_ref", "send_method"], "properties": {
+        {"required": ["action", "source_ref"], "properties": {
             "action": {"const": "mapping.update"}, "source_ref": {"type": "string"}, "send_method": {"type": "integer"},
-            **{name: {"type": "null"} for name in (*old_fields, "preferences_revision", "preferred_backend", "unavailable_policy")}}},
+            **{name: {"type": "string"} for name in ("original_key", "mapping_key", "key_up_mapping_key")},
+            **{name: {"type": "null"} for name in ("source_revision", "source_tab_ref", "insert_row", "setting_name", "source_refs",
+                                                  "preferences_revision", "preferred_backend", "unavailable_policy")}},
+         "anyOf": [{"required": [name]} for name in ("send_method", "original_key", "mapping_key", "key_up_mapping_key")]},
         {"required": ["action", "preferences_revision"], "properties": {
             "action": {"const": "ibinput.preferences.update"}, "preferences_revision": {"type": "string"},
-            **{name: {"type": "null"} for name in (*old_fields, "source_ref", "send_method")}},
+            **{name: {"type": "null"} for name in (*old_fields, "source_ref", "send_method", "key_up_mapping_key")}},
          "anyOf": [{"required": ["preferred_backend"], "properties": {"preferred_backend": {"type": "string"}}},
                    {"required": ["unavailable_policy"], "properties": {"unavailable_policy": {"type": "string"}}}]}])
 

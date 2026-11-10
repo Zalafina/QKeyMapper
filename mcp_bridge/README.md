@@ -101,7 +101,11 @@ PERSIST-136 产品管理窗增加“保存启动选择”：开关立即影响�
 
 ## 完整保存的预览与提交
 
-IB-MCP-138：`mapping.add`可选`send_method`，0=SendInput、1=SendMessage、2=FakerInput、3=IbInput，缺省0。`mapping.update`只接受当前可见源行的`source_ref`和`send_method`，仍走预览／提交；隐藏行和非当前源拒绝，不开放其他字段。两者与GUI共用有效Common、禁用行及同移动组校验；合法保存不要求后端已连接。
+`mapping.add`可选`send_method`，0=SendInput、1=SendMessage、2=FakerInput、3=IbInput，缺省0。两种行操作与GUI共用有效Common、禁用行及同移动组校验；合法保存不要求后端已连接。
+
+EDIT-143扩展既有`mapping.update`：传当前可见源行的`source_ref`，至少指定`original_key`、`mapping_key`、`key_up_mapping_key`或`send_method`之一；省略保持原值。指定新键仅单个大写字母／数字，键值更新要求原行的原键、按下／抬起均为单个字母、数字或F1–F24；仅改发送方式保持IB-MCP-138原范围。抬起键仅原发送时机2／3／4允许，空字符串表示沿用候选按下键；`null`不等于清空。原键变化若会禁用本行／其他行或需要GUI确认，返回`unsupported_capability`且不修改；隐藏行、非当前源和复杂语法不由本能力编辑。
+
+例如先查询取得当前`source_ref`，再预览`{"action":"mapping.update","source_ref":"实际引用","original_key":"E","mapping_key":"C"}`，核对完整before／after后提交其`preview_id`。提交只改内存及dirty，不隐式保存、停止或开始；完整保存仍另行预览并确认范围。新源引用须重新查询，成功重放只返回原业务结果及新查询时间，不再次修改。原GUI的派生采样行为保持，冷读后按真实加载结果报告，不将旧派生样本当成新实例引用。
 
 `ibinput.preferences.update`须带`qkm_get_state.result.ibinput.preferences_revision`，至少指定`preferred_backend`（auto／logitech_ghub／logitech_legacy／razer）或`unavailable_policy`（block／sendinput_before_start）。未指定项保留。提交仅改全局内存偏好及dirty，持久化仍需显式完整保存；预览说明包含两项共享键。实际语义变化使旧写预览失效，同值和被动状态采样不推进修订。取消保存保留此前草稿；写失败后须查询原operation及状态，不能盲重试。
 

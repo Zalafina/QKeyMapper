@@ -77,16 +77,24 @@ class ToolResultTests(unittest.TestCase):
                            "original_key": "A", "mapping_key": "B"}
                 save = {"action": "configuration.save", "setting_name": "配置95"}
                 update = {"action": "mapping.update", "source_ref": "a" * 64 + ":row:0:0", "send_method": 3}
+                key_update = {"action": "mapping.update", "source_ref": update["source_ref"], "mapping_key": "C"}
                 preferences = {"action": "ibinput.preferences.update", "preferences_revision": "a" * 64,
                                "preferred_backend": "razer"}
                 for valid in (mapping, dict(mapping, action="mapping.add"), dict(mapping, send_method=3), save, update,
+                              key_update, dict(update, original_key="A"), dict(key_update, original_key="E"), dict(key_update, key_up_mapping_key=""),
+                              dict(key_update, key_up_mapping_key="D", send_method=0),
                               preferences, dict(preferences, unavailable_policy="sendinput_before_start")):
                     self.assertFalse(list(validator.iter_errors(valid)), valid)
                 for invalid in ({}, {"action": "configuration.save"}, dict(save, setting_name=None),
                                 dict(save, original_key="A"), dict(mapping, mapping_key=None),
                                 dict(mapping, setting_name="extra"), dict(save, unknown=True), dict(update, send_method=True),
                                 dict(update, send_method=4), dict(update, source_ref="a" * 64 + ":row:00:0"),
-                                dict(update, original_key="A"), dict(preferences, preferred_backend=None),
+                                {"action": "mapping.update", "source_ref": update["source_ref"]},
+                                dict(key_update, mapping_key=None), dict(key_update, original_key="AB"),
+                                dict(key_update, key_up_mapping_key="\n"), dict(key_update, key_up_mapping_key=True),
+                                dict(mapping, key_up_mapping_key="C"), dict(save, key_up_mapping_key=""),
+                                dict(preferences, key_up_mapping_key="C"),
+                                dict(update, original_key="a"), dict(preferences, preferred_backend=None),
                                 dict(preferences, unavailable_policy="always"), dict(preferences, send_method=3)):
                     self.assertTrue(list(validator.iter_errors(invalid)), invalid)
                 for entity, code in (("configurations", "permission_denied"), ("tabs", "stale_catalog"),
