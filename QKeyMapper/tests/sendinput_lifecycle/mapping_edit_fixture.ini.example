@@ -1,0 +1,37 @@
+[General]
+SettingSelect=Edit141Seed
+LastWindowPosition=@Point(64 96)
+LanguageIndex=0
+StartupAutoMonitoring=false
+StartupMinimized=false
+VirtualGamepadEnable=false
+MultiInputEnable=false
+CloseToSystemtray=false
+CloseToSystemtray_Decided=true
+NotShow_FilterKeysDisabled=true
+NotShow_VersionUnmatched=true
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false
+HideDisabled=false
+
+[Edit141Seed]
+MappingTable_TabNameList=Normal, Common
+MappingTable_TabInternalNameList=Edit141Normal, __QKM_COMMON__
+MappingTable_TabIncludeCommonList=OFF, OFF
+MappingTable_Common_Enabled=true
+MappingTable_LastTabName=Normal
+KeyMapData_OriginalKeys=A#C|F13#F14
+KeyMapData_MappingKeys=B#D|B#G
+KeyMapData_MappingKeys_KeyUp=B#D|H#G
+KeyMapData_SendMappingKeyMethod=3#0|3#0
+KeyMapData_SendTiming=NORMAL#NORMAL|NORMAL#NORMAL
+KeyMapData_FloatingButton_SyncGroupId=17#0|21#0
+KeyMapData_FloatingButton_Width=93#80|81#80
+AutoStartMappingChecked=0
+EnableSystemFilterKeyChecked=false
+DisableFilterKeyClickSoundChecked=false
+
+[Keep141]
+MappingTable_TabNameList=Preserved
+KeyMapData_OriginalKeys=Q
+KeyMapData_MappingKeys=R
