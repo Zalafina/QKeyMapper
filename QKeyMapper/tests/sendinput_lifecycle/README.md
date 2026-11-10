@@ -75,6 +75,8 @@ SAVE-71共通备注用例同样只操作自有out runtime：`common_comments`准
 
 用真实Qt表格双击、Ctrl+A／字符／Backspace、原Update按钮及Escape建立GUI基线；不设置控件值、不直接调用提交／加载函数、不使用MCP建立基线。验证非法原键／映射拒绝、有效E→C、未清空抬起键保持原值／清空回退C、完整其他字段／源、dirty／INI／加载及实际退出排空。只读记录原始派生样本，不能按新原键推算Pure_OriginalKeys已同步。此为包含实际产品源码的维护目标，原manifest、自有EXE目录／合成INI和私有桌面，未启动映射／发送系统输入；不等于普通Release或正式MCP更新验收。具体版本、失败及原件入口见[唯一主计划141](../../../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md#edit-gui-141普通单行键值修改原gui基线选定完成)。
 
+EDIT-142沿同一`settings_edit_gui`的normal组增加四项候选数据检查：副本按下／抬起分段与纯键去重、两侧互不覆盖、往返保留其他配置／原键样本／锁状态，以及原全局setter负／越界索引无修改。它们是组件检查，不作为GUI操作；原十项真实事件基线及其他三组保持，以完整before／after.sources与141同kit原件比较，证明共用数据提取未改变该GUI范围。
+
 ## DEMO-P1-108 窗口捕获维护范围
 
 `settings_save_apply` 的固定连接变体 `demo_mcp_capture` 沿P0演示夹具，只在空白合法隔离INI／私有桌面上经正式MCP内存新增A→B；固定配对Read+Configure+CaptureWindows，无ShowWindows／RunMapping。`demo_capture`保留Read+Configure，用于正式捕获权限拒绝。维护用例的Qt表格双击／Esc打开关闭真实单项窗，不是正式MCP展示接口。

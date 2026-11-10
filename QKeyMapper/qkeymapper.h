@@ -1496,6 +1496,7 @@ public:
     struct MappingDataInsertSummary;
     static bool importKeyMappingDataFromFile(int tabindex, const QString &filename, MappingDataInsertSummary *insertSummary = Q_NULLPTR);
     static QString buildMappingDataInsertResultMessage(const QString &successMessage, const MappingDataInsertSummary &summary);
+    static void updateMappingKeyValues(MAP_KEYDATA &data, const QString &mappingkeystr, bool keyUp);
     static void updateKeyMappingDataListMappingKeys(int rowindex, const QString &mappingkeystr);
     static void updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QString &mappingkeystr);
     static bool validateSendTimingByKeyMapData(const MAP_KEYDATA &keymapdata);

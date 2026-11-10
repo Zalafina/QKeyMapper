@@ -16,6 +16,8 @@ PERSIST-137-B（2026-11-10，PC-W11）：[正式v2固定目标／同登录产品
 
 EDIT-GUI-141（2026-11-10，PC-W11）：[原Item键值修改GUI基线](qkeymapper_mcp_automation_plan_codex.md#edit-gui-141普通单行键值修改原gui基线选定完成)，双Qt四场／各41项、八原manifest私有进程exit0；初始禁用抬起字段的夹具失败独立保留。产品未改，不是正式MCP键值更新或真实输入验收。
 
+EDIT-142（2026-11-10，PC-W11）：[键值候选的共用提取](qkeymapper_mcp_automation_plan_codex.md#edit-142键值候选的最小共用数据提取选定完成)，双Qt各45项、八私有High进程0，候选组件及完整sources与141原GUI比较通过；无新增正式工具或输入验收。
+
 ## MAP-20261025-67-B1：基本添加正式接线
 
 PC-W10／4c5d04f3+本提交；[版本、EXE、结果及缺口](map67b1_validation.md)。双Qt普通Release、维护各11／SDK各12／product warm各26／源共通各12通过；Qt6 Default实际A→B、编辑拒绝、同步组陈旧及中文截图通过。当前12工具／8能力；显式保存／映射冷启动／MCP启停仍未接。DP请求后代表组未见异常，物理电源未知。四态采样有噪声及查询开销，不称完整无退化。

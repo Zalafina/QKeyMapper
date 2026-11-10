@@ -2817,6 +2817,32 @@ QJsonObject QkmMappingAdditionTestAccess::mappingEditGui(QKeyMapper *mapper)
     const auto sources = before.value(QStringLiteral("sources")).toArray();
     const auto oldRow = sources.at(target).toObject().value(QStringLiteral("rows")).toArray().first().toObject();
     const auto old = QKeyMapper::KeyMappingDataList->first();
+    if (variant == QStringLiteral("normal")) {
+        MAP_KEYDATA candidate = old;
+        QKeyMapper::updateMappingKeyValues(candidate, QStringLiteral("C»D+C»C"), false);
+        check(candidate.Mapping_Keys == QStringList{QStringLiteral("C"), QStringLiteral("D+C"), QStringLiteral("C")}
+            && candidate.Pure_MappingKeys == QStringList{QStringLiteral("C"), QStringLiteral("D")}
+            && candidate.MappingKeys_KeyUp == old.MappingKeys_KeyUp
+            && candidate.Pure_MappingKeys_KeyUp == old.Pure_MappingKeys_KeyUp,
+            "candidate press values split sequences and deduplicate pure keys without changing key-up values");
+        const auto pressSegments = candidate.Mapping_Keys;
+        const auto pressPure = candidate.Pure_MappingKeys;
+        QKeyMapper::updateMappingKeyValues(candidate, QStringLiteral("F»G+F"), true);
+        check(candidate.MappingKeys_KeyUp == QStringList{QStringLiteral("F"), QStringLiteral("G+F")}
+            && candidate.Pure_MappingKeys_KeyUp == QStringList{QStringLiteral("F"), QStringLiteral("G")}
+            && candidate.Mapping_Keys == pressSegments && candidate.Pure_MappingKeys == pressPure,
+            "candidate key-up values do not overwrite the prepared press side");
+        QKeyMapper::updateMappingKeyValues(candidate, old.Mapping_Keys.join(SEPARATOR_NEXTARROW), false);
+        QKeyMapper::updateMappingKeyValues(candidate, old.MappingKeys_KeyUp.join(SEPARATOR_NEXTARROW), true);
+        check(candidate == old && candidate.Pure_MappingKeys == old.Pure_MappingKeys
+            && candidate.Pure_MappingKeys_KeyUp == old.Pure_MappingKeys_KeyUp
+            && candidate.Pure_OriginalKeys == old.Pure_OriginalKeys && candidate.LockState == old.LockState,
+            "candidate round trip preserves every other field, comment, original-key sample and lock state");
+        QKeyMapper::updateKeyMappingDataListMappingKeys(-1, QStringLiteral("Z"));
+        QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(QKeyMapper::KeyMappingDataList->size(), QStringLiteral("Z"));
+        check(mapper->collectAutomationSourceSnapshot(error) == before && error.isEmpty() && !mapper->m_SaveSettingDirty,
+            "candidate preparation and rejected global row indices leave all live sources and dirty unchanged");
+    }
     check(old.Original_Key == (common ? QStringLiteral("F13") : QStringLiteral("A"))
         && old.Mapping_Keys == QStringList{QStringLiteral("B")}
         && old.Disabled == (variant == QStringLiteral("disabled")) && old.SendMappingKeyMethod == 3,

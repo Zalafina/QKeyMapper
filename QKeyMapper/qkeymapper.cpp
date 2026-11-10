@@ -14928,18 +14928,24 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     return import_result;
 }
 
+void QKeyMapper::updateMappingKeyValues(MAP_KEYDATA &data, const QString &mappingkeystr, bool keyUp)
+{
+    QStringList &segments = keyUp ? data.MappingKeys_KeyUp : data.Mapping_Keys;
+    QStringList &pureKeys = keyUp ? data.Pure_MappingKeys_KeyUp : data.Pure_MappingKeys;
+    QStringList mappingKeySeqList = splitMappingKeyString(mappingkeystr, SPLIT_WITH_NEXT);
+    segments = mappingKeySeqList;
+    QStringList pureMappingKeys = splitMappingKeyString(mappingkeystr, SPLIT_WITH_PLUSANDNEXT, true);
+    pureMappingKeys.removeDuplicates();
+    pureKeys = pureMappingKeys;
+}
+
 void QKeyMapper::updateKeyMappingDataListMappingKeys(int rowindex, const QString &mappingkeystr)
 {
     if (rowindex < 0 || rowindex >= QKeyMapper::KeyMappingDataList->size()) {
         return;
     }
 
-    QStringList mappingKeySeqList = splitMappingKeyString(mappingkeystr, SPLIT_WITH_NEXT);
-    (*QKeyMapper::KeyMappingDataList)[rowindex].Mapping_Keys = mappingKeySeqList;
-
-    QStringList pure_mappingKeys = splitMappingKeyString(mappingkeystr, SPLIT_WITH_PLUSANDNEXT, true);
-    pure_mappingKeys.removeDuplicates();
-    (*QKeyMapper::KeyMappingDataList)[rowindex].Pure_MappingKeys = pure_mappingKeys;
+    updateMappingKeyValues((*QKeyMapper::KeyMappingDataList)[rowindex], mappingkeystr, false);
 }
 
 void QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QString &mappingkeystr)
@@ -14948,12 +14954,7 @@ void QKeyMapper::updateKeyMappingDataListKeyUpMappingKeys(int rowindex, const QS
         return;
     }
 
-    QStringList mappingKeySeqList = splitMappingKeyString(mappingkeystr, SPLIT_WITH_NEXT);
-    (*QKeyMapper::KeyMappingDataList)[rowindex].MappingKeys_KeyUp = mappingKeySeqList;
-
-    QStringList pure_mappingKeys = splitMappingKeyString(mappingkeystr, SPLIT_WITH_PLUSANDNEXT, true);
-    pure_mappingKeys.removeDuplicates();
-    (*QKeyMapper::KeyMappingDataList)[rowindex].Pure_MappingKeys_KeyUp = pure_mappingKeys;
+    updateMappingKeyValues((*QKeyMapper::KeyMappingDataList)[rowindex], mappingkeystr, true);
 }
 
 /*
