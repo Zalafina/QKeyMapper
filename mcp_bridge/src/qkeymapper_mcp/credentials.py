@@ -10,19 +10,24 @@ import win32cred
 import win32crypt
 
 from .protocol import BridgeError, Credential, decode, encode, hex_bytes, require
+from .windows import persistent_target
 
 
 class CredentialStore:
-    def __init__(self, discovery: Path, executable: Path, session: int):
+    def __init__(self, discovery: Path, executable: Path, session: int, *, persistent: bool = False):
         with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"SOFTWARE\Microsoft\Cryptography", 0,
                             winreg.KEY_READ | winreg.KEY_WOW64_64KEY) as key:
             machine, kind = winreg.QueryValueEx(key, "MachineGuid")
         require(kind == winreg.REG_SZ and bool(machine), "credential_context_unavailable")
-        context = ("QKeyMapper-MCP-Bridge/v1\0" + machine.lower() + "\0"
-                   + os.path.normcase(str(discovery)) + "\0"
-                   + os.path.normcase(str(executable)) + "\0" + str(session)).encode("utf-8")
+        if persistent:
+            _, binding = persistent_target(executable, session)
+            context = b"QKeyMapper-MCP-Bridge/v2\0" + machine.lower().encode("utf-8") + b"\0" + binding
+        else:
+            context = ("QKeyMapper-MCP-Bridge/v1\0" + machine.lower() + "\0"
+                       + os.path.normcase(str(discovery)) + "\0"
+                       + os.path.normcase(str(executable)) + "\0" + str(session)).encode("utf-8")
         self._entropy = hashlib.sha256(context).digest()
-        self.target = "QKeyMapper.MCP.Bridge/" + self._entropy.hex()
+        self.target = ("QKeyMapper.MCP.Bridge/v2/" if persistent else "QKeyMapper.MCP.Bridge/") + self._entropy.hex()
 
     def load(self) -> Credential | None:
         try:

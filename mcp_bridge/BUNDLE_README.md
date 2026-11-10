@@ -10,18 +10,20 @@ Windows 10／11 x64，内含专用 CPython 3.11.9 和固定运行依赖。用户
     "qkeymapper": {
       "command": "D:\\QKeyMapper\\mcp_bridge\\runtime\\python.exe",
       "args": ["-I", "-B", "-X", "utf8", "-m", "qkeymapper_mcp",
-               "--discovery-file", "<从目标QKeyMapper管理窗口复制的instance.json绝对路径>",
+               "--persistent-target",
                "--executable", "D:\\QKeyMapper\\QKeyMapper.exe"]
     }
   }
 }
 ```
 
-替换示例路径；不要只复制 python.exe 或依赖本机 PATH。保持 -I 和 -B，._pth 限定包内模块、禁用全局 Python 和工作目录导入；stdio 客户端直接运行上述程序，不通过管理员终端。可用同一程序的 `-I -B -X utf8 -m qkeymapper_mcp --help` 查看参数。运行端不执行 pip 或联网下载依赖。
+此固定目标模式需匹配PERSIST-137-B的新产品／桥接；替换示例中的可信EXE路径，不接收发现文件自报目标。桥接只定位该EXE在当前Windows用户／Session下的唯一v2发现记录，不扫描实例或凭据。旧产品／显式连接仍用`--discovery-file <管理窗复制的instance.json>`替代`--persistent-target`，两个模式互斥；缺失或失效不自动回落。不要只复制 python.exe 或依赖本机 PATH。保持 -I 和 -B，._pth 限定包内模块、禁用全局 Python 和工作目录导入；stdio 客户端直接运行上述程序，不通过管理员终端。可用同一程序的 `-I -B -X utf8 -m qkeymapper_mcp --help` 查看参数。运行端不执行 pip 或联网下载依赖。
 
 workspace 可在客户端已有的 MCP 配置中保存上述非秘密 command／args；由支持该格式的客户端明确加载，桥接只接收启动参数，不自动读取或扫描 workspace。不同客户端的配置位置／格式须按其要求填写；示例不证明 Agent 或 gateway 会自动加载。密钥只存本机 Windows 凭据管理器并受 DPAPI 保护，产品端沿用私有受保护配对库；不要把密钥或其加密副本加入配置。
 
 同一 Windows 登录会话、同一目标连接上下文的新对话／桥接进程先调用 qkm_connect，复用有效配对，不因换对话重新申请。不同 workspace 明确使用相同连接参数即共享同一配对和撤销语义，不构成权限隔离。当前每实例只接受一个客户端；端点在既有短暂等待后仍忙碌时返回 pipe_busy，等待原会话主动断开后再显式连接，不抢占或换选目标。目标和凭据缺失、不符或被撤销时明确失败，不扫描其他连接或凭据。
+
+v2将配对上下文稳定绑定于同机、当前Windows用户和规范化可信EXE路径，当前Session只决定运行发现／独占目录；同EXE同Session仍最多一个MCP实例，跨Session共享库用短事务而非终身占锁。客户端v2密钥仍只在Windows凭据管理器＋DPAPI；服务端仍为私有DPAPI库。v1入口和旧密钥不迁移、覆盖、复制或扫描，首次v2须一次新的GUI配对。产品重启后须重新认证，旧实例引用／预览／结果无效。实际跨Windows登录／PC重启验收仍另排，不把稳定命名或同登录测试写成已完成真实重启验收。
 
 删除 workspace 配置只移除该客户端的启动关联，不撤销已建立连接；删除本机对应凭据只使其不能再用该密钥认证；撤销产品授权须在 QKeyMapper 的管理窗口操作。本组件没有通用凭据读取／删除工具，也不会为了修复关联而删除共享配对。关联文件存在不表示已配对或已连接，仍须核对实际认证状态和权限。
 
@@ -31,7 +33,7 @@ workspace 可在客户端已有的 MCP 配置中保存上述非秘密 command／
 
 普通入口提供已实现的连接、查询、预览／提交、保存及受限窗口能力，实际范围以目标能力发现为准。私有后台演示须有version2可信创建记录和已认证只配置模式（startup_purpose=configuration_only_demo）；旧version1／普通模式拒绝。main、item_setup、mapping_advanced 可返回真实PNG，未支持场景明确拒绝。
 
-专用演示实例的客户端沿用上述固定EXE／instance.json配置，再追加：
+专用演示实例复用上述明确选择的固定EXE模式（persistent-target或显式instance.json），再追加：
 
 ```json
 ["--product-demo-record", "--enable-demo-mapping"]

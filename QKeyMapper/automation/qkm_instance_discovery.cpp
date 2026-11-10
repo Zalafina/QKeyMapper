@@ -6,12 +6,15 @@
 
 #include <QBuffer>
 #include <QDir>
+#include <QCryptographicHash>
 #include <QJsonDocument>
 #include <QSaveFile>
 #include <QScopeGuard>
+#include <QStandardPaths>
 #include <QRegularExpression>
 #include <QtEndian>
 #include <limits>
+#include <iterator>
 
 namespace QkmAutomation {
 namespace {
@@ -108,6 +111,40 @@ Occupant occupant(const InstanceDescriptor &descriptor)
 
 } // namespace
 
+PersistentTarget persistentTarget(const QString &executable, quint32 sessionId)
+{
+    if (!QDir::isAbsolutePath(executable) || executable.contains(QChar::Null) || executable.size() > 32768) return {};
+    const QString native = QDir::toNativeSeparators(executable);
+    HANDLE file = CreateFileW(reinterpret_cast<LPCWSTR>(native.utf16()), FILE_READ_ATTRIBUTES,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, 0, nullptr);
+    if (file == INVALID_HANDLE_VALUE) return {};
+    const auto close = qScopeGuard([file]() { CloseHandle(file); });
+    BY_HANDLE_FILE_INFORMATION info{};
+    if (GetFileType(file) != FILE_TYPE_DISK || !GetFileInformationByHandle(file, &info)
+        || (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)) return {};
+    wchar_t name[32768]{};
+    const DWORD length = GetFinalPathNameByHandleW(file, name, DWORD(std::size(name)), FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+    if (!length || length >= std::size(name)) return {};
+    QString canonical = QString::fromWCharArray(name, int(length));
+    if (canonical.startsWith(QStringLiteral("\\\\?\\UNC\\"))) canonical = QStringLiteral("//") + canonical.mid(8);
+    else if (canonical.startsWith(QStringLiteral("\\\\?\\"))) canonical = canonical.mid(4);
+    else return {};
+    canonical.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    // Reject malformed UTF-16 before hashing so lossy conversion cannot merge distinct targets.
+    FrameError frameError;
+    encodeFrame({{QStringLiteral("executable"), canonical}}, MaxDiscoveryPayload, frameError);
+    const QString base = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
+    if (frameError != FrameError::None || base.isEmpty() || !QDir::isAbsolutePath(canonical)) return {};
+    QByteArray context("QKeyMapper-MCP-App/v2");
+    context.append('\0').append(canonical.toUtf8());
+    PersistentTarget result;
+    result.applicationBinding = QCryptographicHash::hash(context, QCryptographicHash::Sha256);
+    result.pairDirectory = QDir(base).filePath(QStringLiteral("QKeyMapper/MCP/targets-v2/")
+        + QString::fromLatin1(result.applicationBinding.toHex()));
+    result.runtimeDirectory = QDir(result.pairDirectory).filePath(QStringLiteral("sessions/") + QString::number(sessionId));
+    return result;
+}
+
 QString instanceDiscoveryPath(const QString &directory)
 {
     return QDir(directory).filePath(QStringLiteral("instance.json"));
@@ -176,8 +213,9 @@ bool publishDemoCreationRecord(const QString &directory, const QString &instance
         || QString::fromWCharArray(station).compare(QStringLiteral("WinSta0"), Qt::CaseInsensitive) != 0
         || !GetUserObjectInformationW(GetThreadDesktop(GetCurrentThreadId()), UOI_NAME, desktop, sizeof(desktop), &needed)) return false;
     const QString desktopName = QString::fromWCharArray(desktop);
+    static const QRegularExpression privateDesktopPattern(QStringLiteral("\\A[A-Za-z0-9_.-]{1,120}\\z"));
     if (desktopName.compare(QStringLiteral("Default"), Qt::CaseInsensitive) == 0
-        || !QRegularExpression(QStringLiteral("\\A[A-Za-z0-9_.-]{1,120}\\z")).match(desktopName).hasMatch()) return false;
+        || !privateDesktopPattern.match(desktopName).hasMatch()) return false;
     const auto own = queryProcessIdentity(GetCurrentProcessId());
     error = DiscoveryError::IdentityRejected;
     if (!own.ok()) return false;

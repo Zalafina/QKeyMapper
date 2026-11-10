@@ -157,3 +157,9 @@ P3-128同一组件用例另核对正式宿主QDialog：三语实时刷新／实�
 固定原生GUI助手增加IbInput打开／关闭及专属配对的窗口权限批准动作。其参数仍绑定精确EXE／PID／创建时间／私有桌面；授权前要求产品仅有一个测试配对，并核对窗口显示的完整pair_id等于已认证专属凭据中的公开ID。不接收任意控件／路径动作，不点连接检查；每次GUI输出使用独立序号保留失败原件。失败轮次的专属凭据仅可在核实唯一配对并已认证后由GUI撤销重建，不能用于其他实例。
 
 正式PNG由产品自身捕获，普通PrintWindow不能读取High产品时单列未验证；不为此提权截图。演示守卫复用既有sendinput_lifecycle输出计数维护目标，按原生API逐项检查，并与普通Release窗口结果区分。桌面／前台前后只读采样不证明持续全程观测，不替代Default真实交互或QQ渠道验收。
+
+## v2 固定目标及目录安全（PERSIST-137-B）
+
+`persistentStorageDirectories`在实际私有桌面检查新稳定根／sessions的受保护私有ACL、不同运行目录可共用配对库，以及预先存在的非私有目录被拒绝且不被修复；普通读取不创建目标根。`startupChoiceWithProductApplicationName`继续覆盖产品式applicationName、GUI保存和启动恢复，已有三语启动／失败用例按原范围保留。运行这些语言用例须将`QKM_TEST_TRANSLATIONS_DIR`指向仓库QKeyMapper/translations，不重新生成TS/QM。
+
+真实普通Release按原持久化脚本追加`--persistent-target`，并提供从当前源码离线重建的包内runtime/python.exe；脚本让每个新桥接使用相同固定v2参数，在产品重启后复用配对、重新认证并拒绝旧引用／预览／结果，完成A→B保存冷读。末尾另以新Read配对验证旧显式入口及Configure拒绝，不复制v2密钥；须在公共定义中同时允许固定ApproveRead动作。收据记录模式，旧收据不能冒充v2。自有合成INI、普通客户端／开发权限及原manifest／私有桌面边界不变。实际跨Windows登录／PC重启和新v2演示宿主的整轮预热另验。

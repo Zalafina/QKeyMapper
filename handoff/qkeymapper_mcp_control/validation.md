@@ -12,6 +12,8 @@ IB-MCP-139（2026-11-10，PC-W11）：[同页Popup续验](ibinput_mcp_integratio
 
 PERSIST-137-A（2026-11-10，PC-W11）：[底层共享配对／撤销选验](qkeymapper_mcp_automation_plan_codex.md#persist-137-a)，双Qt普通组件、真实独立子进程与六项认证时点拒绝；正式v2产品／跨登录和PC重启不由该结果证明。
 
+PERSIST-137-B（2026-11-10，PC-W11）：[正式v2固定目标／同登录产品复用](qkeymapper_mcp_automation_plan_codex.md#persist-137-b)，含双Qt目录／启动及跨语言派生、锁依赖桥接组件、Qt6普通Release四阶段GUI／正式MCP保存冷读、旧入口Read拒绝和正常清理。真实跨登录／PC重启、客户端／QQ及新v2演示宿主整轮预热未验；b02实际产品与b03未变路径复用、首轮夹具／静态失败分别保留。
+
 ## MAP-20261025-67-B1：基本添加正式接线
 
 PC-W10／4c5d04f3+本提交；[版本、EXE、结果及缺口](map67b1_validation.md)。双Qt普通Release、维护各11／SDK各12／product warm各26／源共通各12通过；Qt6 Default实际A→B、编辑拒绝、同步组陈旧及中文截图通过。当前12工具／8能力；显式保存／映射冷启动／MCP启停仍未接。DP请求后代表组未见异常，物理电源未知。四态采样有噪声及查询开销，不称完整无退化。

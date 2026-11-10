@@ -16,20 +16,20 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | PERSIST-137-A底层共享配对事务／撤销选验完成，准备聚焦本地提交；139的8cc889fb为上一个已提交产品检查点 |
+| 当前切片 | PERSIST-137-B正式v2固定目标、双边稳定配对上下文及选定私有验证完成，准备聚焦本地提交；137完整系统验收仍待 |
 | 执行机器 | PC-W11；普通Release配置、Default两后端、组件／实际ASan分别见本轮证据；Win10历史不冒充本轮复验 |
-| 目标分支／接纳点 | codex/qkeymapper-mcp-control与codex/ibinput-mcp-integration均为8cc889fbd9df62fe9f35aaa8f390e7e3bf5bfa5f；后续在原MCP路径开发，集成树干净保留。未push |
+| 目标分支／接纳点 | 原MCP树codex/qkeymapper-mcp-control为bd8474d6e62be97a41fd69c8a401ef50d398df45加137-B未提交差异；集成树保持干净8cc889fb。未push |
 | 集成提交／路径 | e73f719b23ee1bd0df99045727acf9554f33959b，两父分别为MCP94f0bb84及固定IbInput b5b484a6；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
 | 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
-| 当前已完成 | 139固定Popup及旧核心选验保留；137-A独立共享库、短事务读改写、epoch冲突／Busy、外部撤销与旧回调隔离已接底层可选构造，正式产品v2尚未启用 |
-| 当前验证 | 137-A Qt6原选验20／新增复核8，Qt5整组26通过；5个服务端编译上下文静态项目0，双Qt构建零警告。真实IPC／DPAPI／独立子进程仅同一Windows登录，非普通Release或真实跨登录；139实图／产品证据按原范围复用 |
-| 工作区保留 | 原MCP树8cc889fb上保留137-A服务端／IPC定向测试与本计划未提交改动；集成树仍干净8cc889fb。环境／原件保留，未push／reset／clean／stash |
+| 当前已完成 | 139固定Popup及138核心结果保留；137-A共享库事务／撤销及137-B默认v2目录、显式persistent-target、独立凭据命名空间已接正式产品／随包桥接。无扫描、密钥迁移或权限扩大 |
+| 当前验证 | 137-B双Qt派生合同各7项、目录／启动各11项，Python选定74项通过；Qt6普通Release四次真实冷启、GUI保存启用／关闭、一次v2配对重启复用、A→B保存冷读及另一个旧显式Read配对通过。构建／静态／失败与版本边界见137-B正文 |
+| 工作区保留 | 137-B实现、维护测试和必要文档为本次待提交差异；原环境、构建及失败原件保留。仅撤销／删除本轮新建的两份专属测试配对／凭据，不触碰个人或旧v1材料 |
 | 当前控制器 | 普通42036／instance2c169a62c9c54748a1b1ddfc10fdda40至2026-11-10 19:00；已串行支持普通产品与演示，拥有／未定资源正常清零。先前38116／6184的WinError5与两次独立Close记录保留，不重放历史未知请求；持续开发沿原窗口，不关闭其他任务资源 |
 | 授权边界 | 开发／Git／构建／分析／截图普通权限，原manifest测试走公共登记。139仅自有私有桌面GUI／MCP，不新增Default激活／输入、驱动安装或全局设置；138两后端Default结果原范围复用 |
-| 下一项动作 | 完成137-A文档／差异检查并本地提交，随后137-B接同合同的EXE路径派生、固定persistent-target参数、独立v2凭据及正式产品目录；按已批准私有范围做GUI配对与重启，真实跨登录／PC重启另排 |
-| 后续范围 | 主动MCP连接检查／试发、PERSIST-137、普通用户多实例前台绑定、Win10可选实体／Release三包／QQ联调待后续；139不把完整M1／M2标完成 |
-| 本机证据 | 集成树out/ibinput_mcp_integration与out/ibinput_popup_20261110；原MCP树out/mcp_product/ibinput138_20261109及ibinput139_20261110。失败、身份／桌面、真实PNG、FilterKeys及退出原件仅本机，不制作跨机包 |
+| 下一项动作 | 137-B完成文档／差异一致性检查及聚焦本地提交；随后先精简已超建议大小的主计划历史重复说明，再回到M1剩余业务闭环盘点。跨Windows登录／PC重启与新增Default范围另报，不以命名稳定代替实测 |
+| 后续范围 | 137真实跨登录／PC重启、实际客户端接线、主动MCP连接检查／试发、普通用户多实例前台绑定、Win10可选实体／Release三包／QQ联调仍待；完整M1／M2未完成 |
+| 本机证据 | 集成树out/ibinput_mcp_integration与out/ibinput_popup_20261110；原MCP树out/mcp_persist137及out/mcp_product/persist137_20261110，另保留138／139原件。实际身份／桌面、失败、PNG、FilterKeys和退出材料仅本机，不制作跨机包 |
 | 提交策略 | 自选聚焦本地commit，测试产品／输入正常清理后提交已验证切片并仅快进原MCP分支；用户本轮要求持续推进，直至明确收尾。不push、不合并master、不amend已验证提交 |
 
 ### CACHE-139A：状态文件共享冲突的有界原子替换（2026-11-10，选定普通检查完成）
@@ -1006,7 +1006,7 @@ Windows 身份与权限实现参考 [命名管道权限](https://learn.microsoft
 
 133 a1e265e2后用户确认：**客户端密钥仅Windows凭据管理器＋原DPAPI，服务端保留私有DPAPI pairings.dat，workspace无密钥／密文副本。** 历史结果不变。
 
-实际源码：[credentials.py](../../mcp_bridge/src/qkeymapper_mcp/credentials.py)的目标名／DPAPI熵包含MachineGuid、规范化discovery／可信EXE路径及SessionId；[ControlDialog](../../QKeyMapper/automation/qkm_control_dialog.cpp)的applicationBinding为canonical EXE＋SessionId，其哈希既决定默认目录，也进入[PairStore](../../QKeyMapper/automation/qkm_pair_store.cpp)的机器绑定DPAPI熵。故132仅证明同一Windows登录内重连。另须区分Agent对话、Windows登录、产品运行实例；运行期的SID／logon SID／AuthenticationId（含OS验证的双向UAC链接）、Session、PID／创建时间／EXE、管道及认证证明始终复核。
+134时点源码：[credentials.py](../../mcp_bridge/src/qkeymapper_mcp/credentials.py)的v1目标名／DPAPI熵包含MachineGuid、规范化discovery／可信EXE路径及SessionId；当时[ControlDialog](../../QKeyMapper/automation/qkm_control_dialog.cpp)的applicationBinding为canonical EXE＋SessionId，默认目录和[PairStore](../../QKeyMapper/automation/qkm_pair_store.cpp)的DPAPI绑定都随Session变化。132仅证明同一Windows登录内重连。137-A/B现已分离稳定v2配对上下文与当前Session运行目录，旧显式v1算法保留；真实跨登录／PC重启仍未验。Agent对话、Windows登录、产品运行实例须分别处理；运行期的SID／logon SID／AuthenticationId（含OS验证的双向UAC链接）、Session、PID／创建时间／EXE、管道及认证证明始终复核。
 
 **workspace最小关联。** 优先直接复用客户端已有MCP配置：包内command／固定argv里的可信EXE、明确discovery及133产品记录模式已足以定位当前一个凭据上下文，不新增第二份关联格式或任意CredentialTarget参数。客户端须明确加载／导入经审阅的workspace配置，再把argv交桥接；桥接不假定Agent自动读文件。当前常见workspace入口未配置QKM，真实客户端／gateway加载待验；SDK显式加载样例不能冒充实际Agent新对话联调。首次实现只支持同机／用户／目标上下文的先后会话复用，新对话不重配；不同workspace须明确选择共享同一关联／配对，复制两个配置文件不是权限隔离。确需独立撤销时才另设计独立配对命名空间，首版不加。
 
@@ -1016,7 +1016,7 @@ Windows 身份与权限实现参考 [命名管道权限](https://learn.microsoft
 
 136已选验，存储／实际语义及构建／组件／截图见下文；S1–S9已批准，S2／S7／S8真实LF。无新Default／UAC／系统输入；完整产品冷启及Windows／PC重启、客户端接线另列，不由组件结果推导。
 
-**跨Windows登录依赖。** 137须把版本化稳定存储身份（同机同用户／可信EXE）与Session运行发现／独占租约分开；同步核客户端熵／目标名及产品目录／DPAPI绑定，保持上述实时同登录身份检查。不能仅删SessionId或更换路径就称完成。旧入口／旧凭据保留、不静默迁移覆盖复制；新版上下文优先明确重新配对，兼容读取边界、跨Session写锁／撤销传播须在实现前定稿并验证。133动态产品记录只用于当前认证实例，旧引用／结果仍归原实例，不作为永久连接身份。当前一实例仅一客户端；135先验证先后复用和占用失败，绝不踢掉其他会话，不加全局代理／管理服务。
+**跨Windows登录依赖。** 137-A/B已将版本化稳定存储身份（同机同用户／可信EXE）与Session运行发现／独占租约分开，同步覆盖客户端熵／目标名及产品目录／DPAPI绑定，保持上述实时同登录身份检查。旧入口／凭据不迁移、覆盖或复制；首次v2明确重新GUI配对。短事务／撤销由组件与同登录产品选验，真实跨登录和PC重启仍须另验，不能据稳定命名宣布通过。133动态产品记录只用于当前认证实例，旧引用／结果不作永久连接身份。当前一实例仅一客户端；135的先后复用／占用失败按未变合同复用，不踢掉其他会话、不加代理／管理服务。
 
 **PERSIST-137接续方案（2026-11-10，用户已批准137-A/B及私有验证）。** 在139检查点核对：默认applicationBinding同时决定会话私有目录和服务端DPAPI熵，客户端v1熵还包含显式discovery路径／SessionId；服务端启用期的DirectoryLease锁住同一目录。workspace旧固定instance路径也随Session改变。故不能只删SessionId或将整个独占目录改成共享目录。
 
@@ -1026,7 +1026,7 @@ Windows 身份与权限实现参考 [命名管道权限](https://learn.microsoft
 
 跨Session一致性复用DirectoryLease做稳定库的短事务：配对追加、权限更新、撤销均先锁／重新读最新／验证预期epoch／原子保存，不能用旧内存列表覆盖别人变更。新认证和业务执行前／异步复核读取最新授权；撤销／权限变化或存储忙／损坏则拒绝并结束旧认证，不将旧权限自动升级。无常驻文件监控，不强断其他会话以抢占同一实例；已接受结果仍归原实例，取消／部分效果按原契约。
 
-实施分片：137-A先分离共享库／运行目录和事务／撤销，默认旧构造仍兼容，普通双Qt组件及真实独立子进程竞态；137-B接v2目标派生、客户端固定argv／独立凭据上下文与正式产品默认路径，再做自有私有Qt6普通产品GUI配对、同登录产品／桥接重启、业务／旧引用及拒绝路径。真实跨Windows登录／PC重启、Win10和实际Agent／QQ加载仍未执行，须另报授权；组件模拟会话编号不记成真实跨登录。无新驱动／输入／Default动作；若确有新Qt文案，另按三语流程先审。137-A底层选验见下；137-B正式v2入口及跨登录能力尚未交付，不由组件结果推导。
+实施分片：137-A共享库／运行目录、事务／撤销和双Qt独立子进程选验已完成；137-B正式v2目标、固定argv／凭据与默认路径，以及自有私有Qt6普通产品GUI配对、同登录产品／桥接重启、业务／旧引用和拒绝路径已完成选验，详下。真实跨Windows登录／PC重启、Win10和实际Agent／QQ加载仍未执行，须另报授权；组件模拟会话编号不记成真实跨登录。无新驱动／输入／Default动作，无新增Qt文案或TS/QM变化，不将完整137或M1标完成。
 
 ### PERSIST-137-A
 
@@ -1038,13 +1038,35 @@ Qt6最终IPC构建05、Qt5构建05均native0／零编译链接警告。Qt6私有
 
 失败原件保留：首个普通包装器因PyHANDLE不支持with，在创建测试进程前退出；Qt6 IPC-01为16过／4失败，其中新子进程的CRLF确认行被夹具按LF比较，旧拒绝用例仍把合法ShowWindows=128当未知位。02补诊断及未知位修正为KnownScopes+1，取得子进程确认原字节6c6f616465640d0a；按有界固定行处理后03原20项、04新8项通过。未将夹具失败记成产品故障或推算缺失原生码。
 
-原件仅本机原MCP树out/mcp_persist137（build-ipc-*-01至05、ipc-qt6-01至04／ipc-qt5-01、static-server-01）；测试EXE为out/tests/mcp_ipc/{qt6,qt5}-release/release/QKeyMapperMcpIpcTest.exe。它们是asInvoker Qt Core真实管道／DPAPI／文件锁组件及独立子进程，不是普通Release GUI／跨Windows登录／PC重启验收；正式v2路径、桥接与凭据选择待137-B，137完整阶段不标完成。源基线8cc889fb加本片差异，实耗约一小时；137-B预估2–3小时，遇运行缺陷按事实更新。
+原件仅本机原MCP树out/mcp_persist137（build-ipc-*-01至05、ipc-qt6-01至04／ipc-qt5-01、static-server-01）；测试EXE为out/tests/mcp_ipc/{qt6,qt5}-release/release/QKeyMapperMcpIpcTest.exe。它们是asInvoker Qt Core真实管道／DPAPI／文件锁组件及独立子进程，不是普通Release GUI／跨Windows登录／PC重启验收。A时点正式v2路径尚待B接线，后续结果见下；137完整阶段不标完成。源基线8cc889fb加本片差异，A实耗约一小时。
+
+### PERSIST-137-B
+
+2026-11-10，PC-W11，源基线bd8474d6e62be97a41fd69c8a401ef50d398df45加本片差异；正式v2入口及选定私有验证完成，未push。C++／Python通过Windows文件句柄取得同一规范化可信EXE路径及严格Unicode，派生稳定applicationBinding；服务端私有targets-v2根保存原DPAPI配对库，sessions/<当前SessionId>保存发现／运行独占租约。创建时先验证或建立稳定根及sessions的受保护ACL，既有不安全目录拒绝且不修复；只读取／显示管理窗不创建配对根。不同模拟Session可共享稳定库，同EXE同实际Session仍最多一个启用。
+
+桥接显式`--persistent-target --executable <可信EXE>`复用workspace现有command／argv，精确定位当前用户、目标及当前登录记录；无第二份关联文件、枚举、自动换目标或全局服务。v2客户端CredMgr目标／DPAPI熵稳定绑定同机、当前用户及EXE，独立于Session／动态发现路径；服务端仍用受保护DPAPI库。旧`--discovery-file`及v1算法保留，两模式互斥，不迁移／覆盖／复制旧密钥；首次v2须新GUI配对。正常与演示同EXE使用同一目标配对根；专用演示仍须独立EXE副本／INI，136的普通／演示角色启动选择继续分开，不因此获得新权限或绕过演示守卫。
+
+| 本片检查 | 实际结果与范围 |
+|---|---|
+| Qt6普通Release | b02连贯重编受ControlDialog布局影响的直接使用者及moc，native0／零警告后部署；b01构建期间接口曾变化，未部署或运行，不能作有效产品证据。最终b03 native0／零警告 |
+| 双Qt目录／启动组件 | Qt6 PID8768／Qt5 PID18520各11项通过，真实私有QkmPersist137_*桌面；受保护目录、拒绝既有不安全目录、默认关闭／保存选择及原三语恢复用例。Qt5横幅windows10不作为Win10实机结果 |
+| C++／Python派生合同 | Qt6／Qt5各7项无skip；包含真实组件与Unicode目标、0／1／2／最大Session编号的跨语言比较。首次未提供原生EXE的7项中1项skip单列，不倒填为通过；选定Python回归74项通过 |
+| 原生与静态 | 两Qt最终IPC各自target-context及demoRecordLifecycle分组各3项通过（均含init／cleanup）；后者仅配置模式组件。控制窗3编译上下文项目0复用，派生文件最终5上下文工具0／项目0；137-A服务端未变结果按原范围复用 |
+| 离线桥接组件 | 29项原锁依赖、1614载荷文件，内置CPython 3.11.9 x64以-I／-B导入及v2派生成功；无新依赖。bridge-b01.zip SHA256 c2947097453af03acb7a18454bd4f43bf358b6b5252e1d73e21daf7290eea5e0，不代表完整Release三包／干净系统交付 |
+| 真实普通产品与正式MCP | v2-01四阶段first／paired／reused／disabled完成：PID8128／42324／38000／42632均原manifest High、实际自有私有桌面并正常exit0，包内新桥接PID35288／3060／3656为Medium。无选择关闭→真实GUI启用并保存→冷启恢复；一次Read+Configure新v2配对→产品及桥接重启重认证／复用；正式A→B预览／提交／显式保存／冷读；旧源／预览拒绝、旧operation未知；真实GUI关闭保存后冷启关闭 |
+| 旧入口／拒绝与清理 | 在末阶段临时启用而不保存，独立GUI新建Read-only v1配对，显式发现入口读取成功、配置保存预览permission_denied。该配对与v2各自撤销／忘记，未复制密钥；结束后独立核对两份专属CredStore为空、四产品退出0、控制器拥有／未定／在途／待处理均0。仅撤出persist137b-qt6授权，原42036缓存留至19:00 |
+
+真实产品位于原MCP树`out/mcp_product/persist137_20261110/runtime-中文/QKeyMapperMcpAcceptance_persist137_qt6.exe`，对应b02 SHA256 7a881460c5aef7ae407f62f2a46c3c0f7d8619d6771b54ef36c418be7dd0340a；合成INI／同机依赖隔离部署，没有复制个人INI／旧凭据或别机out。最终out/build_qt6/release/QKeyMapper.exe为b03，SHA256 6a0d8a14d626c617ffe4e742d79d5d49fdd5ce5f5dbe50fa3a648eae33bee277；b02后的唯一行为相关差异为demo记录发布函数缓存相同正则，普通模式不经过该函数。故四阶段沿用未受影响的b02证据，不称已在b03重跑；最终双Qt demoRecord组件专门覆盖该处，另加UTF-16注释不改变执行。
+
+失败保留：Control组件首轮目录／启动关键5项通过，6项三语用例因包装器遗漏QKM_TEST_TRANSLATIONS_DIR失败，补环境后双Qt各11项通过，无TS/QM修改。严格静态首轮发现原demo记录函数临时QRegularExpression诊断，改同模式static const后项目0；不将原静态轮记成零诊断。没有产品业务失败或未知启动，本片没有重放历史请求。
+
+原件只在本机原MCP树out/mcp_persist137（build-product-b01至b03、build-control／ipc双Qt、control-*-b01／b02、persistent-target-python、bridge-regression-b01、static-b01／b02及bridge-b01）和out/mcp_product/persist137_20261110（deployment、v2-01四轮身份／桌面／GUI／MCP／FilterKeys及scope-release）。这里只证明同一实际Windows登录、同一EXE路径的普通产品／新桥接会话；无RunMapping权限、系统输入、驱动安装、Default切换或全局设置改动。独立GUI业务基线／保存失败／忙碌和Worker／ASan复用未变的136A／135／138原范围，未重复完整矩阵。真实跨Windows登录／PC重启、Win10、实际Agent新对话／workspace自动加载、QQ和新v2演示宿主整轮预热仍待；不能由模拟Session、稳定名字或组件ZIP推导通过。B实耗约两小时，含部署、夹具修正与文档；后续先整理主计划历史重复，实际系统验收另行安排。
 
 | 顺序 | 聚焦实施及验收（状态按各切片） |
 |---|---|
 | PERSIST-135 | 已选验：现有格式显式SDK加载、同登录先后认证／共享及忙碌拒绝；真实客户端／gateway加载仍待，详下 |
 | PERSIST-136 | 已选验：GUI独立保存／组件冷进程恢复与关闭／失败、角色隔离、双Qt／获批三语资源及截图；完整Release与系统矩阵待 |
-| PERSIST-137 | 定稿并实施双边稳定上下文、旧入口兼容、跨Session并发／撤销；组件／模拟不冒充真实登录／重启 |
+| PERSIST-137 | A/B稳定上下文、旧入口兼容、共享库事务／撤销及同登录产品已选验；真实跨Windows登录／PC重启仍待 |
 | 后续系统验收 | PC重启／登录变化、新UAC／Default另报方法、影响和时长获准后做；Win10／QQ末期另排 |
 
 待验矩阵：首次关闭、启用保存／取消保存／恢复失败；同workspace新会话与跨workspace共享；关联缺失／损坏／目标不符、凭据缺失／写失败／产品撤销；桥接及产品重启、新实例／旧引用失效；用户／机器／Windows会话／路径变化与连接冲突；选定目标有预期业务、其他实例未收到操作、产物无密钥。复用133配置／认证／图像／回收证据，不重复完整验收；未实现／未验证保持待办。

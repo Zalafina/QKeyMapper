@@ -160,6 +160,7 @@ private slots:
     void startupChoice();
     void startupChoiceFailures();
     void startupChoiceWithProductApplicationName();
+    void persistentStorageDirectories();
     void advancedEntryKeyboard();
     void controlFocusPolicy();
     void languageRefreshPreservesState();
@@ -1250,6 +1251,61 @@ void McpControlTest::startupChoiceWithProductApplicationName()
     ControlDialog final;
     prepare(final);
     QVERIFY(!final.server().isEnabled());
+}
+
+void McpControlTest::persistentStorageDirectories()
+{
+    QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/persistent-directories-XXXXXX"));
+    QVERIFY(temporary.isValid());
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    QVERIFY(own.ok());
+    const QString pairs = temporary.path() + QStringLiteral("/stable");
+    ControlDialog first(pairs + QStringLiteral("/sessions/1"), "target137", nullptr, {}, pairs);
+    ControlDialog second(pairs + QStringLiteral("/sessions/2"), "target137", nullptr, {}, pairs);
+    for (auto *dialog : {&first, &second}) {
+        if (configurationOnlyDemo()) QVERIFY(dialog->server().setDemoConfiguration(QStringLiteral("Persist137Seed")));
+        fixture(dialog->server());
+    }
+    QVERIFY(!QFileInfo::exists(pairs));
+    first.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&first));
+    QVERIFY(!QFileInfo::exists(pairs));
+    clickCheckBox(first, "mcpEnabled");
+    QVERIFY(first.server().isEnabled());
+    for (const auto &path : {pairs, pairs + QStringLiteral("/sessions")}) {
+        HANDLE directory = Storage::privateDirectory(path, own.identity.userSid, false);
+        QVERIFY(directory != INVALID_HANDLE_VALUE);
+        CloseHandle(directory);
+    }
+    second.show();
+    QVERIFY(QTest::qWaitForWindowExposed(&second));
+    clickCheckBox(second, "mcpEnabled");
+    QVERIFY(second.server().isEnabled());
+    QVERIFY(first.server().isEnabled());
+    first.server().disable(); second.server().disable();
+    for (bool unsafeSessions : {false, true}) {
+        const QString root = temporary.path() + (unsafeSessions ? QStringLiteral("/unsafe-sessions") : QStringLiteral("/unsafe-root"));
+        if (unsafeSessions) {
+            HANDLE directory = Storage::privateDirectory(root, own.identity.userSid, true);
+            QVERIFY(directory != INVALID_HANDLE_VALUE);
+            CloseHandle(directory);
+        }
+        const QString unsafe = unsafeSessions ? root + QStringLiteral("/sessions") : root;
+        QVERIFY(QDir().mkpath(unsafe));
+        HANDLE unsafeHandle = Storage::privateDirectory(unsafe, own.identity.userSid, false);
+        if (unsafeHandle != INVALID_HANDLE_VALUE) CloseHandle(unsafeHandle);
+        QVERIFY(unsafeHandle == INVALID_HANDLE_VALUE);
+        ControlDialog rejected(root + QStringLiteral("/sessions/1"), "target137", nullptr, {}, root);
+        if (configurationOnlyDemo()) QVERIFY(rejected.server().setDemoConfiguration(QStringLiteral("Persist137Seed")));
+        rejected.show();
+        QVERIFY(QTest::qWaitForWindowExposed(&rejected));
+        clickCheckBox(rejected, "mcpEnabled");
+        QVERIFY(!rejected.server().isEnabled());
+        QVERIFY(!widget<QCheckBox>(rejected, "mcpEnabled")->isChecked());
+        unsafeHandle = Storage::privateDirectory(unsafe, own.identity.userSid, false);
+        if (unsafeHandle != INVALID_HANDLE_VALUE) CloseHandle(unsafeHandle);
+        QVERIFY(unsafeHandle == INVALID_HANDLE_VALUE);
+    }
 }
 
 void McpControlTest::advancedEntryKeyboard()

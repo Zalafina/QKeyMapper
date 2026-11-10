@@ -26,23 +26,27 @@
 namespace QkmAutomation {
 namespace {
 
-QByteArray applicationBinding()
+PersistentTarget defaultTarget()
 {
-    const QString executable = QFileInfo(QCoreApplication::applicationFilePath()).canonicalFilePath();
     const auto own = queryProcessIdentity(GetCurrentProcessId());
-    if (executable.isEmpty() || !own.ok()) return {};
-    QByteArray binding("QKeyMapper-MCP-App/v1");
-    binding.append('\0').append(executable.toUtf8()).append('\0').append(QByteArray::number(own.identity.sessionId));
-    return QCryptographicHash::hash(binding, QCryptographicHash::Sha256);
+    return own.ok() ? persistentTarget(QCoreApplication::applicationFilePath(), own.identity.sessionId) : PersistentTarget{};
 }
 
-QString defaultStoreDirectory()
+bool prepareConnectionDirectories(const QString &runtime, const QString &pairs)
 {
-    const QString base = QStandardPaths::writableLocation(QStandardPaths::GenericDataLocation);
-    const QByteArray binding = applicationBinding();
-    if (base.isEmpty() || binding.isEmpty()) return {};
-    return QDir(base).filePath(QStringLiteral("QKeyMapper/MCP/")
-        + QString::fromLatin1(binding.toHex()));
+    if (runtime.isEmpty()) return false;
+    const QString parent = QFileInfo(runtime).absolutePath();
+    if (pairs.isEmpty()) return QDir().mkpath(parent);
+    if (parent.compare(QDir(pairs).filePath(QStringLiteral("sessions")), Qt::CaseInsensitive) != 0) return false;
+    const auto own = queryProcessIdentity(GetCurrentProcessId());
+    if (!own.ok() || !QDir().mkpath(QFileInfo(pairs).absolutePath())) return false;
+    HANDLE root = Storage::privateDirectory(pairs, own.identity.userSid, true);
+    if (root == INVALID_HANDLE_VALUE) return false;
+    const auto closeRoot = qScopeGuard([root]() { CloseHandle(root); });
+    HANDLE sessions = Storage::privateDirectory(parent, own.identity.userSid, true);
+    if (sessions == INVALID_HANDLE_VALUE) return false;
+    CloseHandle(sessions);
+    return true;
 }
 
 QByteArray startupBinding()
@@ -158,13 +162,21 @@ QLabel *plainLabel(QWidget *parent)
 } // namespace
 
 ControlDialog::ControlDialog(QWidget *parent)
-    : ControlDialog(defaultStoreDirectory(), applicationBinding(), parent, defaultStartupDirectory())
+    : ControlDialog(defaultTarget(), parent)
 {
 }
 
-ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget *parent, QString startupDirectory)
-    : QDialog(parent), m_storeDirectory(std::move(storeDirectory)), m_startupDirectory(std::move(startupDirectory)),
-      m_startupBinding(startupBinding()), m_server(m_storeDirectory, std::move(binding))
+ControlDialog::ControlDialog(PersistentTarget target, QWidget *parent)
+    : ControlDialog(std::move(target.runtimeDirectory), std::move(target.applicationBinding), parent,
+                    defaultStartupDirectory(), std::move(target.pairDirectory))
+{
+}
+
+ControlDialog::ControlDialog(QString storeDirectory, QByteArray binding, QWidget *parent, QString startupDirectory,
+                             QString pairDirectory)
+    : QDialog(parent), m_storeDirectory(std::move(storeDirectory)), m_pairDirectory(std::move(pairDirectory)),
+      m_startupDirectory(std::move(startupDirectory)), m_startupBinding(startupBinding()),
+      m_server(m_storeDirectory, std::move(binding), nullptr, m_pairDirectory)
 {
     setObjectName(QStringLiteral("mcpControlDialog"));
     setMinimumWidth(540);
@@ -400,7 +412,7 @@ void ControlDialog::setEnabledByUser(bool enabled)
     m_failureCode.clear();
     m_windowFailed = false;
     if (enabled) {
-        if (m_storeDirectory.isEmpty() || !QDir().mkpath(QFileInfo(m_storeDirectory).absolutePath())
+        if (!prepareConnectionDirectories(m_storeDirectory, m_pairDirectory)
             || !m_server.enable()) m_failed = true;
     } else {
         m_server.disable();

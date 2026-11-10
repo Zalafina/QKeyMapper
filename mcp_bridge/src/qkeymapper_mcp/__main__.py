@@ -94,7 +94,10 @@ def image_tool_result(value: dict[str, Any]) -> CallToolResult:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="QKeyMapper local MCP bridge (stdio).")
-    parser.add_argument("--discovery-file", type=Path, required=True)
+    targets = parser.add_mutually_exclusive_group(required=True)
+    targets.add_argument("--discovery-file", type=Path)
+    targets.add_argument("--persistent-target", action="store_true",
+                         help="Use only the trusted EXE's v2 target in this user's current Windows login.")
     parser.add_argument("--executable", type=Path, required=True)
     records = parser.add_mutually_exclusive_group()
     records.add_argument("--demo-record", type=Path, help="Explicit host creation record for a dedicated private demo instance.")
@@ -105,16 +108,16 @@ def main() -> None:
     if os.name != "nt":
         parser.error("Windows 10 or 11 is required.")
     # Resolve no untrusted discovery contents; these paths are explicit host configuration.
-    discovery = Path(os.path.abspath(args.discovery_file))
+    discovery = Path(os.path.abspath(args.discovery_file)) if args.discovery_file is not None else None
     executable = Path(os.path.abspath(args.executable))
-    if discovery.name != "instance.json":
+    if discovery is not None and discovery.name != "instance.json":
         parser.error("--discovery-file must name instance.json from QKeyMapper's MCP window.")
     demo_record = Path(os.path.abspath(args.demo_record)) if args.demo_record is not None else None
     demo_configured = demo_record is not None or args.product_demo_record
     if args.enable_demo_mapping and not demo_configured:
         parser.error("--enable-demo-mapping requires --demo-record or --product-demo-record.")
     bridge = Bridge(discovery, executable, demo_record, enable_demo_mapping=args.enable_demo_mapping,
-                    product_demo_record=args.product_demo_record)
+                    product_demo_record=args.product_demo_record, persistent_target=args.persistent_target)
 
     @asynccontextmanager
     async def lifespan(_server):

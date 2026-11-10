@@ -20,17 +20,20 @@ from .demo_scene import DemoSession
 from .images import validate_capture
 from .protocol import (BridgeError, Credential, MAX_HANDSHAKE, client_name, decimal,
                        fields, hex_bytes, proof, require, scopes)
-from .windows import Pipe, discover, identity, pristine_thread
+from .windows import Pipe, discover, identity, pristine_thread, persistent_target
 
 
 class Bridge:
-    def __init__(self, discovery: Path, executable: Path, demo_record: Path | None = None, *,
-                 enable_demo_mapping: bool = False, product_demo_record: bool = False):
+    def __init__(self, discovery: Path | None, executable: Path, demo_record: Path | None = None, *,
+                 enable_demo_mapping: bool = False, product_demo_record: bool = False, persistent_target: bool = False):
+        if (discovery is None) != persistent_target:
+            raise ValueError("Choose either an explicit discovery file or a persistent target.")
         if product_demo_record and demo_record is not None:
             raise ValueError("Choose either an explicit or product-owned demo record.")
         if enable_demo_mapping and demo_record is None and not product_demo_record:
             raise ValueError("Demo mapping requires explicit record configuration.")
         self.discovery, self.executable = discovery, executable
+        self._persistent_target = persistent_target
         self._demo_record = demo_record
         self._product_demo_record = product_demo_record
         self._demo_session = DemoSession() if enable_demo_mapping else None
@@ -106,8 +109,10 @@ class Bridge:
         self._disconnect()
         self._set("connecting")
         own = identity(os.getpid())
+        if self._persistent_target:
+            self.discovery, _ = persistent_target(self.executable, own.session)
         target = discover(self.discovery, self.executable, own)
-        store = CredentialStore(self.discovery, self.executable, own.session)
+        store = CredentialStore(self.discovery, self.executable, own.session, persistent=self._persistent_target)
         credential = None if pair else store.load()
         if not pair and credential is None:
             self._set("pairing_required")

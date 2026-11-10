@@ -38,7 +38,7 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 
 每条命令都须 exit 0。新建环境须使用尚不存在的 venv 目录；已有环境先校验，只有已有哈希安装证据且校验通过才复用，否则在本机重建或修复后重验，不覆盖不明目录。`--force-reinstall` 确保 venv 自带的同版本 pip／setuptools 也实际经过哈希安装，而非以 already satisfied 跳过。`check_environment.py` 只读检查解释器／平台／隔离状态和全部安装包，并拒绝缺失／非法哈希的锁条目；它不替代 pip 对下载字节的验证。对应反向用例为 `tests/test_environment.py`。使用 venv 内解释器的绝对路径启动 SDK、回归及桥接，不依赖 PATH 或激活脚本。venv、个人凭据和 out 产物不随 Git 复制到另一台 PC；虚拟环境应在目标路径重新创建，见 [Python venv 说明](https://docs.python.org/3/library/venv.html)。
 
-上述版本是当前已验证基线，升级须在同一检查点更新锁、哈希和校验入口并重跑相关验收。wheel 哈希来自对应 PyPI 发布文件元数据，再由实际 hash-checking 下载／安装核对；原始文件和日志留在本机 out，不提交包文件。M3-B 打包工具锁及交付尚未完成，打包前固定打包器与相关构建工具，并在独立环境离线重建／启动验收。采用 pip 的[精确版本及哈希锁机制](https://pip.pypa.io/en/stable/topics/repeatable-installs/)，不引入新的环境管理框架。环境及文件身份通过不能替代两系统业务、设备及实际输入验收。
+上述版本是当前已验证基线，升级须在同一检查点更新锁、哈希和校验入口并重跑相关验收。wheel 哈希来自对应 PyPI 发布文件元数据，再由实际 hash-checking 下载／安装核对；原始文件和日志留在本机 out，不提交包文件。PKG-123组件使用已固定嵌入式CPython和wheel离线构建；完整Release集成与干净系统交付仍待M3-B，本轮137-B的桥接组件测试包不代表正式三包Release。采用 pip 的[精确版本及哈希锁机制](https://pip.pypa.io/en/stable/topics/repeatable-installs/)，不引入新的环境管理框架。环境及文件身份通过不能替代两系统业务、设备及实际输入验收。
 
 在 QKeyMapper 的 MCP 管理窗口启用接口，复制显示的 `instance.json` 路径。MCP 宿主以以下参数启动 stdio 进程；具体宿主配置格式按其要求填写：
 
@@ -50,6 +50,11 @@ out/mcp_bridge/venv/Scripts/python.exe -m pip check
 ```
 
 `--executable` 是用户／宿主明确选择的信任目标，不能自动采用发现文件中的 EXE 路径。两台 PC 分别填写本机路径并重新配对，不复制客户端凭据或构建产物。不要把密钥加入参数、环境变量或仓库。
+
+PERSIST-137-B的新产品／桥接另提供固定目标入口：用`--persistent-target --executable <可信QKeyMapper.exe绝对路径>`替代`--discovery-file ... --executable ...`，其余启动参数不变。桥接以Windows文件句柄规范化EXE路径，精确定位当前用户本机数据根下的v2目标及当前Session运行记录；不扫描候选、凭据或其他目录，不因失效自动换目标。workspace只保存现有command／argv，需客户端明确加载。旧显式入口及v1密钥算法不变；两个模式互斥，首次v2须一次新GUI配对，不迁移、覆盖或复制旧v1凭据。
+
+服务端稳定配对库位于目标v2根，运行发现／独占租约位于其sessions/<SessionId>；同EXE同Session仍最多一个启用。共享配对追加／权限／撤销以短私有文件事务读最新再保存，旧epoch冲突／锁忙不重试。认证、每次业务及异步复核查当前授权；存储失效或外部撤销不沿用旧权限。客户端v2凭据仍只用Windows凭据管理器＋DPAPI，服务端仍为私有DPAPI pairings.dat。稳定上下文不保存PID、实例引用、预览或操作结果；产品重启须重新认证并使旧引用失效。
+
 
 workspace 关联复用客户端已有的 MCP 配置和固定启动参数，参见[随包示例及使用边界](BUNDLE_README.md)。客户端须明确加载其支持的格式；桥接不扫描 workspace，也不提供第二套配置或任意 Windows 凭据访问接口。密钥留在 Windows 凭据管理器（另有 DPAPI 保护），服务端仍用私有 DPAPI 配对库。先后启动的对话／桥接可在同一 Windows 登录会话及同一目标上下文复用有效配对；不同 workspace 显式使用同一参数等于共享配对，不是独立授权。PERSIST-136A已选验普通Qt6产品重启／新桥接复用；实际Agent／gateway加载及跨Windows登录／PC重启仍待，不把测试续接收据作为workspace配置。
 
@@ -82,7 +87,7 @@ DEMO-P1-105交付授权基础，107／108新增窗口观察和捕获，109接私
 
 PERSIST-136 产品管理窗增加“保存启动选择”：开关立即影响本次运行，按钮只保存此刻实际启用／关闭状态；首次未保存仍关闭。保存启用后，下次产品启动在初始加载及业务／演示策略就绪后尝试一次；保存关闭后不恢复。当前状态、已保存选择及失败分别显示，失败不静默重试或更换目标；未保存的开关变化不改旧选择。启动选择保存在当前用户本机私有目录，按实际 EXE 路径与普通／演示角色分开，与映射 INI、Tab、配置组及 MCP 保存隔离。
 
-这只恢复用户曾明确保存的接口选择，不自动启动 QKeyMapper、绕过 UAC、批准新客户端、扩大配对权限或激活 Default。配对及真实登录身份核验保持；双边凭据仍含原 SessionId，Windows 登录／PC 重启复用待 PERSIST-137。136A将默认保存根改为不依赖applicationName的当前用户本机数据目录，避免产品使用完整EXE路径时产生非法目录；不迁移／删除旧文件。双Qt组件及Qt6普通Release隔离实例的GUI保存／产品重启／配对复用和A→B保存冷读已选验，完整Release包／干净环境及实际Agent／gateway接线仍待，135组件ZIP未重打包。
+这只恢复用户曾明确保存的接口选择，不自动启动 QKeyMapper、绕过 UAC、批准新客户端、扩大配对权限或激活 Default。配对及真实登录身份核验保持；旧显式v1上下文仍含原SessionId；137-B的v2存储已分离该运行期依赖，但实际Windows登录／PC重启复用仍待独立系统验收。136A将默认保存根改为不依赖applicationName的当前用户本机数据目录，避免产品使用完整EXE路径时产生非法目录；不迁移／删除旧文件。双Qt组件及Qt6普通Release隔离实例的GUI保存／产品重启／配对复用和A→B保存冷读已选验，完整Release包／干净环境及实际Agent／gateway接线仍待，135组件ZIP未重打包。
 
 ## 基本映射的预览与提交
 

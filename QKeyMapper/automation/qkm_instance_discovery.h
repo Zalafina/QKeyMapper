@@ -7,6 +7,15 @@ namespace QkmAutomation {
 
 enum class DiscoveryError { None, NotFound, InvalidData, UnsafeStorage, IoError, IdentityRejected, Busy };
 
+struct PersistentTarget {
+    QByteArray applicationBinding;
+    QString pairDirectory;
+    QString runtimeDirectory;
+    bool ok() const { return applicationBinding.size() == 32 && !pairDirectory.isEmpty() && !runtimeDirectory.isEmpty(); }
+};
+
+PersistentTarget persistentTarget(const QString &executable, quint32 sessionId);
+
 struct InstanceDescriptor {
     QString instanceId;
     QString pipeName;

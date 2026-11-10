@@ -4,6 +4,8 @@
 
 ## 当前状态与填写规则
 
+PERSIST-137-A/B：正式产品默认使用稳定v2配对根与当前Session运行目录；桥接新增显式`--persistent-target --executable <可信EXE>`，复用workspace固定参数。旧显式发现／v1凭据保留，不迁移或扫描；首次v2新GUI配对。同登录普通Release启动选择、产品／桥接重启复用、保存冷读和旧引用拒绝已选验，实际跨Windows登录／PC重启及客户端接线仍待，见[同一主计划证据](qkeymapper_mcp_automation_plan_codex.md#persist-137-b)。这是目标定位／存储模式，工具及业务能力数仍17／23，无新权限或运行映射能力。
+
 IB-MCP-138新增并选验四项能力：mapping.update.preview／apply、ibinput.preferences.update.preview／apply；工具数仍17，业务能力23。mapping.add的send_method纳入0–3并保留默认0；受限更新只改当前可见源行的发送方式，合法Common及可见禁用行可用，隐藏／非当前源拒绝，同移动组冲突不产生修改。两项全局偏好参与预览语义修订、非行足迹、显式完整保存、取消与写失败恢复；被动采样不写配置。Read／Configure正反例、普通Release独立GUI和正式MCP保存冷读、生命周期及私有演示／Default两后端代表结果见[独立证据页](ibinput_mcp_integration_validation.md)。完整M1／M2未完成；主动连接检查／试发工具仍未交付。139增加下述固定Popup角色，工具／能力数仍17／23。
 
 日期：2026-10-28；初始源码基线：`d49a9f57`。**逐控件入口及68条关键链路已盘点。通信／配对、选定状态／目录／源查询／帮助已接；MAP-67-B1增加基本映射内存添加预览／提交／取消／结果查询，SAVE-95接保存只读预览、SAVE-97接完整范围／覆盖确认后的正式保存提交与分段结果，当前共15工具、14项业务能力（107增加windows.read，108增加windows.capture，109／110增加mapping.editor.open／close）。完整增改删、完整保存生命周期、MCP启停及全量GUI等价性仍未完成。** Python字节锁与PC-W11接续见ENV-39，缓存见CACHE-40／CACHE72；入口和链路数量不等于已支持能力数。

@@ -19,7 +19,7 @@ from mcp import Client, StdioServerParameters
 from test_product_interop import Product, connection_pending
 from test_sdk_interop import call, connection, integrity
 from qkeymapper_mcp.credentials import CredentialStore
-from qkeymapper_mcp.windows import identity
+from qkeymapper_mcp.windows import identity, persistent_target
 
 
 def filter_keys():
@@ -72,9 +72,12 @@ async def run(args):
         (args.output / "sdk-calls.json").write_text(json.dumps(calls, ensure_ascii=False, indent=2), encoding="utf-8")
         return value
 
-    def parameters(discovery, output):
+    def parameters(discovery, output, *, persistent=None):
+        if persistent is None:
+            persistent = args.persistent_target
+        target = ["--persistent-target"] if persistent else ["--discovery-file", str(discovery)]
         return StdioServerParameters(command=str(args.bridge_python), args=["-I", "-B", "-X", "utf8", "-m", "qkeymapper_mcp",
-            "--discovery-file", str(discovery), "--executable", str(args.executable)], cwd=str(output))
+            *target, "--executable", str(args.executable)], cwd=str(output))
 
     async def managed(phase, body):
         try:
@@ -116,7 +119,9 @@ async def run(args):
         value = await management(product)
         assert value["enabled"] and value["pair_count"] == 0
         discovery = Path(value["discovery"])
-        candidate = CredentialStore(discovery, args.executable, own.session)
+        if args.persistent_target:
+            assert discovery == persistent_target(args.executable, own.session)[0]
+        candidate = CredentialStore(discovery, args.executable, own.session, persistent=args.persistent_target)
         assert candidate.load() is None, "Never delete or replace an existing credential."
         store = candidate
         async with Client(parameters(discovery, product.output), cache=None) as client:
@@ -198,6 +203,26 @@ async def run(args):
         assert gui["mapping_rows"] == [dict(original="A", mapping="B")] and gui["mapping_button_text"] == "映射开始"
         # Revoke only this fixture's single pairing as cleanup, without enabling the interface.
         await product.action("Revoke")
+        if args.persistent_target:
+            # A separate Read-only pairing proves the old explicit entry, without copying v2 keys.
+            discovery = Path((await product.action("Enable"))["discovery"])
+            legacy = CredentialStore(discovery, args.executable, own.session)
+            assert legacy.load() is None
+            async with Client(parameters(discovery, product.output, persistent=False), cache=None) as client:
+                await request(client, "legacy_read", "qkm_connect")
+                await connection(client, "pairing_required")
+                await request(client, "legacy_read", "qkm_request_pairing")
+                await connection_pending(client)
+                await product.action("ApproveRead", str(args.bridge_python))
+                assert (await connection(client, "connected"))["scopes"] == 1
+                state = (await request(client, "legacy_read", "qkm_get_state"))["result"]
+                assert state["configuration"]["group"] == "Persist136A" and state["run"]["gui_state"] == "idle"
+                await request(client, "legacy_read", "qkm_preview_changes", {"action": "configuration.save", "setting_name": "Persist136A"}, error="permission_denied")
+                await request(client, "legacy_read", "qkm_disconnect")
+                await connection(client, "disconnected")
+            await product.action("Disable")
+            await product.action("Revoke")
+            legacy.forget()
 
     try:
         with patch.object(stdio, "_create_platform_compatible_process", observed_spawn):
@@ -207,12 +232,14 @@ async def run(args):
                 with args.executable.open("rb") as stream:
                     executable_hash = hashlib.file_digest(stream, "sha256").hexdigest()
                 (args.output / "paired-receipt.json").write_text(json.dumps(dict(executable=str(args.executable),
-                    sha256=executable_hash, evidence=str(args.output), old=old, pair_id=saved.pair_id, epoch=saved.epoch)), encoding="utf-8")
+                    sha256=executable_hash, evidence=str(args.output), old=old, pair_id=saved.pair_id, epoch=saved.epoch,
+                    persistent_target=args.persistent_target)), encoding="utf-8")
             else:
                 receipt_path = args.resume_paired.resolve(strict=True)
                 assert receipt_path.is_relative_to(root / "out/mcp_product") and receipt_path.stat().st_size <= 8192
                 receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-                assert receipt.keys() == {"executable", "sha256", "evidence", "old", "pair_id", "epoch"}
+                assert receipt.keys() - {"persistent_target"} == {"executable", "sha256", "evidence", "old", "pair_id", "epoch"}
+                assert receipt.get("persistent_target", False) is args.persistent_target
                 assert Path(receipt["executable"]) == args.executable
                 with args.executable.open("rb") as stream:
                     assert hashlib.file_digest(stream, "sha256").hexdigest() == receipt["sha256"]
@@ -223,18 +250,20 @@ async def run(args):
                     closed = json.loads((evidence / phase / "closed.json").read_text(encoding="utf-8"))
                     assert Path(record["executable"]) == args.executable and closed["exit_code"] == 0 and closed["pid"] == record["pid"]
                 old.update(receipt["old"])
-                store = CredentialStore(Path(old["discovery"]), args.executable, own.session)
+                store = CredentialStore(Path(old["discovery"]), args.executable, own.session, persistent=args.persistent_target)
                 saved = store.load()
                 assert saved is not None and (saved.pair_id, saved.epoch, saved.scopes) == (receipt["pair_id"], receipt["epoch"], 3)
                 completed.extend(["first_reused_evidence", "paired_reused_evidence"])
             await managed("reused", reused)
             await managed("disabled", disabled)
-        assert len(peers) == (2 if args.resume_paired is None else 1)
+        assert len(peers) == (2 if args.resume_paired is None else 1) + int(args.persistent_target)
         assert len({(peer["pid"], peer["created"]) for peer in peers}) == len(peers)
-        assert sum(item["tool"] == "qkm_request_pairing" for item in calls) == (1 if args.resume_paired is None else 0)
+        assert sum(item["tool"] == "qkm_request_pairing" for item in calls) == (1 if args.resume_paired is None else 0) + int(args.persistent_target)
         (args.output / "passed.json").write_text(json.dumps(dict(completed=completed, peers=peers, old=old,
             prior_paired_receipt=str(args.resume_paired) if args.resume_paired else None,
-            new_pairing_requests=1 if args.resume_paired is None else 0, granted_scopes=3,
+            new_pairing_requests=sum(item["tool"] == "qkm_request_pairing" for item in calls), granted_scopes=3,
+            target_mode="persistent_v2" if args.persistent_target else "explicit_v1",
+            legacy_direct_scopes=1 if args.persistent_target else None,
             mapping_started=False, configuration="Persist136A"), ensure_ascii=False, indent=2), encoding="utf-8")
         print("PASS stock Release: startup choice, GUI pairing reuse, A-to-B save/cold read, stale references and saved off; prior evidence reuse is recorded", flush=True)
     finally:
@@ -248,4 +277,5 @@ if __name__ == "__main__":
     parser.add_argument("--bridge-python", type=lambda value: Path(value).resolve(strict=True), required=True)
     parser.add_argument("--output", type=lambda value: Path(value).resolve(), required=True)
     parser.add_argument("--resume-paired", type=Path, help="Reuse this test's explicit non-secret receipt after verifying prior normal exits; never repeat accepted writes.")
+    parser.add_argument("--persistent-target", action="store_true", help="Verify v2 fixed target arguments and a separate Read-only legacy entry.")
     asyncio.run(run(parser.parse_args()))

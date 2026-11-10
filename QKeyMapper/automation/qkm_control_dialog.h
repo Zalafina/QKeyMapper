@@ -19,7 +19,7 @@ class ControlDialog : public QDialog {
 public:
     explicit ControlDialog(QWidget *parent = nullptr);
     ControlDialog(QString storeDirectory, QByteArray applicationBinding, QWidget *parent = nullptr,
-                  QString startupDirectory = {});
+                  QString startupDirectory = {}, QString pairDirectory = {});
     void restoreStartupChoice();
     void retranslateUi();
     static QString title();
@@ -30,6 +30,7 @@ protected:
     void showEvent(QShowEvent *event) override;
 
 private:
+    ControlDialog(PersistentTarget target, QWidget *parent);
     void refresh();
     void showPending();
     void finishPending();
@@ -38,6 +39,7 @@ private:
     void saveStartupChoice();
 
     QString m_storeDirectory;
+    QString m_pairDirectory;
     QString m_startupDirectory;
     QByteArray m_startupBinding;
     std::optional<bool> m_savedStartup;

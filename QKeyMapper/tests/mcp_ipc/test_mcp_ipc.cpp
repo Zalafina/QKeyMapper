@@ -177,6 +177,22 @@ int runStoreReader(const QStringList &arguments)
         && actual.secret == expected.secret ? 0 : 42;
 }
 
+int runTargetContext(const QStringList &arguments)
+{
+    if (arguments.size() != 4) return 106;
+    bool valid = false;
+    const quint32 session = arguments.at(3).toUInt(&valid);
+    if (!valid || arguments.at(3) != QString::number(session)) return 107;
+    const auto target = persistentTarget(arguments.at(2), session);
+    if (!target.ok()) return 108;
+    const QByteArray bytes = QJsonDocument(QJsonObject{{QStringLiteral("version"), 2},
+        {QStringLiteral("binding"), QString::fromLatin1(target.applicationBinding.toHex())},
+        {QStringLiteral("pair_directory"), target.pairDirectory},
+        {QStringLiteral("runtime_directory"), target.runtimeDirectory}}).toJson(QJsonDocument::Compact);
+    QFile output;
+    return output.open(stdout, QIODevice::WriteOnly) && output.write(bytes) == bytes.size() && output.flush() ? 0 : 109;
+}
+
 int runSharedStoreWriter(const QStringList &arguments)
 {
     if (arguments.size() != 7) return 100;
@@ -539,6 +555,7 @@ private slots:
     void discoveryLifecycle();
     void demoRecordLifecycle();
     void discoveryRejectsMetadata();
+    void persistentTargetContext();
     void sessionPairAndReconnect();
     void sessionSharedStore();
     void sessionSharedStoreWriters();
@@ -1785,6 +1802,28 @@ void McpIpcTest::discoveryRejectsMetadata()
     QVERIFY(removeInstanceDiscovery(directory, id, error));
 }
 
+void McpIpcTest::persistentTargetContext()
+{
+    const auto first = persistentTarget(QCoreApplication::applicationFilePath(), 1);
+    const auto second = persistentTarget(QCoreApplication::applicationFilePath(), 2);
+    QVERIFY(first.ok()); QVERIFY(second.ok());
+    QCOMPARE(first.applicationBinding, second.applicationBinding);
+    QCOMPARE(first.pairDirectory, second.pairDirectory);
+    QVERIFY(first.runtimeDirectory != second.runtimeDirectory);
+    QCOMPARE(first.runtimeDirectory, QDir(first.pairDirectory).filePath(QStringLiteral("sessions/1")));
+    QVERIFY(!persistentTarget(QStringLiteral("relative.exe"), 1).ok());
+    QTemporaryDir temporary;
+    QVERIFY(temporary.isValid());
+    QVERIFY(!persistentTarget(temporary.path(), 1).ok());
+    QVERIFY(!persistentTarget(temporary.path() + QStringLiteral("/missing.exe"), 1).ok());
+    const QString file = temporary.path() + QStringLiteral("/演示 日本語.exe");
+    QVERIFY(replaceTestFile(file, "context fixture"));
+    const auto unicode = persistentTarget(file, 0);
+    QVERIFY(unicode.ok());
+    QVERIFY(unicode.applicationBinding != first.applicationBinding);
+    QVERIFY(unicode.pairDirectory != first.pairDirectory);
+}
+
 void McpIpcTest::sessionPairAndReconnect()
 {
     QTemporaryDir temporary(QDir::currentPath() + QStringLiteral("/sessions-XXXXXX"));
@@ -2750,6 +2789,8 @@ int main(int argc, char **argv)
         return runListenerClient(app.arguments());
     if (app.arguments().value(1) == QStringLiteral("--store-reader"))
         return runStoreReader(app.arguments());
+    if (app.arguments().value(1) == QStringLiteral("--target-context"))
+        return runTargetContext(app.arguments());
     if (app.arguments().value(1) == QStringLiteral("--shared-store-writer"))
         return runSharedStoreWriter(app.arguments());
     if (app.arguments().value(1) == QStringLiteral("--session-client"))

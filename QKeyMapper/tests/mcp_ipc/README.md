@@ -141,8 +141,14 @@ DPAPI 原生解密缓冲及本组件自有明文 QByteArray 在使用后清零�
 
 ## 独立共享配对库（PERSIST-137-A）
 
-`AutomationSessionServer`可选独立pairDirectory；省略时保留旧同目录／终身租约合同。独立库使用同一私有DirectoryLease做短事务，写前重新读取最新记录，权限更新核对原epoch／scopes；Busy／Conflict不重试、不覆盖。认证证明完成、请求分发、异步isRequestCurrent及回复均复核外部撤销；旧请求先按连接／请求／配对身份拒绝，不能因共享库正忙而关闭新的合法认证。无文件监控或新服务。正式产品v2入口仍由后续137-B接通。
+`AutomationSessionServer`可选独立pairDirectory；省略时保留旧同目录／终身租约合同。独立库使用同一私有DirectoryLease做短事务，写前重新读取最新记录，权限更新核对原epoch／scopes；Busy／Conflict不重试、不覆盖。认证证明完成、请求分发、异步isRequestCurrent及回复均复核外部撤销；旧请求先按连接／请求／配对身份拒绝，不能因共享库正忙而关闭新的合法认证。无文件监控或新服务。137-B正式ControlDialog默认构造现已接入独立v2目录；组件可继续显式构造旧合同。
 
 定向运行`sessionSharedStore`、`sessionSharedStoreWriters`、`sessionSharedStoreRevalidation`及原session／offline／store／lease受影响用例。合成的不同运行目录模拟共享库使用者，仍全部在同一真实Windows登录内；不冒称跨登录验收。`--shared-store-writer`是asInvoker组件内部子进程入口，经受控stdin固定确认门等待，再修改专属测试pair的权限；不是MCP／产品管理接口。子进程先加载旧快照，分别修改不同pair时保留对方更新，同pair旧epoch及独占锁争用明确失败。stdout固定确认行按有界文本行接受LF／CRLF，不记录密钥。
 
 新增六场景覆盖证明前／请求前／回复前／异步复核撤销、请求前库损坏及锁忙，均使用真实管道证明及受保护合成DPAPI库；不创建产品窗口、发送系统输入或使用UAC。Qt5／Qt6的当前原件及历史失败见[唯一主计划137-A](../../../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md#persist-137-a)。
+
+## 固定 v2 目标派生（PERSIST-137-B）
+
+`persistentTargetContext`验证规范化EXE决定的稳定配对绑定、不同Session只改变运行子目录、相对／缺失／目录目标拒绝及Unicode路径。内部asInvoker `--target-context <EXE> <Session>`仅输出非秘密派生信息，用于`mcp_bridge/tests/test_persistent_target.py`的跨语言互核；不是产品命令或授权入口。设置QKM_IPC_TEST_EXE为匹配的Qt5／Qt6组件并提供相应Qt DLL路径；没有该前置会明确skip该原生合同，不冒充通过。
+
+实际连接仍依次验证私有发现、进程创建时间、用户／真实登录／Session、可信EXE文件身份、管道对端及认证证明；派生路径不是配对成功或执行授权。v1显式入口不改算法，不通过扫描或旧密钥迁移补齐v2。

@@ -2,6 +2,7 @@
 
 import ctypes as c
 import ctypes.wintypes as w
+import hashlib
 import os
 import time
 from contextlib import ExitStack, closing
@@ -15,6 +16,7 @@ import win32event
 import win32file
 import win32pipe
 import win32security
+from win32com.shell import shell
 
 from .protocol import (BridgeError, MAX_FRAME, PIPE_PREFIX, decimal,
                        decode, encode, fields, hex_bytes, require)
@@ -103,6 +105,33 @@ def identity(pid: int) -> Identity:
                               _linked_authentication(token, user_text, logon_text, session))
         require(win32event.WaitForSingleObject(process, 0) == win32event.WAIT_TIMEOUT, "identity_rejected")
         return result
+
+
+def persistent_target(executable: Path, session: int) -> tuple[Path, bytes]:
+    require(type(session) is int and 0 <= session <= 0xFFFFFFFF, "target_context_unavailable")
+    path = str(executable)
+    require(executable.is_absolute() and "\0" not in path and len(path) <= 32768, "executable_rejected")
+    try:
+        with closing(win32file.CreateFile(path, 0x80, 7, None, win32con.OPEN_EXISTING, 0, None)) as handle:
+            require(win32file.GetFileType(handle) == win32file.FILE_TYPE_DISK
+                    and not win32file.GetFileInformationByHandle(handle)[0] & win32con.FILE_ATTRIBUTE_DIRECTORY,
+                    "executable_rejected")
+            canonical = win32file.GetFinalPathNameByHandle(handle, 0)
+        if canonical.startswith("\\\\?\\UNC\\"):
+            canonical = "//" + canonical[8:]
+        elif canonical.startswith("\\\\?\\"):
+            canonical = canonical[4:]
+        else:
+            raise BridgeError("target_context_unavailable")
+        canonical = canonical.replace("\\", "/")
+        require(Path(canonical).is_absolute() and 0 < len(canonical.encode("utf-16-le")) // 2 < 32768,
+                "target_context_unavailable")
+        binding = hashlib.sha256(b"QKeyMapper-MCP-App/v2\0" + canonical.encode("utf-8")).digest()
+        base = Path(shell.SHGetKnownFolderPath(shell.FOLDERID_LocalAppData))
+        require(base.is_absolute(), "target_context_unavailable")
+        return base / "QKeyMapper/MCP/targets-v2" / binding.hex() / "sessions" / str(session) / "instance.json", binding
+    except (pywintypes.error, pywintypes.com_error, UnicodeError):
+        raise BridgeError("target_context_unavailable") from None
 
 
 def file_identity(path: str) -> tuple:
