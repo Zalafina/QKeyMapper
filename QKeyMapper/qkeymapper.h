@@ -2581,6 +2581,14 @@ public:
     ExclusiveGroupConflictResolutionResult autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup = true, bool updateTableWidget = true);
 
 private:
+    struct OriginalKeyConflictAnalysis {
+        bool sourceAvailable = false;
+        bool disableCurrentRow = false;
+        QList<QPair<int, int>> disableOtherRows;
+        QString confirmationMessage;
+    };
+    OriginalKeyConflictAnalysis analyzeOriginalKeyConflict(int tabindex, int row, const QString &originalKey, bool disabled) const;
+
     MappingDataInsertSummary prepareMappingDataForInsertion(int targetTabIndex,
                                                             const QList<MAP_KEYDATA> &sourceMappingData,
                                                             QList<MAP_KEYDATA> *insertMappingDataList,

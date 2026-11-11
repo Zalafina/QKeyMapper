@@ -24,6 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CASES = ("normal", "cold", "normal_clear_up", "disabled", "common", "common_conflict", "complex", "read")
 FLAG_CASES = ("flag_normal", "flag_cold", "flag_disabled", "flag_common", "flag_hidden", "flag_conflict", "flag_common_conflict", "flag_read")
 
+GUARD_CASES = ("key_normal_conflict", "key_common_priority")
+
 
 async def run(args):
     phases = args.case or CASES
@@ -136,6 +138,12 @@ async def run(args):
                     assert before[index]["rows"][0]["fields"]["KeyMapData_OriginalKeys"] == "C"
                     await request(client, phase, "qkm_preview_changes", dict(action="mapping.update", source_ref=target,
                         disabled=False), error="unsupported_capability")
+                    assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
+                    return
+                if phase in GUARD_CASES:
+                    original = "E" if phase == "key_common_priority" else "C"
+                    await request(client, phase, "qkm_preview_changes", dict(action="mapping.update", source_ref=target,
+                        original_key=original), error="unsupported_capability")
                     assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
                     return
                 if not flag and phase in ("common_conflict", "complex"):
@@ -261,6 +269,9 @@ async def run(args):
                 if flag and variant == "common_conflict":
                     payload = payload.replace(b"KeyMapData_SendMappingKeyMethod=", b"KeyMapData_Disabled=OFF#OFF|ON#OFF\nKeyMapData_SendMappingKeyMethod=")
                     payload = payload.replace(b"KeyMapData_OriginalKeys=A#C|F13#F14", b"KeyMapData_OriginalKeys=A#C|C#F14")
+                if phase == "key_common_priority":
+                    payload = payload.replace(b"MappingTable_TabIncludeCommonList=OFF, OFF", b"MappingTable_TabIncludeCommonList=ON, OFF")
+                    payload = payload.replace(b"KeyMapData_OriginalKeys=A#C|F13#F14", b"KeyMapData_OriginalKeys=A#C|E#F14")
                 ini.write_bytes(payload)
             output = args.output / phase
             output.mkdir()
@@ -293,5 +304,5 @@ if __name__ == "__main__":
     parser.add_argument("--gui-baseline", type=lambda value: Path(value).resolve(strict=True), required=True)
     parser.add_argument("--output", type=lambda value: Path(value).resolve(), required=True)
     parser.add_argument("--disabled-gui-baseline", type=lambda value: Path(value).resolve(strict=True))
-    parser.add_argument("--case", nargs="+", choices=(*CASES, *FLAG_CASES), help="Run selected cases; each cold requires its normal case earlier in the same run.")
+    parser.add_argument("--case", nargs="+", choices=(*CASES, *FLAG_CASES, *GUARD_CASES), help="Run selected cases; each cold requires its normal case earlier in the same run.")
     asyncio.run(run(parser.parse_args()))

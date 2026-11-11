@@ -2848,6 +2848,21 @@ QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper 
         && old.SendMappingKeyMethod == 3 && sources.first().toObject().value(QStringLiteral("include_common")).toBool()
             == (variant != QStringLiteral("normal_duplicate")), "the fixture has the intended independent target and Common policy");
     if (!passed) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}, {QStringLiteral("before"), before}};
+    const quint64 epoch = mapper->m_AutomationSourceEpoch;
+    const auto analysis = mapper->analyzeOriginalKeyConflict(target, 0, newOriginal, old.Disabled);
+    QList<QPair<int, int>> expectedOtherRows;
+    if (common) expectedOtherRows.append(qMakePair(0, 1));
+    check(analysis.sourceAvailable && analysis.disableCurrentRow == !common && analysis.disableOtherRows == expectedOtherRows,
+        "pure analysis predicts the original GUI current-row and other-row conflict effects, including disabled Common");
+    const auto invalidTab = mapper->analyzeOriginalKeyConflict(-1, 0, newOriginal, false);
+    const auto missingTab = mapper->analyzeOriginalKeyConflict(QKeyMapper::s_KeyMappingTabInfoList.size(), 0, newOriginal, false);
+    const auto invalidRow = mapper->analyzeOriginalKeyConflict(target, QKeyMapper::KeyMappingDataList->size(), newOriginal, false);
+    check(!invalidTab.sourceAvailable && !missingTab.sourceAvailable && !invalidRow.sourceAvailable
+        && invalidTab.disableOtherRows.isEmpty() && invalidRow.confirmationMessage.isEmpty(),
+        "out-of-range source positions are unavailable, never an approved no-conflict plan");
+    check(mapper->collectAutomationSourceSnapshot(error) == before && error.isEmpty() && !mapper->m_SaveSettingDirty
+        && mapper->m_AutomationSourceEpoch == epoch && mapper->m_MappingLoadGeneration == load && disk() == ini
+        && !QApplication::activeModalWidget(), "analysis leaves the complete source, revision, dirty, disk and UI unchanged");
     auto *table = mapper->m_KeyMappingDataTable;
     if (!table || table->isRowHidden(0)) return {{QStringLiteral("passed"), false}};
     click(table->viewport(), table->visualRect(table->model()->index(0, ORIGINAL_KEY_COLUMN)).center(), true);
@@ -2894,6 +2909,8 @@ QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper 
             && confirmation.value(QStringLiteral("default_no")).toBool(),
             "the original GUI exposes its tentative original key before a default-No decision, with other rows and dirty unchanged");
     }
+    check(analysis.confirmationMessage == confirmation.value(QStringLiteral("text")).toString(),
+        "pure analysis predicts the independently displayed GUI confirmation text, or no confirmation");
     auto expected = sources;
     if (!cancelled) {
         patch(expected, target, 0, QStringLiteral("fields"), {
@@ -2920,6 +2937,9 @@ QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper 
         {QStringLiteral("before"), before}, {QStringLiteral("after"), after}, {QStringLiteral("during_confirmation"), common ? QJsonValue(during) : QJsonValue()},
         {QStringLiteral("dirty_during_confirmation"), dirtyDuring}, {QStringLiteral("confirmation"), confirmation},
         {QStringLiteral("replies"), replies}, {QStringLiteral("notifications"), notifications},
+        {QStringLiteral("analysis"), QJsonObject{{QStringLiteral("source_available"), analysis.sourceAvailable},
+            {QStringLiteral("disable_current"), analysis.disableCurrentRow}, {QStringLiteral("other_row_count"), analysis.disableOtherRows.size()},
+            {QStringLiteral("confirmation"), analysis.confirmationMessage}}},
         {QStringLiteral("target_source"), target}, {QStringLiteral("formal_mcp_update"), false}};
 }
 

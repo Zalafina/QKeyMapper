@@ -1,5 +1,7 @@
 # 第一方测试
 
+EDIT-147：`settings_original_conflict_gui`六场在真实GUI动作前调用纯冲突分析，核对预测行／确认文字、无效位置、完整源／epoch／dirty／加载／INI及无模态副作用，再与已封存146的原GUI结果对照。普通Release驱动另有可选`--case key_normal_conflict key_common_priority`，分别验证同表原键冲突及有效Common优先的明确拒绝；缺省用例不变。配合normal、common_conflict、flag_conflict、flag_common_conflict选六场；仍拒绝冲突写入，权限／工具数不变，不用本轮MCP替代原GUI基线。见[分项证据](../../handoff/qkeymapper_mcp_control/mapping_edit_validation.md)。
+
 EDIT-GUI-146：生命周期目标的`settings_original_conflict_gui`使用141样例及固定`normal_duplicate／normal_common／common_no／common_yes／common_disabled_no／common_disabled_yes`。从真实Item输入原键与映射草稿、点击Update和Common模态No／Yes，再Escape；比较确认期、最终全sources、dirty、通知、加载／INI与退出。Common组须让普通表包含Common，初始禁用组仅改合成INI的Common首行；normal_common预置Common原键E，其余用原样例。`showPopup=false`不抑制原键Common确认，不能直接调用原互斥助手建立MCP预览；确认期的内部观察不等于正式MCP查询证据。本用例不发系统输入或启动映射。
 
 EDIT-GUI-144：生命周期目标的`settings_disabled_gui`复用141样例，`QKM_CONTEXT_VARIANT=normal／disabled／common／hidden`。准备各自独立运行副本，disabled只在合成INI设首行初始禁用，common设普通表包含Common，hidden设HideDisabled=true；所有实际开关均经真实Qt Item／表格复选框事件，不能用setChecked／setCheckState或直接调用槽替代。比较完整源／派生／其他行、即时dirty、Escape、隐藏后重新显示、INI／加载及退出排空。它是配置GUI基线，不新增正式MCP字段、映射或真实系统输入验收。

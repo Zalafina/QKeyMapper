@@ -132,3 +132,49 @@ v3的normal及cold已完整结束：普通行完整sources前后与141的qt6-nor
 所有场景INI字节／加载代次及FilterKeys前后全字段相同，Escape保持已接受或拒绝后的数据，退出work／producers0；两次Default前台归属采样非本轮PID，非连续监测。没有失败轮次、配对或系统输入／映射请求；无普通Release新运行、截图／三语视觉、Default操作、驱动、真实输入、Win10／高DPI、跨登录或全量静态／ASan结论，不把维护结果当完整M1。
 
 原件仅本机out/mcp_original_conflict_gui_20261111：build／deploy及实际EXE、definition／registration、两份gui日志、runs/*-01完整before／during_confirmation／after、confirmation／notifications／closed／INI，另summary.json和scope-release.json。十二进程实退后仅撤本片两份固定授权，owned／unresolved／pending0；保留新普通30560／instance3c8b0380f4fb423587f1a67bfb617d86至2026-11-11 19:00，未接管／重放历史未知。后续纯分析及正式冲突合同仍由唯一主计划决定，本页不另记进度。
+
+## EDIT-147：共用纯冲突分析
+
+2026-11-11，PC-W11、同一Windows登录。源码为66a5270ecfca8f945e27be3734c197cd90b076bb加本片差异。只增加私有analyzeOriginalKeyConflict及结果（源有效性、当前行禁用、其他行位置、确认文字），由既有两处MCP原键／启用冲突拒绝共用；原GUI autoDisableRowIfExclusiveGroupConflict及三个调用方逐字未改。分析结果不是授权／提交计划，真正执行仍经过现有源、权限、生命周期、全候选校验及执行前复核。本片不开放冲突写入，不改17工具／23能力、桥接运行码／schema／TS/QM或保存结构。
+
+### 147 构建与独立GUI对照
+
+- Qt6 6.8.3 x64／MSVC2022普通Release及双Qt维护目标b01增量通过；Qt6编译／链接零警告，Qt5 5.15.2官方msvc2019_64仅精确qtmain.lib(qtmain_win.obj)缺PDB LNK4099例外。普通build脚本子进程ExitCode非零会抛错，本轮报告Build succeeded且PowerShell进程exit0；外层LASTEXITCODE未取得（空），不冒称取得另一个原生码。
+- 维护副本out/mcp_original_analysis147_20261111/{qt6,qt5}-runtime-b01/QKeyMapperOriginalAnalysis147_<kit>_runtime.exe；Qt6 SHA256=29b5edd05f787b127c61644075d0ce512dd50d0eded10d8bd4b4dc6b6322cdf6，Qt5=36f46a56c3429cf3fadc29345918d67bdce9a03d8f205d158f9db8cd1f33c54d。六厂商DLL逐项核对，Qt依赖用对应kit部署，保留manifest，不复制个人INI／凭据。
+- 十二实际私有High进程均exit0，双Qt各84项共168通过；每场新增四项纯分析断言，原146的完整before／after／确认期间源、dirty、实际文字／默认No／回答、通知及目标逐项相等，共十二全量对照。分析前后完整源、epoch、dirty、加载、磁盘不变且无模态；无效索引不可用。初始禁用Common依然预测影响普通行，符合原GUI实际行为。六场原始键冲突均走真实Qt事件／按钮；纯助手调用仅是额外预测，不冒充GUI基线。
+
+| Qt | 场景 | PID | 断言 |
+|---|---|---:|---:|
+| qt6 | common_disabled_no | 28360 | 15 |
+| qt6 | common_disabled_yes | 10644 | 14 |
+| qt6 | common_no | 4304 | 15 |
+| qt6 | common_yes | 6368 | 14 |
+| qt6 | normal_common | 30604 | 13 |
+| qt6 | normal_duplicate | 23532 | 13 |
+| qt5 | common_disabled_no | 26972 | 15 |
+| qt5 | common_disabled_yes | 11540 | 14 |
+| qt5 | common_no | 15108 | 15 |
+| qt5 | common_yes | 7352 | 14 |
+| qt5 | normal_common | 20920 | 13 |
+| qt5 | normal_duplicate | 2940 | 13 |
+
+实际桌面均QkmOriginalAnalysis147_*，普通观察8192／产品12288、同登录；INI逐字不变、FilterKeys前后相等、两次前台采样非自有PID（非连续监测）、退出work／producers0。无失败轮次，无配对、映射启动或系统输入。构建／部署／GUI／对照／汇总原件在本机out/mcp_original_analysis147_20261111，禁止由此推断Default干扰因果、完整冲突操作或设备验收。
+
+### 147 正式MCP与分析
+
+普通Release独立运行副本out/mcp_product/original_analysis147_20261111/runtime-中文/QKeyMapperMcpAcceptance_analysis147_qt6.exe，SHA256=e4b30b46dcce084a48bbef60694aec1f697b1b4e7da54ed1a6c086560f0d8e85。六厂商DLL与仓库匹配；仅取同PC自有137运行副本的DLL／Qt插件，不复制INI或凭据。正式SDK／桥接Medium8192；产品High12288，真实QkmProduct_*私有桌面，同登录。每轮GUI启用并批准专属Read／Configure，无RunMapping；随包145组件九个运行源码与当前逐字核对，沿用ZIP SHA256=2b3f13e5a5f74ecedd4351142b6999be1c7061899948be4373dd82c0daf5db14，不重打未改依赖。
+
+| 正式场景 | PID | 调用 | 结果 |
+|---|---:|---:|---|
+| normal | 5716 | 31 | 预览／取消／提交与141原GUI全源一致，重放／旧引用／no-op及完整保存成功 |
+| key_normal_conflict | 31524 | 9 | 同表原键重复，unsupported_capability、零修改 |
+| key_common_priority | 30292 | 9 | 普通原键受有效Common约束，unsupported_capability、零修改 |
+| common_conflict | 29852 | 9 | Common原键影响普通行，unsupported_capability、零修改 |
+| flag_conflict | 30732 | 9 | 启用影响同表行，unsupported_capability、零修改 |
+| flag_common_conflict | 24704 | 9 | 启用Common影响普通行，unsupported_capability、零修改 |
+
+六场76正式调用、一次141独立全源对照、九次完整source_snapshot上下文（含dirty／加载）不变性通过；五拒绝全源／磁盘保持，normal保存明确完整范围，无隐式开始。产品全部exit0，专属唯一配对GUI撤销至0、停接口、CredentialStore.forget后load为空；六普通桥接不再存活，未取得退出码的明确null，不从进程缺失推算。FilterKeys每场前后相等。实际拓扑／调用／GUI动作／closed／bridge-peers原件在out/mcp_product/original_analysis147_20261111/v1，核对汇总product-evidence.json／bridge-cleanup.json在147本机证据目录。
+
+定向Clang-Tidy／Clazy仅主qkeymapper.cpp、普通／sendinput-lifecycle两个真实编译上下文；脚本exit0、各工具非零退出0、项目诊断0。原件static-b01含summary.txt；未增加未变协议／Worker全矩阵或ASan。原GUI冲突函数及主文件两处调用、Item第三处调用逐字保持。本轮GUI／产品无失败轮次；普通事后桥接核对初次用未安装项目包的开发venv报ModuleNotFoundError，随后用原已核验随包Python -I检查成功，没有重启或重放产品动作。最初GUI调用计数核对把两个主文件调用和一个外部Item调用误按三个主文件调用计数，已按实际2＋1修正；不构成产品失败。
+
+普通控制器30560／instance3c8b0380f4fb423587f1a67bfb617d86保持既有2026-11-11 19:00期限，147三份固定权限已撤出，owned／unresolved／pending及action／job为0／空，剩余授权0。缓存继续开发未off，历史未知不接管或重放。未执行新的Default／系统输入／映射／驱动／全局设置、Win10／高DPI／截图或三语视觉、Qt5普通Release正式MCP、冷读重启／跨登录、完整M1或设备验收；保存冷读／schema等复用145原范围，不能相加称本轮通过。

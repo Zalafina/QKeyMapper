@@ -4,6 +4,8 @@
 
 ## 当前状态与填写规则
 
+EDIT-147共用原键候选纯冲突分析供两处MCP拒绝判断；GUI原确认／写入入口保持。它不增加工具／权限或开放冲突编辑，原143／145支持范围不变；分析及回归事实见[同一编辑证据](mapping_edit_validation.md#edit-147共用纯冲突分析)。
+
 PERSIST-137-A/B：正式产品默认使用稳定v2配对根与当前Session运行目录；桥接新增显式`--persistent-target --executable <可信EXE>`，复用workspace固定参数。旧显式发现／v1凭据保留，不迁移或扫描；首次v2新GUI配对。同登录普通Release启动选择、产品／桥接重启复用、保存冷读和旧引用拒绝已选验，实际跨Windows登录／PC重启及客户端接线仍待，见[同一主计划证据](qkeymapper_mcp_automation_plan_codex.md#persist-137-b)。这是目标定位／存储模式，工具及业务能力数仍17／23，无新权限或运行映射能力。
 
 IB-MCP-138新增并选验四项能力：mapping.update.preview／apply、ibinput.preferences.update.preview／apply；工具数仍17，业务能力23。mapping.add的send_method纳入0–3并保留默认0；该片受限更新只改当前可见源行的发送方式，合法Common及可见禁用行可用，隐藏／非当前源拒绝，同移动组冲突不产生修改。两项全局偏好参与预览语义修订、非行足迹、显式完整保存、取消与写失败恢复；被动采样不写配置。Read／Configure正反例、普通Release独立GUI和正式MCP保存冷读、生命周期及私有演示／Default两后端代表结果见[独立证据页](ibinput_mcp_integration_validation.md)。完整M1／M2未完成；主动连接检查／试发工具仍未交付。139增加下述固定Popup角色，工具／能力数仍17／23。

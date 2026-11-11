@@ -19682,6 +19682,26 @@ int QKeyMapper::applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow
     return auto_disabled;
 }
 
+QKeyMapper::OriginalKeyConflictAnalysis QKeyMapper::analyzeOriginalKeyConflict(int tabindex, int row, const QString &originalKey, bool disabled) const
+{
+    OriginalKeyConflictAnalysis analysis;
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) return analysis;
+    const auto *rows = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+    if (!rows || row < 0 || row >= rows->size()) return analysis;
+    analysis.sourceAvailable = true;
+    const QString group = normalizeOriginalKeyForExclusiveGroup(originalKey);
+    if (isCommonMappingTabIndex(tabindex)) {
+        const auto conflicts = collectEnabledNormalTabExclusiveGroupConflicts(group);
+        for (const auto &conflict : conflicts) {
+            for (int conflictRow : conflict.Rows) analysis.disableOtherRows.append(qMakePair(conflict.TabIndex, conflictRow));
+        }
+        if (!conflicts.isEmpty()) analysis.confirmationMessage = commonConflictConfirmationMessage(originalKey, conflicts);
+    }
+    analysis.disableCurrentRow = !disabled && (hasEnabledExclusiveGroupConflict(*rows, group, row)
+        || (!isCommonMappingTabIndex(tabindex) && hasCommonExclusiveGroupPresenceForTab(tabindex, group)));
+    return analysis;
+}
+
 QKeyMapper::ExclusiveGroupConflictResolutionResult QKeyMapper::autoDisableRowIfExclusiveGroupConflict(int tabindex, int row, bool showPopup, bool updateTableWidget)
 {
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
@@ -38490,11 +38510,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             if (update.disabled.has_value()) {
                 after.Disabled = *update.disabled;
                 if (before.Disabled && !after.Disabled) {
-                    const QString group = normalizeOriginalKeyForExclusiveGroup(after.Original_Key);
-                    const bool affectsOthers = hasEnabledExclusiveGroupConflict(*KeyMappingDataList, group, update.sourceRow)
-                        || (isCommonMappingTabIndex(tab) && !collectEnabledNormalTabExclusiveGroupConflicts(group).isEmpty());
-                    const bool blockedByCommon = !isCommonMappingTabIndex(tab) && hasCommonExclusiveGroupPresenceForTab(tab, group);
-                    if (affectsOthers || blockedByCommon) {
+                    const auto analysis = analyzeOriginalKeyConflict(tab, update.sourceRow, after.Original_Key, after.Disabled);
+                    if (!analysis.sourceAvailable) {
+                        reject(QStringLiteral("context_busy"), QStringLiteral("The source row is no longer available."));
+                        return;
+                    }
+                    if (analysis.disableCurrentRow || !analysis.disableOtherRows.isEmpty()) {
                         reject(QStringLiteral("unsupported_capability"), QStringLiteral("Enabling this row would change other rows or invoke Common priority; resolve this change in the GUI."));
                         return;
                     }
@@ -38541,11 +38562,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     return;
                 }
                 if (after.Original_Key != before.Original_Key) {
-                    const QString group = normalizeOriginalKeyForExclusiveGroup(after.Original_Key);
-                    const bool affectsOthers = isCommonMappingTabIndex(tab) && !collectEnabledNormalTabExclusiveGroupConflicts(group).isEmpty();
-                    const bool disablesCurrent = !after.Disabled && (hasEnabledExclusiveGroupConflict(*KeyMappingDataList, group, update.sourceRow)
-                        || (!isCommonMappingTabIndex(tab) && hasCommonExclusiveGroupPresenceForTab(tab, group)));
-                    if (affectsOthers || disablesCurrent) {
+                    const auto analysis = analyzeOriginalKeyConflict(tab, update.sourceRow, after.Original_Key, after.Disabled);
+                    if (!analysis.sourceAvailable) {
+                        reject(QStringLiteral("context_busy"), QStringLiteral("The source row is no longer available."));
+                        return;
+                    }
+                    if (analysis.disableCurrentRow || !analysis.disableOtherRows.isEmpty()) {
                         reject(QStringLiteral("unsupported_capability"), QStringLiteral("Original-key updates that disable rows or require conflict confirmation are not supported; resolve this change in the GUI."));
                         return;
                     }
