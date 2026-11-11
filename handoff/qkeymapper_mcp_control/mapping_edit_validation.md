@@ -107,3 +107,28 @@ v3的normal及cold已完整结束：普通行完整sources前后与141的qt6-nor
 原件仅本机out/mcp_disabled145_20261110与out/mcp_product/disabled145_20261110/v1，含main.patch、构建／锁组件／分析报告、部署／固定定义、每场topology／GUI／sdk-calls／closed／FilterKeys／完整保存INI、product-evidence.json、bridge-cleanup.json和scope-release.json。双Qt控制原件在out/mcp_persist137/*disabled145-b01*。资源owned／unresolved／pending及授权均0后，仅关闭本任务管理的42036缓存；off返回closed／generation2／native0，后续status再次确认不可用。关闭前无其他活动授权，保留登记元数据及全部历史；closed中的旧last_error来自143，不是本轮off失败。未删除环境、构建、缓存文件或原件。
 
 收尾文档核对UTF-8无BOM／LF、相对链接、主窗完整字节／行数和git diff --check；当前主计划及本事实页在256KiB建议内，任务目录在2MiB内。既有validation.md在本片前已超过256KiB建议，本次仅加短索引，不为本次停止压缩其历史或宣称全部旧文档均符合大小建议。关闭后status实际返回controller=null／native0，普通检查先误按活动控制器形状取cache_available而KeyError；按实际关闭形状复核通过，没有再次off或启动缓存，不是原生关闭失败。
+
+## EDIT-GUI-146：原键互斥与Common确认GUI基线
+
+2026-11-11 PC-W11，从808f7e0b92fdc004874d3ae5be5a6459fbd6572b同机轻量恢复，工作区干净；环境及145等证据沿用，未重建venv或重复完整门槛。仅维护目标增加settings_original_conflict_gui，产品实现／MCP合同／TS/QM未改；工具及业务能力仍17／23，正式MCP仍拒绝原键冲突。
+
+先查Item Update／Enter、主表原键编辑和映射代码三个调用方：原键互斥助手会写行、发通知、刷新；Common即使showPopup=false仍询问。Item把临时原键先写入，再询问，No由调用方恢复原键并保留草稿；不能把该函数直接当预览或仅凭参数false称无副作用。此片以真实Item入口验证，不将主表内联或映射代码入口倒填成运行通过。
+
+双Qt维护b01增量native0，Qt6零警告／Qt5仅官方qtmain缺PDB的精确LNK4099例外。实际EXE为out/mcp_original_conflict_gui_20261111/{qt6,qt5}-runtime-b01/QKeyMapperOriginalConflict146_<kit>_runtime.exe，SHA256分别fa2b234cc4980817e3fb0fb312e4671e642656a0a9691a2a076d5b6cb9fa1e3b、ec8e7eb42e05be2fb9721d7942b80429ba0a845e8f926164383692f5ff3c5f99。原manifest，六项厂商DLL逐项与本机仓库核对，其余Qt按对应kit部署，没有个人INI／配对复制；普通启动前检查FakerInput缺席，未扩大原启动／关闭边界。
+
+样例来自141合成INI；除同表重复组外让Normal包含Common，normal_common组预置Common原键E，禁用Common组预置其首行Disabled=true。正常启动后真实Qt双击、Ctrl+A／字符输入、Update、已有模态按钮和Escape，未用控件赋值／直接业务函数代替GUI。目标原键改C（normal_common改E），映射草稿统一Z，原抬起B／H保留。
+
+| 场景 | Qt6 PID／项数 | Qt5 PID／项数 | 实际行为 |
+|---|---|---|---|
+| normal_duplicate | 6200／9 | 15748／9 | 同表已有C，提交新C→Z后仅当前行自动禁用，不询问；另一C保持启用 |
+| normal_common | 26580／9 | 14964／9 | 有效Common E优先，普通行改E→Z后仅当前行禁用，不询问 |
+| common_no | 26472／11 | 22856／11 | Common F13改C触发一个默认No确认；No恢复完整模型／dirty、保留C／Z草稿，零禁用通知 |
+| common_yes | 29708／10 | 5624／10 | Yes提交C→Z并禁用Normal中冲突C，Common当前行保持启用，一个禁用通知 |
+| common_disabled_no | 25764／11 | 23336／11 | 原Common禁用仍询问；No保持全部原源及禁用状态／dirty，保留草稿 |
+| common_disabled_yes | 13628／10 | 25652／10 | 原Common禁用仍询问；Yes仍禁用普通冲突C，当前Common保持禁用，一个通知 |
+
+各kit60项／共120项，十二个不同QkmOriginalConflict146_*实际私有桌面，High12288产品维护进程／Medium8192观察器，同登录，全部正常exit0。Common八个确认均核对本实例父窗、目标／Normal文字及默认No，并实际点击按钮。Qt内内部观察确认期仅临时Original_Key已变，映射草稿尚未提交、其他行和dirty未变；不是正式MCP查询／外部并发可见性验收。No后整份原快照相等；Yes后全部sources逐字段／派生精确对照，只保留原GUI实际变化和通知。Pure_OriginalKeys仍为原A／F13，未修正或外推运行行为。
+
+所有场景INI字节／加载代次及FilterKeys前后全字段相同，Escape保持已接受或拒绝后的数据，退出work／producers0；两次Default前台归属采样非本轮PID，非连续监测。没有失败轮次、配对或系统输入／映射请求；无普通Release新运行、截图／三语视觉、Default操作、驱动、真实输入、Win10／高DPI、跨登录或全量静态／ASan结论，不把维护结果当完整M1。
+
+原件仅本机out/mcp_original_conflict_gui_20261111：build／deploy及实际EXE、definition／registration、两份gui日志、runs/*-01完整before／during_confirmation／after、confirmation／notifications／closed／INI，另summary.json和scope-release.json。十二进程实退后仅撤本片两份固定授权，owned／unresolved／pending0；保留新普通30560／instance3c8b0380f4fb423587f1a67bfb617d86至2026-11-11 19:00，未接管／重放历史未知。后续纯分析及正式冲突合同仍由唯一主计划决定，本页不另记进度。

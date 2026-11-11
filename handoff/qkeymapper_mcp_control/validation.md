@@ -24,6 +24,8 @@ EDIT-GUI-144（2026-11-10，PC-W11）：[同页禁用开关GUI基线](mapping_ed
 
 EDIT-145（2026-11-10，PC-W11）：[独立禁用更新证据](mapping_edit_validation.md#edit-145独立禁用字段正式接线)，八产品／四组GUI对照及保存冷读／拒绝通过；组件、分析、清理及未验边界见同页，不扩大历史范围。
 
+EDIT-GUI-146（2026-11-11，PC-W11）：[原键互斥GUI基线](mapping_edit_validation.md#edit-gui-146原键互斥与common确认gui基线)，双Qt六场／各60项、十二私有进程exit0；含确认期、No／Yes及禁用Common，未新增MCP冲突能力。
+
 ## MAP-20261025-67-B1：基本添加正式接线
 
 PC-W10／4c5d04f3+本提交；[版本、EXE、结果及缺口](map67b1_validation.md)。双Qt普通Release、维护各11／SDK各12／product warm各26／源共通各12通过；Qt6 Default实际A→B、编辑拒绝、同步组陈旧及中文截图通过。当前12工具／8能力；显式保存／映射冷启动／MCP启停仍未接。DP请求后代表组未见异常，物理电源未知。四态采样有噪声及查询开销，不称完整无退化。

@@ -1,5 +1,7 @@
 # 第一方测试
 
+EDIT-GUI-146：生命周期目标的`settings_original_conflict_gui`使用141样例及固定`normal_duplicate／normal_common／common_no／common_yes／common_disabled_no／common_disabled_yes`。从真实Item输入原键与映射草稿、点击Update和Common模态No／Yes，再Escape；比较确认期、最终全sources、dirty、通知、加载／INI与退出。Common组须让普通表包含Common，初始禁用组仅改合成INI的Common首行；normal_common预置Common原键E，其余用原样例。`showPopup=false`不抑制原键Common确认，不能直接调用原互斥助手建立MCP预览；确认期的内部观察不等于正式MCP查询证据。本用例不发系统输入或启动映射。
+
 EDIT-GUI-144：生命周期目标的`settings_disabled_gui`复用141样例，`QKM_CONTEXT_VARIANT=normal／disabled／common／hidden`。准备各自独立运行副本，disabled只在合成INI设首行初始禁用，common设普通表包含Common，hidden设HideDisabled=true；所有实际开关均经真实Qt Item／表格复选框事件，不能用setChecked／setCheckState或直接调用槽替代。比较完整源／派生／其他行、即时dirty、Escape、隐藏后重新显示、INI／加载及退出排空。它是配置GUI基线，不新增正式MCP字段、映射或真实系统输入验收。
 
 EDIT-143：[普通Release键值更新驱动](../../mcp_bridge/tests/test_product_mapping_update.py)复用独立Item GUI的`settings_edit_gui`／[合成样例](sendinput_lifecycle/mapping_edit_fixture.ini.example)完整sources基线。参数为`--executable`自有隔离产品、`--bridge-python`锁依赖随包桥接、`--gui-baseline`本机141结果目录及`--output`全新证据目录；先按公共入口登记精确EXE／助手摘要和固定GUI动作，不用于用户实例。普通SDK／桥接执行，原manifest产品在私有桌面，GUI只配Read／Configure，验证普通／合法抬起／禁用／Common、取消／重放／陈旧引用／no-op、完整保存冷读及权限拒绝。专属凭据须初始为空，结束后只撤销该轮唯一测试配对；失败先查原请求与实际退出，不盲重放。该驱动不启动映射、不发系统输入、不证明完整GUI／MCP或真实设备等价性。

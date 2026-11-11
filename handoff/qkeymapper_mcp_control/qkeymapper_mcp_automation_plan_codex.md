@@ -1,6 +1,6 @@
 # QKeyMapper MCP 开发计划：操作等价性、阶段排期与双机交接
 
-整理日期：2026-11-10（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
+整理日期：2026-11-11（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
 
 本文件是本任务唯一的计划、进度、决策及最新交接状态来源。相关入口：[目录规则](../README.md)、[能力与等价性矩阵](capability_matrix.md)、[验证记录](validation.md)。
 
@@ -16,27 +16,33 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | EDIT-145独立disabled更新选定完成，以本片本地提交收尾停止，等待明日本机“继续”；未启动下一片 |
+| 当前切片 | EDIT-GUI-146六场原键互斥／Common确认GUI基线选定完成，准备本地提交；正式MCP仍拒绝复杂冲突 |
 | 执行机器 | PC-W11；普通Release配置、Default两后端、组件／实际ASan分别见本轮证据；Win10历史不冒充本轮复验 |
-| 目标分支／接纳点 | codex/qkeymapper-mcp-control停在本次EDIT-145提交（父0db06e9f57529394a0bc0441bd73474e682c4489，HEAD即检查点）；集成树8cc889fb保留，未push |
+| 目标分支／接纳点 | codex/qkeymapper-mcp-control为808f7e0b92fdc004874d3ae5be5a6459fbd6572b加146；集成树保留8cc889fb，未push |
 | 集成提交／路径 | e73f719b23ee1bd0df99045727acf9554f33959b，两父分别为MCP94f0bb84及固定IbInput b5b484a6；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
 | 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
 | 当前已完成 | 145独立布尔更新沿原Read＋Configure／快照／完整校验；143键值、144 GUI、137持久目标、139 Popup及138核心按各自范围保留，完整M1仍待 |
-| 当前验证 | 145双Qt组件各6pass、Python8pass、Qt6普通Release零警告、五上下文分析0诊断；八场167次正式调用、四组144全源GUI对照、22次上下文不变性及保存冷读／隐藏／互斥／Read拒绝通过，见[证据](mapping_edit_validation.md) |
-| 工作区保留 | 本片只提交已验145必要文件，最终暂存／工作区状态以Git核对和回复为准；环境／构建／所有原件保留，无其他开发切片 |
-| 当前控制器 | 本任务42036／instance2c169a62c9c54748a1b1ddfc10fdda40已按用户收尾off：closed／generation2／native0；随后status为controller=null／native0。关闭前无其他授权／活动，资源0；历史未知保留不重放 |
-| 授权边界 | 本片仅自有私有桌面真实GUI／正式MCP配置；未请求映射／系统输入，不新增Default、驱动或全局写入。开发／构建／分析普通权限；缓存已关闭，明日需要提权时再提示安排 |
-| 下一项动作 | 明日本机“继续”后从原键变更互斥／Common确认的GUI基线盘点及定稿接续，再选最小共用操作；当前未开该片。不恢复环境或重复143／144／145选验，只做必要身份／状态检查 |
+| 当前验证 | 146双Qt维护构建0、六场各60项／十二实际私有High进程120项通过，全部exit0；完整源／确认期／草稿取消／通知及INI／加载／FilterKeys／尾计数通过，详见[证据](mapping_edit_validation.md) |
+| 工作区保留 | 146仅维护GUI用例／合成夹具参数及必要记录，产品实现仍808f7e0b；环境／构建／原件全部保留 |
+| 当前控制器 | 普通30560／instance3c8b0380f4fb423587f1a67bfb617d86至2026-11-11 19:00；146两份固定授权已撤出，资源0，保留原窗口继续开发；历史未知不重放 |
+| 授权边界 | 自有私有桌面真实Qt编辑／合成冲突确认，不启映射或系统输入，不新增Default、驱动或全局写入；仅manifest启动／清理用缓存，开发／构建／观察普通权限 |
+| 下一项动作 | 147先提取原键互斥的最小纯分析，保留现有GUI写入／确认／取消顺序及其他调用方差异；用146全源／确认期／通知对照，之后才扩正式MCP冲突处理 |
 | 后续范围 | 137真实跨登录／PC重启、实际客户端接线、主动MCP连接检查／试发、普通用户多实例前台绑定、Win10可选实体／Release三包／QQ联调仍待；完整M1／M2未完成 |
-| 本机证据 | 原MCP树out/mcp_disabled145_20261110及out/mcp_product/disabled145_20261110/v1；143／144和其他历史原件保留，均仅本机，实际EXE／桌面／范围见分项证据 |
-| 提交策略 | 按本次收尾要求形成一个聚焦145本地commit后停止；不push、不合并master、不amend、不reset／clean／stash，等待用户明日继续 |
+| 本机证据 | 本轮out/mcp_original_conflict_gui_20261111；昨日145及其他原件保留，仅本机，不复跑未受影响门槛 |
+| 提交策略 | 自选聚焦本地commit，不push；按用户2026-11-11继续指令持续推进同一计划，直到明确收尾，不合并master或覆盖其他现场 |
+
+### EDIT-GUI-146：原键互斥与Common确认GUI基线（选定完成）
+
+复用Item真实双击／字符／Update／模态按钮／Escape，选同表重复、普通行受有效Common约束、Common原键变更的No／Yes及初始禁用Common的No／Yes六场。比较完整所有源／派生、草稿取消、禁用通知、dirty／加载／INI和退出；同时观察确认期间状态。源码autoDisableRowIfExclusiveGroupConflict即使showPopup=false也可能询问并修改他行，不可充纯预览。
+
+双Qt维护b01 native0，六场各60项／共120项、十二实际私有High进程exit0；完整源、确认期／No草稿／Yes禁用、通知、INI／加载／FilterKeys及尾work／producers0通过，无失败轮次。产品／MCP／TS/QM未改，无Default／系统输入、驱动或全局写入，未加普通Release／静态／ASan完整门槛。两份授权撤出、资源0，原19:00窗口保留；[版本与证据](mapping_edit_validation.md#edit-gui-146原键互斥与common确认gui基线)，原件仅本机out/mcp_original_conflict_gui_20261111。
 
 ### EDIT-145：独立禁用字段更新（选定完成，本机停止）
 
 在既有mapping.update增加可选disabled布尔值，须独立于键值／发送方式更新；不新建工具／权限，仍Read＋Configure、当前可见源、完整快照／偏好修订／清理许可及执行前复核。候选复制真实行，启用若按既有互斥分析需禁用他行或Common优先回退／确认，明确unsupported_capability且零修改；本片不承接复杂冲突决策。沿GUI共用完整候选校验，提交只改Disabled、原显示刷新和dirty，不隐式保存或开始；同值不推进修订。隐藏后不能继续写该行，须用户明确显示，不自动改筛选。
 
-复用144两入口四组完整sources，选双Qt参数／存储及stdio schema，Qt6普通Release／锁依赖桥接的真实GUI配对与正式预览／取消／提交／重放／旧引用／no-op、四组对照、完整保存冷读、同表／Common互斥和Read拒绝；定向分析主窗／协议文件。无新所有权／Worker路径，不加ASan完整门禁。全部自有私有桌面、合成INI／专属配对；仅manifest／固定GUI用原19:00缓存，开发／桥接／构建／分析普通权限。无需Default，无系统输入、映射、驱动安装或全局写入；预计45–75分钟，缺口如实记录。
+145选定双Qt组件、stdio schema、Qt6普通Release／随包桥接、144全源对照、保存冷读与拒绝及定向分析；全部自有私有配置，不新增Default／输入／驱动／全局写入。源、精确结果和限制见分项证据；未选未改Worker／ASan完整门槛。
 
 2026-11-10选定检查全过，无产品失败轮次；八产品exit0、八普通桥接不再存活，配对／凭据清理，FilterKeys不变，固定授权与资源归零后按用户要求关闭缓存并复核。实际源码／EXE、167次正式调用、四组GUI对照、22次上下文检查及未验范围见[145证据](mapping_edit_validation.md#edit-145独立禁用字段正式接线)。实现及选验约半小时，收尾另计；本片提交后停止，不启动下一片，等待明日本机继续。
 

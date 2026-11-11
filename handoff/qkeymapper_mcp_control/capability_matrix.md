@@ -12,6 +12,8 @@ EDIT-143扩展原mapping.update合同，工具／能力数及Read＋Configure不
 
 EDIT-145在同一合同增加独立disabled布尔字段，不与键值／发送方式混用；false只启用行、不开始映射。启用若会按原互斥规则改他行或触发Common确认／回退，明确拒绝且零修改。候选复用现有完整结构校验，提交刷新与dirty；同值不推进源修订，隐藏后继续写仍拒绝，不自动改筛选。144原Item与表格完整GUI基线和145实际范围分别见同页证据，工具／能力仍17／23，完整互斥与M1尚未完成。
 
+EDIT-GUI-146建立原Item原键冲突的独立GUI基线，未放开正式MCP冲突更新。Common初始禁用仍会询问并可禁用普通冲突行；No恢复模型并保留草稿，内部确认期可见临时原键。`autoDisableRowIfExclusiveGroupConflict(...,false,...)`仍可能弹Common确认并写他行，不能作纯预览。双Qt六场及边界见[分项证据](mapping_edit_validation.md#edit-gui-146原键互斥与common确认gui基线)。
+
 日期：2026-10-28；初始源码基线：`d49a9f57`。**逐控件入口及68条关键链路已盘点。通信／配对、选定状态／目录／源查询／帮助已接；MAP-67-B1增加基本映射内存添加预览／提交／取消／结果查询，SAVE-95接保存只读预览、SAVE-97接完整范围／覆盖确认后的正式保存提交与分段结果，当前共15工具、14项业务能力（107增加windows.read，108增加windows.capture，109／110增加mapping.editor.open／close）。完整增改删、完整保存生命周期、MCP启停及全量GUI等价性仍未完成。** Python字节锁与PC-W11接续见ENV-39，缓存见CACHE-40／CACHE72；入口和链路数量不等于已支持能力数。
 
 UI-73：新增MCP界面及4项主窗口提示已接英文tr／正式三语言QM，NoFocus／ClickFocus遵循用户选择；双Qt各36项、实际产品类双Qt三语言66项及私有截图见[本片证据](ui_localization_validation.md)。仅UI与资源，不新增工具、业务能力或运行态编辑许可；High／Default／Win11边界另列。

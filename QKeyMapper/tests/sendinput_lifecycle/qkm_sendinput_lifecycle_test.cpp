@@ -108,6 +108,7 @@ public:
     static QJsonObject tableState(QKeyMapper *mapper);
     static QJsonObject mappingEditGui(QKeyMapper *mapper);
     static QJsonObject mappingDisabledGui(QKeyMapper *mapper);
+    static QJsonObject mappingOriginalConflictGui(QKeyMapper *mapper);
     static QJsonObject mappingRemovalGui(QKeyMapper *mapper);
     static QJsonObject mappingRemovalShared(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
@@ -1323,6 +1324,13 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("settings_original_conflict_gui")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper::getInstance());
+            QTimer::singleShot(2000, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2772,6 +2780,147 @@ QJsonObject QkmMappingAdditionTestAccess::windowMatchSave(QKeyMapper *mapper, bo
     return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
         {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
+QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper *mapper)
+{
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks, notifications;
+    const auto check = [&](bool value, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), value}});
+        passed = passed && value;
+    };
+    const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
+    const QStringList variants{QStringLiteral("normal_duplicate"), QStringLiteral("normal_common"),
+        QStringLiteral("common_no"), QStringLiteral("common_yes"), QStringLiteral("common_disabled_no"), QStringLiteral("common_disabled_yes")};
+    if (!mapper || !variants.contains(variant)) return {{QStringLiteral("passed"), false}};
+    const bool common = variant.startsWith(QStringLiteral("common_"));
+    const bool cancelled = common && variant.endsWith(QStringLiteral("_no"));
+    const bool initiallyDisabled = variant.startsWith(QStringLiteral("common_disabled_"));
+    const QString newOriginal = variant == QStringLiteral("normal_common") ? QStringLiteral("E") : QStringLiteral("C");
+    const auto click = [](QWidget *target, const QPoint &point, bool twice = false) {
+        const QPointF top = target->mapTo(target->window(), point), screen = target->mapToGlobal(point);
+        for (const auto type : {QEvent::MouseButtonPress, QEvent::MouseButtonRelease,
+                               QEvent::MouseButtonDblClick, QEvent::MouseButtonRelease}) {
+            if (!twice && type == QEvent::MouseButtonDblClick) break;
+            QMouseEvent event(type, point, top, screen, Qt::LeftButton,
+                type == QEvent::MouseButtonRelease ? Qt::NoButton : Qt::LeftButton, Qt::NoModifier);
+            QCoreApplication::sendEvent(target, &event);
+        }
+    };
+    const auto key = [](QObject *target, int code, Qt::KeyboardModifiers modifiers = Qt::NoModifier, const QString &text = QString()) {
+        QKeyEvent press(QEvent::KeyPress, code, modifiers, text), release(QEvent::KeyRelease, code, modifiers, text);
+        QCoreApplication::sendEvent(target, &press); QCoreApplication::sendEvent(target, &release);
+    };
+    const auto edit = [&](QLineEdit *line, const QString &text) {
+        click(line, line->rect().center()); key(line, Qt::Key_A, Qt::ControlModifier);
+        for (QChar ch : text) key(line, ch.unicode(), Qt::ShiftModifier, QString(ch));
+    };
+    const auto patch = [](QJsonArray &sources, int tab, int row, const QString &part, const QJsonObject &values) {
+        auto source = sources.at(tab).toObject(); auto rows = source.value(QStringLiteral("rows")).toArray();
+        auto item = rows.at(row).toObject(); auto fields = item.value(part).toObject();
+        for (auto it = values.constBegin(); it != values.constEnd(); ++it) fields.insert(it.key(), it.value());
+        item.insert(part, fields); rows[row] = item; source.insert(QStringLiteral("rows"), rows); sources[tab] = source;
+    };
+    const auto disk = [] { QFile file(QString::fromLatin1(CONFIG_FILENAME));
+        return file.open(QIODevice::ReadOnly) ? file.readAll() : QByteArray(); };
+    const QByteArray ini = disk();
+    const quint64 load = mapper->m_MappingLoadGeneration;
+    const int target = common ? QKeyMapper::findCommonMappingTabIndex() : QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    if (common) {
+        auto *tabs = mapper->findChild<QTabWidget *>(QStringLiteral("keyMappingTabWidget"));
+        if (!tabs || target < 0) return {{QStringLiteral("passed"), false}};
+        click(tabs->tabBar(), tabs->tabBar()->tabRect(target).center());
+    }
+    QString error;
+    const auto before = mapper->collectAutomationSourceSnapshot(error);
+    const auto sources = before.value(QStringLiteral("sources")).toArray();
+    if (!error.isEmpty() || sources.size() != 2 || target < 0 || target >= sources.size()
+        || !QKeyMapper::KeyMappingDataList || QKeyMapper::KeyMappingDataList->size() != 2)
+        return {{QStringLiteral("passed"), false}};
+    const auto old = QKeyMapper::KeyMappingDataList->first();
+    check(!ini.isEmpty() && mapper->m_LoadedMappingSettingGroup == QStringLiteral("Edit141Seed")
+        && mapper->m_KeyMapStatus == QKeyMapper::KEYMAP_IDLE && !mapper->m_SaveSettingDirty
+        && QKeyMapper::s_KeyMappingTabWidgetCurrentIndex == target, "startup selects the dedicated clean idle source");
+    check(old.Original_Key == (common ? QStringLiteral("F13") : QStringLiteral("A"))
+        && old.Mapping_Keys == QStringList{QStringLiteral("B")} && old.Disabled == initiallyDisabled
+        && old.SendMappingKeyMethod == 3 && sources.first().toObject().value(QStringLiteral("include_common")).toBool()
+            == (variant != QStringLiteral("normal_duplicate")), "the fixture has the intended independent target and Common policy");
+    if (!passed) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}, {QStringLiteral("before"), before}};
+    auto *table = mapper->m_KeyMappingDataTable;
+    if (!table || table->isRowHidden(0)) return {{QStringLiteral("passed"), false}};
+    click(table->viewport(), table->visualRect(table->model()->index(0, ORIGINAL_KEY_COLUMN)).center(), true);
+    auto *dialog = mapper->m_ItemSetupDialog;
+    auto *original = dialog->findChild<QLineEdit *>(QStringLiteral("originalKeyLineEdit"));
+    auto *mapping = dialog->findChild<QLineEdit *>(QStringLiteral("SetupDialog_MappingKeyLineEdit"));
+    auto *update = dialog->findChild<QPushButton *>(QStringLiteral("updateMappingInfoButton"));
+    const auto close = qScopeGuard([&] { if (dialog->isVisible()) key(dialog, Qt::Key_Escape); });
+    if (!dialog->isVisible() || !original || !mapping || !update) return {{QStringLiteral("passed"), false}};
+    check(mapper->collectAutomationSourceSnapshot(error) == before && error.isEmpty(), "real double click opens the original source without changes");
+    edit(original, newOriginal); edit(mapping, QStringLiteral("Z"));
+    check(mapper->collectAutomationSourceSnapshot(error) == before && error.isEmpty() && !mapper->m_SaveSettingDirty,
+        "real original and mapping key input remain an uncommitted draft");
+    const auto connection = QObject::connect(mapper, &QKeyMapper::keyMappingTableItemCheckStateChanged_Signal,
+        mapper, [&](int row, int column, bool checked) {
+            notifications.append(QJsonObject{{QStringLiteral("row"), row}, {QStringLiteral("column"), column}, {QStringLiteral("checked"), checked}});
+        });
+    const auto unwatch = qScopeGuard([&] { QObject::disconnect(connection); });
+    QJsonObject during, confirmation;
+    QJsonValue dirtyDuring;
+    int replies = 0;
+    QTimer answer;
+    QObject::connect(&answer, &QTimer::timeout, mapper, [&] {
+        auto *box = qobject_cast<QMessageBox *>(QApplication::activeModalWidget());
+        if (!box || box->parentWidget() != mapper || box->windowTitle() != QString::fromLatin1(PROGRAM_NAME)
+            || !box->button(QMessageBox::Yes) || !box->button(QMessageBox::No)
+            || !box->text().contains(newOriginal) || !box->text().contains(QStringLiteral("Normal"))) return;
+        answer.stop(); ++replies;
+        confirmation = {{QStringLiteral("default_no"), box->defaultButton() == box->button(QMessageBox::No)},
+            {QStringLiteral("owned_parent"), true}, {QStringLiteral("text"), box->text()}};
+        during = mapper->collectAutomationSourceSnapshot(error);
+        dirtyDuring = mapper->m_SaveSettingDirty;
+        click(box->button(cancelled ? QMessageBox::No : QMessageBox::Yes), box->button(cancelled ? QMessageBox::No : QMessageBox::Yes)->rect().center());
+    });
+    answer.start(10);
+    click(update, update->rect().center());
+    answer.stop();
+    const auto after = mapper->collectAutomationSourceSnapshot(error);
+    check(error.isEmpty() && replies == (common ? 1 : 0), "only a Common original-key conflict asks for its real modal decision");
+    if (common) {
+        auto tentative = sources;
+        patch(tentative, target, 0, QStringLiteral("fields"), {{QString::fromLatin1(KEYMAPDATA_ORIGINALKEYS), newOriginal}});
+        check(during.value(QStringLiteral("sources")).toArray() == tentative && dirtyDuring == QJsonValue(false)
+            && confirmation.value(QStringLiteral("default_no")).toBool(),
+            "the original GUI exposes its tentative original key before a default-No decision, with other rows and dirty unchanged");
+    }
+    auto expected = sources;
+    if (!cancelled) {
+        patch(expected, target, 0, QStringLiteral("fields"), {
+            {QString::fromLatin1(KEYMAPDATA_ORIGINALKEYS), newOriginal}, {QString::fromLatin1(KEYMAPDATA_MAPPINGKEYS), QJsonArray{QStringLiteral("Z")}},
+            {QString::fromLatin1(KEYMAPDATA_MAPPINGKEYS_COMMENTS), QJsonArray{QString()}},
+            {QString::fromLatin1(KEYMAPDATA_DISABLED), initiallyDisabled || !common}});
+        patch(expected, target, 0, QStringLiteral("derived"), {{QStringLiteral("pure_mapping_keys"), QJsonArray{QStringLiteral("Z")}}});
+        if (common) patch(expected, 0, 1, QStringLiteral("fields"), {{QString::fromLatin1(KEYMAPDATA_DISABLED), true}});
+    }
+    check(after.value(QStringLiteral("sources")).toArray() == expected,
+        "the final original, mapping, disabled patches and every other source field and derived sample match the actual decision");
+    check(notifications.size() == (cancelled ? 0 : 1) && (notifications.isEmpty()
+        || (notifications.first().toObject().value(QStringLiteral("column")).toInt() == DISABLED_COLUMN
+            && notifications.first().toObject().value(QStringLiteral("checked")).toBool())),
+        "only the accepted disable emits one actual checkbox notification");
+    check(mapper->m_SaveSettingDirty == !cancelled && mapper->m_MappingLoadGeneration == load && disk() == ini,
+        "accepted decisions dirty only memory; refusal, load generation and disk retain their original state");
+    if (cancelled) check(after == before && original->text() == newOriginal && mapping->text() == QStringLiteral("Z"),
+        "No restores the complete model and dirty while retaining both user drafts for review");
+    key(dialog, Qt::Key_Escape);
+    check(!dialog->isVisible() && mapper->collectAutomationSourceSnapshot(error) == after && error.isEmpty() && disk() == ini,
+        "Escape preserves the final accepted or refused model and disk");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
+        {QStringLiteral("before"), before}, {QStringLiteral("after"), after}, {QStringLiteral("during_confirmation"), common ? QJsonValue(during) : QJsonValue()},
+        {QStringLiteral("dirty_during_confirmation"), dirtyDuring}, {QStringLiteral("confirmation"), confirmation},
+        {QStringLiteral("replies"), replies}, {QStringLiteral("notifications"), notifications},
+        {QStringLiteral("target_source"), target}, {QStringLiteral("formal_mcp_update"), false}};
 }
 
 QJsonObject QkmMappingAdditionTestAccess::mappingDisabledGui(QKeyMapper *mapper)
@@ -6411,6 +6560,7 @@ int main(int argc, char *argv[])
         QStringLiteral("settings_prepared_save"), QStringLiteral("settings_save_preview"), QStringLiteral("settings_save_execution"),
         QStringLiteral("settings_save_apply"), QStringLiteral("settings_save_gui"), QStringLiteral("settings_remove_gui"),
         QStringLiteral("settings_remove_shared"), QStringLiteral("settings_edit_gui"), QStringLiteral("settings_disabled_gui"),
+        QStringLiteral("settings_original_conflict_gui"),
         QStringLiteral("demo_management_probe")};
     bool knownCase = cases.contains(mode);
     for (const auto &spec : repeatSpecs()) { knownCase = knownCase || mode == spec.name; }
