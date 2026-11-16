@@ -1,5 +1,7 @@
 # 验证记录与证据索引
 
+EDIT-148普通原键冲突本行禁用的实际源码、普通Release、GUI数据对照、拒绝及收尾见[编辑证据](mapping_edit_validation.md#edit-148普通原键冲突仅禁用本行)。
+
 EDIT-147共用纯冲突分析的实际版本、双Qt对照、普通Release及遗漏见[编辑证据](mapping_edit_validation.md#edit-147共用纯冲突分析)。
 
 [返回唯一计划与进度](qkeymapper_mcp_automation_plan_codex.md) · [能力与等价性矩阵](capability_matrix.md) · [目录规则](../README.md)

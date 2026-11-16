@@ -178,3 +178,33 @@ v3的normal及cold已完整结束：普通行完整sources前后与141的qt6-nor
 定向Clang-Tidy／Clazy仅主qkeymapper.cpp、普通／sendinput-lifecycle两个真实编译上下文；脚本exit0、各工具非零退出0、项目诊断0。原件static-b01含summary.txt；未增加未变协议／Worker全矩阵或ASan。原GUI冲突函数及主文件两处调用、Item第三处调用逐字保持。本轮GUI／产品无失败轮次；普通事后桥接核对初次用未安装项目包的开发venv报ModuleNotFoundError，随后用原已核验随包Python -I检查成功，没有重启或重放产品动作。最初GUI调用计数核对把两个主文件调用和一个外部Item调用误按三个主文件调用计数，已按实际2＋1修正；不构成产品失败。
 
 普通控制器30560／instance3c8b0380f4fb423587f1a67bfb617d86保持既有2026-11-11 19:00期限，147三份固定权限已撤出，owned／unresolved／pending及action／job为0／空，剩余授权0。缓存继续开发未off，历史未知不接管或重放。未执行新的Default／系统输入／映射／驱动／全局设置、Win10／高DPI／截图或三语视觉、Qt5普通Release正式MCP、冷读重启／跨登录、完整M1或设备验收；保存冷读／schema等复用145原范围，不能相加称本轮通过。
+
+## EDIT-148：普通原键冲突仅禁用本行
+
+2026-11-11、PC-W11、同一Windows登录，源码898af7984bce7c64b617f507dbae8a2f7fa616b2加本片差异。产品主文件仅3增／2删，复用147纯分析，将普通原键同表重复／有效Common优先时的Disabled=true纳入当前候选；预览原before／after清楚列出实际flag差异，不弹窗或写源。取消保持，提交沿完整候选校验、源／权限／实例／生命周期／编辑窗守卫及执行前复核，仅当前行／dirty，其他行／Common不变，不隐式保存或开始。涉及他行或Common本行冲突禁用仍明确unsupported_capability，独立disabled启用守卫未改；无新请求字段、工具、权限／TS/QM或桥接运行码，17／23不变。GUI原函数和三个调用方未改。
+
+选定Qt6普通Release七场及主文件两编译上下文定向分析；本片没有新Qt版本API，147未变纯分析／六场双QtGUI和兼容构建、145组件schema／保存冷读只复用原范围，不冒充本轮重跑。Qt6 b01普通增量构建脚本通过（子进程ExitCode=0守卫后报告成功、外层进程exit0）、零编译／链接警告。维护目标、Worker、实际ASan或完整设备／核心矩阵不在本片门槛。
+
+### 148 实际场景与清理
+
+以下为2026-11-11实际运行，2026-11-16只读核对留存原件后补记，不是11-16重新运行验收。实际Qt6普通Release副本out/mcp_product/self_disabled148_20261111/runtime-中文/QKeyMapperMcpAcceptance_selfdisabled148_qt6.exe，SHA256=9b4988e7f4d400a9fdef667f8d7ba284e513ee2e7edcf1d83239d0cea4640756。六厂商DLL与仓库匹配，仅取同PC自有137副本DLL／Qt插件，无个人INI或凭据；保留原manifest。复用145桥接ZIP（SHA256=2b3f13e5a5f74ecedd4351142b6999be1c7061899948be4373dd82c0daf5db14），九个运行源码逐字核对，SDK／桥接8192、产品12288，同登录、真实QkmProduct_*私有桌面，GUI只批Read＋Configure，专属凭据初始为空。
+
+| 场景 | PID | 调用 | 实际结果 |
+|---|---:|---:|---|
+| normal | 9920 | 31 | 141完整数据、取消／提交／重放／旧引用／no-op及显式保存通过 |
+| key_normal_conflict | 21320 | 34 | C→Z且本行禁用，其他行保持，完整数据与146同表GUI一致 |
+| key_common_priority | 27644 | 34 | E→Z受有效Common约束而禁用，完整数据与146普通行GUI一致 |
+| key_conflict_hidden | 30756 | 33 | 数据与146同表基线一致，隐藏后新引用写请求invalid_target，不自动重显 |
+| common_conflict | 31664 | 9 | 启用Common原键影响普通行，unsupported_capability、零修改 |
+| common_conflict_disabled | 11528 | 9 | 初始禁用Common仍影响普通行，unsupported_capability、零修改 |
+| common_self_conflict | 5832 | 9 | 普通表不附加Common，但Common同表冲突禁用范围未开放，明确拒绝 |
+
+七场159正式调用、19次完整source_snapshot不变性（含dirty／加载）通过。四场完整源数据对照为141普通正例、146两组独立GUI及隐藏场沿146同表数据；隐藏场仅改合成INI的HideDisabled，复用144原GUI行为并核本轮实际isRowHidden写许可拒绝，不声称新建独立GUI隐藏冲突基线。三个新正例的预览明确before.Disabled=false／after.Disabled=true；取消保持源／INI，提交未保存／开始，重放不再改，旧引用拒绝，同值不推进；隐藏场用引用拒绝替代no-op。新三场均显式完整保存成功，正式重载查询完整数据相同，只有加载后的pure_original_keys按新原键重建，保留各saved-keymapdata.ini。这是同进程保存重载，不是本片冷启动；三Common拒绝全源／INI不变。
+
+七产品实际exit0，每场GUI撤销唯一测试配对至0、停接口，CredentialStore.forget后load为空。七普通桥接均不再存活；未取得的native_exit_code记null，不据进程缺失推算。FilterKeys逐场前后相等，无映射启动或系统输入请求。拓扑／GUI／权限、159调用、数据对照、合成INI及退出在out/mcp_product/self_disabled148_20261111/v1；构建／部署／汇总和bridge-cleanup在out/mcp_self_disabled148_20261111。定向Clang-Tidy／Clazy实际主文件普通与sendinput-lifecycle两个编译上下文，工具非零退出0、项目诊断0。GUI原函数／三个调用方未改，没有产品或分析失败轮次；事后聚合脚本运行前纠正两个复制误改的期望字面值，未重放产品／原生动作。
+
+11-11撤出本片1份固定授权后scope空、owned／unresolved／pending0、action／job空，无其他共享授权；16:49:11按技能off普通控制器30560／instance3c8b0380f4fb423587f1a67bfb617d86，响应closed／cache_available=false／native0，独立status controller=null／native0。原19:00窗口提前关闭，历史未知不接管／重放；cache-before-off／cache-off／cache-after-off／cache-shutdown.json保留本机，关闭缓存和实际产品退出分别核验，不把off当作历史未知已经解决。
+
+11-11最终文档写入因自动审批额度错误未执行，因此没有形成148提交。11-16以实际HEAD898af798及七个既有改动接续：核对完整留存结果、匹配EXE及源码唯一3增／2删差异，暂存区原为空，不重建环境／构建／运行产品／重复验收。今日只补齐收尾记录与聚焦本地提交。按用户请求新申请截至11-16 19:00的缓存，普通35160／instance b838e3bc3a094d51bde65ead1f799068，未登记或派发测试；今日10:15:14按技能off，响应closed／缓存不可用／native0，独立status controller=null／native0；scope及owned／unresolved／pending均0，无其他共享活动，历史未知保留。今日未启动任何产品，原件在同一out下close-20261116。
+
+本片未执行新Default／前台、真实输入／映射、驱动安装或全局写入、Win10／高DPI／三语截图、Qt5新普通产品MCP、独立冷启动／跨登录、完整M1／设备验收。137持久、145冷读／schema、147兼容／纯分析仅沿原范围复用，原件全部仅本机out。Common多行确认后续未启动；148稳定提交后暂停MCP，等待用户另行安排master两项Bug，再明确恢复MCP。

@@ -38567,10 +38567,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                         reject(QStringLiteral("context_busy"), QStringLiteral("The source row is no longer available."));
                         return;
                     }
-                    if (analysis.disableCurrentRow || !analysis.disableOtherRows.isEmpty()) {
-                        reject(QStringLiteral("unsupported_capability"), QStringLiteral("Original-key updates that disable rows or require conflict confirmation are not supported; resolve this change in the GUI."));
+                    if (!analysis.disableOtherRows.isEmpty() || (analysis.disableCurrentRow && isCommonMappingTabIndex(tab))) {
+                        reject(QStringLiteral("unsupported_capability"), QStringLiteral("Original-key updates that change other rows or disable a conflicting Common row are not supported; resolve this change in the GUI."));
                         return;
                     }
+                    after.Disabled = after.Disabled || analysis.disableCurrentRow;
                 }
             }
             QHash<int, QList<MAP_KEYDATA>> overrides{{tab, *KeyMappingDataList}};

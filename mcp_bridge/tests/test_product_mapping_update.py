@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parents[2]
 CASES = ("normal", "cold", "normal_clear_up", "disabled", "common", "common_conflict", "complex", "read")
 FLAG_CASES = ("flag_normal", "flag_cold", "flag_disabled", "flag_common", "flag_hidden", "flag_conflict", "flag_common_conflict", "flag_read")
 
-GUARD_CASES = ("key_normal_conflict", "key_common_priority")
+SELF_DISABLE_CASES = ("key_normal_conflict", "key_common_priority", "key_conflict_hidden")
+GUARD_CASES = ("common_conflict_disabled", "common_self_conflict")
 
 
 async def run(args):
@@ -37,6 +38,8 @@ async def run(args):
     assert args.gui_baseline.is_relative_to(ROOT / "out")
     if any(phase in FLAG_CASES for phase in phases):
         assert args.disabled_gui_baseline and args.disabled_gui_baseline.is_relative_to(ROOT / "out")
+    if any(phase in SELF_DISABLE_CASES for phase in phases):
+        assert args.original_conflict_gui_baseline and args.original_conflict_gui_baseline.is_relative_to(ROOT / "out")
     args.output.mkdir(parents=True, exist_ok=False)
     ini = args.executable.parent / "keymapdata.ini"
     seed = (ROOT / "QKeyMapper/tests/sendinput_lifecycle/mapping_edit_fixture.ini.example").read_bytes()
@@ -140,26 +143,26 @@ async def run(args):
                         disabled=False), error="unsupported_capability")
                     assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
                     return
-                if phase in GUARD_CASES:
-                    original = "E" if phase == "key_common_priority" else "C"
-                    await request(client, phase, "qkm_preview_changes", dict(action="mapping.update", source_ref=target,
-                        original_key=original), error="unsupported_capability")
-                    assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
-                    return
-                if not flag and phase in ("common_conflict", "complex"):
+                if not flag and phase in ("common_conflict", "complex", *GUARD_CASES):
                     if phase == "complex":
                         assert before[index]["rows"][0]["fields"]["KeyMapData_MappingKeys"] == ["B", "D"]
                     await request(client, phase, "qkm_preview_changes", dict(action="mapping.update", source_ref=target,
                         original_key="C"), error="unsupported_capability")
                     assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
                     return
-                baseline_path = (args.disabled_gui_baseline / ("qt6-" + variant + "-01/case.json") if flag
-                    else args.gui_baseline / ("qt6-" + phase + "-02/case.json"))
+                if phase in SELF_DISABLE_CASES:
+                    gui_variant = "normal_common" if phase == "key_common_priority" else "normal_duplicate"
+                    baseline_path = args.original_conflict_gui_baseline / ("qt6-" + gui_variant + "-01/case.json")
+                else:
+                    baseline_path = (args.disabled_gui_baseline / ("qt6-" + variant + "-01/case.json") if flag
+                        else args.gui_baseline / ("qt6-" + phase + "-02/case.json"))
                 assert baseline_path.stat().st_size <= 2 * 1024 * 1024
                 baseline = json.loads(baseline_path.read_bytes())["settingsGeneral"]
                 assert before == baseline["before"]["sources"], "Stock input must match the independent GUI input."
                 fields = (dict(disabled=not before[index]["rows"][0]["fields"]["KeyMapData_Disabled"]) if flag
                     else dict(original_key="E", mapping_key="C"))
+                if phase in SELF_DISABLE_CASES:
+                    fields = dict(original_key="E" if phase == "key_common_priority" else "C", mapping_key="Z")
                 change = dict(action="mapping.update", source_ref=target, **fields)
                 if not flag:
                     if phase == "normal_clear_up":
@@ -168,6 +171,11 @@ async def run(args):
                         await request(client, phase, "qkm_preview_changes", dict(action="mapping.update", source_ref=target,
                             key_up_mapping_key=""), error="invalid_mapping")
                 preview = (await request(client, phase, "qkm_preview_changes", change))["result"]
+                if phase in SELF_DISABLE_CASES:
+                    described = preview["description"]["changes"][0]
+                    assert not described["before"]["fields"]["KeyMapData_Disabled"]
+                    assert described["after"]["fields"]["KeyMapData_Disabled"]
+                    assert described["after"]["fields"]["KeyMapData_OriginalKeys"] == fields["original_key"]
                 assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
                 await request(client, phase, "qkm_cancel_changes", dict(preview_id=preview["preview_id"]))
                 assert (await snapshot(client, phase))[0] == before
@@ -184,7 +192,7 @@ async def run(args):
                     ("operation_id", "status", "target", "sampled_at_utc", "result_known", "persistence"))
                 assert (await snapshot(client, phase))[0] == after
                 await request(client, phase, "qkm_preview_changes", change, error="stale_source")
-                if flag and variant == "hidden":
+                if (flag and variant == "hidden") or phase == "key_conflict_hidden":
                     await request(client, phase, "qkm_preview_changes", dict(action="mapping.update",
                         source_ref=next_refs[index][0]["source_ref"], disabled=False), error="invalid_target")
                     assert (await snapshot(client, phase))[0] == after
@@ -211,8 +219,8 @@ async def run(args):
                     assert (await snapshot(client, phase))[0] == after
                 gui = await product.action("ReadMapping")
                 assert gui["mapping_button_text"] == "映射开始"
-                if not flag:
-                    assert gui["mapping_rows"][0] == dict(original="E", mapping="C")
+                if not flag and phase != "key_conflict_hidden":
+                    assert gui["mapping_rows"][0] == dict(original=fields["original_key"], mapping=fields["mapping_key"])
                 (product.output / "gui-comparison.json").write_text(json.dumps(dict(before=True, after=True,
                     baseline=str(baseline_path), fields=after[index]["rows"][0]), ensure_ascii=False, indent=2), encoding="utf-8")
                 if flag and variant in ("disabled", "common"):
@@ -221,12 +229,18 @@ async def run(args):
                         source_ref=current_refs[index][0]["source_ref"], disabled=before[index]["rows"][0]["fields"]["KeyMapData_Disabled"])))["result"]
                     await request(client, phase, "qkm_apply_changes", dict(preview_id=restored["preview_id"]))
                     assert (await snapshot(client, phase))[0] == baseline["after_table"]["sources"]
-                if variant == "normal":
+                if variant == "normal" or phase in SELF_DISABLE_CASES:
                     saved = (await request(client, phase, "qkm_preview_changes", dict(action="configuration.save",
                         setting_name="Edit141Seed")))["result"]
                     result = (await request(client, phase, "qkm_apply_changes", dict(preview_id=saved["preview_id"],
                         confirm_scope=True)))["result"]
                     assert result["status"] == "applied" and result["result"]["saved"] and result["result"]["reloaded"]
+                    if phase in SELF_DISABLE_CASES:
+                        reloaded, _, _ = await snapshot(client, phase)
+                        expected = deepcopy(after)
+                        expected[index]["rows"][0]["derived"]["pure_original_keys"] = [fields["original_key"]]
+                        assert reloaded == expected, "Save/reload must retain the complete candidate and recompute only the loaded original-key sample."
+                        (product.output / "saved-keymapdata.ini").write_bytes(ini.read_bytes())
                     warm.update(instance=authenticated["instance"], row=after[index]["rows"][0], revision=after_revision,
                         source_tab_ref=next_refs[index][0]["source_tab_ref"], operation=preview["preview_id"])
         finally:
@@ -272,6 +286,13 @@ async def run(args):
                 if phase == "key_common_priority":
                     payload = payload.replace(b"MappingTable_TabIncludeCommonList=OFF, OFF", b"MappingTable_TabIncludeCommonList=ON, OFF")
                     payload = payload.replace(b"KeyMapData_OriginalKeys=A#C|F13#F14", b"KeyMapData_OriginalKeys=A#C|E#F14")
+                if phase == "key_conflict_hidden":
+                    payload = payload.replace(b"HideDisabled=false\n", b"HideDisabled=true\n")
+                if phase == "common_conflict_disabled":
+                    payload = payload.replace(b"MappingTable_TabIncludeCommonList=OFF, OFF", b"MappingTable_TabIncludeCommonList=ON, OFF")
+                    payload = payload.replace(b"KeyMapData_SendMappingKeyMethod=", b"KeyMapData_Disabled=OFF#OFF|ON#OFF\nKeyMapData_SendMappingKeyMethod=")
+                if phase == "common_self_conflict":
+                    payload = payload.replace(b"KeyMapData_OriginalKeys=A#C|F13#F14", b"KeyMapData_OriginalKeys=A#C|F13#C")
                 ini.write_bytes(payload)
             output = args.output / phase
             output.mkdir()
@@ -290,7 +311,7 @@ async def run(args):
                     assert integrity(handle) == 8192
             completed.append(phase)
             (args.output / "completed-phases.json").write_text(json.dumps(completed), encoding="utf-8")
-    compared = sum(phase in ("normal", "normal_clear_up", "disabled", "common", "flag_normal", "flag_disabled", "flag_common", "flag_hidden") for phase in completed)
+    compared = sum(phase in ("normal", "normal_clear_up", "disabled", "common", "flag_normal", "flag_disabled", "flag_common", "flag_hidden") or phase in SELF_DISABLE_CASES for phase in completed)
     (args.output / "passed.json").write_text(json.dumps(dict(completed=completed, gui_baselines=compared,
         tools=17, business_capabilities=23, mapping_started=False, system_input_injected=False,
         bridge_peers=peers), ensure_ascii=False, indent=2), encoding="utf-8")
@@ -304,5 +325,6 @@ if __name__ == "__main__":
     parser.add_argument("--gui-baseline", type=lambda value: Path(value).resolve(strict=True), required=True)
     parser.add_argument("--output", type=lambda value: Path(value).resolve(), required=True)
     parser.add_argument("--disabled-gui-baseline", type=lambda value: Path(value).resolve(strict=True))
-    parser.add_argument("--case", nargs="+", choices=(*CASES, *FLAG_CASES, *GUARD_CASES), help="Run selected cases; each cold requires its normal case earlier in the same run.")
+    parser.add_argument("--original-conflict-gui-baseline", type=lambda value: Path(value).resolve(strict=True))
+    parser.add_argument("--case", nargs="+", choices=(*CASES, *FLAG_CASES, *SELF_DISABLE_CASES, *GUARD_CASES), help="Run selected cases; each cold requires its normal case earlier in the same run.")
     asyncio.run(run(parser.parse_args()))

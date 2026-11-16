@@ -4,13 +4,15 @@
 
 ## 当前状态与填写规则
 
-EDIT-147共用原键候选纯冲突分析供两处MCP拒绝判断；GUI原确认／写入入口保持。它不增加工具／权限或开放冲突编辑，原143／145支持范围不变；分析及回归事实见[同一编辑证据](mapping_edit_validation.md#edit-147共用纯冲突分析)。
+EDIT-148接续147：普通当前行原键因同表重复或有效Common优先而仅需禁用本行时，候选沿原GUI置Disabled=true并在预览before／after列出；取消不改、提交仅内存／dirty，保存仍独立。影响他行、Common自身冲突禁用／确认仍拒绝，独立disabled启用边界不变，17工具／23能力及Read＋Configure不变。143／147当时的本行冲突拒绝边界由此有界替代；精确验证与遗漏见[编辑证据](mapping_edit_validation.md#edit-148普通原键冲突仅禁用本行)。
+
+EDIT-147当时共用原键候选纯冲突分析供两处MCP拒绝判断；GUI原确认／写入入口保持。它不增加工具／权限或开放冲突编辑，原143／145支持范围不变；分析及回归事实见[同一编辑证据](mapping_edit_validation.md#edit-147共用纯冲突分析)。
 
 PERSIST-137-A/B：正式产品默认使用稳定v2配对根与当前Session运行目录；桥接新增显式`--persistent-target --executable <可信EXE>`，复用workspace固定参数。旧显式发现／v1凭据保留，不迁移或扫描；首次v2新GUI配对。同登录普通Release启动选择、产品／桥接重启复用、保存冷读和旧引用拒绝已选验，实际跨Windows登录／PC重启及客户端接线仍待，见[同一主计划证据](qkeymapper_mcp_automation_plan_codex.md#persist-137-b)。这是目标定位／存储模式，工具及业务能力数仍17／23，无新权限或运行映射能力。
 
 IB-MCP-138新增并选验四项能力：mapping.update.preview／apply、ibinput.preferences.update.preview／apply；工具数仍17，业务能力23。mapping.add的send_method纳入0–3并保留默认0；该片受限更新只改当前可见源行的发送方式，合法Common及可见禁用行可用，隐藏／非当前源拒绝，同移动组冲突不产生修改。两项全局偏好参与预览语义修订、非行足迹、显式完整保存、取消与写失败恢复；被动采样不写配置。Read／Configure正反例、普通Release独立GUI和正式MCP保存冷读、生命周期及私有演示／Default两后端代表结果见[独立证据页](ibinput_mcp_integration_validation.md)。完整M1／M2未完成；主动连接检查／试发工具仍未交付。139增加下述固定Popup角色，工具／能力数仍17／23。
 
-EDIT-143扩展原mapping.update合同，工具／能力数及Read＋Configure不变：当前可见源行至少指定original_key／mapping_key／key_up_mapping_key／send_method之一，省略保持；新键限大写字母／数字，原行须为简单键盘键。抬起仅原发送时机2／3／4，空字符串沿用候选按下键；原键变更需禁用本行／他行或弹确认时明确不支持，完整语法和冲突编辑仍待。候选沿GUI共用校验／值提取及备注对齐，真实变化才刷新／dirty，不隐式保存或运行；参见[分项事实与限制](mapping_edit_validation.md)。仅发送方式保持138原范围，attached_to_ui不表示当前选中源。
+EDIT-143扩展原mapping.update合同，工具／能力数及Read＋Configure不变：当前可见源行至少指定original_key／mapping_key／key_up_mapping_key／send_method之一，省略保持；新键限大写字母／数字，原行须为简单键盘键。抬起仅原发送时机2／3／4，空字符串沿用候选按下键；143当时原键变更需禁用本行／他行或弹确认时明确不支持，完整语法和冲突编辑仍待。候选沿GUI共用校验／值提取及备注对齐，真实变化才刷新／dirty，不隐式保存或运行；参见[分项事实与限制](mapping_edit_validation.md)。仅发送方式保持138原范围，attached_to_ui不表示当前选中源。
 
 EDIT-145在同一合同增加独立disabled布尔字段，不与键值／发送方式混用；false只启用行、不开始映射。启用若会按原互斥规则改他行或触发Common确认／回退，明确拒绝且零修改。候选复用现有完整结构校验，提交刷新与dirty；同值不推进源修订，隐藏后继续写仍拒绝，不自动改筛选。144原Item与表格完整GUI基线和145实际范围分别见同页证据，工具／能力仍17／23，完整互斥与M1尚未完成。
 
