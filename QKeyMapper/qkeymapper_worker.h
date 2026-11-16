@@ -1484,6 +1484,16 @@ public:
 
     static int hookBurstAndLockProc(const QString &keycodeString, int keyupdown);
     static int updatePressedRealKeysList(const QString &keycodeString, int keyupdown);
+    static bool isPressedRealKeysContains(const QString &keycodeString);
+    static bool isPressedRealKeysRemoveMultiInputContains(const QString &keycodeString);
+    static bool isPressedTimedKeysContains(const QString &keycodeString);
+    static QStringList getPressedRealKeysListSnapshot(void);
+    static QStringList getPressedRealKeysListRemoveMultiInputSnapshot(void);
+    static void getPressedRealKeysSnapshots(QStringList &pressedRealKeys, QStringList &pressedRealKeysRemoveMultiInput);
+    static bool isPressedLongPressKeysContains(const QString &keycodeString);
+    static bool isPressedDoublePressKeysContains(const QString &keycodeString);
+    static QStringList getPressedLongPressKeysListSnapshot(void);
+    static QStringList getPressedDoublePressKeysListSnapshot(void);
     static void keyRecordStart(void);
     static void keyRecordStart(const QStringList &startKeyUpSkipKeys, const QStringList &stopKeySkipKeys);
     static void keyRecordStop(void);

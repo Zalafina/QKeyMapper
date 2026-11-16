@@ -468,9 +468,11 @@ void QItemSetupDialog::updateKeyRecordLineEditWithRealKeyListChanged(const QStri
         }
     }
 
+    const QStringList pressedRealKeysSnapshot = QKeyMapper_Worker::getPressedRealKeysListRemoveMultiInputSnapshot();
+
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged]" << keycodeString << (keyupdown == KEY_DOWN?"KeyDown":"KeyUp");
-    qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged]" << "pressedRealKeysListRemoveMultiInput ->" << QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
+    qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged]" << "pressedRealKeysListRemoveMultiInput ->" << pressedRealKeysSnapshot;
 #endif
 
     // Start capturing when first key is pressed
@@ -485,7 +487,7 @@ void QItemSetupDialog::updateKeyRecordLineEditWithRealKeyListChanged(const QStri
     if (keyupdown == KEY_DOWN) {
         // Handle key press - update the OriginalKey LineEdit display
         if (m_isItemSetupKeyRecordLineEdit_CapturingKey) {
-            QStringList pressedRealKeys = QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput;
+            QStringList pressedRealKeys = pressedRealKeysSnapshot;
             pressedRealKeys.removeAll(GAMEPAD_HOME_STR);
             QString updatedOriginalKeyString = pressedRealKeys.join(SEPARATOR_PLUS);
             ui->keyRecordLineEdit->setText(updatedOriginalKeyString);
@@ -496,7 +498,7 @@ void QItemSetupDialog::updateKeyRecordLineEditWithRealKeyListChanged(const QStri
         }
     }
     else { /* keyupdown == KEY_UP */
-        if (m_isItemSetupKeyRecordLineEdit_CapturingKey && QKeyMapper_Worker::pressedRealKeysListRemoveMultiInput.isEmpty()) {
+        if (m_isItemSetupKeyRecordLineEdit_CapturingKey && pressedRealKeysSnapshot.isEmpty()) {
             m_isItemSetupKeyRecordLineEdit_CapturingKey = false;
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[QKeyMapper::updateKeyLineEditWithRealKeyListChanged] End capturing keys, final OriginalKeyString:" << ui->keyRecordLineEdit->text();

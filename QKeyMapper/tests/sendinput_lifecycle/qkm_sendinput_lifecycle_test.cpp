@@ -30,6 +30,7 @@
 #include <QTranslator>
 #include <qt_windows.h>
 #include <thread>
+#include <atomic>
 #include "../../automation/qkm_control_dialog.h"
 #include "../../automation/qkm_source_snapshot.h"
 #include "../../automation/qkm_mapping_changes.h"
@@ -109,6 +110,7 @@ public:
     static QJsonObject mappingEditGui(QKeyMapper *mapper);
     static QJsonObject mappingDisabledGui(QKeyMapper *mapper);
     static QJsonObject mappingOriginalConflictGui(QKeyMapper *mapper);
+    static QJsonObject pressedState149(QKeyMapper *mapper);
     static QJsonObject mappingRemovalGui(QKeyMapper *mapper);
     static QJsonObject mappingRemovalShared(QKeyMapper *mapper);
     static QJsonObject commonComments(QKeyMapper *mapper, const QString &mode);
@@ -1324,6 +1326,13 @@ void installLifecycleTest()
             result->commonCommentsEvidence = QkmMappingAdditionTestAccess::commonComments(QKeyMapper::getInstance(), guiMode);
             QTimer::singleShot(2000, QCoreApplication::instance(), [] {
                 finish(result->commonCommentsEvidence.value(QStringLiteral("passed")).toBool());
+            });
+            return;
+        }
+        if (guiMode == QStringLiteral("pressed_state149")) {
+            result->settingsGeneralEvidence = QkmMappingAdditionTestAccess::pressedState149(QKeyMapper::getInstance());
+            QTimer::singleShot(500, QCoreApplication::instance(), [] {
+                finish(result->settingsGeneralEvidence.value(QStringLiteral("passed")).toBool());
             });
             return;
         }
@@ -2780,6 +2789,115 @@ QJsonObject QkmMappingAdditionTestAccess::windowMatchSave(QKeyMapper *mapper, bo
     return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
         {QStringLiteral("saved_key_count"), ini.allKeys().size()}, {QStringLiteral("cold"), cold},
         {QStringLiteral("formal_mcp"), false}, {QStringLiteral("system_input"), false}};
+}
+
+QJsonObject QkmMappingAdditionTestAccess::pressedState149(QKeyMapper *mapper)
+{
+    using Worker = QKeyMapper_Worker;
+    using namespace QKeyMapperConstants;
+    bool passed = true;
+    QJsonArray checks;
+    const auto check = [&](bool ok, const char *name) {
+        checks.append(QJsonObject{{QStringLiteral("check"), QString::fromLatin1(name)}, {QStringLiteral("passed"), ok}});
+        passed = passed && ok;
+    };
+    auto *worker = Worker::getInstance();
+    const auto originalSource = QKeyMapper::KeyMappingDataList;
+    if (!originalSource) return {{QStringLiteral("passed"), false}};
+    const auto sourceValues = *originalSource;
+    const bool dirty = mapper->m_SaveSettingDirty;
+    const auto load = mapper->m_MappingLoadGeneration;
+    QFile file(QString::fromLatin1(CONFIG_FILENAME));
+    if (!file.open(QIODevice::ReadOnly)) return {{QStringLiteral("passed"), false}};
+    const auto disk = file.readAll(); file.close();
+    const auto hook = Worker::s_AtomicHookProcState.loadAcquire();
+    const auto oldLong = Worker::longPressOriginalKeysMap;
+    const auto oldDouble = Worker::doublePressOriginalKeysMap;
+    const bool disconnected = QObject::disconnect(worker, &Worker::sendInputKeys_Signal, worker, &Worker::onSendInputKeys);
+    QList<MAP_KEYDATA> empty, timed;
+    const auto restore = qScopeGuard([&] {
+        QKeyMapper::KeyMappingDataList = originalSource;
+        Worker::s_AtomicHookProcState.storeRelease(hook);
+        Worker::longPressOriginalKeysMap = oldLong; Worker::doublePressOriginalKeysMap = oldDouble;
+        if (disconnected) QObject::connect(worker, &Worker::sendInputKeys_Signal, worker, &Worker::onSendInputKeys, Qt::QueuedConnection);
+    });
+    QKeyMapper::KeyMappingDataList = &empty;
+    Worker::s_AtomicHookProcState.storeRelease(HOOKPROC_STATE_STOPPED);
+    check(disconnected && Worker::getPressedRealKeysListSnapshot().isEmpty()
+        && Worker::getPressedLongPressKeysListSnapshot().isEmpty() && Worker::getPressedDoublePressKeysListSnapshot().isEmpty(),
+        "isolated idle fixture has no held state and disconnects native task dispatch");
+    std::atomic<int> remaining{2};
+    std::thread first([&] { for (int i = 0; i < 1000; ++i) { Worker::updatePressedRealKeysList(QStringLiteral("F16@0"), KEY_DOWN);
+        Worker::updatePressedRealKeysList(QStringLiteral("F16@0"), KEY_UP); } --remaining; });
+    std::thread second([&] { for (int i = 0; i < 1000; ++i) { Worker::updatePressedRealKeysList(QStringLiteral("F17@1"), KEY_DOWN);
+        Worker::updatePressedRealKeysList(QStringLiteral("F17@1"), KEY_UP); } --remaining; });
+    bool consistent = true;
+    int snapshots = 0;
+    do {
+        QStringList raw, normalized;
+        Worker::getPressedRealKeysSnapshots(raw, normalized);
+        QStringList expected;
+        for (const auto &key : raw) { const auto base = Worker::getKeycodeStringRemoveMultiInput(key); if (!expected.contains(base)) expected.append(base); }
+        consistent = consistent && expected == normalized;
+        ++snapshots;
+    } while (remaining.load() != 0);
+    first.join(); second.join();
+    QCoreApplication::processEvents();
+    check(consistent && snapshots > 0 && Worker::getPressedRealKeysListSnapshot().isEmpty()
+        && Worker::getPressedRealKeysListRemoveMultiInputSnapshot().isEmpty(), "two real producers and paired readers retain atomic list consistency and release their own keys");
+    int realCallbacks = 0, timedCallbacks = 0;
+    const auto realObserver = QObject::connect(mapper, &QKeyMapper::updateKeyLineEditWithRealKeyListChanged_Signal, mapper, [&] {
+        QStringList raw, normalized; Worker::getPressedRealKeysSnapshots(raw, normalized); ++realCallbacks;
+    }, Qt::DirectConnection);
+    const auto timedObserver = QObject::connect(worker, &Worker::sendInputKeys_Signal, worker, [&] {
+        (void)Worker::getPressedLongPressKeysListSnapshot(); (void)Worker::getPressedDoublePressKeysListSnapshot();
+        (void)Worker::getPressedRealKeysListSnapshot(); ++timedCallbacks;
+    }, Qt::DirectConnection);
+    const auto unwatch = qScopeGuard([&] { QObject::disconnect(realObserver); QObject::disconnect(timedObserver); });
+    auto *line = mapper->findChild<QLineEdit *>(QStringLiteral("originalKeyRecordLineEdit"));
+    auto *item = mapper->m_ItemSetupDialog;
+    auto *itemLine = item ? item->findChild<QLineEdit *>(QStringLiteral("keyRecordLineEdit")) : nullptr;
+    if (!line || !itemLine) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}};
+    const auto mainText = line->text(), itemText = itemLine->text();
+    const QScopedValueRollback<int> mode(mapper->m_OriginalKeyEditMode, KEYRECORD_EDITMODE_CAPTURE);
+    const auto restoreText = qScopeGuard([&] { line->setText(mainText); itemLine->setText(itemText); });
+    mapper->activateWindow(); QCoreApplication::processEvents();
+    line->setFocus(Qt::OtherFocusReason); QCoreApplication::processEvents();
+    Worker::updatePressedRealKeysList(QStringLiteral("F8"), KEY_DOWN); QCoreApplication::processEvents();
+    item->updateKeyRecordLineEditWithRealKeyListChanged(QStringLiteral("F8"), KEY_DOWN);
+    Worker::updatePressedRealKeysList(QStringLiteral("F9"), KEY_DOWN); QCoreApplication::processEvents();
+    item->updateKeyRecordLineEditWithRealKeyListChanged(QStringLiteral("F9"), KEY_DOWN);
+    check(line->hasFocus() && line->text() == QStringLiteral("F8+F9") && itemLine->text() == QStringLiteral("F8+F9"),
+        "main signal reader and Item callback render the same quiet paired snapshot; this is a component check, not a GUI input baseline");
+    Worker::updatePressedRealKeysList(QStringLiteral("F8"), KEY_UP); QCoreApplication::processEvents();
+    item->updateKeyRecordLineEditWithRealKeyListChanged(QStringLiteral("F8"), KEY_UP);
+    Worker::updatePressedRealKeysList(QStringLiteral("F9"), KEY_UP); QCoreApplication::processEvents();
+    item->updateKeyRecordLineEditWithRealKeyListChanged(QStringLiteral("F9"), KEY_UP);
+    check(realCallbacks == 4 && !mapper->m_isOriginalKeyLineEdit_CapturingKey,
+        "all four real-key callbacks can reenter snapshot helpers after the nonrecursive lock was released");
+    MAP_KEYDATA longRow; longRow.Original_Key = QStringLiteral("F8") + SEPARATOR_LONGPRESS + QStringLiteral("50");
+    longRow.Mapping_Keys = longRow.MappingKeys_KeyUp = QStringList{QStringLiteral("Unmapped149")};
+    longRow.DisableFnKeySwitch = true; timed.append(longRow);
+    MAP_KEYDATA doubleRow = longRow; doubleRow.Original_Key = QStringLiteral("F9✖50"); timed.append(doubleRow);
+    QKeyMapper::KeyMappingDataList = &timed;
+    Worker::longPressOriginalKeysMap.clear(); Worker::doublePressOriginalKeysMap.clear();
+    Worker::collectLongPressOriginalKeysMap(); Worker::collectDoublePressOriginalKeysMap();
+    Worker::s_AtomicHookProcState.storeRelease(HOOKPROC_STATE_STARTED);
+    Worker::longPressKeyProc(longRow.Original_Key, KEY_DOWN);
+    Worker::doublePressKeyProc(QStringLiteral("F9✖"), KEY_DOWN);
+    check(Worker::isPressedLongPressKeysContains(longRow.Original_Key)
+        && Worker::isPressedDoublePressKeysContains(QStringLiteral("F9✖")), "timed DOWN inserts both independently protected states");
+    Worker::longPressKeyProc(QStringLiteral("F8"), KEY_UP);
+    Worker::doublePressKeyProc(QStringLiteral("F9"), KEY_UP);
+    check(Worker::getPressedLongPressKeysListSnapshot().isEmpty() && Worker::getPressedDoublePressKeysListSnapshot().isEmpty()
+        && timedCallbacks == 4, "timed UP removes matching states and every DOWN/UP callback safely reenters all snapshot helpers");
+    QKeyMapper::KeyMappingDataList = originalSource;
+    Worker::s_AtomicHookProcState.storeRelease(hook);
+    check(*originalSource == sourceValues && mapper->m_SaveSettingDirty == dirty && mapper->m_MappingLoadGeneration == load
+        && file.open(QIODevice::ReadOnly) && file.readAll() == disk, "the component checks leave the actual configuration, dirty, load and disk unchanged");
+    return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("paired_snapshots"), snapshots},
+        {QStringLiteral("real_callbacks"), realCallbacks}, {QStringLiteral("timed_callbacks"), timedCallbacks},
+        {QStringLiteral("formal_gui_baseline"), false}, {QStringLiteral("native_dispatch_disconnected"), disconnected}};
 }
 
 QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper *mapper)
@@ -6544,7 +6662,7 @@ int main(int argc, char *argv[])
         const QByteArray bytes = QJsonDocument(summary).toJson();
         return output.open(QIODevice::WriteOnly) && output.write(bytes) == bytes.size() && output.commit() && passed ? 0 : 2;
     }
-    const QStringList cases{QStringLiteral("wait_clear"), QStringLiteral("pause_clear"), QStringLiteral("queue_keyup"),
+    const QStringList cases{QStringLiteral("pressed_state149"), QStringLiteral("wait_clear"), QStringLiteral("pause_clear"), QStringLiteral("queue_keyup"),
         QStringLiteral("cancel_reset"), QStringLiteral("pause_continue"), QStringLiteral("break_one"),
         QStringLiteral("break_all"), QStringLiteral("stop"), QStringLiteral("restart"), QStringLiteral("admission"),
         QStringLiteral("exit_wait"), QStringLiteral("exit_pause"), QStringLiteral("borrowers"),
