@@ -179,3 +179,14 @@ SDK模块[demo_owned_record_acceptance.py](../../../mcp_bridge/tests/demo_owned_
 ## DEMO-P3-128 正式宿主入口与正常关闭
 
 `demo_host_role` 维护入口要求实际私有后台，原参数仅 `--demo-host`，经正式main进入宿主GUI；独立安全INI／部署标记仍必需。仅测试观察器设置后续子 `settings_save_apply/demo_ready` 固定握手，父不构造产品单例。SDK模块[demo_host_acceptance.py](../../../mcp_bridge/tests/demo_host_acceptance.py)只读消费产品记录／检查ready及源INI不变；子完成后只发布 `case.json.owner-close-ready` 并继续事件循环，宿主真实close向仍存活子主窗请求WM_CLOSE。分别核对宿主入口返回、子／父实际退出、产品记录删除及尾部／公共清理。门闩只在Native测试，不改变产品正常关闭／默认MCP关闭或替代GUI配对。当前正式宿主界面只有状态／关闭；配对显示／返回及普通用户完整预热仍待，不在Default执行本维护用例。
+
+
+## 运行时列表与序列回归 149/150
+
+沿原生维护目标和公共测试登记入口设置 `QKM_LIFECYCLE_CASE`／`QKM_LIFECYCLE_RESULT`；使用独立 EXE 目录及合成 INI、实际私有桌面，不切换输入桌面。
+
+- `pressed_state149`：两个生产者并发更新实键双列表、成对快照、锁外回调重入、主窗／Item 录键组件及长按／双击释放。不是独立 GUI 录键或完整驱动基线。
+- `sequence_context150`：尾随清理任务持有 SendInputWorkItem，绑定原控制器／源行／上下文；队列丢弃归还计数，旧任务不清新状态，旧重复在新根实际运行后从发射与消费两端拒绝。只使用合成 NoOp 键。
+- `sequence_release150`：仅 `CONFIG+=ibinput_output_probe` 构建可执行，所有相关原生输出由现有编译期计数替身截获。覆盖其他行借键／物理原键保护、最后借用者释放、延迟 UP 回声不重复发送、未发 DOWN 不补 UP、取消后晚到 UP 不重放。夹具使用运行态标记但不安装 Hook，局部源表销毁前排空控制器；普通构建明确拒绝该场景。
+
+`repeatSpecs()` 全表的观察器必须转交实际运行代次及排队 work 中的序列身份；不能把自己创建的空身份当成正式生产接线。`repeat_restart` 先完成旧冻结运行和实际排空，再编辑下一控制轮的合成源。外部复现只临时放在 out 直接子目录，不纳入永久测试；安装自身 SendInput 不转发截获及正对照失败时必须退出，不能落入真实输入。实际结果只记唯一主计划与事实页。

@@ -3,11 +3,13 @@
 #include <Windows.h>
 #include <IbInputSimulator/InputSimulator.hpp>
 #include <QJsonArray>
+#include <QAtomicInt>
 #include <QJsonObject>
 
 // Only the opt-in maintenance build replaces these final native boundaries.
 namespace QkmNativeOutputProbe {
 void reset();
+void breakAfterUp(QAtomicInt *flag, WORD virtualKey, int stopValue);
 QJsonObject counts();
 QJsonArray exercise(bool demo);
 }

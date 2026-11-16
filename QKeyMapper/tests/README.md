@@ -390,3 +390,12 @@ A3客户端ghub_position／ghub_position_boundaries使用固定位置、尺寸�
 sendinput_lifecycle维护目标的重启调用显式预留代次，晚到admission用例传0表示非IbInput源。A3接纳只选wait_clear、queue_keyup、cancel_reset、exit_wait、borrowers五个实际任务／排空／退出ASan用例，不发送真实输入；客户端ASan使用C API替身。两者不等同真实驱动输入ASan或Forza全套验收。同步修复Forza状态测试中两处旧重启签名，仅作调用兼容，不修改Forza算法。
 
 U42／U43的六个三语错误场景追加在ui_test原十五场之后，使用负目标坐标与Windows错误5经Requirements.rejection进入真实反馈区；检查QM翻译、占位符、换行及窗口边界，不打开驱动。当前共21场景，证据见主计划34.3。
+
+
+## 序列中断 Default 代表回归（BUG02-150）
+
+`ibinput/product_check.pro` 的固定 `QKM_IBINPUT_PRODUCT_CASE=sequence150` 复用真实 main、Worker、MappingSwitch 和 tray quit；它是维护目标，不把结果改写为普通 Release 全运行验收。独立 INI 须只有 Mouse-L→Num1+Num2⏱400»Num0⏱25 一行、抬起 BLOCKED、方式3、按键重复、RepeatTimes=1、透传开启，其余连发／锁定／HoldDown／不可打断均关，偏好显式 G HUB 或 Razer、不可用策略 block。真实后端必须连接成功且无回退，首次运行和重启代次分别留证。
+
+沿已有 receiver 协议和 `sequence150-stop/restart/exit/abort` 文件门闩；固定 `sequence150-break` 只触发本行既有 breakRunningKeySequence，并产生序号应答，不开放通用控件或命令。stopped 记录实际 work／producer 归零、池排空、断开及 releaseIncomplete；closed 在真实 main 正常返回后记录尾计数及控制器清空。Worker STOPPED 单独不足以通过。
+
+该角色只用于已批准并提前公告的 Default 自有接收窗回归；普通控制器仅注入固定原 Mouse-L，维护目标通过选定厂商后端发送固定数字小键盘序列。每次 DOWN 前核对目标身份、前台、输入桌面及指针在接收窗内，失焦停止后续 DOWN，清理本轮保持；不改 NumLock／指针参数／FilterKeys／驱动。接收器的键状态会去重，原生重复 UP 的确定性计数由 sequence_release150 补证，不能由接收器零保持单独推定。两个后端串行，运行与截图均沿现有入口，权限范围由用户批准，不因维护参数自动扩大。

@@ -22,6 +22,8 @@
 #include "../../qkm_ibinput_client.h"
 #include "../../qkm_ibinput_popup.h"
 #include "../../qkm_ibinput_validation.h"
+#include "../../qkm_send_input_work.h"
+#include "../../qkm_input_producer_work.h"
 
 // Keep the real entry point, startup and orderly shutdown in this maintenance target.
 #define main qkmIbProductMain
@@ -361,10 +363,11 @@ void verifyInputProduct(QKeyMapper *window) {
     const bool standard=selectedCase==QStringLiteral("standard");
     const bool loops=selectedCase==QStringLiteral("loops");
     const bool macros=selectedCase==QStringLiteral("macros");
+    const bool sequence=selectedCase==QStringLiteral("sequence150");
     const bool motion=selectedCase==QStringLiteral("motion");
     const bool absolute=selectedCase==QStringLiteral("absolute");
     const bool horizontal=selectedCase==QStringLiteral("horizontal");
-    const bool mouse=selectedCase==QStringLiteral("mouse") || loops || macros || horizontal || absolute || motion;
+    const bool mouse=selectedCase==QStringLiteral("mouse") || loops || macros || horizontal || absolute || motion || sequence;
     const bool patterns=selectedCase==QStringLiteral("patterns");
     const QString prefix=output+QLatin1Char('/')+selectedCase+QLatin1Char('-');
     if (inputPhase!=6 && QFile::exists(prefix+QStringLiteral("abort"))) {
@@ -386,7 +389,7 @@ void verifyInputProduct(QKeyMapper *window) {
         CloseHandle(snapshot);
         check(!conflict,"Another mapper appeared; no mapping started");
         const auto *rows=QKeyMapper::KeyMappingDataList;
-        const QStringList originals=motion ? QStringList{QStringLiteral("Joy-LS2Mouse"),QStringLiteral("Joy-Gyro2Mouse"),
+        const QStringList originals=sequence ? QStringList{QStringLiteral("Mouse-L")} : motion ? QStringList{QStringLiteral("Joy-LS2Mouse"),QStringLiteral("Joy-Gyro2Mouse"),
             QStringLiteral("Joy-Touchpad2Mouse"),QStringLiteral("Q")} : absolute ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),
             QStringLiteral("R"),QStringLiteral("T"),QStringLiteral("A"),QStringLiteral("S")} : horizontal ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E")} : pause ? QStringList{QStringLiteral("Q")} : stopActions
             ? QStringList{QStringLiteral("Q"),QStringLiteral("SendOnMappingStart"),QStringLiteral("SendOnMappingStop")} : tables ? QStringList{QStringLiteral("Q"),QStringLiteral("W")} : standard
@@ -397,7 +400,7 @@ void verifyInputProduct(QKeyMapper *window) {
             ? QStringList{QStringLiteral("Q"),QStringLiteral("W"),QStringLiteral("E"),QStringLiteral("R"),QStringLiteral("T"),
                 QStringLiteral("A"),QStringLiteral("S"),QStringLiteral("D"),QStringLiteral("F")}
             : QStringList{QStringLiteral("W"),QStringLiteral("1"),QStringLiteral("F13")};
-        const QStringList mapped=motion ? QStringList{QStringLiteral("Joy-LS2Mouse"),QStringLiteral("Joy-Gyro2Mouse"),
+        const QStringList mapped=sequence ? QStringList{QStringLiteral("Num1+Num2⏱400»Num0⏱25")} : motion ? QStringList{QStringLiteral("Joy-LS2Mouse"),QStringLiteral("Joy-Gyro2Mouse"),
             QStringLiteral("Joy-Touchpad2Mouse"),QStringLiteral("Mouse-L")} : absolute ? QStringList{QStringLiteral("Mouse-Move(300,300)"),QStringLiteral("Mouse-L(320,310)"),
             QStringLiteral("Mouse-PosSave"),QStringLiteral("Mouse-Move(340,320)"),QStringLiteral("Mouse-PosRestore"),
             QStringLiteral("Mouse-Move:W(210,180)"),QStringLiteral("Mouse-L:W(230,190)")} : horizontal ? QStringList{QStringLiteral("Mouse-WheelLeft"),QStringLiteral("Mouse-WheelRight"),QStringLiteral("Mouse-L")} : pause ? QStringList{QStringLiteral("Pause")} : stopActions
@@ -438,6 +441,15 @@ void verifyInputProduct(QKeyMapper *window) {
                 && (index!=1 || row.RepeatTimes==3) && (index!=2 || row.RepeatTimes==2),"Macro fixture timing/flags changed");
             if (standard || stopActions || pause || horizontal || absolute || motion) check(!row.Burst && !row.Lock && !row.KeySeqHoldDown
                 && row.RepeatMode==QKeyMapperConstants::REPEAT_MODE_NONE,"Standard fixture flags changed");
+        }
+        if (sequence) {
+            const auto &row=rows->first();
+            check(!row.Burst && !row.Lock && !row.KeySeqHoldDown && !row.Unbreakable && row.PassThrough
+                && row.SendTiming==QKeyMapperConstants::SENDTIMING_NORMAL
+                && row.RepeatMode==QKeyMapperConstants::REPEAT_MODE_BYKEY && row.RepeatTimes==1
+                && row.MappingKeys_KeyUp==QStringList{QStringLiteral("BLOCKED")},"Sequence150 fixture flags changed");
+            check(client.preferences().backend==expectedBackend && client.preferences().unavailablePolicy==QStringLiteral("block"),
+                "Sequence150 must use its explicit backend without fallback");
         }
         if (tables) {
             const QStringList names{QStringLiteral("IbTableA"),QStringLiteral("IbTableB"),QStringLiteral("SendInputTable")};
@@ -656,12 +668,22 @@ void verifyInputProduct(QKeyMapper *window) {
             inputPhase=2;
         }
     }
+    if (sequence && inputPhase==2 && QFile::exists(prefix+QStringLiteral("break"))) {
+        check(QFile::remove(prefix+QStringLiteral("break")),"Cannot consume owned sequence break marker");
+        QKeyMapper_Worker::breakRunningKeySequence(QStringLiteral("Mouse-L"));
+        static int breaks=0;
+        inputRecord(QStringLiteral("break-%1.json").arg(++breaks),{{"generation",static_cast<qint64>(inputGeneration)}});
+    }
     if (inputPhase==2 && QFile::exists(prefix+QStringLiteral("stop"))) {
         window->MappingSwitch(QKeyMapper::MAPPINGSTART_BUTTONCLICK); inputPhase=3;
     }
     if (inputPhase==3 && window->m_KeyMapStatus==QKeyMapper::KEYMAP_IDLE && !client.busy()
         && !status.connected && qkmCurrentIbInputGeneration()==0) {
-        inputRecord(QStringLiteral("stopped.json"),{{"released",true},{"generation",static_cast<qint64>(inputGeneration)}});
+        check(SendInputWorkItem::outstanding()==0 && InputProducerWorkItem::outstanding()==0
+            && SendInputTask::poolsFinished(),"Idle stop still owns input work");
+        inputRecord(QStringLiteral("stopped.json"),{{"released",true},{"generation",static_cast<qint64>(inputGeneration)},
+            {"work",QString::number(SendInputWorkItem::outstanding())},{"producers",QString::number(InputProducerWorkItem::outstanding())},
+            {"pools_finished",SendInputTask::poolsFinished()},{"connected",status.connected},{"release_incomplete",status.releaseIncomplete}});
         inputPhase=7;
     }
     if (tables && inputPhase==7 && tableRaceRound==3) {
@@ -686,7 +708,7 @@ void verifyInputProduct(QKeyMapper *window) {
 
 void verifyProduct() {
     try {
-        if (++polls>((selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute") || selectedCase==QStringLiteral("motion")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
+        if (++polls>((selectedCase==QStringLiteral("sequence150") || selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute") || selectedCase==QStringLiteral("motion")) ? 900 : 180)) throw std::runtime_error("Product check exceeded 90 seconds");
         check(currentDesktop()==expectedDesktop,"Product left its selected desktop");
         QKeyMapper *window=nullptr;
         for (QWidget *widget:QApplication::topLevelWidgets())
@@ -694,7 +716,7 @@ void verifyProduct() {
         if (!window || !QKeyMapper::s_AtomicIsInitialized.loadAcquire()) {
             QTimer::singleShot(500,verifyProduct); return;
         }
-        if (selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute") || selectedCase==QStringLiteral("motion")) {
+        if (selectedCase==QStringLiteral("sequence150") || selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute") || selectedCase==QStringLiteral("motion")) {
             verifyInputProduct(window); QTimer::singleShot(100,verifyProduct); return;
         }
         if (checked) {
@@ -794,10 +816,15 @@ int main(int argc,char **argv) {
     expectedDesktop=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_DESKTOP");
     expectedBackend=qEnvironmentVariable("QKM_IBINPUT_PRODUCT_BACKEND",QStringLiteral("logitech_ghub"));
     if (expectedBackend!=QStringLiteral("logitech_ghub") && expectedBackend!=QStringLiteral("razer")) return 2;
-    const bool input=selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute") || selectedCase==QStringLiteral("motion");
+    const bool input=selectedCase==QStringLiteral("sequence150") || selectedCase==QStringLiteral("keyboard") || selectedCase==QStringLiteral("mouse") || selectedCase==QStringLiteral("patterns") || selectedCase==QStringLiteral("loops") || selectedCase==QStringLiteral("macros") || selectedCase==QStringLiteral("standard") || selectedCase==QStringLiteral("tables") || selectedCase==QStringLiteral("stopactions") || selectedCase==QStringLiteral("pause") || selectedCase==QStringLiteral("pause_faker") || selectedCase==QStringLiteral("horizontal") || selectedCase==QStringLiteral("absolute") || selectedCase==QStringLiteral("motion");
     if (argc!=1 || !QDir(output).exists() || currentDesktop()!=expectedDesktop
         || (input ? expectedDesktop!=QStringLiteral("Default")
             : ((selectedCase!=QStringLiteral("save") && selectedCase!=QStringLiteral("cold"))
                 || !expectedDesktop.startsWith(QStringLiteral("QkmIbProduct_"))))) return 2;
-    return qkmIbProductMain(argc,argv);
+    const int result=qkmIbProductMain(argc,argv);
+    if (selectedCase==QStringLiteral("sequence150")) inputRecord(QStringLiteral("closed.json"),
+        {{"native_main_result",result},{"work",QString::number(SendInputWorkItem::outstanding())},
+            {"producers",QString::number(InputProducerWorkItem::outstanding())},
+            {"controllers_empty",SendInputTask::s_SendInputTaskControllerMap.isEmpty()}});
+    return result;
 }

@@ -790,7 +790,18 @@ struct ViGEm_ReportData
     {}
 };
 
+struct KeySequenceContext {
+    QAtomicInt cancelled{0};
+    QStringList heldKeys; // Accessed only by this original key's serial send pool.
+    int row = QKeyMapperConstants::INITIAL_ROW_INDEX;
+    QList<MAP_KEYDATA> *source = nullptr;
+    QSharedPointer<QList<MAP_KEYDATA>> snapshot;
+    quint64 ibGeneration = 0;
+};
+
 struct SendInputTaskController {
+    QSharedPointer<KeySequenceContext> sequence;
+    QSharedPointer<KeySequenceContext> activeSequence;
     QThreadPool *task_threadpool;
     QAtomicInt *task_stop_flag; // NOLINT(clang-analyzer-webkit.NoUncountedMemberChecker)
     QAtomicInt *task_pause_state; // NOLINT(clang-analyzer-webkit.NoUncountedMemberChecker)
@@ -828,7 +839,7 @@ private:
     SendInputWorkItem m_work;
 
 public:
-    SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, quint64 ibInputGeneration = qkmCurrentIbInputGeneration());
+    SendInputTask(int rowindex, const QStringList& inputKeys, int keyupdown, const QString& original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, quint64 ibInputGeneration = qkmCurrentIbInputGeneration(), const QSharedPointer<KeySequenceContext> &sequence = {});
 
     void run() override;
 
@@ -856,6 +867,7 @@ public:
     QList<MAP_KEYDATA> *m_keyMappingDataList = Q_NULLPTR;
     quint64 m_ibInputGeneration = 0;
     QSharedPointer<QList<MAP_KEYDATA>> m_ibInputSnapshot;
+    QSharedPointer<KeySequenceContext> m_sequence;
 };
 
 class QKeyMapper_Worker : public QObject
@@ -1206,9 +1218,10 @@ public:
 public slots:
     void onKey2MouseCycleTimeout(void);
     void onMouseWheel(int wheel_updown);
-    void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration);
+    void onSendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration, QSharedPointer<SendInputWorkItem> work = {});
 public:
     void sendInputKeys(int rowindex, QStringList inputKeys, int keyupdown, QString original_key, int sendmode, SendInputTaskController controller, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, quint64 ibInputGeneration = qkmCurrentIbInputGeneration());
+    void cleanupInterruptedKeySequenceState(const QString &normalizedOriginalKey, int rowindex = QKeyMapperConstants::INITIAL_ROW_INDEX, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, quint64 ibInputGeneration = 0, const QSharedPointer<KeySequenceContext> &sequence = {});
     // void send_WINplusD(void);
     void sendMousePointClick(QString &mousepoint_str, int keyupdown, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT, bool ibStopAction=false, quint64 ibInputGeneration=qkmCurrentIbInputGeneration());
     void sendMouseMoveToPoint(QString &mousepoint_str, int sendmappingkeymethod = QKeyMapperConstants::SENDMAPPINGKEY_METHOD_SENDINPUT, bool ibStopAction=false, quint64 ibInputGeneration=qkmCurrentIbInputGeneration());
@@ -1222,7 +1235,7 @@ public:
             && s_AtomicHookProcState.loadAcquire() == QKeyMapperConstants::HOOKPROC_STATE_STARTED;
     }
 
-    void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = QKeyMapperConstants::SENDVIRTUALKEY_STATE_NORMAL, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR);
+    void emit_sendInputKeysSignal_Wrapper(int rowindex, QStringList &inputKeys, int keyupdown, QString &original_key_unchanged, int sendmode, int sendvirtualkey_state = QKeyMapperConstants::SENDVIRTUALKEY_STATE_NORMAL, QList<MAP_KEYDATA> *keyMappingDataList = Q_NULLPTR, const QSharedPointer<KeySequenceContext> &sequence = {});
 
 public:
     static void sendBurstKeyDown(const QString &burstKey, bool start);
@@ -1494,6 +1507,11 @@ public:
     static bool isPressedDoublePressKeysContains(const QString &keycodeString);
     static QStringList getPressedLongPressKeysListSnapshot(void);
     static QStringList getPressedDoublePressKeysListSnapshot(void);
+    static bool isPressedVirtualKeysContains(const QString &keycodeString);
+    static QStringList getPressedVirtualKeysListSnapshot(void);
+    static bool appendPressedVirtualKeyIfAbsent(const QString &keycodeString);
+    static void removePressedVirtualKey(const QString &keycodeString);
+    static void clearPressedVirtualKeysList(void);
     static void keyRecordStart(void);
     static void keyRecordStart(const QStringList &startKeyUpSkipKeys, const QStringList &stopKeySkipKeys);
     static void keyRecordStop(void);
@@ -1595,11 +1613,15 @@ private:
     void clearAllPressedVirtualKeys(void);
     void clearPressedVirtualKeysOfMappingKeys(const QString &mappingkeys, int rowindex,
         SendInputTaskController rowController, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration);
+    void clearPressedVirtualKeysOfMappingKeysWithPendingKeys(const QString &mappingkeys, const QStringList &pendingPressedKeys, int rowindex,
+        SendInputTaskController rowController, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration);
+    void clearPressedVirtualKeysOfMappingKeysImpl(const QString &mappingkeys, const QStringList &pendingPressedKeys, bool limitToPendingKeys, int rowindex,
+        SendInputTaskController rowController, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration);
     void clearAllNormalPressedMappingKeys(bool restart = false, QList<MAP_KEYDATA> *keyMappingDataListToCheck = Q_NULLPTR);
     void clearCustomKeyFlags(bool restart = false);
     void clearAllPressedRealCombinationKeys(void);
     void collectExchangeKeysList(void);
-    bool isPressedMappingKeysContains(QString &key);
+    bool isPressedMappingKeysContains(const QString &key);
     void initGlobalSendInputTaskController(void);
     void resetGlobalSendInputTaskController(void);
     void clearGlobalSendInputTaskController(void);
@@ -1613,7 +1635,7 @@ public:
 #if 0
     int makeKeySequenceInputarray(QStringList &keyseq_list, INPUT *input_array);
 #endif
-    void sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList);
+    void sendKeySequenceList(QStringList &keyseq_list, QString &original_key, int sendmode, int sendvirtualkey_state, QList<MAP_KEYDATA> *keyMappingDataList, const QSharedPointer<KeySequenceContext> &sequence);
 
 public:
     static ULONG_PTR VIRTUAL_KEY_SEND;

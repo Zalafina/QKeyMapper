@@ -5,11 +5,14 @@
 #include <QMetaType>
 #include <QSharedPointer>
 
+struct KeySequenceContext;
+
 // Includes lifecycle/send queues and runnable destruction; zero alone is not a stop fence.
 class SendInputWorkItem final {
 public:
-    SendInputWorkItem() { s_outstanding.fetchAndAddRelaxed(1); }
+    explicit SendInputWorkItem(const QSharedPointer<KeySequenceContext> &context = {}) : sequence(context) { s_outstanding.fetchAndAddRelaxed(1); }
     ~SendInputWorkItem() { s_outstanding.fetchAndSubRelease(1); }
+    QSharedPointer<KeySequenceContext> sequence;
     static quint64 outstanding() { return s_outstanding.loadAcquire(); }
 
 private:

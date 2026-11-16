@@ -8,6 +8,9 @@ namespace {
 std::atomic<int> initCalls{0}, ibInputCalls{0}, destroyCalls{0}, sendInputCalls{0}, cursorCalls{0};
 POINT cursor{};
 quint64 clockTicks = 0;
+QAtomicInt *breakFlag = nullptr;
+WORD breakKey = 0;
+int breakValue = 0;
 }
 Send::Error __stdcall qkmProbeIbSendInit(Send::SendType, Send::InitFlags, void *) { ++initCalls; return Send::Error::Success; }
 void __stdcall qkmProbeIbSendDestroy() { ++destroyCalls; }
@@ -23,7 +26,16 @@ UINT WINAPI qkmProbeIbSendInput(UINT count, LPINPUT inputs, int size)
     }
     return count;
 }
-UINT WINAPI qkmProbeSendInput(UINT count, LPINPUT, int) { ++sendInputCalls; return count; }
+UINT WINAPI qkmProbeSendInput(UINT count, LPINPUT inputs, int) {
+    ++sendInputCalls;
+    for (UINT index = 0; inputs && index < count; ++index) {
+        if (breakFlag && inputs[index].type == INPUT_KEYBOARD && inputs[index].ki.wVk == breakKey
+            && (inputs[index].ki.dwFlags & KEYEVENTF_KEYUP)) {
+            breakFlag->storeRelease(breakValue); breakFlag = nullptr;
+        }
+    }
+    return count;
+}
 BOOL WINAPI qkmProbeSetCursorPos(int, int) { ++cursorCalls; return TRUE; }
 
 namespace QkmIbInputSystem {
@@ -59,7 +71,8 @@ struct QkmIbInputDemoTestAccess {
 };
 
 namespace QkmNativeOutputProbe {
-void reset() { initCalls = 0; ibInputCalls = 0; destroyCalls = 0; sendInputCalls = 0; cursorCalls = 0; cursor = {}; clockTicks = 0; }
+void breakAfterUp(QAtomicInt *flag, WORD virtualKey, int stopValue) { breakFlag = flag; breakKey = virtualKey; breakValue = stopValue; }
+void reset() { breakFlag = nullptr; initCalls = 0; ibInputCalls = 0; destroyCalls = 0; sendInputCalls = 0; cursorCalls = 0; cursor = {}; clockTicks = 0; }
 QJsonObject counts() {
     return {{QStringLiteral("IbSendInit"), initCalls.load()}, {QStringLiteral("IbSendInput"), ibInputCalls.load()},
         {QStringLiteral("IbSendDestroy"), destroyCalls.load()}, {QStringLiteral("SendInput"), sendInputCalls.load()},
