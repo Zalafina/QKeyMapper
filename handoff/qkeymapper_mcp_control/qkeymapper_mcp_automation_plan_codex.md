@@ -4,9 +4,11 @@
 
 本文件是本任务唯一的计划、进度、决策及最新交接状态来源。相关入口：[目录规则](../README.md)、[能力与等价性矩阵](capability_matrix.md)、[验证记录](validation.md)。
 
+Rust Sidecar迁移按2026-11-17用户安排设独立子任务，唯一迁移计划／进度／决策见[迁移子计划](qkeymapper_mcp_rust_migration_plan.md)。本文件只保留迁移入口、依赖及MCP总体接续，不双写Rust执行状态；MCP其他工作仍以本文件为准。
+
 ## 当前进度与最新交接卡片
 
-2026-11-09完成IB-MCP-138核心融合、选定验证及本地快进接纳，收尾后停止。输入为MCP `94f0bb8485e7e607cff5c73bf6c0a45725e052d9`与固定IbInput `b5b484a63bf97716c407ae9680fd1b63f8d5eb01`；[本轮证据](ibinput_mcp_integration_validation.md)分别记录普通Release、维护目标、替身及历史范围。当日接纳后停止，次日本机恢复后已完成139 Popup，不重复环境恢复或已通过验收；PERSIST-136A及STOP-46等历史结果不扩大。
+IB-MCP-138于2026-11-09接纳MCP `94f0bb8485e7e607cff5c73bf6c0a45725e052d9`与固定IbInput `b5b484a63bf97716c407ae9680fd1b63f8d5eb01`；后续139 Popup已选验。普通Release／维护／替身／历史范围见[证据](ibinput_mcp_integration_validation.md)。PERSIST-136A／STOP-46等历史不扩大，不重复环境恢复或已通过验收。
 
 2026-10-30的PERSIST-136在PC-W11收尾；2026-10-31在PC-W10只执行Forza修复同步，不将其历史结果记成本轮Win11复验。
 
@@ -16,27 +18,31 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | BUG02-FOLLOWUP-151选定完成并停止；本提交父fe2eb674b1ca1842ab1bae0923c33f58cfcda880，不自动恢复MCP |
-| 执行机器 | PC-W11；151仅私有替身／实际ASan／正式MCP维护产品，普通Release只构建；Default为转交或历史证据，不记作本轮复验 |
+| 当前切片 | RUST-PLAN-152文档安排已吸收，迁移进度仅见子计划；产品检查点仍为3fefc26a846b8ad5db1ba381cecff870c570a670 |
+| 执行机器 | PC-W11；本轮只读评估及文档检查。151私有／实际ASan／正式MCP及转交／历史Default证据保持原范围 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；不切／合master、不push |
 | 集成提交／路径 | e73f719b23ee1bd0df99045727acf9554f33959b，两父分别为MCP94f0bb84及固定IbInput b5b484a6；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
 | 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
-| 当前已完成 | 151三边界修正及必要回落适配完成；149／150和前序MCP证据保留原范围，完整M1仍待 |
-| 当前验证 | 151双Qt构建／17项释放／输出正对照、Qt6九运行态／28repeat／六实际ASan、定向分析、39 Python及正式MCP两图／零输出通过；失败和分层见runtime_bugfix_validation.md |
-| 工作区保留 | 151起始干净；仅本切片八文件形成独立提交，环境／构建／原件保留，来源材料及其他工作区未修改 |
-| 当前控制器 | 38956／instance5983f527062048ddbead92cfdef128c7于11-17 15:18:29 off，closed／off脚本exit0／cache不可用，owned／unresolved／pending0；独立status无控制器、原生会话0；无外来共享授权，历史未知未重放 |
-| 授权边界 | 11-17批准151产品修正及私有验证；不新增Default／真实输入／驱动或系统设置；开发普通权限，仅原manifest启动关闭走公共登记入口 |
-| 下一项动作 | 本轮提交后停止等待用户指示，不启动新MCP；若安排恢复，再接148之后既定编辑范围，不重复环境恢复／未受影响验收，不自行开启缓存 |
+| 当前已完成 | Rust迁移子计划及入口／依赖已建立；151三边界修正保持，完整M1／M2／M3-B未完成 |
+| 当前验证 | 152仅文档差异、编码／链接／大小及Git检查；没有Rust构建／运行／兼容性实测。151原验证见runtime_bugfix_validation.md |
+| 工作区保留 | 本轮起始干净；本提交仅迁移子计划、此主计划和handoff/README.md三份文档；环境／构建／原件保留 |
+| 当前控制器 | 151收尾于11-17 15:18:29关闭38956并独立核实资源0／无控制器；152不查询、开启或变更缓存，不接管历史未知请求 |
+| 授权边界 | 本轮仅文档，不安装工具链、不实施迁移、不启动产品／桥接／测试，不申请UAC或缓存；后续必要系统行为另安排 |
+| 下一项动作 | 本次文档提交后停止，等待明日“继续”安排子计划RUST-A；不提前启动原型或恢复MCP新功能 |
 | 后续范围 | 137真实跨登录／PC重启、实际客户端接线、主动MCP连接检查／试发、普通用户多实例前台绑定、Win10可选实体／Release三包／QQ联调仍待；完整M1／M2未完成 |
 | 本机证据 | 151 out/runtime_followup151_20261117；149／150 out/runtime_bugfix_149_20261116及用户转交Gemini原件分别记录，均不跨PC假定存在 |
-| 提交策略 | 151一个聚焦本地独立提交，不push／amend／合master；完成后停止，等待用户后续指示 |
+| 提交策略 | 2026-11-17用户追加授权本次三份文档聚焦本地commit，完成后停止，不push／amend；产品检查点3fefc26a保留 |
 
 ### BUG02-FOLLOWUP-151：三项运行时边界补充（选定完成，停止）
 
 用户11-17批准，在干净fe2eb674上组入Gemini三项修正：仅序列任务继承身份、FakerInput按行／pending／本地报告／借键释放、成功显式UP移除记账。另修原补丁遗漏的force_sendinput控制键已受理DOWN且无Hook回声的释放，只认九种已知原生控制键；普通HID缺项不触发回落。探针固定替身至析构，局部源前排空任务及解除引用；末次零VK哨兵保护以双Qt／实际ASan无界面单元复验、final04重编／分析通过，缓存保持关闭。MCP／权限／文案不变。
 
 修前旧七绿／新增七红；原补丁七项转绿但回落对照红，适配后双Qt17项全过。双Qt普通Release／探针、Qt6九运行态／28repeat／六实际ASan及最后夹具复验、三编译上下文定向分析、39 Python检查、27调用正式MCP两图／10零输出及回收选验通过。首轮夹具C2248、版本与实际范围见[既有事实页](runtime_bugfix_validation.md#bug02-followup-151三项运行时边界补充2026-11-17选定完成)。本会话无Default／真实输入；Gemini转交结果单列。本地报告不是设备回读、脚本注入不是物理键；同VK及既有SendInput松开边界登记待办，不承诺零误伤。原件out/runtime_followup151_20261117仅本机。15:18:29缓存off并独立核实，聚焦本地提交后停止，不自动恢复MCP。
+
+### RUST-PLAN-152：Rust Sidecar迁移入口（文档安排）
+
+依据源码有条件可行，尚无Rust实测；先做有界A原型，完成后由用户综合决定B–D，实际客户端门槛Codex＋Antigravity。完整契约、SDK候选、阶段验收、体积及回退只见[迁移子计划](qkeymapper_mcp_rust_migration_plan.md)。本轮仅三份文档，产品仍为3fefc26a；Python继续正式使用，M1／M2／M3-B及历史证据范围保持。
 
 ### RUNTIME-BUG01-149／BUG02-150：选定完成（11-16）
 
@@ -100,17 +106,9 @@ Qt5共享JSON take破坏原close输入已由组件先复现后局部修正，两
 
 ### IB-MCP-138：已批准接纳契约（2026-11-09，核心选验及接纳完成）
 
-现有mapping.add增加可选send_method（0–3、缺省0）；mapping.update只改当前source_ref的发送方式。ibinput.preferences.update仅接preferred_backend与unavailable_policy，至少一项，前者auto／logitech_ghub／logitech_legacy／razer，后者block／sendinput_before_start；提交只改内存和dirty，持久化仍须configuration.save。预览绑定实际偏好语义修订；真实变化使旧预览失效，被动刷新／同值不推进。两个INI全局键纳入完整足迹、取消及QSettings失败恢复，不在确认前单独写盘。GUI与MCP共用有效Common／禁用行／移动组合并规则；合法配置不依赖软件安装或连接。
+e73f719b接纳MCP94f0bb84与固定IbInput b5b484a6，保留共同历史。发送方式3、两项全局偏好的预览／提交／完整保存足迹、被动状态／语义修订、运行代次／实际排空及只配置演示底层守卫完成选验；合法配置保存不依赖软件安装／连接。GUI与MCP沿有效Common、禁用行及移动组业务边界；候选先筛能力再按G HUB→旧Logitech→Razer尝试，旧通道未开放输入、运行中不换后端。该阶段mapping.update仅改发送方式，后续键值／禁用扩展见141–148；Popup后继139，主动连接检查／试发仍未交付。
 
-qkm_get_state增加分离偏好、实际后端／能力、回退、释放状态与最近结果／时间的ibinput对象；临时连接已关闭和历史结果不冒充当前连接。Read／Configure等范围沿正式认证；主动检查和试发工具按用户选择继续待实现，不从窗口动作绕行。核心生命周期保留工作令牌／源快照／真实排空，并使故障／关闭／重启携带代次；旧通知不解除新屏障，释放未完成不报成功。自动候选先筛能力，再按G HUB→旧Logitech→Razer尝试，旧通道仍未开放。
-
-configuration_only_demo使用既有共享策略在客户端原生初始化和最终输出层拒绝，覆盖A3像素／归一化／内部步进及SendInput回退。选验逐场分别核IbSendInit／IbSendInput／SendInput／SetCursorPos及其他受影响入口零调用，普通正对照验证计数接线；不以UI禁用或单一汇总替代。真实Qt6普通产品配置／冷读与正式维护目标的Default真实接收、组件替身及旧证据分别记录。Qt6 Release、Qt5 x64／x86、定向静态、实际ASan及两后端15–20分钟Default代表回归通过后才可快进。
-
-Popup的ibinput_settings角色发现／打开／捕获／关闭为快进后首片；绑定会话和窗口代次，ShowWindows与CaptureWindows分别校验，仅私有后台，不隐式连接／修改偏好／发输入。TS保留双方词条后重生QM，已批准U42／U43不重新审阅；新可见文案仍先三语审批。保留v1.1手册与0009制品／许可；dwExtraInfo只沿b5b484a6所录侧会话指定DLL／Hook范围，不追加专项或扩展FakerInput结论。
-
-**本轮收敛**：原MCP工作区只写忽略的测试材料，试合并／实现均在独立树。局部修复了generation=0的旧重启通知解除新IbInput清理屏障的问题：先由真实维护入口通知注入复现native2，补busy过滤后分离旧代／零代断言及4次保存拒绝通过。正常Default两后端停止／切表／重启／退出均核实际释放，不以Worker STOPPED替代。普通GUI／MCP业务证据与维护故障注入、输出边界替身、最终实际ASan分别记录。
-
-初始部署缺DLL导致身份核验失败／目标退出码缺失、原控制器unknown关闭，GUI探针的原生访问违例及其他夹具失败、Common目录字段错误、静态前置与编译失败均保留在[选定证据](ibinput_mcp_integration_validation.md)。修正后GUI-12／MCP-02／Read-01／sources-02等独立通过，不重写失败或用户转交的旧DLL／Hook事实。Default仅本机代表范围；PERSIST-137、Popup和发布阶段未验内容不计完成。
+Qt6普通产品配置／冷读、正式维护目标Default G HUB／Razer、Qt5 x64／x86兼容、定向分析／实际ASan及演示逐场原生零调用／正对照分层记录。旧代／零代重启通知解除新屏障曾经真实维护入口native2复现，修正后拒绝及释放检查通过；缺DLL／unknown启动、GUI探针违例及其他夹具失败保留在[选定事实页](ibinput_mcp_integration_validation.md)。维护／替身／用户转交DLL Hook结果不扩大为普通Release完整设备验收；dwExtraInfo沿b5b484a6所录范围，不追加专项或FakerInput结论。v1.1手册、0009制品／许可及双方TS词条保留，QM由合并TS重生；新文案仍需三语审阅。完整原文见Git3fefc26a本节，其他历史／未验边界仍见同一事实页，不以本文精简重新计算验收。
 
 ### FORZA-MERGE-20261031：master修复补验与本地同步
 
@@ -1130,8 +1128,9 @@ GUI 基线不得调用 MCP 或直接调用共用业务函数替代界面操作�
 | M2-B：软件设置与界面条件 | 配置切换、窗口匹配、全部全局／高级设置、悬浮与显示、必要界面会话；核对联动、缓存和生效时机 | 12–22 小时 | 未开始 |
 | M3-A：深入观测与复现验证 | 诊断事件、真实输入观测、相关设备操作、授权与异常清理；现有生命周期及崩溃／卡死诊断衔接 | 8–14 小时 | 未开始 |
 | M3-B：双系统集成与交付 | Win10／Win11 验收、相关 Qt5 兼容、性能对照、打包、说明及完整能力覆盖 | 6–10 小时 | PKG-123提前完成桥接组件选验；完整集成／干净双系统仍待 |
+| Rust Sidecar迁移依赖 | 默认桥接替换须先有界原型评审、身份／业务等价及实际客户端／交付验证；不替代M1／M2／M3-B | 子计划另计，不并入旧估算 | 详细状态及下一步仅见[迁移子计划](qkeymapper_mcp_rust_migration_plan.md) |
 | DEMO：专用演示与截图会话 | P0可行性→正式窗口／捕获→串行A→B及重置→预置Release预热／免Python→末期Win10 QQ联调 | 后续场景／交付待校准，未计入旧合计 | 进行中；P0／P1／P2及P3预热已选验，扩展／Win10／QQ／完整交付待，PC-W11无gateway环境 |
-| 剩余合计 | 原范围未完成部分＋新增DEMO待校准 | **原60–106小时＋DEMO新增待估** | 未完成，不含已投入未可靠分账工时；新增部分先P0后分账，复用不重复计时 |
+| 剩余合计 | 原范围未完成部分＋新增DEMO待校准；Rust迁移另计 | **原60–106小时＋DEMO新增待估** | 未完成，不含已投入未可靠分账工时；新增部分先P0后分账，复用不重复计时 |
 
 - 历史估算为初始 48–84 小时、阶段总量校准 56–94 小时（预留后 70–120）、STOP-53 剩余 56–98 小时（预留后 70–125）；均不是实耗。上表现在明确表示**剩余**工作：在 STOP-53 基线上，仅为 DESIGN-58 整窗提示实现及新增针对性验收增加 4–8 小时，纳入 M1 后为 20–36 小时；其他阶段沿用原范围，合计 60–106 小时，约 25% 预留并取整后按 **原范围75–135小时剩余有效作业时间**考虑（不含DEMO新增待估）。已有状态守卫、显示／会话和双系统测试复用，不重复计时；未依据未分账投入扣减工时。首个可用闭环的剩余工作主要在 M1，不承诺某个日历日期。
 - 本次校准依据已确认的同用户 UAC／工具兼容、源身份、两所有者排队、在途回调、定时器残留和池／GUI 完成边界复杂度。组件通过尚未替代 GUI／MCP 操作等价、持久化／冷启动及真正输入效果验证；目标和验收范围不缩减。后续按实际切片继续校准，缺少分账的历史投入不倒算成已完成比例。

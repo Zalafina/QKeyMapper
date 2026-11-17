@@ -7,9 +7,12 @@
 | 任务 | 唯一计划与进度 |
 |---|---|
 | QKeyMapper MCP 控制与开发验证 | [开发计划](qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md) |
+| QKeyMapper MCP Sidecar Rust迁移（子任务） | [唯一迁移计划](qkeymapper_mcp_control/qkeymapper_mcp_rust_migration_plan.md) |
 | QKeyMapper IbInputSimulator 输入方式 | [开发计划](ibinput-simulator/qkeymapper_ibinputsimulator_integration_plan.md) |
 
 本表只提供导航；具体状态和下一步只在各任务主计划中维护。
+
+Rust迁移按2026-11-17用户安排独立跟踪，详细迁移状态只见其子计划；MCP总体计划仅保留入口、依赖及总体接续卡，不双写迁移执行进度。
 
 固定IbInput与MCP核心接纳的源码／范围／原件索引见[选定验证记录](qkeymapper_mcp_control/ibinput_mcp_integration_validation.md)，提交及停止位置仍以两项唯一计划的顶部卡片为准。
 
