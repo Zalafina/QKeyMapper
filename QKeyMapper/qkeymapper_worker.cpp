@@ -52,6 +52,19 @@ QList<MAP_KEYDATA> expandedRows(const QList<MAP_KEYDATA> &source) {
 }
 
 namespace {
+bool isNativeControlKey(WORD keyCode)
+{
+    return VK_MOUSE2VJOY_HOLD == keyCode
+        || VK_KEY2MOUSE_UP == keyCode
+        || VK_KEY2MOUSE_DOWN == keyCode
+        || VK_KEY2MOUSE_LEFT == keyCode
+        || VK_KEY2MOUSE_RIGHT == keyCode
+        || VK_CROSSHAIR_NORMAL == keyCode
+        || VK_CROSSHAIR_TYPEA == keyCode
+        || VK_GYRO2MOUSE_HOLD == keyCode
+        || VK_GYRO2MOUSE_MOVE == keyCode;
+}
+
 std::atomic<quint64> ibInputGeneration{0};
 std::atomic_bool ibInputFaultReported{false};
 Q_GLOBAL_STATIC(QMutex, ibInputSnapshotMutex)
@@ -4035,15 +4048,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                     input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                     force_sendinput = true;
                 }
-                else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
-                    || VK_KEY2MOUSE_UP == vkeycode.KeyCode
-                    || VK_KEY2MOUSE_DOWN == vkeycode.KeyCode
-                    || VK_KEY2MOUSE_LEFT == vkeycode.KeyCode
-                    || VK_KEY2MOUSE_RIGHT == vkeycode.KeyCode
-                    || VK_CROSSHAIR_NORMAL == vkeycode.KeyCode
-                    || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode
-                    || VK_GYRO2MOUSE_HOLD == vkeycode.KeyCode
-                    || VK_GYRO2MOUSE_MOVE == vkeycode.KeyCode) {
+                else if (isNativeControlKey(vkeycode.KeyCode)) {
                     if (0 <= row_index && row_index < USHRT_MAX) {
                         input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS | row_index;
                     }
@@ -4204,11 +4209,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
 
             clearPressedVirtualKeysOfMappingKeysWithPendingKeys(mappingkeys_str, remainingKeyUps, rowindex, controller, keyMappingDataList, ibInputGeneration);
 
-#ifdef FAKERINPUT_SUPPORT
-            // Release mapping keys from FakerInput HID report on sequence break.
-            // The KEY_UP was never sent via FakerInput (break happened before
-            // KEY_UP processing), so the HID report still has the keycodes.
-            if (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_IBINPUT) {
+#if defined(FAKERINPUT_SUPPORT) && defined(FAKERINPUT_EXTRAINFO)
+            // Release mapping keys from FakerInput HID report on sequence break when ExtraInfo tracking is active.
+            if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
                 QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS, true);
                 for (auto it = mappingKeyListToClear.crbegin(); it != mappingKeyListToClear.crend(); ++it) {
                     const QString &mappingkey = *it;
@@ -5036,14 +5039,20 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         outputAccepted = SendInput(1, &input, sizeof(INPUT)) == 1;
                     }
 
-                    if (outputAccepted && KEY_DOWN == send_keyupdown
+                    if (outputAccepted
                         && sendtype != SENDTYPE_BOTH
                         && sendtype != SENDTYPE_EXCLUSION
-                        && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE
-                        && !sentKeyDownVirtualKeys.contains(key)) {
-                        sentKeyDownVirtualKeys.append(key);
-                        if (controller.activeSequence && !controller.activeSequence->heldKeys.contains(key))
-                            controller.activeSequence->heldKeys.append(key);
+                        && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE) {
+                        if (KEY_DOWN == send_keyupdown && !sentKeyDownVirtualKeys.contains(key)) {
+                            sentKeyDownVirtualKeys.append(key);
+                            if (controller.activeSequence && !controller.activeSequence->heldKeys.contains(key))
+                                controller.activeSequence->heldKeys.append(key);
+                        }
+                        else if (KEY_UP == send_keyupdown) {
+                            sentKeyDownVirtualKeys.removeAll(key);
+                            if (controller.activeSequence)
+                                controller.activeSequence->heldKeys.removeAll(key);
+                        }
                     }
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()) {
@@ -5169,15 +5178,7 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         input.ki.dwExtraInfo = VIRTUAL_KEY_OVERLAY;
                         force_sendinput = true;
                     }
-                    else if (VK_MOUSE2VJOY_HOLD == vkeycode.KeyCode
-                        || VK_KEY2MOUSE_UP == vkeycode.KeyCode
-                        || VK_KEY2MOUSE_DOWN == vkeycode.KeyCode
-                        || VK_KEY2MOUSE_LEFT == vkeycode.KeyCode
-                        || VK_KEY2MOUSE_RIGHT == vkeycode.KeyCode
-                        || VK_CROSSHAIR_NORMAL == vkeycode.KeyCode
-                        || VK_CROSSHAIR_TYPEA == vkeycode.KeyCode
-                        || VK_GYRO2MOUSE_HOLD == vkeycode.KeyCode
-                        || VK_GYRO2MOUSE_MOVE == vkeycode.KeyCode) {
+                    else if (isNativeControlKey(vkeycode.KeyCode)) {
                         if (0 <= row_index && row_index < USHRT_MAX) {
                             input.ki.dwExtraInfo = VIRTUAL_CUSTOM_KEYS | row_index;
                         }
@@ -5235,15 +5236,21 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                         }
                     }
 
-                    if (outputAccepted && KEY_DOWN == send_keyupdown
+                    if (outputAccepted
                         && sendtype != SENDTYPE_BOTH
                         && sendtype != SENDTYPE_EXCLUSION
                         && sendmappingkeymethod != SENDMAPPINGKEY_METHOD_SENDMESSAGE
-                        && !(normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE)
-                        && !sentKeyDownVirtualKeys.contains(key)) {
-                        sentKeyDownVirtualKeys.append(key);
-                        if (controller.activeSequence && !controller.activeSequence->heldKeys.contains(key))
-                            controller.activeSequence->heldKeys.append(key);
+                        && !(normal_send && fixedvkeycode != FIXED_VIRTUAL_KEY_CODE_NONE)) {
+                        if (KEY_DOWN == send_keyupdown && !sentKeyDownVirtualKeys.contains(key)) {
+                            sentKeyDownVirtualKeys.append(key);
+                            if (controller.activeSequence && !controller.activeSequence->heldKeys.contains(key))
+                                controller.activeSequence->heldKeys.append(key);
+                        }
+                        else if (KEY_UP == send_keyupdown) {
+                            sentKeyDownVirtualKeys.removeAll(key);
+                            if (controller.activeSequence)
+                                controller.activeSequence->heldKeys.removeAll(key);
+                        }
                     }
 
                     if (QKeyMapper::getSendToSameTitleWindowsStatus()
@@ -5481,13 +5488,9 @@ void QKeyMapper_Worker::sendInputKeys(int rowindex, QStringList inputKeys, int k
                 }
                 clearPressedVirtualKeysOfMappingKeysWithPendingKeys(mappingkeys_str, sentKeyDownVirtualKeys, rowindex, controller, keyMappingDataList, ibInputGeneration);
 
-#ifdef FAKERINPUT_SUPPORT
-                // Also release mapping keys from FakerInput HID report.
-                // clearPressedVirtualKeysOfMappingKeys sends KEY_UP via SendInput API,
-                // which does NOT clean the FakerInput driver's HID report keycodes.
-                // Stale keycodes cause subsequent sequence iterations to conflict
-                // ("already in report" -> no new Windows event -> stuck key).
-                if (sendmappingkeymethod != SENDMAPPINGKEY_METHOD_IBINPUT) {
+#if defined(FAKERINPUT_SUPPORT) && defined(FAKERINPUT_EXTRAINFO)
+                // Also release mapping keys from FakerInput HID report when ExtraInfo tracking is active.
+                if (sendmappingkeymethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
                     QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys_str, SPLIT_WITH_PLUS, true);
                     for (auto it = mappingKeyListToClear.crbegin(); it != mappingKeyListToClear.crend(); ++it) {
                         const QString &mappingkey = *it;
@@ -6089,13 +6092,16 @@ void QKeyMapper_Worker::emit_sendInputKeysSignal_Wrapper(int rowindex, QStringLi
 
     if (false == skip_emitsignal) {
         auto owner = sequence;
-        const bool rootSequence = isKeySequence(inputKeys) && !original_key.contains(":" + QString(KEYSEQUENCE_STR));
+        const bool isSequenceStep = original_key.contains(":" + QString(KEYSEQUENCE_STR));
+        const bool rootSequence = isKeySequence(inputKeys) && !isSequenceStep;
+        const bool isSequenceTask = (sendmode != SENDMODE_FORCE_STOP)
+            && (isSequenceStep || rootSequence || sendmode == SENDMODE_KEYSEQ_REPEAT);
         if (!owner && rootSequence && keyupdown == KEY_DOWN && sendmode != SENDMODE_KEYSEQ_REPEAT) {
             if (!controller) controller = &ensureSendInputTaskController(original_key);
             if (controller->sequence) controller->sequence->cancelled.storeRelease(1);
             owner = sequenceContext(rowindex, keyMappingDataList, qkmCurrentIbInputGeneration());
             controller->sequence = owner;
-        } else if (!owner && controller) owner = controller->sequence;
+        } else if (!owner && isSequenceTask && controller) owner = controller->sequence;
         emit sendInputKeys_Signal(rowindex, inputKeys, keyupdown, original_key, sendmode, sendvirtualkey_state, keyMappingDataList, qkmCurrentIbInputGeneration(),
             QSharedPointer<SendInputWorkItem>::create(owner));
 #ifdef DEBUG_LOGOUT_ON
@@ -6722,6 +6728,40 @@ BYTE QKeyMapper_Worker::MouseButtonStringToHIDButton(const QString &mouseButton,
         return FAKERINPUT_MOUSE_BUTTON_X2;
     }
     return 0;   // Unknown button
+}
+
+bool QKeyMapper_Worker::isFakerInputVirtualKeyInReport(const QString &key)
+{
+    QMutexLocker locker(&s_FakerInputClient_Mutex);
+
+    if (s_FakerInputClient == Q_NULLPTR || s_FakerInputClient_ConnectState != FAKERINPUT_CONNECT_SUCCESS) {
+        return false;
+    }
+
+    if (VirtualMouseButtonMap.contains(key)) {
+        const BYTE buttonBit = MouseButtonStringToHIDButton(key, KEY_DOWN);
+        return buttonBit != 0 && (s_FakerInputMouseReport_Buttons & buttonBit) != 0;
+    }
+
+    if (VirtualKeyCodeMap.contains(key)) {
+        const V_KEYCODE vkeycode = VirtualKeyCodeMap.value(key);
+        const BYTE modifierFlag = VirtualKeyCodeToHIDModifierFlag(vkeycode.KeyCode);
+        if (modifierFlag != 0) {
+            return (s_FakerInputKeyboardReport_ShiftFlags & modifierFlag) != 0;
+        }
+
+        const BYTE hidCode = VirtualKeyCodeToHIDUsageCode(vkeycode.KeyCode);
+        if (hidCode == 0) {
+            return false;
+        }
+        for (int i = 0; i < KBD_KEY_CODES; ++i) {
+            if (s_FakerInputKeyboardReport_KeyCodes[i] == hidCode) {
+                return true;
+            }
+        }
+    }
+
+    return false;
 }
 
 void QKeyMapper_Worker::resetFakerInputMouseReport(void)
@@ -21225,15 +21265,15 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeysWithPendingKeys(cons
 void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeysImpl(const QString &mappingkeys, const QStringList &pendingPressedKeys, bool limitToPendingKeys, int rowindex,
     SendInputTaskController rowController, QList<MAP_KEYDATA> *keyMappingDataList, quint64 ibInputGeneration)
 {
-    if (keyMappingDataList && rowindex >= 0 && rowindex < keyMappingDataList->size()
-        && keyMappingDataList->at(rowindex).SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) return;
+    const bool hasRowData = (keyMappingDataList && rowindex >= 0 && rowindex < keyMappingDataList->size());
+    const int sendMethod = hasRowData ? keyMappingDataList->at(rowindex).SendMappingKeyMethod : SENDMAPPINGKEY_METHOD_SENDINPUT;
+    if (hasRowData && sendMethod == SENDMAPPINGKEY_METHOD_SENDMESSAGE) return;
     QStringList mappingKeyListToClear = splitMappingKeyString(mappingkeys, SPLIT_WITH_PLUS, true);
     if (mappingKeyListToClear.isEmpty()) {
         return;
     }
 
-    if (keyMappingDataList && rowindex >= 0 && rowindex < keyMappingDataList->size()
-        && keyMappingDataList->at(rowindex).SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_IBINPUT) {
+    if (hasRowData && sendMethod == SENDMAPPINGKEY_METHOD_IBINPUT) {
         // A native KEY_UP cannot clear the selected driver's retained report,
         // and IBInput driver events bypass pressedVirtualKeysList (dwExtraInfo == 0).
         // Driver feedback has no original dwExtraInfo; its real-key echo is not a release ownership test.
@@ -21249,6 +21289,37 @@ void QKeyMapper_Worker::clearPressedVirtualKeysOfMappingKeysImpl(const QString &
         }
         return;
     }
+
+#if defined(FAKERINPUT_SUPPORT) && !defined(FAKERINPUT_EXTRAINFO)
+    if (hasRowData && sendMethod == SENDMAPPINGKEY_METHOD_FAKERINPUT) {
+        // Local HID reports identify this backend's holds, not device readback or physical-key ownership.
+        // Native control keys retain the accepted-DOWN and real-key safeguards even before their Hook echo.
+        rowController.sendvirtualkey_state = SENDVIRTUALKEY_STATE_FORCE;
+        SendInputTaskController fallbackController = SendInputTask::s_GlobalSendInputTaskController;
+        fallbackController.activeSequence = rowController.activeSequence;
+        fallbackController.sendvirtualkey_state = SENDVIRTUALKEY_STATE_FORCE;
+        const QStringList pressedVirtualKeysSnapshot = getPressedVirtualKeysListSnapshot();
+        for (auto it = mappingKeyListToClear.crbegin(); it != mappingKeyListToClear.crend(); ++it) {
+            const QString &key = *it;
+            if ((!VirtualKeyCodeMap.contains(key) && !VirtualMouseButtonMap.contains(key))
+                || (limitToPendingKeys && !pendingPressedKeys.contains(key))
+                || isPressedMappingKeysContains(key)) {
+                continue;
+            }
+            if (isFakerInputVirtualKeyInReport(key)) {
+                sendInputKeys(rowindex, QStringList{key}, KEY_UP, QString(CLEAR_VIRTUALKEYS),
+                    SENDMODE_FORCE_STOP, rowController, keyMappingDataList, ibInputGeneration);
+            }
+            else if (VirtualKeyCodeMap.contains(key) && isNativeControlKey(VirtualKeyCodeMap.value(key).KeyCode)
+                && (pressedVirtualKeysSnapshot.contains(key) || pendingPressedKeys.contains(key))
+                && !isPressedRealKeysRemoveMultiInputContains(key)) {
+                sendInputKeys(-1, QStringList{key}, KEY_UP, QString(CLEAR_VIRTUALKEYS),
+                    SENDMODE_FORCE_STOP, fallbackController, keyMappingDataList, ibInputGeneration);
+            }
+        }
+        return;
+    }
+#endif
 
     QStringList pressedVirtualKeysSnapshot = getPressedVirtualKeysListSnapshot();
     for (const QString &pendingKey : pendingPressedKeys) {
@@ -21329,12 +21400,12 @@ void QKeyMapper_Worker::cleanupInterruptedKeySequenceState(const QString &normal
                 resolvedRowIndex, cleanupController, targetKeyMappingDataList, ibInputGeneration);
             else clearPressedVirtualKeysOfMappingKeys(combinedMappingKeys, resolvedRowIndex, cleanupController, targetKeyMappingDataList, ibInputGeneration);
 
-#ifdef FAKERINPUT_SUPPORT
-            const bool useIbInput = (targetKeyMappingDataList != Q_NULLPTR
+#if defined(FAKERINPUT_SUPPORT) && defined(FAKERINPUT_EXTRAINFO)
+            const bool useFakerInput = (targetKeyMappingDataList != Q_NULLPTR
                 && resolvedRowIndex >= 0
                 && resolvedRowIndex < targetKeyMappingDataList->size()
-                && targetKeyMappingDataList->at(resolvedRowIndex).SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_IBINPUT);
-            if (!useIbInput) {
+                && targetKeyMappingDataList->at(resolvedRowIndex).SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_FAKERINPUT);
+            if (useFakerInput) {
                 const QStringList mappingKeyListToClear = splitMappingKeyString(combinedMappingKeys, SPLIT_WITH_PLUS, true);
                 for (auto it = mappingKeyListToClear.crbegin(); it != mappingKeyListToClear.crend(); ++it) {
                     const QString &mappingkey = *it;
@@ -22516,15 +22587,18 @@ SendInputTask::SendInputTask(int rowindex, const QStringList &inputKeys, int key
 
         auto &controller = ensureSendInputTaskController(m_real_originalkey);
         controller.task_keyup_sent = keyupdown == KEY_UP;
-        const bool root = isKeySequence(inputKeys) && !original_key.contains(":" + QString(KEYSEQUENCE_STR));
+        const bool isSequenceStep = original_key.contains(":" + QString(KEYSEQUENCE_STR));
+        const bool root = isKeySequence(inputKeys) && !isSequenceStep;
+        const bool isSequenceTask = (sendmode != SENDMODE_FORCE_STOP)
+            && (isSequenceStep || root || sendmode == SENDMODE_KEYSEQ_REPEAT);
         if (!m_sequence && keyupdown == KEY_DOWN && sendmode != SENDMODE_KEYSEQ_REPEAT
-            && (root || original_key.contains(":" + QString(KEYSEQUENCE_STR)))) {
+            && (root || isSequenceStep)) {
             if (root || !controller.sequence) {
                 m_sequence = sequenceContext(rowindex, m_keyMappingDataList, ibInputGeneration);
                 controller.sequence = m_sequence;
             }
         }
-        if (!m_sequence) m_sequence = controller.sequence;
+        if (!m_sequence && isSequenceTask) m_sequence = controller.sequence;
     }
 }
 

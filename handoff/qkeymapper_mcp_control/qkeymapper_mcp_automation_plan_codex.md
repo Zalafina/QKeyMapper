@@ -1,6 +1,6 @@
 # QKeyMapper MCP 开发计划：操作等价性、阶段排期与双机交接
 
-整理日期：2026-11-16（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
+整理日期：2026-11-17（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
 
 本文件是本任务唯一的计划、进度、决策及最新交接状态来源。相关入口：[目录规则](../README.md)、[能力与等价性矩阵](capability_matrix.md)、[验证记录](validation.md)。
 
@@ -16,29 +16,31 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | BUG01-149为ec2daf695fb7eeb3dc65625e77b7030eb8cc35fc；BUG02-150为本提交（父为149），选定完成并收尾停止，等待用户安排，不自动恢复MCP |
-| 执行机器 | PC-W11；普通Release配置、Default两后端、组件／实际ASan分别见本轮证据；Win10历史不冒充本轮复验 |
-| 目标分支／接纳点 | codex/qkeymapper-mcp-control基线5a80dd0649668ed59fd9f22591433954002264dd；本轮只在此分支修复，不切／合master、不push |
+| 当前切片 | BUG02-FOLLOWUP-151选定完成并停止；本提交父fe2eb674b1ca1842ab1bae0923c33f58cfcda880，不自动恢复MCP |
+| 执行机器 | PC-W11；151仅私有替身／实际ASan／正式MCP维护产品，普通Release只构建；Default为转交或历史证据，不记作本轮复验 |
+| 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；不切／合master、不push |
 | 集成提交／路径 | e73f719b23ee1bd0df99045727acf9554f33959b，两父分别为MCP94f0bb84及固定IbInput b5b484a6；codex/ibinput-mcp-integration，D:/agent_home/.codex/worktrees/ibinput-mcp-integration/QKeyMapper |
 | 固定输入 | b5b484a63bf97716c407ae9680fd1b63f8d5eb01，父f2f48ee5；包含f6495e9e、e88daf6a、06d5a38f |
 | 共同祖先 | 0d053c17590589f9a2b8492b61ab7e77b915456a；保留共同历史，不重复合入Forza |
-| 当前已完成 | 149实键／Timed线程安全、150序列打断／重触发选验完成；148及前序MCP能力沿原范围保留，完整M1仍待 |
-| 当前验证 | 双Qt普通构建、定向分析、47运行态／28repeat／26实际ASan／7 Qt5、正式MCP／演示及Default G HUB／Razer各7场通过；失败与分层边界见runtime_bugfix_validation.md |
-| 工作区保留 | 起始及提交前无无关改动／暂存；本提交仅两Bug所需文件，环境／构建／原始证据保留，外部材料只读；两份临时复现CPP／PRO副本已清理 |
-| 当前控制器 | 13752／instance dabbebabad784963b85fa4c860b8cc4e于16:54:45 off；独立status无控制器、原生缓存会话0，owned／unresolved／pending0。仅本任务登记，无其他共享活动；历史未知不重放 |
-| 授权边界 | 11-16批准两Bug及私有门槛；通过后公告Default G HUB／Razer自有接收窗20–30分钟，受限合成输入／清理；不安装驱动／改系统设置，开发普通权限 |
-| 下一项动作 | 本轮停止等待用户指示；恢复MCP时接148之后既定剩余编辑范围，以当前源码／计划为准，不重复环境恢复或未受影响验收，不自行开启缓存 |
+| 当前已完成 | 151三边界修正及必要回落适配完成；149／150和前序MCP证据保留原范围，完整M1仍待 |
+| 当前验证 | 151双Qt构建／17项释放／输出正对照、Qt6九运行态／28repeat／六实际ASan、定向分析、39 Python及正式MCP两图／零输出通过；失败和分层见runtime_bugfix_validation.md |
+| 工作区保留 | 151起始干净；仅本切片八文件形成独立提交，环境／构建／原件保留，来源材料及其他工作区未修改 |
+| 当前控制器 | 38956／instance5983f527062048ddbead92cfdef128c7于11-17 15:18:29 off，closed／off脚本exit0／cache不可用，owned／unresolved／pending0；独立status无控制器、原生会话0；无外来共享授权，历史未知未重放 |
+| 授权边界 | 11-17批准151产品修正及私有验证；不新增Default／真实输入／驱动或系统设置；开发普通权限，仅原manifest启动关闭走公共登记入口 |
+| 下一项动作 | 本轮提交后停止等待用户指示，不启动新MCP；若安排恢复，再接148之后既定编辑范围，不重复环境恢复／未受影响验收，不自行开启缓存 |
 | 后续范围 | 137真实跨登录／PC重启、实际客户端接线、主动MCP连接检查／试发、普通用户多实例前台绑定、Win10可选实体／Release三包／QQ联调仍待；完整M1／M2未完成 |
-| 本机证据 | 本轮out/runtime_bugfix_149_20261116；外部基线与当前复现／实际程序、Default／私有／替身分别记录；原件仅本机 |
-| 提交策略 | 01与02各形成聚焦本地提交，不push／amend／合master；两Bug验证收尾后停止，不自动恢复MCP，失败保留现场不强行提交 |
+| 本机证据 | 151 out/runtime_followup151_20261117；149／150 out/runtime_bugfix_149_20261116及用户转交Gemini原件分别记录，均不跨PC假定存在 |
+| 提交策略 | 151一个聚焦本地独立提交，不push／amend／合master；完成后停止，等待用户后续指示 |
 
-### RUNTIME-BUG01-149／BUG02-150：两项运行时缺陷（选定完成，本机停止）
+### BUG02-FOLLOWUP-151：三项运行时边界补充（选定完成，停止）
 
-按用户11-16批准方案顺序审阅01／02；参考预适配仅提供线索，已核对01检查及两补丁内存61／54段上下文，不代表兼容验收。01使用实键双列表／Timed两非递归叶锁、锁外回调及UI快照；02补虚拟列表快照逆序、待释放DOWN／普通SendInput遗漏、打断与重触发，清理任务须纳入SendInputWorkItem并绑定原源／控制器／运行代次，不临时取当前上下文。保留MCP冻结／权限、IbInput后端和dwExtraInfo决定，不新增MCP接口。
+用户11-17批准，在干净fe2eb674上组入Gemini三项修正：仅序列任务继承身份、FakerInput按行／pending／本地报告／借键释放、成功显式UP移除记账。另修原补丁遗漏的force_sendinput控制键已受理DOWN且无Hook回声的释放，只认九种已知原生控制键；普通HID缺项不触发回落。探针固定替身至析构，局部源前排空任务及解除引用；末次零VK哨兵保护以双Qt／实际ASan无界面单元复验、final04重编／分析通过，缓存保持关闭。MCP／权限／文案不变。
 
-本轮选验完成：双Qt普通Release、三文件定向分析、01五模式、02三套Case1/2/3a–3d及各300轮，最终47运行态／28 repeat、26实际ASan及7 Qt5通过；71项MCP组件／12 SDK、普通产品51调用与保存冷读、运行／清理期间45调用写拒绝、演示10场逐入口零调用及Forza通过。首次控制器身份接线、延迟UP与未发DOWN补UP均经失败轮次定位后修正；永久回归在既有目标，未新增MCP接口。原五完整dump仅作所供不匹配重建PDB辅助对照，五空partial不计；不是精确生产栈。
+修前旧七绿／新增七红；原补丁七项转绿但回落对照红，适配后双Qt17项全过。双Qt普通Release／探针、Qt6九运行态／28repeat／六实际ASan及最后夹具复验、三编译上下文定向分析、39 Python检查、27调用正式MCP两图／10零输出及回收选验通过。首轮夹具C2248、版本与实际范围见[既有事实页](runtime_bugfix_validation.md#bug02-followup-151三项运行时边界补充2026-11-17选定完成)。本会话无Default／真实输入；Gemini转交结果单列。本地报告不是设备回读、脚本注入不是物理键；同VK及既有SendInput松开边界登记待办，不承诺零误伤。原件out/runtime_followup151_20261117仅本机。15:18:29缓存off并独立核实，聚焦本地提交后停止，不自动恢复MCP。
 
-用户自行退出个人实例后，已公告Default G HUB／Razer固定序列各7场通过，真实后端无回退、代次1→2、停止和退出实际排空／释放、native0。Razer首轮观察文件刷新竞争正常清理后，仅修普通读取助手，新轮通过；两成功轮接收器映射键8/8/1收发对应、最终保持0，原键恢复计数不扩大为严格事件一一对应。计划预留20–30分钟，成功驱动实测各约8.3／8.4秒，不是长期稳定性或游戏验收。普通Release配置、真实维护输入、组件／替身及历史范围分开；失焦守卫未额外故障注入。未改NumLock、指针参数、FilterKeys或驱动，未操作个人INI／实例。清理自有进程／凭据、仅移除两份外部源码副本，16:54:45缓存off并独立核实；当前停止，不启动后续MCP。完整失败／版本／EXE／图片／本机原件及遗漏见[证据](runtime_bugfix_validation.md)，Win10、Qt5 x86、真实FakerInput及厂商故障等未验不补造。
+### RUNTIME-BUG01-149／BUG02-150：选定完成（11-16）
+
+149 ec2daf695fb7eeb3dc65625e77b7030eb8cc35fc采用实键双列表／Timed两叶锁与锁外回调、UI快照；150 fe2eb674b1ca1842ab1bae0923c33f58cfcda880补虚拟列表快照、待释放DOWN、打断重触发和绑定原源／运行代次的计数尾任务。双Qt普通构建、定向分析、01五模式、02三套复现及各300轮、47运行态／28repeat／26实际ASan／7Qt5、MCP／保存／演示／Forza选验通过。Default G HUB／Razer各7场真实维护目标通过，不扩大普通Release全运行／游戏／物理设备验收；不匹配重建PDB仅辅助对照。失败轮次、版本／EXE、原始材料与未验范围见[事实页](runtime_bugfix_validation.md)，精简前全文保留Git fe2eb674。本轮缓存off及独立核实后停止，11-17只插入151，不恢复MCP。
 
 ### EDIT-148：普通原键冲突仅禁用本行（选定完成，本机暂停）
 

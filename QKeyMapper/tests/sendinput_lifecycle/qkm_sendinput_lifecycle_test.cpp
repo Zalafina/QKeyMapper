@@ -29,6 +29,7 @@
 #include <QMenu>
 #include <QTranslator>
 #include <qt_windows.h>
+#include <cstring>
 #include <thread>
 #include <atomic>
 #include "../../automation/qkm_control_dialog.h"
@@ -2938,14 +2939,103 @@ QJsonObject QkmMappingAdditionTestAccess::sequenceContext150(QKeyMapper *mapper)
         {QStringLiteral("native_dispatch_disconnected"), disconnected}, {QStringLiteral("synthetic_contexts"), true}};
 }
 
+#if defined(QKM_IBINPUT_OUTPUT_PROBE) && defined(FAKERINPUT_SUPPORT)
+namespace {
+struct FakerInputEchoMirror150 {
+    static inline BYTE s_prevShift = 0;
+    static inline BYTE s_prevCodes[KBD_KEY_CODES]{};
+    static inline BYTE s_prevMouse = 0;
+
+    static void reset()
+    {
+        s_prevShift = 0;
+        std::memset(s_prevCodes, 0, sizeof(s_prevCodes));
+        s_prevMouse = 0;
+    }
+
+    static bool hidCodeContains(const BYTE codes[KBD_KEY_CODES], BYTE target)
+    {
+        for (int i = 0; i < KBD_KEY_CODES; ++i) {
+            if (codes[i] == target) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    static void injectKey(BYTE vk, bool up)
+    {
+        KBDLLHOOKSTRUCT kbd{};
+        kbd.vkCode = vk;
+        kbd.scanCode = static_cast<DWORD>(MapVirtualKeyW(vk, MAPVK_VK_TO_VSC));
+        kbd.flags = LLKHF_INJECTED | (up ? LLKHF_UP : 0);
+        kbd.dwExtraInfo = 0;
+        QKeyMapper_Worker::LowLevelKeyboardHookProc(HC_ACTION, up ? WM_KEYUP : WM_KEYDOWN, reinterpret_cast<LPARAM>(&kbd));
+    }
+
+    static void onKeyboard(BYTE shiftFlags, const BYTE keyCodes[KBD_KEY_CODES])
+    {
+        const bool wasCtrl = (s_prevShift & KBD_LCONTROL_BIT) != 0;
+        const bool nowCtrl = (shiftFlags & KBD_LCONTROL_BIT) != 0;
+        if (wasCtrl != nowCtrl) {
+            injectKey(VK_LCONTROL, !nowCtrl);
+        }
+        struct TrackedKey { BYTE hid; BYTE vk; };
+        static constexpr TrackedKey tracked[] = {
+            {0x59, VK_NUMPAD1},
+            {0x5A, VK_NUMPAD2},
+            {0x62, VK_NUMPAD0}
+        };
+        for (const TrackedKey &entry : tracked) {
+            const bool wasDown = hidCodeContains(s_prevCodes, entry.hid);
+            const bool nowDown = hidCodeContains(keyCodes, entry.hid);
+            if (wasDown != nowDown) {
+                injectKey(entry.vk, !nowDown);
+            }
+        }
+        s_prevShift = shiftFlags;
+        std::memcpy(s_prevCodes, keyCodes, sizeof(s_prevCodes));
+    }
+
+    static void onMouse(BYTE button)
+    {
+        const bool wasLeft = (s_prevMouse & FAKERINPUT_MOUSE_BUTTON_LEFT) != 0;
+        const bool nowLeft = (button & FAKERINPUT_MOUSE_BUTTON_LEFT) != 0;
+        if (wasLeft != nowLeft) {
+            MSLLHOOKSTRUCT mouse{};
+            mouse.flags = LLMHF_INJECTED;
+            mouse.dwExtraInfo = 0;
+            QKeyMapper_Worker::LowLevelMouseHookProc(HC_ACTION, nowLeft ? WM_LBUTTONDOWN : WM_LBUTTONUP, reinterpret_cast<LPARAM>(&mouse));
+        }
+        s_prevMouse = button;
+    }
+};
+}
+#endif
+
 QJsonObject QkmMappingAdditionTestAccess::sequenceRelease150()
 {
 #ifndef QKM_IBINPUT_OUTPUT_PROBE
     return {{QStringLiteral("passed"), false}, {QStringLiteral("requires_substituted_native_boundaries"), true}};
 #else
     using Worker = QKeyMapper_Worker;
+    auto *worker = Worker::getInstance();
+    auto *mapper = QKeyMapper::getInstance();
     const int previousHook = Worker::s_AtomicHookProcState.loadAcquire();
+    const bool previousInterceptionStart = Interception_Worker::s_InterceptStart;
+    const auto previousKeyMapStatus = mapper->m_KeyMapStatus;
+    auto *previousMappingTable = QKeyMapper::KeyMappingDataList;
     Worker::s_AtomicHookProcState.storeRelease(HOOKPROC_STATE_STARTED);
+    Interception_Worker::s_InterceptStart = false;
+    mapper->m_KeyMapStatus = QKeyMapper::KEYMAP_IDLE;
+#ifdef FAKERINPUT_SUPPORT
+    const auto previousFakerClient = Worker::s_FakerInputClient;
+    const auto previousFakerConnectState = Worker::s_FakerInputClient_ConnectState;
+    const BYTE previousShiftFlags = Worker::s_FakerInputKeyboardReport_ShiftFlags;
+    BYTE previousKeyCodes[KBD_KEY_CODES]{};
+    std::memcpy(previousKeyCodes, Worker::s_FakerInputKeyboardReport_KeyCodes, sizeof(previousKeyCodes));
+    const BYTE previousMouseButtons = Worker::s_FakerInputMouseReport_Buttons;
+#endif
     QList<MAP_KEYDATA> source{MAP_KEYDATA()}; source[0].Original_Key = QStringLiteral("QkmSequence150");
     const QString own = QStringLiteral("QkmSequence150:KeySequence1"), borrower = QStringLiteral("QkmBorrower150");
     Worker::clearPressedVirtualKeysList(); Worker::appendPressedVirtualKeyIfAbsent(QStringLiteral("Num1"));
@@ -2954,9 +3044,34 @@ QJsonObject QkmMappingAdditionTestAccess::sequenceRelease150()
     const auto restore = qScopeGuard([&] {
         QkmNativeOutputProbe::reset();
         SendInputTask::clearSendInputTaskControllerMap();
+        QKeyMapper::KeyMappingDataList = previousMappingTable;
+#ifdef FAKERINPUT_SUPPORT
+        QkmNativeOutputProbe::setFakerInputObservers(nullptr, nullptr);
+        QkmNativeOutputProbe::resetFakerInput();
+        {
+            QMutexLocker fakerLock(&Worker::s_FakerInputClient_Mutex);
+            Worker::s_FakerInputKeyboardReport_ShiftFlags = previousShiftFlags;
+            std::memcpy(Worker::s_FakerInputKeyboardReport_KeyCodes, previousKeyCodes, sizeof(previousKeyCodes));
+            Worker::s_FakerInputMouseReport_Buttons = previousMouseButtons;
+            Worker::s_FakerInputClient = previousFakerClient;
+            Worker::s_FakerInputClient_ConnectState = previousFakerConnectState;
+        }
+#endif
+        Worker::s_runningKeySequenceOrikeyList.clear();
+        Worker::s_KeySequenceRepeatCount.clear();
+        for (const QString &realKey : {QStringLiteral("Num0"), QStringLiteral("Num1"), QStringLiteral("Num2"),
+                 QStringLiteral("L-Ctrl"), QStringLiteral("W"), QStringLiteral("Mouse-L")}) {
+            Worker::updatePressedRealKeysList(realKey, KEY_UP);
+        }
+        Worker::clearPressedVirtualKeysList();
+        {
+            QMutexLocker lock(&Worker::s_PressedMappingKeysMapMutex);
+            Worker::pressedMappingKeysMap.clear();
+        }
+        QKeyMapper::KeyMappingDataList = previousMappingTable;
+        mapper->m_KeyMapStatus = previousKeyMapStatus;
+        Interception_Worker::s_InterceptStart = previousInterceptionStart;
         Worker::s_AtomicHookProcState.storeRelease(previousHook);
-        Worker::updatePressedRealKeysList(QStringLiteral("Num2"), KEY_UP); Worker::clearPressedVirtualKeysList();
-        QMutexLocker lock(&Worker::s_PressedMappingKeysMapMutex); Worker::pressedMappingKeysMap.clear();
     });
     const auto seed = [&] { QMutexLocker lock(&Worker::s_PressedMappingKeysMapMutex);
         Worker::pressedMappingKeysMap[own] = QStringList{QStringLiteral("Num1+Num2⏱400")}; };
@@ -3010,11 +3125,470 @@ QJsonObject QkmMappingAdditionTestAccess::sequenceRelease150()
         &source, 0, controller.activeSequence); late.run(); }
     const bool lateUpRejected = QkmNativeOutputProbe::counts().value(QStringLiteral("SendInput")).toInt() == 0;
     QkmNativeOutputProbe::reset();
+
+    // Boundary 1: mixed single-key and KeySequence on the same mapping row (SendTiming Normal+KeyUp).
+    bool keyseqWithSingleKeyup = false;
+    bool singleKeydownWithKeyseqKeyup = false;
+    {
+        struct EmittedRequest {
+            int row = -1;
+            QStringList keys;
+            int direction = 0;
+            QString original;
+            int mode = 0;
+            int state = 0;
+            QList<MAP_KEYDATA> *table = nullptr;
+            quint64 generation = 0;
+            QSharedPointer<SendInputWorkItem> work;
+        };
+        QList<EmittedRequest> requests;
+        const bool disconnected = QObject::disconnect(worker, &Worker::sendInputKeys_Signal, worker, &Worker::onSendInputKeys);
+        const auto capture = QObject::connect(worker, &Worker::sendInputKeys_Signal, worker,
+            [&](int row, QStringList keys, int direction, QString originalKey, int mode, int state,
+                QList<MAP_KEYDATA> *table, quint64 generation, QSharedPointer<SendInputWorkItem> work) {
+                requests.append({row, keys, direction, originalKey, mode, state, table, generation, work});
+            }, Qt::DirectConnection);
+        const auto reconnect = qScopeGuard([&] {
+            requests.clear();
+            QObject::disconnect(capture);
+            if (disconnected) {
+                QObject::connect(worker, &Worker::sendInputKeys_Signal, worker, &Worker::onSendInputKeys, Qt::QueuedConnection);
+            }
+        });
+
+        QList<MAP_KEYDATA> timingSource{MAP_KEYDATA()};
+        timingSource[0].Original_Key = QStringLiteral("QkmBoundary1A");
+        timingSource[0].Mapping_Keys = QStringList{QStringLiteral("Num1⏱400"), QStringLiteral("Num2")};
+        timingSource[0].MappingKeys_KeyUp = QStringList{QStringLiteral("Esc")};
+        timingSource[0].SendTiming = SENDTIMING_NORMAL_AND_KEYUP;
+        timingSource[0].RepeatMode = REPEAT_MODE_BYKEY;
+        QKeyMapper::KeyMappingDataList = &timingSource;
+        Worker::clearPressedVirtualKeysList();
+        SendInputTask::clearSendInputTaskControllerMap();
+
+        worker->emit_sendInputKeysSignal_Wrapper(0, timingSource[0].Mapping_Keys, KEY_DOWN, timingSource[0].Original_Key,
+            SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource);
+        QSharedPointer<KeySequenceContext> s1 = requests.isEmpty() ? nullptr : requests.last().work->sequence;
+        if (s1) {
+            QMutexLocker lock(&SendInputTask::s_SendInputTaskControllerMapMutex);
+            auto &c = SendInputTask::s_SendInputTaskControllerMap[timingSource[0].Original_Key];
+            c.sequence = c.activeSequence = s1;
+        }
+        Worker::s_runningKeySequenceOrikeyList = QStringList{timingSource[0].Original_Key};
+        requests.clear();
+
+        worker->emit_sendInputKeysSignal_Wrapper(0, timingSource[0].Mapping_Keys, KEY_UP, timingSource[0].Original_Key,
+            SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource);
+        worker->emit_sendInputKeysSignal_Wrapper(0, timingSource[0].MappingKeys_KeyUp, KEY_DOWN, timingSource[0].Original_Key,
+            SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource);
+        worker->emit_sendInputKeysSignal_Wrapper(0, timingSource[0].MappingKeys_KeyUp, KEY_UP, timingSource[0].Original_Key,
+            SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource);
+        const bool wrapperUnbound = requests.size() == 3 && !requests.at(1).work->sequence && !requests.at(2).work->sequence;
+        QkmNativeOutputProbe::reset();
+        for (const EmittedRequest &req : std::as_const(requests)) {
+            const int downsBefore = QkmNativeOutputProbe::sendInputDownCount(VK_ESCAPE);
+            const int upsBefore = QkmNativeOutputProbe::sendInputUpCount(VK_ESCAPE);
+            SendInputTask task(req.row, req.keys, req.direction, req.original, req.mode, req.state,
+                req.table, req.generation, req.work ? req.work->sequence : nullptr);
+            task.run();
+            if (req.direction == KEY_DOWN && QkmNativeOutputProbe::sendInputDownCount(VK_ESCAPE) > downsBefore) {
+                Worker::appendPressedVirtualKeyIfAbsent(QStringLiteral("Esc"));
+            }
+            if (req.direction == KEY_UP && QkmNativeOutputProbe::sendInputUpCount(VK_ESCAPE) > upsBefore) {
+                Worker::removePressedVirtualKey(QStringLiteral("Esc"));
+            }
+        }
+        if (s1) {
+            s1->cancelled.storeRelease(1);
+            QMutexLocker lock(&SendInputTask::s_SendInputTaskControllerMapMutex);
+            auto &c = SendInputTask::s_SendInputTaskControllerMap[timingSource[0].Original_Key];
+            c.sequence = c.activeSequence = s1;
+        }
+        {
+            const int downsBefore = QkmNativeOutputProbe::sendInputDownCount(VK_ESCAPE);
+            SendInputTask directDown(0, timingSource[0].MappingKeys_KeyUp, KEY_DOWN, timingSource[0].Original_Key,
+                SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource, 0);
+            directDown.run();
+            if (QkmNativeOutputProbe::sendInputDownCount(VK_ESCAPE) > downsBefore) {
+                Worker::appendPressedVirtualKeyIfAbsent(QStringLiteral("Esc"));
+            }
+            const int upsBefore = QkmNativeOutputProbe::sendInputUpCount(VK_ESCAPE);
+            SendInputTask directUp(0, timingSource[0].MappingKeys_KeyUp, KEY_UP, timingSource[0].Original_Key,
+                SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource, 0);
+            directUp.run();
+            if (QkmNativeOutputProbe::sendInputUpCount(VK_ESCAPE) > upsBefore) {
+                Worker::removePressedVirtualKey(QStringLiteral("Esc"));
+            }
+        }
+        keyseqWithSingleKeyup = disconnected && wrapperUnbound && s1
+            && QkmNativeOutputProbe::sendInputDownCount(VK_ESCAPE) == 2
+            && QkmNativeOutputProbe::sendInputUpCount(VK_ESCAPE) == 2;
+
+        // Reverse: single-key Mapping_Keys + KeySequence MappingKeys_KeyUp after KeyUp interruption.
+        requests.clear();
+        SendInputTask::clearSendInputTaskControllerMap();
+        Worker::s_runningKeySequenceOrikeyList.clear();
+        Worker::clearPressedVirtualKeysList();
+        timingSource[0].Original_Key = QStringLiteral("QkmBoundary1B");
+        timingSource[0].Mapping_Keys = QStringList{QStringLiteral("Num1")};
+        timingSource[0].MappingKeys_KeyUp = QStringList{QStringLiteral("Esc"), QStringLiteral("Enter")};
+        timingSource[0].RepeatMode = REPEAT_MODE_NONE;
+
+        worker->emit_sendInputKeysSignal_Wrapper(0, timingSource[0].MappingKeys_KeyUp, KEY_DOWN, timingSource[0].Original_Key,
+            SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource);
+        QSharedPointer<KeySequenceContext> sKu = requests.isEmpty() ? nullptr : requests.last().work->sequence;
+        if (sKu) {
+            sKu->cancelled.storeRelease(1);
+            QMutexLocker lock(&SendInputTask::s_SendInputTaskControllerMapMutex);
+            auto &c = SendInputTask::s_SendInputTaskControllerMap[timingSource[0].Original_Key];
+            c.sequence = c.activeSequence = sKu;
+        }
+        requests.clear();
+        worker->emit_sendInputKeysSignal_Wrapper(0, timingSource[0].Mapping_Keys, KEY_DOWN, timingSource[0].Original_Key,
+            SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource);
+        worker->emit_sendInputKeysSignal_Wrapper(0, timingSource[0].Mapping_Keys, KEY_UP, timingSource[0].Original_Key,
+            SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource);
+        const bool reverseUnbound = requests.size() == 2 && !requests.at(0).work->sequence && !requests.at(1).work->sequence;
+        QkmNativeOutputProbe::reset();
+        for (const EmittedRequest &req : std::as_const(requests)) {
+            const int downsBefore = QkmNativeOutputProbe::sendInputDownCount(VK_NUMPAD1);
+            const int upsBefore = QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1);
+            SendInputTask task(req.row, req.keys, req.direction, req.original, req.mode, req.state,
+                req.table, req.generation, req.work ? req.work->sequence : nullptr);
+            task.run();
+            if (req.direction == KEY_DOWN && QkmNativeOutputProbe::sendInputDownCount(VK_NUMPAD1) > downsBefore) {
+                Worker::appendPressedVirtualKeyIfAbsent(QStringLiteral("Num1"));
+            }
+            if (req.direction == KEY_UP && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1) > upsBefore) {
+                Worker::removePressedVirtualKey(QStringLiteral("Num1"));
+            }
+        }
+        {
+            const int downsBefore = QkmNativeOutputProbe::sendInputDownCount(VK_NUMPAD1);
+            SendInputTask directDown(0, timingSource[0].Mapping_Keys, KEY_DOWN, timingSource[0].Original_Key,
+                SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource, 0);
+            directDown.run();
+            if (QkmNativeOutputProbe::sendInputDownCount(VK_NUMPAD1) > downsBefore) {
+                Worker::appendPressedVirtualKeyIfAbsent(QStringLiteral("Num1"));
+            }
+            const int upsBefore = QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1);
+            SendInputTask directUp(0, timingSource[0].Mapping_Keys, KEY_UP, timingSource[0].Original_Key,
+                SENDMODE_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &timingSource, 0);
+            directUp.run();
+            if (QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1) > upsBefore) {
+                Worker::removePressedVirtualKey(QStringLiteral("Num1"));
+            }
+        }
+        singleKeydownWithKeyseqKeyup = disconnected && reverseUnbound && sKu
+            && QkmNativeOutputProbe::sendInputDownCount(VK_NUMPAD1) == 2
+            && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1) == 2;
+
+        requests.clear();
+        SendInputTask::clearSendInputTaskControllerMap();
+        QKeyMapper::KeyMappingDataList = &source;
+        Worker::s_runningKeySequenceOrikeyList.clear();
+        Worker::clearPressedVirtualKeysList();
+        singleKeydownWithKeyseqKeyup = singleKeydownWithKeyseqKeyup && SendInputWorkItem::outstanding() == 0;
+    }
+
+    // Boundary 3: explicit UP operator (↓Num1 » ↑Num1+Num2⏱200) must drop Num1 from heldKeys before break cleanup.
+    bool explicitUpBeforeBreak = false;
+    bool failedExplicitUpRetained = false;
+    {
+        QList<MAP_KEYDATA> mixedSource{MAP_KEYDATA()};
+        mixedSource[0].Original_Key = QStringLiteral("QkmBoundary3");
+        mixedSource[0].Mapping_Keys = QStringList{QStringLiteral("↓Num1"), QStringLiteral("↑Num1+Num2⏱200")};
+        const QString step1Key = QStringLiteral("QkmBoundary3:KeySequence1");
+        const QString step2Key = QStringLiteral("QkmBoundary3:KeySequence2");
+        QKeyMapper::KeyMappingDataList = &mixedSource;
+        Worker::clearPressedVirtualKeysList();
+        SendInputTask::clearSendInputTaskControllerMap();
+        {
+            SendInputTask seedCtrl(0, mixedSource[0].Mapping_Keys, KEY_DOWN, mixedSource[0].Original_Key,
+                SENDMODE_KEYSEQ_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &mixedSource, 0);
+        }
+        auto mixedController = SendInputTask::s_SendInputTaskControllerMap[mixedSource[0].Original_Key];
+        mixedController.activeSequence = QSharedPointer<KeySequenceContext>::create();
+        mixedController.activeSequence->source = &mixedSource;
+        mixedController.activeSequence->row = 0;
+        mixedController.task_stop_flag->storeRelease(INPUTSTOP_NONE);
+        QkmNativeOutputProbe::reset();
+
+        worker->sendInputKeys(0, QStringList{QStringLiteral("↓Num1")}, KEY_DOWN, step1Key,
+            SENDMODE_KEYSEQ_NORMAL, mixedController, &mixedSource, 0);
+        worker->sendInputKeys(0, QStringList{QStringLiteral("↓Num1")}, KEY_UP, step1Key,
+            SENDMODE_KEYSEQ_NORMAL, mixedController, &mixedSource, 0);
+        const bool step1Held = mixedController.activeSequence->heldKeys.contains(QStringLiteral("Num1"))
+            && QkmNativeOutputProbe::sendInputDownCount(VK_NUMPAD1) == 1
+            && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1) == 0;
+
+        QkmNativeOutputProbe::breakAfterDown(mixedController.task_stop_flag, VK_NUMPAD2, INPUTSTOP_KEYSEQ);
+        worker->sendInputKeys(0, QStringList{QStringLiteral("↑Num1+Num2⏱200")}, KEY_DOWN, step2Key,
+            SENDMODE_KEYSEQ_NORMAL, mixedController, &mixedSource, 0);
+        const bool step2DroppedHeld = !mixedController.activeSequence->heldKeys.contains(QStringLiteral("Num1"))
+            && !mixedController.activeSequence->heldKeys.contains(QStringLiteral("Num2"));
+        worker->cleanupInterruptedKeySequenceState(mixedSource[0].Original_Key, 0, &mixedSource, 0, mixedController.activeSequence);
+        const bool noExtraUpOnBreak = QkmNativeOutputProbe::sendInputDownCount(VK_NUMPAD2) == 1
+            && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD2) == 1
+            && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1) == 1;
+
+        // Cross-step cleanup right before Step 2 KEY_UP (after Step 1 finishes its no-op KEY_UP).
+        Worker::clearPressedVirtualKeysList();
+        mixedController.activeSequence->heldKeys.clear();
+        mixedController.task_stop_flag->storeRelease(INPUTSTOP_NONE);
+        QkmNativeOutputProbe::reset();
+        worker->sendInputKeys(0, QStringList{QStringLiteral("↓Num1")}, KEY_DOWN, step1Key,
+            SENDMODE_KEYSEQ_NORMAL, mixedController, &mixedSource, 0);
+        worker->sendInputKeys(0, QStringList{QStringLiteral("↓Num1")}, KEY_UP, step1Key,
+            SENDMODE_KEYSEQ_NORMAL, mixedController, &mixedSource, 0);
+        worker->sendInputKeys(0, QStringList{QStringLiteral("↑Num1+Num2")}, KEY_DOWN, step2Key,
+            SENDMODE_KEYSEQ_NORMAL, mixedController, &mixedSource, 0);
+        const bool crossStepHeldOnlyNum2 = !mixedController.activeSequence->heldKeys.contains(QStringLiteral("Num1"))
+            && mixedController.activeSequence->heldKeys.contains(QStringLiteral("Num2"));
+        QkmNativeOutputProbe::reset();
+        worker->cleanupInterruptedKeySequenceState(mixedSource[0].Original_Key, 0, &mixedSource, 0, mixedController.activeSequence);
+        const bool crossStepSingleUp = QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1) == 0
+            && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD2) == 1;
+
+        explicitUpBeforeBreak = step1Held && step2DroppedHeld && noExtraUpOnBreak
+            && crossStepHeldOnlyNum2 && crossStepSingleUp;
+
+        // A rejected explicit UP must remain owned until a later admitted cleanup succeeds.
+        mixedController.task_stop_flag->storeRelease(INPUTSTOP_NONE);
+        QkmNativeOutputProbe::reset();
+        worker->sendInputKeys(0, {QStringLiteral("↓Num1")}, KEY_DOWN, step1Key,
+            SENDMODE_KEYSEQ_NORMAL, mixedController, &mixedSource, 0);
+        QkmNativeOutputProbe::failNextSendInputUp(VK_NUMPAD1);
+        worker->sendInputKeys(0, {QStringLiteral("↑Num1")}, KEY_DOWN, step2Key,
+            SENDMODE_KEYSEQ_NORMAL, mixedController, &mixedSource, 0);
+        const bool retainedAfterFailure = mixedController.activeSequence->heldKeys.contains(QStringLiteral("Num1"))
+            && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1) == 0;
+        worker->cleanupInterruptedKeySequenceState(mixedSource[0].Original_Key, 0, &mixedSource, 0, mixedController.activeSequence);
+        failedExplicitUpRetained = retainedAfterFailure && mixedController.activeSequence->heldKeys.isEmpty()
+            && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1) == 1;
+        QKeyMapper::KeyMappingDataList = &source;
+        SendInputTask::clearSendInputTaskControllerMap();
+        Worker::clearPressedVirtualKeysList();
+    }
+
+#ifdef FAKERINPUT_SUPPORT
+    // Boundary 2: FakerInput sequences emit dwExtraInfo == 0 hook echoes into pressedRealKeysListRemoveMultiInput.
+    // Release uses the local HID report and row method, preserving unrelated real-key bookkeeping
+    // and borrower rows while keeping ordinary SendInput rows isolated from FakerInput reports.
+    bool fakerKeyboardBreakRelease = false;
+    bool fakerMouseBreakRelease = false;
+    bool fakerBorrowerProtected = false;
+    bool fakerSendInputIsolation = false;
+    bool fakerFallbackPendingReleased = false;
+    bool fakerMissingReportNoFallback = false;
+    {
+        FakerInputEchoMirror150::reset();
+        QkmNativeOutputProbe::resetFakerInput();
+        {
+            QMutexLocker fakerLock(&Worker::s_FakerInputClient_Mutex);
+            Worker::s_FakerInputKeyboardReport_ShiftFlags = 0;
+            std::memset(Worker::s_FakerInputKeyboardReport_KeyCodes, 0, sizeof(Worker::s_FakerInputKeyboardReport_KeyCodes));
+            Worker::s_FakerInputMouseReport_Buttons = 0;
+        }
+        Worker::FakerInputClient_Alloc();
+        Worker::FakerInputClient_Connect();
+        QkmNativeOutputProbe::setFakerInputObservers(&FakerInputEchoMirror150::onKeyboard, &FakerInputEchoMirror150::onMouse);
+
+        QList<MAP_KEYDATA> fakerSource{MAP_KEYDATA()};
+        fakerSource[0].Original_Key = QStringLiteral("QkmFakerSeq150");
+        fakerSource[0].Mapping_Keys = QStringList{QStringLiteral("L-Ctrl+Num1+Num2⏱400"), QStringLiteral("Num0⏱25")};
+        fakerSource[0].SendMappingKeyMethod = SENDMAPPINGKEY_METHOD_FAKERINPUT;
+        const QString fakerOwn = QStringLiteral("QkmFakerSeq150:KeySequence1");
+        const QString fakerBorrower = QStringLiteral("QkmFakerBorrower150");
+        QKeyMapper::KeyMappingDataList = &fakerSource;
+        Worker::clearPressedVirtualKeysList();
+        SendInputTask::clearSendInputTaskControllerMap();
+
+        // Seed unrelated real-key bookkeeping; this is not a physical keyboard test.
+        Worker::updatePressedRealKeysList(QStringLiteral("W"), KEY_DOWN);
+
+        {
+            SendInputTask seedCtrl(0, fakerSource[0].Mapping_Keys, KEY_DOWN, fakerSource[0].Original_Key,
+                SENDMODE_KEYSEQ_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &fakerSource, 0);
+        }
+        auto fakerController = SendInputTask::s_SendInputTaskControllerMap[fakerSource[0].Original_Key];
+        fakerController.activeSequence = QSharedPointer<KeySequenceContext>::create();
+        fakerController.activeSequence->source = &fakerSource;
+        fakerController.activeSequence->row = 0;
+        fakerController.task_stop_flag->storeRelease(INPUTSTOP_NONE);
+        QkmNativeOutputProbe::reset();
+        QkmNativeOutputProbe::resetFakerInput();
+
+        worker->sendInputKeys(0, QStringList{QStringLiteral("L-Ctrl+Num1+Num2")}, KEY_DOWN, fakerOwn,
+            SENDMODE_KEYSEQ_NORMAL, fakerController, &fakerSource, 0);
+        const bool echoPolluted = Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("L-Ctrl"))
+            && Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("Num1"))
+            && Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("Num2"))
+            && Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("W"));
+
+        // Interrupt cross-step (simulating Break during wait) with dwExtraInfo==0 echo still present.
+        worker->cleanupInterruptedKeySequenceState(fakerSource[0].Original_Key, 0, &fakerSource, 0, fakerController.activeSequence);
+        const QList<BYTE> kbdAfterCleanup = QkmNativeOutputProbe::lastFakerInputKeyCodes();
+        bool kbdReportCleared = QkmNativeOutputProbe::lastFakerInputShiftFlags() == 0;
+        for (BYTE code : kbdAfterCleanup) {
+            kbdReportCleared = kbdReportCleared && code == 0;
+        }
+        const bool unrelatedPhysicalIntact = Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("W"))
+            && QkmNativeOutputProbe::counts().value(QStringLiteral("SendInput")).toInt() == 0;
+        fakerKeyboardBreakRelease = echoPolluted && kbdReportCleared && unrelatedPhysicalIntact
+            && !Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("Num1"))
+            && !Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("Num2"))
+            && !Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("L-Ctrl"));
+
+        // Mouse button + keyboard combination inside FakerInput sequence.
+        FakerInputEchoMirror150::reset();
+        Worker::clearPressedVirtualKeysList();
+        fakerSource[0].Mapping_Keys = QStringList{QStringLiteral("Mouse-L+Num1⏱400"), QStringLiteral("Num0")};
+        fakerController.activeSequence = QSharedPointer<KeySequenceContext>::create();
+        fakerController.activeSequence->source = &fakerSource;
+        fakerController.activeSequence->row = 0;
+        fakerController.task_stop_flag->storeRelease(INPUTSTOP_NONE);
+        QkmNativeOutputProbe::reset();
+        QkmNativeOutputProbe::resetFakerInput();
+        worker->sendInputKeys(0, QStringList{QStringLiteral("Mouse-L+Num1")}, KEY_DOWN, fakerOwn,
+            SENDMODE_KEYSEQ_NORMAL, fakerController, &fakerSource, 0);
+        const bool mouseEchoPolluted = Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("Mouse-L"))
+            && (QkmNativeOutputProbe::lastFakerInputMouseButtons() & FAKERINPUT_MOUSE_BUTTON_LEFT) != 0;
+        worker->cleanupInterruptedKeySequenceState(fakerSource[0].Original_Key, 0, &fakerSource, 0, fakerController.activeSequence);
+        const QList<BYTE> kbdAfterMouseCleanup = QkmNativeOutputProbe::lastFakerInputKeyCodes();
+        bool mouseKbdZero = true;
+        for (BYTE code : kbdAfterMouseCleanup) {
+            mouseKbdZero = mouseKbdZero && code == 0;
+        }
+        fakerMouseBreakRelease = mouseEchoPolluted && mouseKbdZero
+            && QkmNativeOutputProbe::lastFakerInputMouseButtons() == 0
+            && !Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("Mouse-L"))
+            && !Worker::isPressedRealKeysRemoveMultiInputContains(QStringLiteral("Num1"));
+
+        // Borrower protection: active borrower holds Num1; only Num2 releases on break, Num1 stays down until last borrower leaves.
+        FakerInputEchoMirror150::reset();
+        Worker::clearPressedVirtualKeysList();
+        fakerSource[0].Mapping_Keys = QStringList{QStringLiteral("Num1+Num2⏱400"), QStringLiteral("Num0")};
+        fakerController.activeSequence = QSharedPointer<KeySequenceContext>::create();
+        fakerController.activeSequence->source = &fakerSource;
+        fakerController.activeSequence->row = 0;
+        {
+            QMutexLocker lock(&Worker::s_PressedMappingKeysMapMutex);
+            Worker::pressedMappingKeysMap[fakerBorrower] = QStringList{QStringLiteral("Num1")};
+        }
+        QkmNativeOutputProbe::resetFakerInput();
+        worker->sendInputKeys(0, QStringList{QStringLiteral("Num1+Num2")}, KEY_DOWN, fakerOwn,
+            SENDMODE_KEYSEQ_NORMAL, fakerController, &fakerSource, 0);
+        worker->cleanupInterruptedKeySequenceState(fakerSource[0].Original_Key, 0, &fakerSource, 0, fakerController.activeSequence);
+        const QList<BYTE> codesWhileBorrowed = QkmNativeOutputProbe::lastFakerInputKeyCodes();
+        const bool num1HeldWhileBorrowed = codesWhileBorrowed.contains(Worker::VirtualKeyCodeToHIDUsageCode(VK_NUMPAD1))
+            && !codesWhileBorrowed.contains(Worker::VirtualKeyCodeToHIDUsageCode(VK_NUMPAD2));
+        {
+            QMutexLocker lock(&Worker::s_PressedMappingKeysMapMutex);
+            Worker::pressedMappingKeysMap.remove(fakerBorrower);
+            Worker::pressedMappingKeysMap[fakerOwn] = QStringList{QStringLiteral("Num1")};
+        }
+        worker->cleanupInterruptedKeySequenceState(fakerSource[0].Original_Key, 0, &fakerSource, 0, fakerController.activeSequence);
+        bool allReleasedAfterBorrower = true;
+        for (BYTE code : QkmNativeOutputProbe::lastFakerInputKeyCodes()) {
+            allReleasedAfterBorrower = allReleasedAfterBorrower && code == 0;
+        }
+        fakerBorrowerProtected = num1HeldWhileBorrowed && allReleasedAfterBorrower;
+
+        // An accepted control-key fallback DOWN needs an UP even before its Hook echo arrives.
+        QkmNativeOutputProbe::setFakerInputObservers(nullptr, nullptr);
+        Worker::clearPressedVirtualKeysList();
+        fakerController.activeSequence = QSharedPointer<KeySequenceContext>::create();
+        fakerController.activeSequence->source = &fakerSource;
+        fakerController.activeSequence->row = 0;
+        fakerController.task_stop_flag->storeRelease(INPUTSTOP_NONE);
+        QkmNativeOutputProbe::reset();
+        QkmNativeOutputProbe::resetFakerInput();
+        QkmNativeOutputProbe::breakAfterDown(fakerController.task_stop_flag, VK_KEY2MOUSE_UP, INPUTSTOP_KEYSEQ);
+        worker->sendInputKeys(0, {QStringLiteral("Key2Mouse-Up⏱400")}, KEY_DOWN, fakerOwn,
+            SENDMODE_KEYSEQ_NORMAL, fakerController, &fakerSource, 0);
+        fakerFallbackPendingReleased = QkmNativeOutputProbe::sendInputDownCount(VK_KEY2MOUSE_UP) == 1
+            && QkmNativeOutputProbe::sendInputUpCount(VK_KEY2MOUSE_UP) == 1
+            && QkmNativeOutputProbe::fakerInputCounts().value(QStringLiteral("keyboardUpdates")).toInt() == 0
+            && QkmNativeOutputProbe::fakerInputCounts().value(QStringLiteral("relativeMouseUpdates")).toInt() == 0
+            && Worker::getPressedVirtualKeysListSnapshot().isEmpty() && fakerController.activeSequence->heldKeys.isEmpty();
+
+        // A stale virtual marker for an ordinary HID key is not evidence of a native fallback DOWN.
+        Worker::appendPressedVirtualKeyIfAbsent(QStringLiteral("Esc"));
+        QkmNativeOutputProbe::reset();
+        fakerController.activeSequence->heldKeys = QStringList{QStringLiteral("Esc")};
+        {
+            QMutexLocker lock(&Worker::s_PressedMappingKeysMapMutex);
+            Worker::pressedMappingKeysMap[fakerOwn] = QStringList{QStringLiteral("Esc")};
+        }
+        worker->cleanupInterruptedKeySequenceState(fakerSource[0].Original_Key, 0, &fakerSource, 0, fakerController.activeSequence);
+        fakerMissingReportNoFallback = QkmNativeOutputProbe::counts().value(QStringLiteral("SendInput")).toInt() == 0;
+        Worker::removePressedVirtualKey(QStringLiteral("Esc"));
+
+        // A SendInput row must not touch HID reports and must retain the seeded real-key Num1 safeguard.
+        FakerInputEchoMirror150::reset();
+        QkmNativeOutputProbe::setFakerInputObservers(nullptr, nullptr);
+        Worker::updatePressedRealKeysList(QStringLiteral("Num1"), KEY_DOWN);
+        fakerSource[0].Original_Key = QStringLiteral("QkmSendInputSeq150");
+        fakerSource[0].SendMappingKeyMethod = SENDMAPPINGKEY_METHOD_SENDINPUT;
+        Worker::clearPressedVirtualKeysList();
+        Worker::appendPressedVirtualKeyIfAbsent(QStringLiteral("Num1"));
+        Worker::appendPressedVirtualKeyIfAbsent(QStringLiteral("Num2"));
+        {
+            SendInputTask seedCtrl(0, fakerSource[0].Mapping_Keys, KEY_DOWN, fakerSource[0].Original_Key,
+                SENDMODE_KEYSEQ_NORMAL, SENDVIRTUALKEY_STATE_NORMAL, &fakerSource, 0);
+        }
+        {
+            QMutexLocker lock(&Worker::s_PressedMappingKeysMapMutex);
+            Worker::pressedMappingKeysMap[QStringLiteral("QkmSendInputSeq150:KeySequence1")] = QStringList{QStringLiteral("Num1+Num2")};
+        }
+        auto sendInputController = SendInputTask::s_SendInputTaskControllerMap[fakerSource[0].Original_Key];
+        sendInputController.activeSequence = QSharedPointer<KeySequenceContext>::create();
+        sendInputController.activeSequence->source = &fakerSource;
+        sendInputController.activeSequence->row = 0;
+        sendInputController.activeSequence->heldKeys = QStringList{QStringLiteral("Num1"), QStringLiteral("Num2")};
+        QkmNativeOutputProbe::reset();
+        QkmNativeOutputProbe::resetFakerInput();
+        worker->cleanupInterruptedKeySequenceState(fakerSource[0].Original_Key, 0, &fakerSource, 0, sendInputController.activeSequence);
+        fakerSendInputIsolation = QkmNativeOutputProbe::fakerInputCounts().value(QStringLiteral("keyboardUpdates")).toInt() == 0
+            && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD1) == 0
+            && QkmNativeOutputProbe::sendInputUpCount(VK_NUMPAD2) == 1;
+
+        Worker::updatePressedRealKeysList(QStringLiteral("Num1"), KEY_UP);
+        Worker::updatePressedRealKeysList(QStringLiteral("W"), KEY_UP);
+        QkmNativeOutputProbe::reset();
+        SendInputTask::clearSendInputTaskControllerMap();
+        QKeyMapper::KeyMappingDataList = &source;
+        Worker::clearPressedVirtualKeysList();
+    }
+#else
+    const bool fakerKeyboardBreakRelease = true;
+    const bool fakerMouseBreakRelease = true;
+    const bool fakerBorrowerProtected = true;
+    const bool fakerSendInputIsolation = true;
+    const bool fakerFallbackPendingReleased = true;
+    const bool fakerMissingReportNoFallback = true;
+#endif
+
+    QkmNativeOutputProbe::reset();
     return {{QStringLiteral("passed"), protectedBoth && releasedOwn && releasedLast && noDuplicate && noUnsentUp
-        && lastContextRelease && lateUpRejected},
+        && lastContextRelease && lateUpRejected
+        && keyseqWithSingleKeyup && singleKeydownWithKeyseqKeyup && explicitUpBeforeBreak
+        && failedExplicitUpRetained && fakerKeyboardBreakRelease && fakerMouseBreakRelease && fakerBorrowerProtected
+        && fakerSendInputIsolation && fakerFallbackPendingReleased && fakerMissingReportNoFallback},
         {QStringLiteral("borrower_and_physical_protected"), protectedBoth}, {QStringLiteral("unborrowed_own_release"), releasedOwn},
         {QStringLiteral("last_borrower_release"), releasedLast}, {QStringLiteral("delayed_up_echo_no_duplicate"), noDuplicate}, {QStringLiteral("cancel_before_down_no_up"), noUnsentUp},
         {QStringLiteral("last_borrower_context_release"), lastContextRelease}, {QStringLiteral("late_cancelled_up_no_replay"), lateUpRejected},
+        {QStringLiteral("keyseq_with_single_keyup"), keyseqWithSingleKeyup},
+        {QStringLiteral("single_keydown_with_keyseq_keyup"), singleKeydownWithKeyseqKeyup},
+        {QStringLiteral("sequence_explicit_up_before_break"), explicitUpBeforeBreak},
+        {QStringLiteral("failed_explicit_up_retained"), failedExplicitUpRetained},
+        {QStringLiteral("fakerinput_keyboard_break_release"), fakerKeyboardBreakRelease},
+        {QStringLiteral("fakerinput_mouse_break_release"), fakerMouseBreakRelease},
+        {QStringLiteral("fakerinput_borrower_protected"), fakerBorrowerProtected},
+        {QStringLiteral("fakerinput_sendinput_row_isolation"), fakerSendInputIsolation},
+        {QStringLiteral("fakerinput_fallback_pending_released"), fakerFallbackPendingReleased},
+        {QStringLiteral("fakerinput_missing_report_no_fallback"), fakerMissingReportNoFallback},
         {QStringLiteral("substituted_native_boundaries"), true}};
 #endif
 }

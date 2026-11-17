@@ -187,6 +187,8 @@ SDK模块[demo_owned_record_acceptance.py](../../../mcp_bridge/tests/demo_owned_
 
 - `pressed_state149`：两个生产者并发更新实键双列表、成对快照、锁外回调重入、主窗／Item 录键组件及长按／双击释放。不是独立 GUI 录键或完整驱动基线。
 - `sequence_context150`：尾随清理任务持有 SendInputWorkItem，绑定原控制器／源行／上下文；队列丢弃归还计数，旧任务不清新状态，旧重复在新根实际运行后从发射与消费两端拒绝。只使用合成 NoOp 键。
-- `sequence_release150`：仅 `CONFIG+=ibinput_output_probe` 构建可执行，所有相关原生输出由现有编译期计数替身截获。覆盖其他行借键／物理原键保护、最后借用者释放、延迟 UP 回声不重复发送、未发 DOWN 不补 UP、取消后晚到 UP 不重放。夹具使用运行态标记但不安装 Hook，局部源表销毁前排空控制器；普通构建明确拒绝该场景。
+- `sequence_release150`：仅 `CONFIG+=ibinput_output_probe` 构建可执行。保留原 7 项释放／借键／晚到取消检查，并覆盖同一行的序列与普通按下／抬起混用、成功显式 UP 后不重复释放、失败 UP 保留记账、FakerInput 键鼠本地 HID 报告清理、借键、无关实键记账与 SendInput 行隔离。另覆盖实际 `force_sendinput` 控制键 DOWN 已受理但 Hook 回声未到的释放，以及普通 HID 报告缺项／陈旧虚拟标记不能触发原生回落。共 17 项行为检查；运行态标记及 Hook 回声均由夹具建模，不安装 Hook，也不是物理键或设备回读验收。
+  - 原有 `counts()` 的 `IbSendInit`／`IbSendInput`／`IbSendDestroy`／`SendInput`／`SetCursorPos` 五字段保持兼容；FakerInput 的生命周期和报告 API 在整个探针进程（含启动及析构）固定使用替身，不能切换到真实 DLL。`fakerInputCounts()` 单列报告观测，显式 UP 失败由固定一次替身拒绝建立，不代表厂商故障。
+  - 局部源表销毁前先清空捕获的工作项、排空控制器并解除全局源引用，再恢复原报告／客户端／指针。普通构建明确拒绝该场景；不得将其作为 Default 真实输入证据。
 
 `repeatSpecs()` 全表的观察器必须转交实际运行代次及排队 work 中的序列身份；不能把自己创建的空身份当成正式生产接线。`repeat_restart` 先完成旧冻结运行和实际排空，再编辑下一控制轮的合成源。外部复现只临时放在 out 直接子目录，不纳入永久测试；安装自身 SendInput 不转发截获及正对照失败时必须退出，不能落入真实输入。实际结果只记唯一主计划与事实页。

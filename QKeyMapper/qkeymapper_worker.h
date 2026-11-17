@@ -1275,6 +1275,7 @@ public:
     static bool FakerInputClient_sendAbsoluteMouseButton(const QString &mouseButton, int x, int y, int keyupdown, ULONG_PTR extraInfo = 0);
     static bool FakerInputClient_sendAbsoluteMouseMove(int x, int y, ULONG_PTR extraInfo = 0);
     static BYTE MouseButtonStringToHIDButton(const QString &mouseButton, int keyupdown);
+    static bool isFakerInputVirtualKeyInReport(const QString &key);
 
 #ifdef FAKERINPUT_EXTRAINFO
     // FakerInput ExtraInfo queue management functions

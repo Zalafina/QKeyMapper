@@ -1,8 +1,8 @@
-# 两项运行时缺陷：独立审阅与选定验证事实
+# 两项运行时缺陷及边界补充：独立审阅与选定验证事实
 
 [唯一主计划](qkeymapper_mcp_automation_plan_codex.md) · [能力矩阵](capability_matrix.md)
 
-本页只记录事实，阶段／决策／下一步见唯一主计划。当前基线5a80dd0649668ed59fd9f22591433954002264dd，PC-W11、2026-11-16。外部材料只读，不把Gemini结果当当前分支新验收；原件仅本机out/runtime_bugfix_149_20261116。
+本页只记录事实，阶段／决策／下一步见唯一主计划。149／150初始基线5a80dd0649668ed59fd9f22591433954002264dd，PC-W11、2026-11-16；11-17的151基线及新验证见末节，历史结论不扩大。外部材料只读，不把Gemini结果当当前分支新验收；原件分别在本机out/runtime_bugfix_149_20261116和out/runtime_followup151_20261117。
 
 ## 原始材料与符号边界
 
@@ -97,3 +97,63 @@ NumLock保持0，实际观察为End/Down/Insert（VK35/40/45，scan0x4f/0x50/0x5
 16:54:45对13752／instance dabbebabad784963b85fa4c860b8cc4e执行off，事前16项登记均核实属本任务、无其他共享scope或活动资源；off脚本exit0，closed／cache_available=false、native_sessions_observed=0、owned/unresolved/pending0。独立status脚本exit0、controller=null／native_sessions_observed0。缓存关闭与目标清理分别证明；历史未知请求b588469d172e4e4bbff2b4fc1797792a保留、不重放，不因本次零资源改写历史未知。用户恢复办公后的全局按键采样不判作本任务保持，也不发送额外全局UP。
 
 完成必要差异／编码／相对链接和文档大小检查后，BUG02-150形成第二个聚焦本地提交。本轮停止，等待用户明确安排，不自动恢复MCP。原始证据只在本机上述out；Win10实机、Qt5 x86、游戏／实体手柄全范围、真实FakerInput专项、厂商真实I/O故障注入和精确生产PDB仍未覆盖；这些不因当前选定通过补造。
+
+### BUG02-FOLLOWUP-151：三项运行时边界补充（2026-11-17，选定完成）
+
+#### 输入、采纳及局部适配
+
+本轮从干净codex/qkeymapper-mcp-control、fe2eb674b1ca1842ab1bae0923c33f58cfcda880接续；原工作区D:/work/mygithub/QKeyMapper/QKeyMapper，未切换／修改Gemini工作区或合并master。只读材料为用户提供的mcp_3_3_followup目录：01_fix_keyseq_timing_and_fakerinput_release_fe2eb674.patch、02_tests_sequence_release150_followup_fe2eb674.patch及CODEX_MERGE_GUIDE_MCP_3_3_FOLLOWUP.md。两补丁上下文检查通过；对六文件的内存应用结果与Gemini隔离工作区逐文件相同。这是输入核验，不代替本轮行为验证。补丁身份、实际EXE摘要及版本记录于本机summary151.json、deployment-*.json，源版本为fe2eb674加本提交必要改动。
+
+- wrapper与SendInputTask构造器只在序列根／步骤／重复任务中自动继承已有序列身份；普通单键及强制清理不误继承取消的旧序列，显式原上下文清理仍保留。
+- 无FAKERINPUT_EXTRAINFO时，FakerInput释放统一按发送方式、待释放集合、本地键盘／鼠标报告和其他行借键检查，锁内只读本地报告，发送仍走原后端。旧散落分支限定FAKERINPUT_SUPPORT且FAKERINPUT_EXTRAINFO及正确发送方式，没有启用EXTRAINFO。
+- 原补丁遗漏已受理force_sendinput控制键DOWN但尚无Hook回声的释放。本轮共用原UP／DOWN中的九种控制键判断，并在清理中认可其pending DOWN；仅这种已知原生路径可回落，不因普通HID报告缺项或陈旧虚拟标记改发SendInput UP。保留借键及实键记账检查。
+- 成功显式UP才从步内sentKeyDownVirtualKeys和序列heldKeys移除，失败保留；未改变BOTH／EXCLUSION／SendMessage／固定覆盖边界、后端冻结、来源识别或dwExtraInfo决定。
+- 探针中的FakerInput生命周期／报告API改为固定替身，整个进程启动至析构均无真实DLL透传开关；普通产品不受影响。原有五项counts字段保持，另有FakerInput报告观测。局部源销毁前清空捕获工作标记、排空任务及解除全局引用，再恢复原报告／指针；新增失败UP固定替身及控制键延迟回声对照。
+
+正式MCP工具／权限／请求格式、用户文案及TS/QM均未变。本轮原生启动仍使用原管理员manifest；开发／Git／构建／分析／桥接均Medium，公共登记入口只提权必要目标。
+
+#### 修前红例及失败轮次
+
+先仅应用安全测试补丁及夹具适配，产品保持fe2eb674。Qt6 baseline在自有私有桌面native2：原七项全真，新增混合时机两项、显式UP及FakerInput键盘／鼠标／借键／SendInput行隔离共七项全假；失败UP保留记账及已受理控制键无回声释放对照为真。原始case.json保留，不借Gemini红例。
+
+仅组入01原产品补丁后的supplied轮仍native2：上述七红已全部转绿，唯一失败为fakerinput_fallback_pending_released。补入九种控制键共用判断及pending DOWN后，最终全部通过；普通HID负对照用Esc的陈旧虚拟标记及持有映射明确进入公开清理入口，防止空操作冒充通过。
+
+final01三探针构建均以C2248失败：本轮新增负对照误调Worker私有helper。只改夹具走现有公开cleanupInterruptedKeySequenceState，未扩大产品访问范围；final02通过。末次审计再清空捕获的SendInputWorkItem，并在局部源销毁前检查outstanding==0；此变化仅涉及sequence_release150，final03重编三探针并定向复验该夹具，不重复未受影响矩阵。首轮失败日志、修正及各EXE均保留。
+
+最终差异复核发现本轮探针失败注入的零哨兵会误拒绝wVk=0的UP（例如Unicode键）。缓存关闭后，以普通Medium无界面QCore组件直接编译实际native_output_probe.cpp及客户端依赖，只测试探针函数；Worker及策略仅有未执行的链接替身，不是产品生命周期／演示证明。Qt6修前native2且zero_vk_up_accepted=false；补上failNextUpKey!=0后，Qt6／Qt5／实际ASan均native0，零VK与不匹配UP通过、匹配UP仅失败一次，ASan运行时已加载且无报告。没有启动产品、Worker、窗口或新缓存。这一行只影响探针零VK失败注入，已选业务／序列场景均使用非零VK；最终final04三探针重编与native-probe-final04定向分析通过，复用此前产品源码完全相同的私有结果，不将新构建说成已重跑整套产品。
+
+#### 最终选定门槛与证据层次
+
+原件根为out/runtime_followup151_20261117，final04维护EXE在maint-{qt6-output,qt5-output,qt6-output-asan}/release，普通组件单元及红／绿结果在probe-unit-*和unit-*.json；仅本机；没有复制另一PC的out／venv／凭据。实际构建工具Qt6.8.3 msvc2022_64、Qt5.15.2 msvc2019_64，MSVC14.44.35207，Windows x64；依赖沿用既有已锁环境，不重新恢复或安装。
+
+| 检查 | 本轮实际结果／范围 |
+|---|---|
+| 普通Release构建 | out/build_qt6/release/QKeyMapper.exe与out/build_qt5_5152/release/QKeyMapper.exe成功；Qt6零警告，Qt5仅官方qtmain缺PDB的精确LNK4099例外。本轮没有运行普通Release作完整运行态验收 |
+| 扩展释放夹具 | Qt6／Qt5 final02及final03均17项行为检查全真、native0；实际目标{kit}-runtime-151-final03/QKeyMapperRuntime151_{kit}_runtime.exe，均原manifest、自有私有桌面 |
+| 正常输出正对照 | 双Qt ibinput_output_control各11场通过、native0，校准原有五种替身计数入口；私有桌面登记启动，未在此QCore正对照额外回读GUI桌面；不是厂商实发。记录在formal-demo151/positive-{kit} |
+| Qt6运行态 | sequence_context150、break_one／all、pause_clear、queue_keyup、hold_source_context、stop、restart、exit_wait共9项native0；源上下文、任务排空与配置边界通过 |
+| repeat全表 | 当前repeatSpecs的28项全过、native0，含重触发、停止／重启、HoldDown及不可打断边界；不外推长期硬件稳定性 |
+| 实际ASan | Qt6 MSVC的sequence_release150、sequence_context150、pause_clear、queue_keyup、repeat_retrigger、exit_wait六项通过；final03额外复验释放夹具，均观测到clang_rt.asan_dynamic-x86_64.dll、native0、无ASan报告，非仅编译开关 |
+| 定向分析 | Worker普通产品及生命周期两个实际编译上下文、native_output_probe实际Makefile上下文，Clang-Tidy／Clazy各native0、项目诊断0。LLVM22的既有分析专用SDL兼容守卫沿用；非全仓零告警宣称 |
+| Python协议／schema | test_protocol22、test_tool_results8、test_demo9，共39项普通权限通过、各脚本native0；正式工具／权限／格式未增改 |
+| 正式MCP演示 | 本轮Qt6 final02维护产品，以真实--demo-configuration-only入口及正式stdio／业务handler完成27调用、两串行场景、两张真实图片、25产品检查及10个逐场五项零输出边界；native0、场景全回收、INI字节不变、产品记录退出删除、FilterKeys不变。含8项预期schema拒绝；不是8个未解决故障 |
+
+final02与final03产品及原生探针源码相同；后者仅加强释放夹具局部作用域收尾并收窄注释，故9运行态／28repeat、输出正对照及正式演示复用final02，final03只复验受影响夹具。最后final04仅补探针零VK哨兵保护，验证层次见上段；三最终探针构建均native0、Qt6零警告，Qt5仅既有精确LNK4099例外；Qt6普通脚本内部检查Process.ExitCode并在非零时抛错，日志明确Build succeeded，但外层LASTEXITCODE为空，未把外层空值填成观测到的原生0。其余目标实际退出码见native-exit.json／closed.json，工具码见static-*/runs.json。
+
+矩阵证据在runs/*及run-*.log；17项JSON、原生退出、PID／创建时间、实际Qkm私有桌面、High目标／Medium控制器、work／producers0及FilterKeys前后值均记录。两预期红轮native2，51个成功原生进程native0（合计53，含最后三夹具复验、两正对照和正式MCP产品）；没有超时或控制器终止。正式演示真实截图mcp-image-0-mapping_advanced.png（770×390）和mcp-image-1-item_setup.png（820×480）已自行查看：中文清晰、非黑图、C→D设置与请求一致；未将QQ送达或普通GUI独立基线列为本轮通过。
+
+#### 用户转交的Gemini证据与保留限制
+
+Gemini dev_temp2工作区out/stage2_fakerinput_test/stage2_result.json及脚本为用户转交的11-17 Default结果；本会话只读核对，未重跑或修改。八组passed:true，包含就绪、s1–s6及停止；FakerInput键鼠序列、借键与SendInput行对照按其实际记录保留。所谓“物理”键由SendInput(extraInfo0)注入，不是硬件键盘；本地HID报告缓冲也不是设备回读。
+
+s5的同VK F7在FakerInput释放后，合并异步状态变为false，不能支持“任何场景物理键零误伤”；s6既有SendInput同J在打断时保留，原键UP后来仍受虚拟列表影响，F24停止后清零。本轮登记这两项边界待用户安排，不新增所有权／物理恢复设计，也不把用户转交的实际FakerInput结果或11-16 G HUB／Razer历史结果相加成最终源码的完整设备验收。
+
+本轮没有Default切换／输入、真实物理同键、多设备、厂商I/O故障恢复、Win10、Qt5 x86、游戏／实体手柄或完整普通Release运行验收；没有启用FAKERINPUT_EXTRAINFO，没有重跑dwExtraInfo专项。此前不匹配生产PDB缺口及149／150未验范围仍保留。
+
+#### 清理与停止
+
+全部本轮目标通过已登记Start运行并实际退出；work／producers归零，目标实际私有桌面、前后前台非本实例，离散采样不冒充连续前台监控。正式桥接及redirector两个原PID以进程枚举确认消失；初次清理观察器漏捕获pywintypes.error（实际87），在尚未派发off时修正异常处理，再独立枚举核实，不根据错误文字推算。没有重放原生动作或未知请求。
+
+本轮桥接CredentialStore.forget已执行；服务端专属夹具库在out内private_store保留，不宣称已撤销全部持久配对，也不触及个人INI／凭据。共享归属检查只见本轮登记及授权，无外来活动；38956／instance5983f527062048ddbead92cfdef128c7于15:18:29off，closed／cache_available=false、off脚本exit0、owned／unresolved／pending0，独立status无控制器且原生缓存会话0。历史未知请求未接管或重放。
+
+保留环境／构建／原始证据；本提交为151独立提交切点，父fe2eb674，不push／amend／合master。完成提交后停止等待用户后续指示，不自动恢复MCP；下一步及未完阶段只见唯一主计划。
