@@ -66,3 +66,7 @@ for configuration changes. It needs a separately approved and registered
 product copy, the untouched synthetic persistence fixture, and an exact Rust
 client executable for the Read and Configure approval. The test controller
 and both sidecars stay at ordinary Medium integrity.
+
+`tests/test_product_demo.py` uses an approved configuration-only product
+and the fixed private GUI helper for the two window permissions. It
+checks real product images and recovers both demonstration scenes.
