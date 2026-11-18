@@ -3713,11 +3713,14 @@ QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper 
     };
     const QString variant = qEnvironmentVariable("QKM_CONTEXT_VARIANT");
     const QStringList variants{QStringLiteral("normal_duplicate"), QStringLiteral("normal_common"),
-        QStringLiteral("common_no"), QStringLiteral("common_yes"), QStringLiteral("common_disabled_no"), QStringLiteral("common_disabled_yes")};
+        QStringLiteral("common_no"), QStringLiteral("common_yes"), QStringLiteral("common_disabled_no"), QStringLiteral("common_disabled_yes"),
+        QStringLiteral("common_self"), QStringLiteral("common_self_disabled")};
     if (!mapper || !variants.contains(variant)) return {{QStringLiteral("passed"), false}};
     const bool common = variant.startsWith(QStringLiteral("common_"));
-    const bool cancelled = common && variant.endsWith(QStringLiteral("_no"));
-    const bool initiallyDisabled = variant.startsWith(QStringLiteral("common_disabled_"));
+    const bool commonSelf = variant.startsWith(QStringLiteral("common_self"));
+    const bool confirmOtherRows = common && !commonSelf;
+    const bool cancelled = confirmOtherRows && variant.endsWith(QStringLiteral("_no"));
+    const bool initiallyDisabled = variant.startsWith(QStringLiteral("common_disabled_")) || variant == QStringLiteral("common_self_disabled");
     const QString newOriginal = variant == QStringLiteral("normal_common") ? QStringLiteral("E") : QStringLiteral("C");
     const auto click = [](QWidget *target, const QPoint &point, bool twice = false) {
         const QPointF top = target->mapTo(target->window(), point), screen = target->mapToGlobal(point);
@@ -3766,13 +3769,14 @@ QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper 
     check(old.Original_Key == (common ? QStringLiteral("F13") : QStringLiteral("A"))
         && old.Mapping_Keys == QStringList{QStringLiteral("B")} && old.Disabled == initiallyDisabled
         && old.SendMappingKeyMethod == 3 && sources.first().toObject().value(QStringLiteral("include_common")).toBool()
-            == (variant != QStringLiteral("normal_duplicate")), "the fixture has the intended independent target and Common policy");
+            == (!commonSelf && variant != QStringLiteral("normal_duplicate")), "the fixture has the intended independent target and Common policy");
     if (!passed) return {{QStringLiteral("passed"), false}, {QStringLiteral("checks"), checks}, {QStringLiteral("before"), before}};
     const quint64 epoch = mapper->m_AutomationSourceEpoch;
     const auto analysis = mapper->analyzeOriginalKeyConflict(target, 0, newOriginal, old.Disabled);
     QList<QPair<int, int>> expectedOtherRows;
-    if (common) expectedOtherRows.append(qMakePair(0, 1));
-    check(analysis.sourceAvailable && analysis.disableCurrentRow == !common && analysis.disableOtherRows == expectedOtherRows,
+    if (confirmOtherRows) expectedOtherRows.append(qMakePair(0, 1));
+    check(analysis.sourceAvailable && analysis.disableCurrentRow == (!confirmOtherRows && !initiallyDisabled)
+        && analysis.disableOtherRows == expectedOtherRows,
         "pure analysis predicts the original GUI current-row and other-row conflict effects, including disabled Common");
     const auto invalidTab = mapper->analyzeOriginalKeyConflict(-1, 0, newOriginal, false);
     const auto missingTab = mapper->analyzeOriginalKeyConflict(QKeyMapper::s_KeyMappingTabInfoList.size(), 0, newOriginal, false);
@@ -3821,8 +3825,8 @@ QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper 
     click(update, update->rect().center());
     answer.stop();
     const auto after = mapper->collectAutomationSourceSnapshot(error);
-    check(error.isEmpty() && replies == (common ? 1 : 0), "only a Common original-key conflict asks for its real modal decision");
-    if (common) {
+    check(error.isEmpty() && replies == (confirmOtherRows ? 1 : 0), "a Common original-key change that disables ordinary rows asks for its modal decision");
+    if (confirmOtherRows) {
         auto tentative = sources;
         patch(tentative, target, 0, QStringLiteral("fields"), {{QString::fromLatin1(KEYMAPDATA_ORIGINALKEYS), newOriginal}});
         check(during.value(QStringLiteral("sources")).toArray() == tentative && dirtyDuring == QJsonValue(false)
@@ -3836,13 +3840,14 @@ QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper 
         patch(expected, target, 0, QStringLiteral("fields"), {
             {QString::fromLatin1(KEYMAPDATA_ORIGINALKEYS), newOriginal}, {QString::fromLatin1(KEYMAPDATA_MAPPINGKEYS), QJsonArray{QStringLiteral("Z")}},
             {QString::fromLatin1(KEYMAPDATA_MAPPINGKEYS_COMMENTS), QJsonArray{QString()}},
-            {QString::fromLatin1(KEYMAPDATA_DISABLED), initiallyDisabled || !common}});
+            {QString::fromLatin1(KEYMAPDATA_DISABLED), initiallyDisabled || !confirmOtherRows}});
         patch(expected, target, 0, QStringLiteral("derived"), {{QStringLiteral("pure_mapping_keys"), QJsonArray{QStringLiteral("Z")}}});
-        if (common) patch(expected, 0, 1, QStringLiteral("fields"), {{QString::fromLatin1(KEYMAPDATA_DISABLED), true}});
+        if (confirmOtherRows) patch(expected, 0, 1, QStringLiteral("fields"), {{QString::fromLatin1(KEYMAPDATA_DISABLED), true}});
     }
     check(after.value(QStringLiteral("sources")).toArray() == expected,
         "the final original, mapping, disabled patches and every other source field and derived sample match the actual decision");
-    check(notifications.size() == (cancelled ? 0 : 1) && (notifications.isEmpty()
+    const int expectedNotifications = cancelled || (commonSelf && initiallyDisabled) ? 0 : 1;
+    check(notifications.size() == expectedNotifications && (notifications.isEmpty()
         || (notifications.first().toObject().value(QStringLiteral("column")).toInt() == DISABLED_COLUMN
             && notifications.first().toObject().value(QStringLiteral("checked")).toBool())),
         "only the accepted disable emits one actual checkbox notification");
@@ -3854,7 +3859,7 @@ QJsonObject QkmMappingAdditionTestAccess::mappingOriginalConflictGui(QKeyMapper 
     check(!dialog->isVisible() && mapper->collectAutomationSourceSnapshot(error) == after && error.isEmpty() && disk() == ini,
         "Escape preserves the final accepted or refused model and disk");
     return {{QStringLiteral("passed"), passed}, {QStringLiteral("checks"), checks}, {QStringLiteral("variant"), variant},
-        {QStringLiteral("before"), before}, {QStringLiteral("after"), after}, {QStringLiteral("during_confirmation"), common ? QJsonValue(during) : QJsonValue()},
+        {QStringLiteral("before"), before}, {QStringLiteral("after"), after}, {QStringLiteral("during_confirmation"), confirmOtherRows ? QJsonValue(during) : QJsonValue()},
         {QStringLiteral("dirty_during_confirmation"), dirtyDuring}, {QStringLiteral("confirmation"), confirmation},
         {QStringLiteral("replies"), replies}, {QStringLiteral("notifications"), notifications},
         {QStringLiteral("analysis"), QJsonObject{{QStringLiteral("source_available"), analysis.sourceAvailable},

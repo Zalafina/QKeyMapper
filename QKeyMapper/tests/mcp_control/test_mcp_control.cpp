@@ -363,7 +363,7 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(conflictSchema(capabilities.at(9)).value(QStringLiteral("const")), QJsonValue(false));
     for (const auto &update : {updatePreview, updateApply}) {
         QCOMPARE(update.value(QStringLiteral("original_key_conflict_policy")).toString(),
-            QStringLiteral("disable_current_normal_row_or_confirm_common_changes"));
+            QStringLiteral("disable_current_row_or_confirm_common_changes"));
         QVERIFY(update.value(QStringLiteral("limitations")).toArray().contains(
             QStringLiteral("common_update_requires_confirmation_to_disable_normal_rows")));
     }

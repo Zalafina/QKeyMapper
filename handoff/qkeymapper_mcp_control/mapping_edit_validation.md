@@ -224,3 +224,11 @@ v3的normal及cold已完整结束：普通行完整sources前后与141的qt6-nor
 | key_normal_conflict | 34 | 普通行只禁用当前行，146 数据对照及显式保存重载通过 |
 
 七个独立实际 QkmProduct_* Windows 私有桌面，High 产品／Medium Rust 同登录，各原生退出 0，FilterKeys 前后相等。撤销七个专属配对，客户端凭据均删除，已核实本批自有产品／桥接进程为零、定向登记授权已撤出，PID 6896 保留至 19:00。实际副本 out/mcp_product/common_conflict154_20261118/runtime-中文/QKeyMapperMcpAcceptance_commonconflict154_qt6.exe，测试原件同目录 rust-r01；构建及实际 Rust 在 out/mcp_common_conflict_154_20261118。未新增 Default 图形交互、实际输入、驱动、独立冷启动或 Qt5 正式产品验收。
+
+## EDIT-COMMON-155：Common 同表原键冲突
+
+2026-11-18 PC-W11，源码 8f902531 加本片。先只扩展维护 GUI 探针，在普通表未附加 Common 的独立合成配置中，把 Common 首行的 F13→B 改为 C→Z，同表第二行已有启用的 C。原产品 GUI 结果为只禁用首行，首行原已禁用时仅改键值；两种均无跨表确认，不改其他行。四个实际 Qt5／Qt6 私有进程各 13 项（共 52）、原生退出 0。启用场景发出一次本行禁用通知，原已禁用场景为零；完整源、加载、INI、采样 FilterKeys 及退出工作计数核对通过。Qt6 零警告，Qt5 维护 GUI 仅既有官方 qtmain LNK4099 例外。
+
+正式编辑复用共用分析的 disableCurrentRow，保留 154 已绑定且可重算的其他行确认、原权限及取消／重放。Qt6 普通 Release 和双 Qt x64 组件零警告，双 Qt 每套四个离屏用例通过；Rust 静态 x64 和两种协议 17 项工具合同通过。
+
+Qt6 普通版＋实际 Rust 在五个 QkmProduct_* 私有桌面共 131 次工具记录。同表启用／原禁用分别 39／34 次，预览仅有当前行、完整数据与本片独立 GUI 一致，错误添加冲突确认拒绝，取消／提交／重复／旧引用和显式保存重载均通过。154 的跨表确认和 146 完整数据对照回归 40 次，Read 写拒绝及独立开关连带启用拒绝各 9 次。五产品原生退出 0，配对、凭据及本批授权清理、FilterKeys 前后相等。未进行 Default 图形交互、系统输入、驱动、Qt5 正式产品或冷启动测试。产品及原件 out/mcp_product/common_self155_20261118，双 Qt GUI、组件和 Rust 构建及原件 out/mcp_common_self_155_20261118，仅本机。18:07 PID 6896 仍有效，授权及测试资源为零。

@@ -38572,10 +38572,6 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                         reject(QStringLiteral("context_busy"), QStringLiteral("The source row is no longer available."));
                         return;
                     }
-                    if (analysis.disableCurrentRow && isCommonMappingTabIndex(tab)) {
-                        reject(QStringLiteral("unsupported_capability"), QStringLiteral("Disabling a conflicting Common row itself during an original-key update is not supported; resolve this change in the GUI."));
-                        return;
-                    }
                     after.Disabled = after.Disabled || analysis.disableCurrentRow;
                     conflictRows = analysis.disableOtherRows;
                 }

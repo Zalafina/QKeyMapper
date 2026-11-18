@@ -24,9 +24,10 @@ ROOT = Path(__file__).resolve().parents[2]
 CASES = ("normal", "cold", "normal_clear_up", "disabled", "common", "common_conflict", "complex", "read")
 FLAG_CASES = ("flag_normal", "flag_cold", "flag_disabled", "flag_common", "flag_hidden", "flag_conflict", "flag_common_conflict", "flag_read")
 
-SELF_DISABLE_CASES = ("key_normal_conflict", "key_common_priority", "key_conflict_hidden")
+COMMON_SELF_CASES = ("common_self_conflict", "common_self_conflict_disabled")
+SELF_DISABLE_CASES = ("key_normal_conflict", "key_common_priority", "key_conflict_hidden", *COMMON_SELF_CASES)
 COMMON_CONFLICT_CASES = ("common_conflict", "common_conflict_disabled", "common_conflict_multiple")
-GUARD_CASES = ("common_self_conflict", "common_conflict_read")
+GUARD_CASES = ("common_conflict_read",)
 
 
 async def run(args):
@@ -148,9 +149,8 @@ async def run(args):
                         disabled=False), error="unsupported_capability")
                     assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
                     return
-                if not flag and phase in ("complex", "common_self_conflict"):
-                    if phase == "complex":
-                        assert before[index]["rows"][0]["fields"]["KeyMapData_MappingKeys"] == ["B", "D"]
+                if phase == "complex":
+                    assert before[index]["rows"][0]["fields"]["KeyMapData_MappingKeys"] == ["B", "D"]
                     await request(client, phase, "qkm_preview_changes", dict(action="mapping.update", source_ref=target,
                         original_key="C"), error="unsupported_capability")
                     assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
@@ -248,7 +248,10 @@ async def run(args):
                         assert (await snapshot(client, phase))[0] == after
                     return
                 if phase in SELF_DISABLE_CASES:
-                    gui_variant = "normal_common" if phase == "key_common_priority" else "normal_duplicate"
+                    if phase in COMMON_SELF_CASES:
+                        gui_variant = "common_self_disabled" if phase.endswith("_disabled") else "common_self"
+                    else:
+                        gui_variant = "normal_common" if phase == "key_common_priority" else "normal_duplicate"
                     baseline_path = args.original_conflict_gui_baseline / ("qt6-" + gui_variant + "-01/case.json")
                 else:
                     baseline_path = (args.disabled_gui_baseline / ("qt6-" + variant + "-01/case.json") if flag
@@ -270,9 +273,16 @@ async def run(args):
                 preview = (await request(client, phase, "qkm_preview_changes", change))["result"]
                 if phase in SELF_DISABLE_CASES:
                     described = preview["description"]["changes"][0]
-                    assert not described["before"]["fields"]["KeyMapData_Disabled"]
+                    description = preview["description"]
+                    assert not description["confirmation_required"] and len(description["changes"]) == 1
+                    assert described["before"] == before[index]["rows"][0]
+                    assert described["after"] == baseline["after"]["sources"][index]["rows"][0]
                     assert described["after"]["fields"]["KeyMapData_Disabled"]
-                    assert described["after"]["fields"]["KeyMapData_OriginalKeys"] == fields["original_key"]
+                    if phase == "common_self_conflict":
+                        await request(client, phase, "qkm_apply_changes", dict(preview_id=preview["preview_id"],
+                            confirm_conflicts=True), error="invalid_arguments")
+                        assert (await snapshot(client, phase))[2] == revision and ini.read_bytes() == original_ini
+                        preview = (await request(client, phase, "qkm_preview_changes", change))["result"]
                 assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
                 await request(client, phase, "qkm_cancel_changes", dict(preview_id=preview["preview_id"]))
                 assert (await snapshot(client, phase))[0] == before
@@ -401,9 +411,9 @@ async def run(args):
                     payload = payload.replace(b"KeyMapData_OriginalKeys=A#C|F13#F14", b"KeyMapData_OriginalKeys=A#C|E#F14")
                 if phase == "key_conflict_hidden":
                     payload = payload.replace(b"HideDisabled=false\n", b"HideDisabled=true\n")
-                if phase == "common_conflict_disabled":
+                if phase in ("common_conflict_disabled", "common_self_conflict_disabled"):
                     payload = payload.replace(b"KeyMapData_SendMappingKeyMethod=", b"KeyMapData_Disabled=OFF#OFF|ON#OFF\nKeyMapData_SendMappingKeyMethod=")
-                if phase == "common_self_conflict":
+                if phase in COMMON_SELF_CASES:
                     payload = payload.replace(b"KeyMapData_OriginalKeys=A#C|F13#F14", b"KeyMapData_OriginalKeys=A#C|F13#C")
                 ini.write_bytes(payload)
             output = args.output / phase
