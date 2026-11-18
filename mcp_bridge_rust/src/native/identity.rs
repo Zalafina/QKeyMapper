@@ -180,14 +180,25 @@ fn linked_login(token: HANDLE, login: &Login) -> Option<NonZeroU64> {
         ELEVATION_LIMITED => ELEVATION_FULL,
         _ => return None,
     };
-    let raw = unsafe {
-        TokenBuffer::get(token, TokenLinkedToken)
-            .ok()?
-            .read::<TOKEN_LINKED_TOKEN>()
-            .ok()?
+    let mut link = TOKEN_LINKED_TOKEN::default();
+    let mut bytes = 0;
+    // TokenLinkedToken returns ERROR_BAD_LENGTH on Windows for a size-only query.
+    if unsafe {
+        GetTokenInformation(
+            token,
+            TokenLinkedToken,
+            (&mut link as *mut TOKEN_LINKED_TOKEN).cast(),
+            size_of::<TOKEN_LINKED_TOKEN>() as u32,
+            &mut bytes,
+        )
+    } == 0
+    {
+        return None;
     }
-    .LinkedToken;
-    let linked = unsafe { take_handle(raw, ERROR) }.ok()?;
+    let linked = unsafe { take_handle(link.LinkedToken, ERROR) }.ok()?;
+    if bytes as usize != size_of::<TOKEN_LINKED_TOKEN>() {
+        return None;
+    }
     let handle = linked.as_raw_handle();
     if unsafe {
         TokenBuffer::get(handle, TokenElevationType)
@@ -279,6 +290,24 @@ pub fn identity(pid: u32) -> Result<Identity> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[ignore = "compares this process with the locked Windows Python implementation"]
+    fn current_link_query_matches_python() {
+        use std::{path::Path, process::Command};
+        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
+        let code = "import sys; from qkeymapper_mcp.windows import identity; \
+                    print(int(bool(identity(int(sys.argv[1])).linked_authentication)))";
+        let result = Command::new(root.join("out/mcp_bridge/venv/Scripts/python.exe"))
+            .env("PYTHONPATH", root.join("mcp_bridge/src"))
+            .args(["-B", "-X", "utf8", "-c", code])
+            .arg(std::process::id().to_string())
+            .output()
+            .unwrap();
+        assert!(result.status.success(), "Python identity helper failed");
+        let expected = std::str::from_utf8(&result.stdout).unwrap().trim() == "1";
+        assert_eq!(own_identity().unwrap().linked.is_some(), expected);
+    }
 
     #[test]
     fn verifies_live_process_and_reciprocal_login() {
