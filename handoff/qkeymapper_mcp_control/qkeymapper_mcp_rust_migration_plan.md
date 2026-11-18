@@ -8,16 +8,16 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | RUST-D2 本机 Codex 真实产品及 PNG 已验；Antigravity 正式工具发现及合成 PNG 已验，真实产品截图待补 |
+| 当前切片 | RUST-D2 本机 Codex 真实产品及 PNG 已验；Antigravity 正式工具经诊断转发调用及合成 PNG 已验，真产品截图待补 |
 | 分支／源码检查点 | codex/qkeymapper-mcp-control，RUST-A c57476df，RUST-B 75e43a67，C2 产品验收 c8f7893a，C4 私有验收 d69e2360，组件内 Rust 源 f4cc8c7d，D1 ecd22c62，D2 Codex dc3fe016，Antigravity 记录见本提交。产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
 | 执行机器 | PC-W11，Windows x64 MSVC。项目固定及本机默认 Rust 均核为 1.100.0 |
-| 本轮改动 | 已登录 Antigravity CLI 在独立工作区直启解包 EXE，实际调用合成工具并保存 PNG；ACP 探针核对正式 17 项工具。一次真实产品尝试遇到上游故障，已清理 |
+| 本轮改动 | 已登录 Antigravity CLI 在独立工作区直启解包 EXE，实际调用合成工具并保存 PNG；ACP 核对正式 17 项工具及原生直启，CLI 经诊断转发完成正式断开状态查询；真产品尝试已清理 |
 | 实现状态 | A 至 C 的本机选定范围、D1 和 D2 Codex 真产品已验；D2 Antigravity 真产品、D3 干净机器及最终替换仍待 |
 | 正式实现 | 继续使用现有 Python 桥接；此前 C++、GUI／MCP、打包组件及运行时证据保持原范围 |
 | 决策门槛 | 按 11-18 的连续推进指示接入 B 的组件切片。A 实测供迁移评估，实际产品互操作和默认替换分别沿 B、D 的门槛 |
 | 客户端门槛 | 正式替换须通过 Codex＋Antigravity；其他宿主不默认承诺，QQ gateway 另行联调 |
 | 当前权限 | 本轮获批一次私有 C4 产品启动与 Read＋CaptureWindows。已撤销专属配对、清除专属凭据并退出；25 分钟专用缓存 PID 27208 已核实关闭，无在途或未决自有请求 |
-| 下一步 | Antigravity 模型服务恢复后，先用完整工具名核对正式断开状态，再安排一次私有真产品读取和截图。VirtualBox 按用户安排；D3 仍需干净 Win10／Win11 |
+| 下一步 | 先用已登录 Antigravity 原生直连完成正式断开状态查询，再安排一次私有真产品读取和截图。VirtualBox 按用户安排；D3 仍需干净 Win10／Win11 |
 | 证据边界 | 本机原件 out/rust_sidecar/{a,b,c,d}_20261118、out/mcp_product/{rust_b,rust_c,rust_c_demo}_20261118。合成、Qt 夹具、真实产品和包验收各保留原范围 |
 | 提交策略 | 按 11-18 用户授权形成聚焦本地提交，禁止推送 |
 
@@ -166,7 +166,9 @@ C3/C4 的真实正例见 out/mcp_product/rust_c_demo_20261118/windows-demo-r01�
 
 同一 PC-W11 上的 Antigravity CLI 1.5.10 使用现有登录和独立临时工作区的 `.agents/mcp_config.json`，直接启动中文／空格路径中的解包 EXE，调用合成文本和图片工具。CLI 以流式 JSON 记录成功的工具步骤，保存的 2×2、75 字节 PNG 已核对。合成文本轮实得结果和模型回文，最终状态因早期 API EOF 为 ERROR；图片轮在 PNG 落盘后遇到模型服务 503 并超时。另在无产品的 ACP 会话中用诊断转发观察正式入口的 `server/discover`、`tools/list` 和全部 17 项工具，宿主退出 0。原件 out/rust_sidecar/d_20261118/agy-cli-fixture-r02、agy-cli-fixture-image-r01、agy-acp-formal-r01。[Antigravity CLI 的工作区配置](https://antigravity.google/docs/mcp?tab=cli)
 
-本轮一次真实产品尝试仍使用上述 Qt6 合成 INI、只配置模式和自有私有桌面。固定助手仅向解包 EXE 的专属配对授 Read＋CaptureWindows。Antigravity CLI 在正式调用前尝试列资源，随后其 shell 请求按本次会话规则被拒绝；模型服务报告 503，CLI 退出码为 3。本轮没有 Antigravity 真产品 MCP 读取或 PNG。产品原生退出 0，专属配对已撤销、凭据已删除、接口已关闭；合成 INI、FilterKeys 和前／后输入桌面观测符合原基线，产品未成为所采样的前台。其后无产品预检在模型资格检查遇到 EOF，另一次显式 effort 与服务给出的模型不匹配。下轮先沿默认模型设置以完整工具名验证正式断开状态，再安排真产品读取和对照截图。原件 out/rust_sidecar/d_20261118/agy-product-r01、agy-formal-r01 至 agy-formal-r03 及 out/mcp_product/rust_c_demo_20261118/agy-read-r01。
+本轮一次真实产品尝试仍使用上述 Qt6 合成 INI、只配置模式和自有私有桌面。固定助手仅向解包 EXE 的专属配对授 Read＋CaptureWindows。Antigravity CLI 在正式调用前尝试列资源，随后其 shell 请求按本次会话规则被拒绝；模型服务报告 503，CLI 退出码为 3。本轮没有 Antigravity 真产品 MCP 读取或 PNG。产品原生退出 0，专属配对已撤销、凭据已删除、接口已关闭；合成 INI、FilterKeys 和前／后输入桌面观测符合原基线，产品未成为所采样的前台。其后无产品预检在模型资格检查遇到 EOF，另一次显式 effort 与服务给出的模型不匹配。后续用完整工具名和单独的服务器名复查，结果见下。原件 out/rust_sidecar/d_20261118/agy-product-r01、agy-formal-r01 至 agy-formal-r03 及 out/mcp_product/rust_c_demo_20261118/agy-read-r01。
+
+缓存关闭后的补查区分了启动与调用。CLI 的独立诊断转发实际发送 2026-07-28 版 `tools/call`，正式 `qkm_get_connection_state` 返回 `disconnected`、`busy=false`，Rust 退出 0；回文包含该状态，模型服务仍记录一次 EOF。CLI 换独立名称后直启的对照轮没有生成正式工具缓存或发出调用。ACP 显式配置能直接启动同一正式 EXE，已登录复查也生成了正式工具 Schema，但提示在 90 秒内没有返回工具调用。当前证据不足以定位 CLI 直启差异的原因。下次先完成无产品的原生直连正式调用，再沿同一入口申请私有真产品及截图复验。原件 out/rust_sidecar/d_20261118/agy-formal-r04 至 agy-formal-r06-direct、agy-acp-native-formal-r01 和 agy-acp-signed-formal-r01。
 
 用户选择先在本机完成验证。VirtualBox 只读核对发现关机的 Win10_x64 已配置 Win10_x64_share，缓存来宾工具版本 7.2.16。安排 D3 时先核对实际来宾在线、登录、网络隔离、共享访问与可用执行入口，再传输已核验 SHA-256 的候选 ZIP 和原生 PowerShell 验证脚本；缓存的版本只是准备线索。当前未进行来宾操作、干净 Win10／Win11 及正式默认替换。[VirtualBox 来宾工具](https://docs.oracle.com/en/virtualization/virtualbox/7.2/user/guestadditions.html)
 
