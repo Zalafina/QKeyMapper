@@ -200,7 +200,7 @@ impl Connection {
         })
     }
 
-    pub(crate) fn call_read(
+    pub(crate) fn call(
         &mut self,
         method: &'static str,
         arguments: Object,

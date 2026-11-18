@@ -14,9 +14,10 @@ sys.path.insert(0, str(ROOT / "mcp_bridge/src"))
 from qkeymapper_mcp.__main__ import _ERROR_FEEDBACK, _PRODUCT_ERRORS
 
 CATALOG = HERE.parents[1] / "src/tool_catalog.json"
-READ_STAGE = {
+TOOLS = {
     "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect",
     "qkm_get_capabilities", "qkm_get_state", "qkm_get_help", "qkm_query", "qkm_get_operation",
+    "qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes",
 }
 
 
@@ -33,8 +34,8 @@ def metadata(tools):
 
 async def selected_catalog():
     async with Client(config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py"))) as client:
-        tools = [tool for tool in (await client.list_tools()).tools if tool.name in READ_STAGE]
-        assert {tool.name for tool in tools} == READ_STAGE
+        tools = [tool for tool in (await client.list_tools()).tools if tool.name in TOOLS]
+        assert {tool.name for tool in tools} == TOOLS
         return {"tools": metadata(tools), "feedback": {key: list(value) for key, value in _ERROR_FEEDBACK.items()},
                 "reviewed_product_errors": sorted(_PRODUCT_ERRORS)}
 
@@ -63,18 +64,29 @@ async def compare(exe):
                     {"entity": "mappings", "source_tab_ref": "a" * 64 + ":source:01"})),
                 ("qkm_get_operation", {"operation_id": "a" * 32},
                  ({}, {"operation_id": "A" * 32}, {"operation_id": None}, {"operation_id": "bad"})),
+                ("qkm_preview_changes", {"action": "configuration.save", "setting_name": "\u8bbe" * 32767}, (
+                    {"action": "unknown"}, {"action": None}, {"send_method": True}, {"send_method": 4},
+                    {"source_ref": "a" * 64 + ":row:0:01"}, {"source_refs": []},
+                    {"setting_name": ""}, {"setting_name": "A" * 32768}, {"key_up_mapping_key": "AB"},
+                    {"insert_row": 2147483648}, {"original_key": "a"}, {"disabled": 1},
+                    {"unavailable_policy": "fallback"})),
+                ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
+                    {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
+                    {"preview_id": "a" * 32, "confirm_overwrite": None})),
+                ("qkm_cancel_changes", {"preview_id": "a" * 32}, (
+                    {}, {"preview_id": 1}, {"preview_id": "a" * 32, "confirm_delete": True})),
             ):
-                for arguments in (*invalids, valid):
+                for index, arguments in enumerate((*invalids, valid)):
                     left = await client.call_tool(name, arguments)
                     right = await python.call_tool(name, arguments)
                     assert left.is_error and right.is_error, (mode, name, arguments)
-                    if arguments == valid:
+                    if index == len(invalids):
                         assert left.structured_content == right.structured_content, (mode, name)
                         assert left.structured_content["error"] == "not_connected"
                         assert json.loads(left.content[0].text) == left.structured_content
                     else:
                         assert left.structured_content is None and right.structured_content is None
-            print("PASS", mode, "9 tool contracts and error layers")
+            print("PASS", mode, len(TOOLS), "tool contracts and error layers")
 
 
 if __name__ == "__main__":

@@ -2,9 +2,9 @@
 
 #[cfg(windows)]
 mod connection;
-#[cfg(windows)]
-mod read_args;
 mod stdio;
+#[cfg(windows)]
+mod tool_args;
 
 use std::{
     ffi::OsStr,

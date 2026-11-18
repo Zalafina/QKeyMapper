@@ -20,6 +20,9 @@ use rmcp::{
 use serde::Deserialize;
 use serde_json::{Value, json};
 
+// The largest setting name can occupy roughly 384 KiB with JSON Unicode escapes.
+const MAX_REQUEST_LINE: usize = 512 * 1024;
+
 #[derive(Deserialize)]
 struct Contracts {
     tools: Vec<Tool>,
@@ -67,7 +70,7 @@ impl ServerHandler for Handler {
                 env!("CARGO_PKG_VERSION"),
             ))
             .with_instructions(
-                "QKeyMapper Rust IPC candidate. Connection, pairing, and read tools.",
+                "QKeyMapper Rust IPC candidate. Explicitly connect to the configured target before querying or editing.",
             )
     }
 
@@ -87,7 +90,7 @@ impl ServerHandler for Handler {
         context: RequestContext<RoleServer>,
     ) -> Result<CallToolResponse, ErrorData> {
         let Ok(arguments) =
-            crate::read_args::parse(&request.name, request.arguments.unwrap_or_default())
+            crate::tool_args::parse(&request.name, request.arguments.unwrap_or_default())
         else {
             return Ok(
                 CallToolResult::error(vec![ContentBlock::text("请求参数不符合接口约束。")]).into(),
@@ -98,11 +101,20 @@ impl ServerHandler for Handler {
             "qkm_connect" => self.bridge.connect(false),
             "qkm_request_pairing" => self.bridge.connect(true),
             "qkm_disconnect" => self.bridge.disconnect(),
-            "qkm_get_capabilities" => self.read("qkm_get_capabilities", arguments, context).await,
-            "qkm_get_state" => self.read("qkm_get_state", arguments, context).await,
-            "qkm_get_help" => self.read("qkm_get_help", arguments, context).await,
-            "qkm_query" => self.read("qkm_query", arguments, context).await,
-            "qkm_get_operation" => self.read("qkm_get_operation", arguments, context).await,
+            "qkm_get_capabilities" => {
+                self.request("qkm_get_capabilities", arguments, context)
+                    .await
+            }
+            "qkm_get_state" => self.request("qkm_get_state", arguments, context).await,
+            "qkm_get_help" => self.request("qkm_get_help", arguments, context).await,
+            "qkm_query" => self.request("qkm_query", arguments, context).await,
+            "qkm_get_operation" => self.request("qkm_get_operation", arguments, context).await,
+            "qkm_preview_changes" => {
+                self.request("qkm_preview_changes", arguments, context)
+                    .await
+            }
+            "qkm_apply_changes" => self.request("qkm_apply_changes", arguments, context).await,
+            "qkm_cancel_changes" => self.request("qkm_cancel_changes", arguments, context).await,
             _ => return Ok(CallToolResult::error(vec![ContentBlock::text("未知工具。")]).into()),
         };
         Ok(self.contracts.tool_result(value).into())
@@ -110,7 +122,7 @@ impl ServerHandler for Handler {
 }
 
 impl Handler {
-    async fn read(
+    async fn request(
         &self,
         method: &'static str,
         arguments: Object,
@@ -119,7 +131,7 @@ impl Handler {
         if context.ct.is_cancelled() {
             return json!({"ok": false, "error": "cancelled"});
         }
-        let mut job = match self.bridge.read(method, arguments) {
+        let mut job = match self.bridge.request(method, arguments) {
             Ok(job) => job,
             Err(error) => return json!({"ok": false, "error": error.code}),
         };
@@ -182,7 +194,7 @@ pub fn run(target: Target) -> Result<(), &'static str> {
         bridge: worker.client.clone(),
         contracts,
     };
-    let outcome = crate::stdio::run(handler, 64 * 1024, move || client.stop());
+    let outcome = crate::stdio::run(handler, MAX_REQUEST_LINE, move || client.stop());
     worker.join().map_err(|_| "IPC worker did not finish")?;
     outcome
 }

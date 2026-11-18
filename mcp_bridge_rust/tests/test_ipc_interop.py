@@ -16,13 +16,8 @@ import win32security
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "mcp_bridge/tests"))
 from test_sdk_interop import Fixture, call, connection, elevation, identity, parameters, pending
+from test_tool_contract import TOOLS
 from qkeymapper_mcp.credentials import CredentialStore
-
-TOOLS = {
-    "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing",
-    "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state",
-    "qkm_get_help", "qkm_query", "qkm_get_operation",
-}
 
 
 def rust_parameters(args, discovery, executable):
@@ -125,6 +120,12 @@ async def exercise(args):
             ):
                 denied = await call(client, tool, arguments, error="unsupported_capability")
                 assert denied["message"] == "Business capability is not connected."
+            for tool, arguments in (
+                ("qkm_preview_changes", {"action": "configuration.save", "setting_name": "Synthetic"}),
+                ("qkm_apply_changes", {"preview_id": "a" * 32}),
+                ("qkm_cancel_changes", {"preview_id": "a" * 32}),
+            ):
+                await call(client, tool, arguments, error="permission_denied")
             await fixture.wait(lambda value: value["authenticated"] == 1)
         assert store.load() is not None
         async with Client(python) as client:

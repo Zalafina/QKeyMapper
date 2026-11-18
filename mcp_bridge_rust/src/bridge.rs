@@ -12,7 +12,7 @@ use crate::wire::Object;
 
 enum Operation {
     Connect { pair: bool },
-    Read(&'static str, Object),
+    Request(&'static str, Object),
 }
 
 enum Command {
@@ -121,7 +121,7 @@ impl Bridge {
         state
     }
 
-    pub fn read(&self, method: &'static str, arguments: Object) -> Result<Pending> {
+    pub fn request(&self, method: &'static str, arguments: Object) -> Result<Pending> {
         if !matches!(
             method,
             "qkm_get_state"
@@ -129,10 +129,13 @@ impl Bridge {
                 | "qkm_get_help"
                 | "qkm_query"
                 | "qkm_get_operation"
+                | "qkm_preview_changes"
+                | "qkm_apply_changes"
+                | "qkm_cancel_changes"
         ) {
             return Err(NativeError::new("unsupported_method"));
         }
-        self.submit(Operation::Read(method, arguments))
+        self.submit(Operation::Request(method, arguments))
     }
 
     pub fn disconnect(&self) -> Value {
@@ -219,11 +222,11 @@ fn perform(
             state.lock().unwrap().status = status.clone();
             Ok(status)
         }
-        Operation::Read(method, arguments) => {
+        Operation::Request(method, arguments) => {
             let session = session
                 .as_mut()
                 .ok_or_else(|| NativeError::new("not_connected"))?;
-            let value = session.call_read(method, arguments, cancel)?;
+            let value = session.call(method, arguments, cancel)?;
             state.lock().unwrap().status = session.info();
             Ok(value)
         }

@@ -1,7 +1,7 @@
 # QKeyMapper MCP Sidecar in Rust
 
 This project provides the RUST-A protocol fixture and a candidate for pairing
-and read-only IPC, including help, paged queries and operation lookup.
+and authenticated IPC, including queries and configuration transactions.
 Follow the [migration plan](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_rust_migration_plan.md)
 for validation status and the remaining product and delivery work.
 
@@ -43,7 +43,7 @@ disconnected. Use `qkm_connect` with an existing pairing or
 `qkm_request_pairing` followed by approval on the verified target.
 
 On Windows, `cargo test --locked` also covers argument handling, framing,
-proof vectors, identity and pipe cancellation. Run `tests/test_read_contract.py --exe $exe`
+proof vectors, identity and pipe cancellation. Run `tests/test_tool_contract.py --exe $exe`
 with the locked Python environment to compare the tool catalog and result
 format on both protocol versions. Use its `--export-catalog` option when
 synchronizing reviewed Python tool descriptions, schemas or error messages.
