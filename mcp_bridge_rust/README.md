@@ -53,3 +53,9 @@ credential contexts and removes both entries. The private Qt fixture uses
 `tests/test_ipc_interop.py` and the repository's asInvoker
 `QKeyMapperMcpControlTest.exe`. Run the Windows credential and Qt cases in
 ordinary Medium integrity.
+
+`tests/test_product_transactions.py` is the private stock-product check
+for configuration changes. It needs a separately approved and registered
+product copy, the untouched synthetic persistence fixture, and an exact Rust
+client executable for the Read and Configure approval. The test controller
+and both sidecars stay at ordinary Medium integrity.
