@@ -132,6 +132,11 @@ impl Bridge {
                 | "qkm_preview_changes"
                 | "qkm_apply_changes"
                 | "qkm_cancel_changes"
+                | "qkm_open_mapping_editor"
+                | "qkm_close_mapping_editor"
+                | "qkm_open_mapping_settings"
+                | "qkm_close_mapping_settings"
+                | "qkm_capture_window"
         ) {
             return Err(NativeError::new("unsupported_method"));
         }

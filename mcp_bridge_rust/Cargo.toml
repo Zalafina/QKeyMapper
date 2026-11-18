@@ -17,6 +17,8 @@ tokio = { version = "1", features = ["macros", "rt", "time"] }
 tokio-util = "0.7"
 
 [target.'cfg(windows)'.dependencies]
+base64 = "0.23.1"
+chrono = { version = "0.4", default-features = false }
 getrandom = "0.4"
 windows-sys = { version = "0.61.2", features = [
     "Win32_Foundation",

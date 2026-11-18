@@ -218,7 +218,10 @@ impl Connection {
         }
         match response.get("ok").and_then(Value::as_bool) {
             Some(true) => match response.remove("result") {
-                Some(value @ Value::Object(_)) => {
+                Some(mut value @ Value::Object(_)) => {
+                    if method == "qkm_capture_window" {
+                        super::capture::verify(&mut value, self.pipe.target(), &arguments)?;
+                    }
                     Ok(json!({"id": id, "ok": true, "result": value}))
                 }
                 _ => Err(invalid()),

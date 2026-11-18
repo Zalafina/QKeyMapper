@@ -1,7 +1,8 @@
 # QKeyMapper MCP Sidecar in Rust
 
 This project provides the RUST-A protocol fixture and a candidate for pairing
-and authenticated IPC, including queries and configuration transactions.
+and authenticated IPC, including queries, configuration transactions and
+restricted windows with verified PNG results.
 Follow the [migration plan](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_rust_migration_plan.md)
 for validation status and the remaining product and delivery work.
 

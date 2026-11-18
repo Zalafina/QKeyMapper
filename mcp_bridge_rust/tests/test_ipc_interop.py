@@ -126,6 +126,21 @@ async def exercise(args):
                 ("qkm_cancel_changes", {"preview_id": "a" * 32}),
             ):
                 await call(client, tool, arguments, error="permission_denied")
+            revision = "a" * 64
+            tab = revision + ":source:0"
+            row = revision + ":row:0:0"
+            editor = {"source_ref": row, "presentation": "private_background"}
+            settings = {"source_tab_ref": tab, "presentation": "private_background"}
+            window = "b" * 64
+            for tool, arguments in (
+                ("qkm_open_mapping_editor", editor),
+                ("qkm_close_mapping_editor", {**editor, "window_ref": window}),
+                ("qkm_open_mapping_settings", settings),
+                ("qkm_close_mapping_settings", {**settings, "window_ref": window}),
+                ("qkm_capture_window", {"role": "main", "window_ref": window,
+                    "source_revision": revision, "source_tab_ref": tab}),
+            ):
+                await call(client, tool, arguments, error="permission_denied")
             await fixture.wait(lambda value: value["authenticated"] == 1)
         assert store.load() is not None
         async with Client(python) as client:

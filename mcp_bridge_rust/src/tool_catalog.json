@@ -1130,6 +1130,241 @@
       "annotations": {
         "destructiveHint": false,
         "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "通过原GUI入口打开本实例当前源行的单项设定窗，必须另获ShowWindows；Read、Configure或CaptureWindows不能替代。先查询mappings取得source_ref；仅支持实际WinSta0后台私有桌面，拒绝Default／当前输入桌面或无法核验的桌面。源必须仍安全且属于当前可见Tab／行；不会自动切换Tab、关闭既有编辑窗或覆盖草稿。只显示本实例单项窗，不请求激活、不注入输入、不改映射／保存。返回目标、源和新窗口引用，随后可在获准后capture。失败／断线后先query windows核对是否已经打开，勿盲目重发；本接口不执行演示重置、预热或QQ发送。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation": {
+            "const": "private_background",
+            "title": "Presentation",
+            "type": "string"
+          },
+          "source_ref": {
+            "maxLength": 128,
+            "pattern": "^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$",
+            "title": "Source Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_ref",
+          "presentation"
+        ],
+        "title": "qkm_open_mapping_editorArguments",
+        "type": "object"
+      },
+      "name": "qkm_open_mapping_editor",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_open_mapping_editorDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "截取本实例当前已显示、非最小化的受支持Qt窗口，必须另获CaptureWindows；Read、Configure或ShowWindows不能代替。先查询windows取得本角色window_ref（mapping_advanced及ibinput_settings须显式window_role查询），并查询mapping_sources取得当前source_revision及所选source_tab_ref；窗口须正展示该源，不自动切换Tab。绘制等待前后复核请求、窗口、完整源及安全停止上下文；单项窗存在未应用键文本、弹窗、陈旧或超时明确失败。不会显示、恢复、激活、开始映射或注入输入。返回160KiB内PNG原生图片和不含Base64的实例／源／窗口／尺寸元数据；仅Qt客户区，独立弹窗／原生边框不包含，实时UI可能显示其他未提交控件。没有文件路径参数，不落盘；高级窗另含settings_scope，明确实时设定未由行source_revision提交；ibinput_settings为独立固定Popup的自身Qt客户区，另含偏好修订及本owner未变标记，允许该Popup本身存在但不含其下拉子窗。不执行连接检查或偏好编辑；本接口不显示或关闭窗口。图片不代表已保存，也不代表QQ已发送。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "main",
+              "item_setup",
+              "mapping_advanced",
+              "ibinput_settings"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "source_revision": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Revision",
+            "type": "string"
+          },
+          "source_tab_ref": {
+            "maxLength": 128,
+            "pattern": "^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$",
+            "title": "Source Tab Ref",
+            "type": "string"
+          },
+          "window_ref": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Window Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "role",
+          "window_ref",
+          "source_revision",
+          "source_tab_ref"
+        ],
+        "title": "qkm_capture_windowArguments",
+        "type": "object"
+      },
+      "name": "qkm_capture_window",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_capture_windowDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "安全关闭本认证会话通过正式open打开且内容未变的单项设定窗，必须另获ShowWindows。只接受当前source_ref／window_ref及private_background；C++核验实际后台私有非输入桌面、完整安全源／真实源行、打开记录及全部现有输入和待应用备注摘要。不关闭仅GUI打开的窗，不提供discard开关；草稿／来源／权限／窗口变化或其他编辑窗存在时拒绝，不自动应用、丢弃、切Tab、停映射或重试。成功返回已核实隐藏的窗口和目标／源摘要；这不清空映射、不保存，也不构成演示重置。失败或断线后先query windows核对实际结果。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation": {
+            "const": "private_background",
+            "title": "Presentation",
+            "type": "string"
+          },
+          "source_ref": {
+            "maxLength": 128,
+            "pattern": "^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$",
+            "title": "Source Ref",
+            "type": "string"
+          },
+          "window_ref": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Window Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_ref",
+          "window_ref",
+          "presentation"
+        ],
+        "title": "qkm_close_mapping_editorArguments",
+        "type": "object"
+      },
+      "name": "qkm_close_mapping_editor",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_close_mapping_editorDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "只在已核验后台私有非输入桌面，通过原入口打开本实例固定设定窗（window_role默认mapping_advanced；ibinput_settings为IbInput Popup），需要Read+ShowWindows。source_tab_ref须为当前已加载、安全空闲的附着源；不切换主窗设置页、不请求激活、不修改参数或启动映射；IbInput角色只显示已有偏好和被动状态，不执行连接检查或试发。已有编辑窗／菜单／通知子窗、表格编辑或未稳定数字拒绝，不替换已有窗口。成功返回实际源／窗口引用并记录本owner的输入／偏好修订摘要；截图另需CaptureWindows。失败或断线先query对应固定window_role，勿盲目重发。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation": {
+            "const": "private_background",
+            "title": "Presentation",
+            "type": "string"
+          },
+          "source_tab_ref": {
+            "maxLength": 128,
+            "pattern": "^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$",
+            "title": "Source Tab Ref",
+            "type": "string"
+          },
+          "window_role": {
+            "default": "mapping_advanced",
+            "enum": [
+              "mapping_advanced",
+              "ibinput_settings"
+            ],
+            "title": "Window Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_tab_ref",
+          "presentation"
+        ],
+        "title": "qkm_open_mapping_settingsArguments",
+        "type": "object"
+      },
+      "name": "qkm_open_mapping_settings",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_open_mapping_settingsDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "安全关闭本owner正式打开且输入未变的固定设定窗（window_role默认mapping_advanced；ibinput_settings为IbInput Popup），需要Read+ShowWindows及当前source_tab_ref／window_ref。实际后台私有桌面、完整安全源、当前Tab／权限和打开记录再次核验；仅GUI打开、参数／待输入数字或子窗变化时拒绝并保留，不提供discard或自动应用。成功核实隐藏、输入和源不变；不保存、不删除映射、不改配对或启动状态。失败或断线先query实际窗口；旧引用、操作结果未知都不能据此自动重试。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "presentation": {
+            "const": "private_background",
+            "title": "Presentation",
+            "type": "string"
+          },
+          "source_tab_ref": {
+            "maxLength": 128,
+            "pattern": "^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$",
+            "title": "Source Tab Ref",
+            "type": "string"
+          },
+          "window_ref": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Window Ref",
+            "type": "string"
+          },
+          "window_role": {
+            "default": "mapping_advanced",
+            "enum": [
+              "mapping_advanced",
+              "ibinput_settings"
+            ],
+            "title": "Window Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_tab_ref",
+          "window_ref",
+          "presentation"
+        ],
+        "title": "qkm_close_mapping_settingsArguments",
+        "type": "object"
+      },
+      "name": "qkm_close_mapping_settings",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_close_mapping_settingsDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
         "readOnlyHint": true
       },
       "description": "查询本实例／本配对及权限代次内的预览或提交结果，失败状态查询本身仍可成功。保存预览另带所属实例／配置组／保存修订。结果带采样时间，完成记录为历史事实，不代表当前运行／保存状态；最多64条，进行中记录保留，完成后保留10分钟并受容量限制，接口重置或进程退出后丢失。unknown时核对当前配置及源，不能假定未修改或盲目重发。",

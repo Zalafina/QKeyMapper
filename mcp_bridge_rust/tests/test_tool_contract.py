@@ -18,6 +18,8 @@ TOOLS = {
     "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect",
     "qkm_get_capabilities", "qkm_get_state", "qkm_get_help", "qkm_query", "qkm_get_operation",
     "qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes",
+    "qkm_open_mapping_editor", "qkm_close_mapping_editor", "qkm_open_mapping_settings",
+    "qkm_close_mapping_settings", "qkm_capture_window",
 }
 
 
@@ -43,6 +45,13 @@ async def selected_catalog():
 async def compare(exe):
     baseline = await selected_catalog()
     assert json.loads(CATALOG.read_text(encoding="utf-8")) == baseline
+    revision = "a" * 64
+    tab = revision + ":source:0"
+    row = revision + ":row:0:0"
+    window = "b" * 64
+    editor = {"source_ref": row, "presentation": "private_background"}
+    settings = {"source_tab_ref": tab, "presentation": "private_background"}
+    capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
     for mode in ("legacy", "2026-07-28"):
         async with Client(config(exe), mode=mode) as client, Client(
             config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py")), mode=mode,
@@ -75,6 +84,18 @@ async def compare(exe):
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),
                 ("qkm_cancel_changes", {"preview_id": "a" * 32}, (
                     {}, {"preview_id": 1}, {"preview_id": "a" * 32, "confirm_delete": True})),
+                ("qkm_open_mapping_editor", editor, (
+                    {}, {**editor, "presentation": "Default"}, {**editor, "source_ref": tab},
+                    {**editor, "window_ref": window})),
+                ("qkm_close_mapping_editor", {**editor, "window_ref": window}, (
+                    editor, {**editor, "window_ref": 1}, {**editor, "window_ref": window, "discard": True})),
+                ("qkm_open_mapping_settings", settings, (
+                    {}, {**settings, "window_role": "main"}, {**settings, "window_role": None})),
+                ("qkm_close_mapping_settings", {**settings, "window_role": "ibinput_settings", "window_ref": window}, (
+                    settings, {**settings, "window_ref": window, "window_role": "item_setup"})),
+                ("qkm_capture_window", capture, (
+                    {}, {**capture, "role": "other"}, {**capture, "source_revision": "A" * 64},
+                    {**capture, "window_ref": window[:63]}, {**capture, "path": "capture.png"})),
             ):
                 for index, arguments in enumerate((*invalids, valid)):
                     left = await client.call_tool(name, arguments)

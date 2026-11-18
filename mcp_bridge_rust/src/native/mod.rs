@@ -13,6 +13,7 @@ use windows_sys::Win32::{
     Storage::FileSystem::{CreateFileW, OPEN_EXISTING},
 };
 
+mod capture;
 mod credentials;
 mod discovery;
 mod identity;

@@ -21,11 +21,33 @@ enum Entity {
     DemoContext,
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Default, Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
-enum Role {
+enum SettingsRole {
+    #[default]
     MappingAdvanced,
     IbinputSettings,
+}
+
+impl SettingsRole {
+    fn is_default(&self) -> bool {
+        matches!(self, Self::MappingAdvanced)
+    }
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum CaptureRole {
+    Main,
+    ItemSetup,
+    MappingAdvanced,
+    IbinputSettings,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum Presentation {
+    PrivateBackground,
 }
 
 fn default_limit() -> u8 {
@@ -57,7 +79,7 @@ struct Query {
     #[serde(skip_serializing_if = "Option::is_none")]
     source_tab_ref: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    window_role: Option<Role>,
+    window_role: Option<SettingsRole>,
     #[serde(default)]
     offset: u32,
     #[serde(default = "default_limit")]
@@ -162,6 +184,49 @@ struct Cancel {
     preview_id: String,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct OpenEditor {
+    source_ref: String,
+    presentation: Presentation,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct CloseEditor {
+    source_ref: String,
+    window_ref: String,
+    presentation: Presentation,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct OpenSettings {
+    source_tab_ref: String,
+    presentation: Presentation,
+    #[serde(default, skip_serializing_if = "SettingsRole::is_default")]
+    window_role: SettingsRole,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct CloseSettings {
+    source_tab_ref: String,
+    window_ref: String,
+    presentation: Presentation,
+    #[serde(default, skip_serializing_if = "SettingsRole::is_default")]
+    window_role: SettingsRole,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct Capture {
+    role: CaptureRole,
+    window_ref: String,
+    source_revision: String,
+    source_tab_ref: String,
+}
+
 fn revision(s: &str) -> bool {
     hex_bytes::<32>(s).is_ok()
 }
@@ -233,6 +298,19 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             Ok(values)
         }
         "qkm_cancel_changes" => typed(arguments, |v: &Cancel| id(&v.preview_id)),
+        "qkm_open_mapping_editor" => typed(arguments, |v: &OpenEditor| row_ref(&v.source_ref)),
+        "qkm_close_mapping_editor" => typed(arguments, |v: &CloseEditor| {
+            row_ref(&v.source_ref) && revision(&v.window_ref)
+        }),
+        "qkm_open_mapping_settings" => {
+            typed(arguments, |v: &OpenSettings| tab_ref(&v.source_tab_ref))
+        }
+        "qkm_close_mapping_settings" => typed(arguments, |v: &CloseSettings| {
+            tab_ref(&v.source_tab_ref) && revision(&v.window_ref)
+        }),
+        "qkm_capture_window" => typed(arguments, |v: &Capture| {
+            revision(&v.window_ref) && revision(&v.source_revision) && tab_ref(&v.source_tab_ref)
+        }),
         _ if arguments.is_empty() => Ok(arguments),
         _ => Err(InvalidMessage),
     }
@@ -242,6 +320,31 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn settings_window_omits_the_default_role_and_keeps_an_explicit_popup() {
+        let mut arguments = json!({"source_tab_ref":format!("{}:source:0", "a".repeat(64)),
+            "presentation":"private_background"});
+        let default = arguments.as_object().unwrap().clone();
+        arguments["window_role"] = "mapping_advanced".into();
+        assert_eq!(
+            parse(
+                "qkm_open_mapping_settings",
+                arguments.as_object().unwrap().clone()
+            )
+            .unwrap(),
+            default
+        );
+        arguments["window_role"] = "ibinput_settings".into();
+        assert_eq!(
+            parse(
+                "qkm_open_mapping_settings",
+                arguments.as_object().unwrap().clone()
+            )
+            .unwrap(),
+            *arguments.as_object().unwrap()
+        );
+    }
 
     #[test]
     fn configuration_arguments_keep_original_wire_shapes() {

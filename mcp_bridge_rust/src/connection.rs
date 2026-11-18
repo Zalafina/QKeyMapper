@@ -115,9 +115,31 @@ impl ServerHandler for Handler {
             }
             "qkm_apply_changes" => self.request("qkm_apply_changes", arguments, context).await,
             "qkm_cancel_changes" => self.request("qkm_cancel_changes", arguments, context).await,
+            "qkm_open_mapping_editor" => {
+                self.request("qkm_open_mapping_editor", arguments, context)
+                    .await
+            }
+            "qkm_close_mapping_editor" => {
+                self.request("qkm_close_mapping_editor", arguments, context)
+                    .await
+            }
+            "qkm_open_mapping_settings" => {
+                self.request("qkm_open_mapping_settings", arguments, context)
+                    .await
+            }
+            "qkm_close_mapping_settings" => {
+                self.request("qkm_close_mapping_settings", arguments, context)
+                    .await
+            }
+            "qkm_capture_window" => self.request("qkm_capture_window", arguments, context).await,
             _ => return Ok(CallToolResult::error(vec![ContentBlock::text("未知工具。")]).into()),
         };
-        Ok(self.contracts.tool_result(value).into())
+        let result = if request.name == "qkm_capture_window" {
+            self.contracts.image_tool_result(value)
+        } else {
+            self.contracts.tool_result(value)
+        };
+        Ok(result.into())
     }
 }
 
@@ -153,6 +175,24 @@ impl Handler {
 }
 
 impl Contracts {
+    fn image_tool_result(&self, mut value: Value) -> CallToolResult {
+        if value["ok"].as_bool() != Some(true) {
+            return self.tool_result(value);
+        }
+        let Some(Value::String(encoded)) = value
+            .get_mut("result")
+            .and_then(Value::as_object_mut)
+            .and_then(|result| result.remove("png_base64"))
+        else {
+            return self.tool_result(json!({"ok": false, "error": "invalid_image"}));
+        };
+        let mut result = self.tool_result(value);
+        result
+            .content
+            .insert(0, ContentBlock::image(encoded, "image/png"));
+        result
+    }
+
     fn tool_result(&self, mut value: Value) -> CallToolResult {
         if value["ok"].as_bool() != Some(false) && value["accepted"].as_bool() != Some(false) {
             return CallToolResult::structured(value);
@@ -197,4 +237,40 @@ pub fn run(target: Target) -> Result<(), &'static str> {
     let outcome = crate::stdio::run(handler, MAX_REQUEST_LINE, move || client.stop());
     worker.join().map_err(|_| "IPC worker did not finish")?;
     outcome
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn capture_image_is_returned_once_and_errors_have_no_picture() {
+        let contracts: Contracts = serde_json::from_str(include_str!("tool_catalog.json")).unwrap();
+        let result = serde_json::to_value(
+            contracts
+                .image_tool_result(json!({"ok": true, "result":{"width": 2, "png_base64":"cG5n"}})),
+        )
+        .unwrap();
+        assert_eq!(
+            result["content"][0],
+            json!({"type":"image","data":"cG5n","mimeType":"image/png"})
+        );
+        assert_eq!(
+            result["structuredContent"],
+            json!({"ok": true, "result":{"width": 2}})
+        );
+        assert_eq!(
+            serde_json::from_str::<Value>(result["content"][1]["text"].as_str().unwrap()).unwrap(),
+            result["structuredContent"]
+        );
+        for value in [
+            json!({"ok": true, "result":{}}),
+            json!({"ok": false, "error":"stale_window"}),
+        ] {
+            let result = serde_json::to_value(contracts.image_tool_result(value)).unwrap();
+            assert_eq!(result["isError"], true);
+            assert_eq!(result["content"].as_array().unwrap().len(), 1);
+            assert_eq!(result["content"][0]["type"], "text");
+        }
+    }
 }
