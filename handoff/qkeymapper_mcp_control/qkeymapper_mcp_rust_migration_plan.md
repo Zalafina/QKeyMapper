@@ -8,16 +8,16 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | RUST-D1 完整组件及本机解包通过；D2 的 Codex 夹具通过，Antigravity 已建立隔离会话 |
-| 分支／源码检查点 | codex/qkeymapper-mcp-control，RUST-A c57476df，RUST-B 75e43a67，C2 产品验收 c8f7893a，C4 私有验收 d69e2360，组件内 Rust 源 f4cc8c7d，D1 为记录本切片的提交。产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
+| 当前切片 | RUST-D2 本机 Codex 真实产品及 PNG 通过，Antigravity 直启和工具发现通过 |
+| 分支／源码检查点 | codex/qkeymapper-mcp-control，RUST-A c57476df，RUST-B 75e43a67，C2 产品验收 c8f7893a，C4 私有验收 d69e2360，组件内 Rust 源 f4cc8c7d，D1 ecd22c62，D2 为记录本切片的提交。产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
 | 执行机器 | PC-W11，Windows x64 MSVC。项目固定及本机默认 Rust 均核为 1.100.0 |
-| 本轮改动 | 已冻结完整 Rust EXE，核验 x64 DLL、签名、依赖许可和包摘要，生成可重复的 ZIP 及原生 PowerShell 检查入口 |
-| 实现状态 | A 至 C 的本机选定范围通过。D1 候选已准备，实际宿主、干净机器及最终替换待验 |
+| 本轮改动 | 用解包后的 EXE 和实际 Codex 完成私有产品读取及 PNG。独立 Antigravity ACP 核对真实启动及现代工具发现 |
+| 实现状态 | A 至 C 的本机选定范围通过。D1 及 D2 本机选定范围通过，Antigravity 实际调用、干净机器及最终替换待验 |
 | 正式实现 | 继续使用现有 Python 桥接；此前 C++、GUI／MCP、打包组件及运行时证据保持原范围 |
 | 决策门槛 | 按 11-18 的连续推进指示接入 B 的组件切片。A 实测供迁移评估，实际产品互操作和默认替换分别沿 B、D 的门槛 |
 | 客户端门槛 | 正式替换须通过 Codex＋Antigravity；其他宿主不默认承诺，QQ gateway 另行联调 |
-| 当前权限 | B、C2 和 C3/C4 的私有产品验收分别获批；均已清理。19:00 缓存保留，无自有目标、在途或未决请求 |
-| 下一步 | D2 实际产品的 Codex／Antigravity 工具及图片，Antigravity 需要可用的已授权会话。D3 干净 Win10／Win11 仍待安排 |
+| 当前权限 | B、C2、C3/C4 及 D2 的私有产品验收分别获批并清理。19:00 缓存保留，无自有目标、在途、未决请求或本轮固定授权 |
+| 下一步 | 在已授权 Antigravity 登录会话内核对正式调用和图片。按用户安排再接续 D3 干净 Win10／Win11 |
 | 证据边界 | 本机原件 out/rust_sidecar/{a,b,c,d}_20261118、out/mcp_product/{rust_b,rust_c,rust_c_demo}_20261118。合成、Qt 夹具、真实产品和包验收各保留原范围 |
 | 提交策略 | 按 11-18 用户授权形成聚焦本地提交，禁止推送 |
 
@@ -160,9 +160,11 @@ C3/C4 的真实正例见 out/mcp_product/rust_c_demo_20261118/windows-demo-r01�
 
 实际 Codex CLI 0.169.0 App Server 在中文／空格解包路径加载原 Rust 二进制。显式会话覆盖关闭其他服务器，独立 SQLite 和记录均在 out。真实本地 MCP 列表及 text、ImageContent、structuredContent、isError 分别通过，EOF 后 App Server 退出 0。此次使用合成工具，未调用模型。早期轮次遇到 App Server 引导配置、沙箱本地状态和测试客户端 64 KiB 读取上限，修正隔离配置及测试客户端后确认通过。原件 out/rust_sidecar/d_20261118/codex-host-r07。
 
-实际 Antigravity CLI 1.5.10 独立 ACP 通过 initialize 和带显式本地 stdio 服务器参数的 session/new，宿主退出 0。较早尝试中的命令行列表未确认工作区发现，绝对配置目录被宿主拒绝。独立配置未登录，未观察到实际 MCP 工具结果或图片。只记录会话启动，仍需在授权账号、固定测试工作区及实际客户端内验收。[Antigravity CLI 官方配置](https://antigravity.google/docs/cli/gcli-migration?authuser=0)
+同一 Codex 以正式模式发现全部 17 项普通工具，断开时返回原结构化错误。经用户单独批准，复用合成 INI 和既有原 manifest Qt6 只配置产品启动一次。通过 GUI 为解包 EXE 本次配对授 Read＋CaptureWindows；正式 Codex 重新认证，读取真实产品状态、源和窗口，并取得 1130×722、56,622 字节的真实主窗 PNG，目视核对中文及预期窗口。产品和 App Server 原生退出 0，INI 及 FilterKeys 保持原值，目标未成为输入桌面前台，专属配对、凭据及固定授权均清理。原件 out/rust_sidecar/d_20261118/codex-product-r01 和 out/mcp_product/rust_c_demo_20261118/codex-read-r01。
 
-当前会话未取得干净 Win10／Win11 测试端，本机未找到 Windows Sandbox 入口。在相应环境、宿主和完整产品接线补验之前保留 Python 默认方案。
+实际 Antigravity CLI 1.5.10 独立 ACP 通过 initialize 和带显式本地 stdio 服务器参数的 session/new。r05 观察到独立解包 EXE 直启，r06 仅用开发诊断转发观察实际 `server/discover`、`tools/list` 和返回的合成工具名，两轮宿主退出 0。转发器只用于核验报文，不属于候选包。早期命令行列表未确认工作区发现，绝对配置目录被宿主拒绝。独立配置尚未登录，实际 tools/call、用户可见图片及活动工作区配置接线仍待授权账号验收。原件 out/rust_sidecar/d_20261118/agy-acp-r05、agy-acp-r06。[Antigravity CLI 官方配置](https://antigravity.google/docs/cli/gcli-migration?authuser=0)
+
+用户选择先在本机完成验证。VirtualBox 只读核对发现关机的 Win10_x64 已配置 Win10_x64_share，缓存来宾工具版本 7.2.16。安排 D3 时先核对实际来宾在线、登录、网络隔离、共享访问与可用执行入口，再传输已核验 SHA-256 的候选 ZIP 和原生 PowerShell 验证脚本；缓存的版本只是准备线索。当前未进行来宾操作、干净 Win10／Win11 及正式默认替换。[VirtualBox 来宾工具](https://docs.oracle.com/en/virtualization/virtualbox/7.2/user/guestadditions.html)
 
 ### 3.3 交付与回退
 
