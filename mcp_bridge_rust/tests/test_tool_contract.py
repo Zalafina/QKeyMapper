@@ -3,6 +3,7 @@
 import argparse
 import asyncio
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -15,6 +16,7 @@ from qkeymapper_mcp.__main__ import _ERROR_FEEDBACK, _PRODUCT_ERRORS
 
 CATALOG = HERE.parents[1] / "src/tool_catalog.json"
 DEMO_STATE = "qkm_get_demo_state"
+DEMO_MAPPING = "qkm_demo_mapping"
 RECORD = ROOT / "out/rust_sidecar/catalog-only/creation.json"
 TOOLS = {
     "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect",
@@ -37,8 +39,9 @@ def metadata(tools):
 
 
 async def selected_catalog():
-    async with Client(config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py"), "--demo-record", str(RECORD))) as client:
-        expected = TOOLS | {DEMO_STATE}
+    async with Client(config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py"),
+                             "--demo-record", str(RECORD), "--enable-demo-mapping")) as client:
+        expected = TOOLS | {DEMO_STATE, DEMO_MAPPING}
         tools = [tool for tool in (await client.list_tools()).tools if tool.name in expected]
         assert {tool.name for tool in tools} == expected
         return {"tools": metadata(tools), "feedback": {key: list(value) for key, value in _ERROR_FEEDBACK.items()},
@@ -60,9 +63,9 @@ async def compare(exe):
             config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py")), mode=mode,
         ) as python:
             assert metadata((await client.list_tools()).tools) == [
-                tool for tool in baseline["tools"] if tool["name"] != DEMO_STATE]
+                tool for tool in baseline["tools"] if tool["name"] in TOOLS]
             for sidecar in (client, python):
-                for name in ("qkm_unknown", DEMO_STATE):
+                for name in ("qkm_unknown", DEMO_STATE, DEMO_MAPPING):
                     unknown = await sidecar.call_tool(name)
                     assert unknown.is_error and unknown.structured_content is None
             for name, valid, invalids in (
@@ -113,16 +116,31 @@ async def compare(exe):
                     else:
                         assert left.structured_content is None and right.structured_content is None
             print("PASS", mode, len(TOOLS), "tool contracts and error layers")
-        for flags in (("--demo-record", str(RECORD)), ("--product-demo-record",)):
+        for flags in (("--demo-record", str(RECORD)), ("--product-demo-record",),
+                      ("--product-demo-record", "--enable-demo-mapping")):
             async with Client(config(exe, *flags), mode=mode) as rust, Client(
                 config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py"), *flags), mode=mode,
             ) as python:
-                assert metadata((await rust.list_tools()).tools) == baseline["tools"]
+                assert metadata((await rust.list_tools()).tools) == [
+                    tool for tool in baseline["tools"]
+                    if tool["name"] != DEMO_MAPPING or "--enable-demo-mapping" in flags]
                 left = await rust.call_tool(DEMO_STATE)
                 right = await python.call_tool(DEMO_STATE)
                 assert left.is_error and right.is_error
                 assert left.structured_content == right.structured_content and left.structured_content["error"] == "not_connected"
+                if "--enable-demo-mapping" in flags:
+                    mapping = {"original_key": "A", "mapping_key": "B"}
+                    for sidecar in (rust, python):
+                        valid = await sidecar.call_tool(DEMO_MAPPING, mapping)
+                        assert valid.is_error and valid.structured_content["error"] == "not_connected"
+                        for extra in ({"view": "ibinput_settings"}, {"original_key": "a"}, {"pid": 123}):
+                            denied = await sidecar.call_tool(DEMO_MAPPING, mapping | extra)
+                            assert denied.is_error and denied.structured_content is None
         print("PASS", mode, "explicit and product demo-record tool gates")
+
+    parameters = config(exe, "--enable-demo-mapping")
+    rejected = subprocess.run([parameters.command, *parameters.args], capture_output=True, timeout=5)
+    assert rejected.returncode == 2 and rejected.stdout == b""
 
 
 if __name__ == "__main__":

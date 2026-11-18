@@ -7,8 +7,9 @@ use std::{
 use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
+use crate::demo_scene::DemoSession;
 use crate::native::{
-    Cancel, Connection, DemoRecord, NativeError, Result, Target, require_pristine_thread,
+    Cancel, Connection, DemoOptions, NativeError, Result, Target, require_pristine_thread,
 };
 use crate::wire::Object;
 
@@ -47,7 +48,7 @@ pub struct Pending {
 }
 
 impl Worker {
-    pub fn start(target: Target, demo: Option<DemoRecord>) -> io::Result<Self> {
+    pub fn start(target: Target, demo: Option<DemoOptions>) -> io::Result<Self> {
         let (sender, queue) = mpsc::channel();
         let state = Arc::new(Mutex::new(State {
             status: json!({"status": "disconnected"}),
@@ -140,6 +141,7 @@ impl Bridge {
                 | "qkm_close_mapping_settings"
                 | "qkm_capture_window"
                 | "qkm_get_demo_state"
+                | "qkm_demo_mapping"
         ) {
             return Err(NativeError::new("unsupported_method"));
         }
@@ -178,11 +180,15 @@ impl Bridge {
 
 fn run(
     target: Target,
-    demo: Option<DemoRecord>,
+    demo: Option<DemoOptions>,
     queue: mpsc::Receiver<Command>,
     state: Arc<Mutex<State>>,
 ) {
     let mut session = None;
+    let mut scene = demo
+        .as_ref()
+        .filter(|options| options.enable_mapping)
+        .map(|_| DemoSession::default());
     while let Ok(command) = queue.recv() {
         match command {
             Command::Run(operation, cancel, reply) => {
@@ -194,6 +200,7 @@ fn run(
                         &cancel,
                         &state,
                         &mut session,
+                        scene.as_mut(),
                     )
                 });
                 if let Err(error) = &result {
@@ -225,10 +232,11 @@ fn run(
 fn perform(
     operation: Operation,
     target: &Target,
-    demo: Option<&DemoRecord>,
+    demo: Option<&DemoOptions>,
     cancel: &Cancel,
     state: &Mutex<State>,
     session: &mut Option<Connection>,
+    scene: Option<&mut DemoSession>,
 ) -> Result<Value> {
     match operation {
         Operation::Connect { pair } => {
@@ -248,11 +256,30 @@ fn perform(
             let session = session
                 .as_mut()
                 .ok_or_else(|| NativeError::new("not_connected"))?;
-            let value = if method == "qkm_get_demo_state" {
-                let mode = demo.ok_or_else(|| NativeError::new("demo_not_configured"))?;
-                session.demo_state(mode, &target.executable, cancel)?
-            } else {
-                session.call(method, arguments, cancel)?
+            let value = match method {
+                "qkm_get_demo_state" => {
+                    let options = demo.ok_or_else(|| NativeError::new("demo_not_configured"))?;
+                    let mut value =
+                        session.demo_state(&options.record, &target.executable, cancel)?;
+                    if let Some(scene) = scene {
+                        value["result"]["demo_session"] = scene.status();
+                    }
+                    value
+                }
+                "qkm_demo_mapping" => {
+                    let (Some(options), Some(scene)) = (demo, scene) else {
+                        return Ok(json!({"ok":false, "error":"demo_not_enabled"}));
+                    };
+                    let binding = session.demo_binding(&options.record, &target.executable)?;
+                    let granted = session.scopes();
+                    scene.run(
+                        &mut |method, args| session.call(method, args, cancel),
+                        &binding,
+                        granted,
+                        &arguments,
+                    )?
+                }
+                _ => session.call(method, arguments, cancel)?,
             };
             state.lock().unwrap().status = session.info();
             Ok(value)

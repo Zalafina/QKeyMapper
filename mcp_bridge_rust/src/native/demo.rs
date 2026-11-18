@@ -14,6 +14,11 @@ pub enum DemoRecord {
     Product,
 }
 
+pub struct DemoOptions {
+    pub record: DemoRecord,
+    pub enable_mapping: bool,
+}
+
 pub(crate) struct Binding {
     pub target: Value,
     pub configuration: String,

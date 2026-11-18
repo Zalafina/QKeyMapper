@@ -45,6 +45,9 @@ disconnected. Use `qkm_connect` with an existing pairing or
 Add either `--demo-record PATH` or `--product-demo-record` to expose the
 read-only demo readiness check for a dedicated private product. The
 record is verified after authentication against the selected target.
+Add `--enable-demo-mapping` only for the dedicated configuration-only
+product. The bridge runs each scene as one native job, returns a verified
+image after cleanup, and keeps the cleanup receipt in its own process.
 
 On Windows, `cargo test --locked` also covers argument handling, framing,
 proof vectors, identity and pipe cancellation. Run `tests/test_tool_contract.py --exe $exe`

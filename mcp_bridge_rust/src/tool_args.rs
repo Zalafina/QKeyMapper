@@ -227,6 +227,24 @@ struct Capture {
     source_tab_ref: String,
 }
 
+#[derive(Default, Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum DemoView {
+    Main,
+    #[default]
+    ItemSetup,
+    MappingAdvanced,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct DemoMapping {
+    original_key: String,
+    mapping_key: String,
+    #[serde(default)]
+    view: DemoView,
+}
+
 fn revision(s: &str) -> bool {
     hex_bytes::<32>(s).is_ok()
 }
@@ -310,6 +328,9 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }),
         "qkm_capture_window" => typed(arguments, |v: &Capture| {
             revision(&v.window_ref) && revision(&v.source_revision) && tab_ref(&v.source_tab_ref)
+        }),
+        "qkm_demo_mapping" => typed(arguments, |v: &DemoMapping| {
+            basic_key(&v.original_key) && basic_key(&v.mapping_key)
         }),
         _ if arguments.is_empty() => Ok(arguments),
         _ => Err(InvalidMessage),

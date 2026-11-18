@@ -6,7 +6,7 @@ use std::{
 
 use qkeymapper_mcp_rust::{
     bridge::{Bridge, Worker},
-    native::{DemoRecord, NativeError, Target},
+    native::{DemoOptions, DemoRecord, NativeError, Target},
     wire::Object,
 };
 use rmcp::{
@@ -32,9 +32,10 @@ struct Contracts {
 
 pub fn parse_target(
     args: &mut impl Iterator<Item = OsString>,
-) -> Option<(Target, Option<DemoRecord>)> {
+) -> Option<(Target, Option<DemoOptions>)> {
     let (mut executable, mut discovery, mut persistent) = (None, None, false);
     let mut demo = None;
+    let mut enable_mapping = false;
     while let Some(flag) = args.next() {
         match flag.to_str()? {
             "--executable" if executable.is_none() => {
@@ -52,10 +53,11 @@ pub fn parse_target(
                 demo = Some(DemoRecord::Explicit(path::absolute(args.next()?).ok()?));
             }
             "--product-demo-record" if demo.is_none() => demo = Some(DemoRecord::Product),
+            "--enable-demo-mapping" if !enable_mapping => enable_mapping = true,
             _ => return None,
         }
     }
-    if discovery.is_none() && !persistent {
+    if (discovery.is_none() && !persistent) || (enable_mapping && demo.is_none()) {
         return None;
     }
     Some((
@@ -63,7 +65,10 @@ pub fn parse_target(
             executable: executable?,
             discovery,
         },
-        demo,
+        demo.map(|record| DemoOptions {
+            record,
+            enable_mapping,
+        }),
     ))
 }
 
@@ -71,6 +76,7 @@ struct Handler {
     bridge: Bridge,
     contracts: Contracts,
     demo_configured: bool,
+    demo_mapping: bool,
 }
 
 impl ServerHandler for Handler {
@@ -146,9 +152,15 @@ impl ServerHandler for Handler {
             "qkm_get_demo_state" if self.demo_configured => {
                 self.request("qkm_get_demo_state", arguments, context).await
             }
+            "qkm_demo_mapping" if self.demo_mapping => {
+                self.request("qkm_demo_mapping", arguments, context).await
+            }
             _ => return Ok(CallToolResult::error(vec![ContentBlock::text("未知工具。")]).into()),
         };
-        let result = if request.name == "qkm_capture_window" {
+        let result = if matches!(
+            request.name.as_ref(),
+            "qkm_capture_window" | "qkm_demo_mapping"
+        ) {
             self.contracts.image_tool_result(value)
         } else {
             self.contracts.tool_result(value)
@@ -239,21 +251,23 @@ impl Contracts {
     }
 }
 
-pub fn run(target: Target, demo: Option<DemoRecord>) -> Result<(), &'static str> {
+pub fn run(target: Target, demo: Option<DemoOptions>) -> Result<(), &'static str> {
     let mut contracts: Contracts = serde_json::from_str(include_str!("tool_catalog.json"))
         .map_err(|_| "Invalid embedded MCP tool catalog")?;
     let demo_configured = demo.is_some();
-    if !demo_configured {
-        contracts
-            .tools
-            .retain(|tool| tool.name != "qkm_get_demo_state");
-    }
+    let demo_mapping = demo.as_ref().is_some_and(|options| options.enable_mapping);
+    contracts.tools.retain(|tool| match tool.name.as_ref() {
+        "qkm_get_demo_state" => demo_configured,
+        "qkm_demo_mapping" => demo_mapping,
+        _ => true,
+    });
     let worker = Worker::start(target, demo).map_err(|_| "Could not start the IPC worker")?;
     let client = worker.client.clone();
     let handler = Handler {
         bridge: worker.client.clone(),
         contracts,
         demo_configured,
+        demo_mapping,
     };
     let outcome = crate::stdio::run(handler, MAX_REQUEST_LINE, move || client.stop());
     worker.join().map_err(|_| "IPC worker did not finish")?;

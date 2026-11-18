@@ -146,7 +146,7 @@ fn main() -> ExitCode {
     eprintln!(
         "   or: qkeymapper-mcp-rust --executable PATH (--discovery-file PATH | --persistent-target)"
     );
-    eprintln!("       [--demo-record PATH | --product-demo-record]");
+    eprintln!("       [--demo-record PATH | --product-demo-record] [--enable-demo-mapping]");
     ExitCode::from(2)
 }
 

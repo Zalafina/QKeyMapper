@@ -227,6 +227,56 @@
     },
     {
       "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "仅供宿主显式启用的预授权专用私有实例，须有version2创建记录及已认证产品只配置策略，普通模式拒绝：建立一个基础映射，按view获取既有主窗(main)、原入口单项窗(item_setup，默认)或固定高级窗(mapping_advanced)的原生图片，安全关闭本轮归属窗并删除本轮创建的行；不请求激活。高级视图只展示当前真实参数，必须取得输入未变标记并通过安全关闭／非行足迹复核，不编辑参数，其图片本身不显示A/B，行归属由正式源核验。不启动映射、不保存、不注入系统输入。需要Read+Configure+ShowWindows+CaptureWindows及当前角色能力合同，首次须已加载无dirty空源；连续轮次只复用同一桥接已证明的回收记录，dirty按原GUI保留。失败可能保留本轮源／窗口并隔离，查询demo_state核对实际阶段和操作ID，勿盲目重试、清空草稿或改连。图片以MCP ImageContent返回，附场景／目标／尺寸及回收元数据；QQ等渠道送达须由gateway另行完成。本工具非幂等、同桥接串行，不能作为全局实例租约。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "mapping_key": {
+            "maxLength": 1,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9]$",
+            "title": "Mapping Key",
+            "type": "string"
+          },
+          "original_key": {
+            "maxLength": 1,
+            "minLength": 1,
+            "pattern": "^[A-Z0-9]$",
+            "title": "Original Key",
+            "type": "string"
+          },
+          "view": {
+            "default": "item_setup",
+            "enum": [
+              "item_setup",
+              "main",
+              "mapping_advanced"
+            ],
+            "title": "View",
+            "type": "string"
+          }
+        },
+        "required": [
+          "original_key",
+          "mapping_key"
+        ],
+        "title": "qkm_demo_mappingArguments",
+        "type": "object"
+      },
+      "name": "qkm_demo_mapping",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_demo_mappingDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
         "destructiveHint": false,
         "openWorldHint": false,
         "readOnlyHint": false
