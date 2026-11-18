@@ -1,9 +1,8 @@
 # QKeyMapper MCP Sidecar in Rust
 
-This project currently provides the RUST-A protocol fixture. It exposes one
-synthetic tool and requires the explicit `--protocol-fixture` argument. Follow the
-[migration plan](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_rust_migration_plan.md)
-for the product connection and delivery status.
+This project provides the RUST-A protocol fixture and the RUST-B candidate for
+pairing and read-only IPC. Follow the [migration plan](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_rust_migration_plan.md)
+for validation status and the remaining product and delivery work.
 
 Build from the repository root in an ordinary Windows x64 development shell
 with the MSVC C++ build tools. The existing Python environment is used for the
@@ -36,3 +35,16 @@ their own metadata. On Windows the SDK can keep a blocking stdin read after
 a failed write to stdout. The adapter stops the MCP service and bounds
 runtime shutdown in that case. This shutdown path is for stdio. Product
 work and native named-pipe cancellation need their own completion checks.
+
+The IPC candidate uses `--executable PATH --discovery-file PATH/instance.json`
+or `--executable PATH --persistent-target`. Starting it leaves the connection
+disconnected. Use `qkm_connect` with an existing pairing or
+`qkm_request_pairing` followed by approval on the verified target.
+
+On Windows, `cargo test --locked --lib` covers framing, proof vectors,
+identity and pipe cancellation. The ignored `dedicated_credential_roundtrip`
+test uses the locked Python environment to cross-check two newly generated
+credential contexts and removes both entries. The private Qt fixture uses
+`tests/test_ipc_interop.py` and the repository's asInvoker
+`QKeyMapperMcpControlTest.exe`. Run the Windows credential and Qt cases in
+ordinary Medium integrity.

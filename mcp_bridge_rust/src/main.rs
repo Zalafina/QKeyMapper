@@ -1,5 +1,7 @@
 #![forbid(unsafe_code)]
 
+#[cfg(windows)]
+mod connection;
 mod stdio;
 
 use std::{
@@ -130,14 +132,23 @@ impl ServerHandler for Fixture {
 }
 
 fn main() -> ExitCode {
-    if !std::env::args_os()
-        .skip(1)
-        .eq([OsStr::new("--protocol-fixture")])
-    {
-        eprintln!("Usage: qkeymapper-mcp-rust --protocol-fixture");
-        return ExitCode::from(2);
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args == [OsStr::new("--protocol-fixture")] {
+        return finish(stdio::run(Fixture::default(), MAX_LINE_BYTES, || {}));
     }
-    match stdio::run(Fixture::default(), MAX_LINE_BYTES) {
+    #[cfg(windows)]
+    if let Some(target) = connection::parse_target(&mut args.into_iter()) {
+        return finish(connection::run(target));
+    }
+    eprintln!("Usage: qkeymapper-mcp-rust --protocol-fixture");
+    eprintln!(
+        "   or: qkeymapper-mcp-rust --executable PATH (--discovery-file PATH | --persistent-target)"
+    );
+    ExitCode::from(2)
+}
+
+fn finish(result: Result<(), &'static str>) -> ExitCode {
+    match result {
         Ok(()) => ExitCode::SUCCESS,
         Err(message) => {
             eprintln!("{message}");

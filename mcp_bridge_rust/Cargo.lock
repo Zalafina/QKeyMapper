@@ -392,6 +392,7 @@ dependencies = [
 name = "qkeymapper-mcp-rust"
 version = "0.1.0"
 dependencies = [
+ "getrandom",
  "hmac",
  "rmcp",
  "schemars",
@@ -400,6 +401,8 @@ dependencies = [
  "sha2",
  "tokio",
  "tokio-util",
+ "windows-sys",
+ "zeroize",
 ]
 
 [[package]]
@@ -833,6 +836,12 @@ checksum = "ae137229bcbd6cdf0f7b80a31df61766145077ddf49416a728b02cb3921ff3fc"
 dependencies = [
  "windows-link",
 ]
+
+[[package]]
+name = "zeroize"
+version = "1.9.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "85ccff8a4805aba1eaa4cd4afcd49f7557dd2cf5fd79ffc37f8959466effc5aa"
 
 [[package]]
 name = "zmij"

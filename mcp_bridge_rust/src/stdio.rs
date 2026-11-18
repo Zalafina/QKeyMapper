@@ -1,4 +1,4 @@
-use std::{future::Future, time::Duration};
+use std::{future::Future, sync::Arc, time::Duration};
 
 use rmcp::{
     RoleServer, ServerHandler, ServiceExt,
@@ -17,6 +17,7 @@ type Pipes = AsyncRwTransport<RoleServer, Stdin, Stdout>;
 struct StdioTransport {
     pipes: Pipes,
     output_failed: CancellationToken,
+    peer_closed: Arc<dyn Fn() + Send + Sync>,
 }
 
 impl Transport<RoleServer> for StdioTransport {
@@ -28,9 +29,11 @@ impl Transport<RoleServer> for StdioTransport {
     ) -> impl Future<Output = Result<(), Self::Error>> + Send + 'static {
         let send = self.pipes.send(message);
         let output_failed = self.output_failed.clone();
+        let peer_closed = self.peer_closed.clone();
         async move {
             let result = send.await;
             if result.is_err() {
+                peer_closed();
                 output_failed.cancel();
             }
             result
@@ -39,7 +42,10 @@ impl Transport<RoleServer> for StdioTransport {
 
     async fn receive(&mut self) -> Option<ClientJsonRpcMessage> {
         loop {
-            let message = self.pipes.receive().await?;
+            let Some(message) = self.pipes.receive().await else {
+                (self.peer_closed)();
+                return None;
+            };
             // rmcp 3.10 can close during bootstrap if it sees an unknown notification.
             if !matches!(
                 &message,
@@ -56,7 +62,11 @@ impl Transport<RoleServer> for StdioTransport {
     }
 }
 
-pub fn run(handler: impl ServerHandler, max_line_bytes: usize) -> Result<(), &'static str> {
+pub fn run(
+    handler: impl ServerHandler,
+    max_line_bytes: usize,
+    peer_closed: impl Fn() + Send + Sync + 'static,
+) -> Result<(), &'static str> {
     let runtime = Builder::new_current_thread()
         .enable_time()
         .build()
@@ -67,6 +77,7 @@ pub fn run(handler: impl ServerHandler, max_line_bytes: usize) -> Result<(), &'s
         let transport = StdioTransport {
             pipes: Pipes::new(read, write).with_max_line_length(max_line_bytes),
             output_failed: output_failed.clone(),
+            peer_closed: Arc::new(peer_closed),
         };
         match handler
             .serve_with_ct(transport, output_failed.child_token())

@@ -3,7 +3,7 @@ use std::num::{NonZeroU32, NonZeroU64};
 use hmac::{Hmac, KeyInit, Mac};
 use sha2::Sha256;
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub struct ProcessStamp {
     pub pid: NonZeroU32,
     pub created: NonZeroU64,
