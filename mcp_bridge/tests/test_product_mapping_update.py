@@ -25,7 +25,8 @@ CASES = ("normal", "cold", "normal_clear_up", "disabled", "common", "common_conf
 FLAG_CASES = ("flag_normal", "flag_cold", "flag_disabled", "flag_common", "flag_hidden", "flag_conflict", "flag_common_conflict", "flag_read")
 
 SELF_DISABLE_CASES = ("key_normal_conflict", "key_common_priority", "key_conflict_hidden")
-GUARD_CASES = ("common_conflict_disabled", "common_self_conflict")
+COMMON_CONFLICT_CASES = ("common_conflict", "common_conflict_disabled", "common_conflict_multiple")
+GUARD_CASES = ("common_self_conflict", "common_conflict_read")
 
 
 async def run(args):
@@ -38,8 +39,10 @@ async def run(args):
     assert args.gui_baseline.is_relative_to(ROOT / "out")
     if any(phase in FLAG_CASES for phase in phases):
         assert args.disabled_gui_baseline and args.disabled_gui_baseline.is_relative_to(ROOT / "out")
-    if any(phase in SELF_DISABLE_CASES for phase in phases):
+    if any(phase in (*SELF_DISABLE_CASES, *COMMON_CONFLICT_CASES) for phase in phases):
         assert args.original_conflict_gui_baseline and args.original_conflict_gui_baseline.is_relative_to(ROOT / "out")
+    bridge = args.rust_exe or args.bridge_python
+    bridge_args = [] if args.rust_exe else ["-I", "-B", "-X", "utf8", "-m", "qkeymapper_mcp"]
     args.output.mkdir(parents=True, exist_ok=False)
     ini = args.executable.parent / "keymapdata.ini"
     seed = (ROOT / "QKeyMapper/tests/sendinput_lifecycle/mapping_edit_fixture.ini.example").read_bytes()
@@ -55,7 +58,7 @@ async def run(args):
         process = await spawn(*values, **keywords)
         try:
             peer = identity(process.pid)
-            assert own.same_login(peer) and Path(peer.executable) == args.bridge_python
+            assert own.same_login(peer) and Path(peer.executable) == bridge
             with closing(win32api.OpenProcess(0x1000, False, peer.pid)) as handle:
                 assert integrity(handle) == 8192
             peers.append(dict(pid=peer.pid, created=str(peer.created), executable=peer.executable, integrity=8192))
@@ -98,15 +101,15 @@ async def run(args):
         discovery = Path(enabled["discovery"])
         store = CredentialStore(discovery, args.executable, own.session, persistent=True)
         assert store.load() is None, "Do not replace an existing credential."
-        parameters = StdioServerParameters(command=str(args.bridge_python), args=["-I", "-B", "-X", "utf8", "-m",
-            "qkeymapper_mcp", "--persistent-target", "--executable", str(args.executable)], cwd=str(product.output))
+        parameters = StdioServerParameters(command=str(bridge), args=bridge_args +
+            ["--persistent-target", "--executable", str(args.executable)], cwd=str(product.output))
         try:
             async with Client(parameters, cache=None) as client:
                 await request(client, phase, "qkm_connect")
                 await connection(client, "pairing_required")
                 await request(client, phase, "qkm_request_pairing")
                 await connection_pending(client)
-                await product.action("ApproveRead" if read_only else "ApproveConfigure", str(args.bridge_python))
+                await product.action("ApproveRead" if read_only else "ApproveConfigure", str(bridge))
                 authenticated = await connection(client, "connected")
                 assert authenticated["scopes"] == (1 if read_only else 3)
                 (product.output / "authenticated.json").write_text(json.dumps(authenticated), encoding="utf-8")
@@ -123,6 +126,8 @@ async def run(args):
                 original_ini = ini.read_bytes()
                 if read_only:
                     fields = dict(disabled=True) if flag else dict(original_key="E", mapping_key="C")
+                    if phase == "common_conflict_read":
+                        fields = dict(original_key="C", mapping_key="Z")
                     await request(client, phase, "qkm_preview_changes", dict(action="mapping.update", source_ref=target,
                         **fields), error="permission_denied")
                     assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
@@ -143,12 +148,104 @@ async def run(args):
                         disabled=False), error="unsupported_capability")
                     assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
                     return
-                if not flag and phase in ("common_conflict", "complex", *GUARD_CASES):
+                if not flag and phase in ("complex", "common_self_conflict"):
                     if phase == "complex":
                         assert before[index]["rows"][0]["fields"]["KeyMapData_MappingKeys"] == ["B", "D"]
                     await request(client, phase, "qkm_preview_changes", dict(action="mapping.update", source_ref=target,
                         original_key="C"), error="unsupported_capability")
                     assert (await snapshot(client, phase))[0] == before and ini.read_bytes() == original_ini
+                    return
+                if phase in COMMON_CONFLICT_CASES:
+                    multiple = phase == "common_conflict_multiple"
+                    gui_case = "common_disabled_yes" if phase.endswith("_disabled") else "common_yes"
+                    baseline_path = args.original_conflict_gui_baseline / ("qt6-" + gui_case + "-01/case.json")
+                    assert baseline_path.stat().st_size <= 2 * 1024 * 1024
+                    baseline = json.loads(baseline_path.read_bytes())["settingsGeneral"]
+                    expected = deepcopy(before)
+                    if multiple:
+                        common_before, common_after = (next(item for item in baseline[stage]["sources"]
+                            if item["kind"] == "common") for stage in ("before", "after"))
+                        assert before[index]["rows"] == common_before["rows"]
+                        expected[index]["rows"] = common_after["rows"]
+                    else:
+                        assert before == baseline["before"]["sources"]
+                        expected = baseline["after"]["sources"]
+                    active_names = ["Tab1", "Second"] if multiple else ["Normal"]
+                    disabled = []
+                    for tab, item in enumerate(before):
+                        if item["name"] not in active_names:
+                            continue
+                        assert item["include_common"]
+                        for row, original in enumerate(refs[tab]):
+                            fields = original["fields"]
+                            if fields["KeyMapData_OriginalKeys"] != "C" or fields["KeyMapData_Disabled"]:
+                                continue
+                            disabled.append(dict(kind="disable_mapping", source_tab_ref=original["source_tab_ref"],
+                                source_ref=original["source_ref"], source_name=item["name"], source_row=row,
+                                original_key="C", mapping_keys=fields["KeyMapData_MappingKeys"],
+                                disabled_before=False, disabled_after=True))
+                            if multiple:
+                                expected[tab]["rows"][row]["fields"]["KeyMapData_Disabled"] = True
+                    assert [item["source_name"] for item in disabled] == active_names
+                    change = dict(action="mapping.update", source_ref=target, original_key="C", mapping_key="Z")
+
+                    async def conflict_preview():
+                        preview = (await request(client, phase, "qkm_preview_changes", change))["result"]
+                        description = preview["description"]
+                        assert description["confirmation_required"] and description["changes"][1:] == disabled
+                        edited = description["changes"][0]
+                        assert edited["before"] == before[index]["rows"][0] and edited["after"] == expected[index]["rows"][0]
+                        assert (await snapshot(client, phase))[2] == revision and ini.read_bytes() == original_ini
+                        return dict(preview_id=preview["preview_id"])
+
+                    cancelled = await conflict_preview()
+                    assert (await request(client, phase, "qkm_cancel_changes", cancelled))["result"]["status"] == "cancelled"
+                    await request(client, phase, "qkm_apply_changes", dict(cancelled, confirm_conflicts=True),
+                        error="stale_preview")
+                    denied = await conflict_preview()
+                    await request(client, phase, "qkm_apply_changes", denied, error="confirmation_required")
+                    await request(client, phase, "qkm_apply_changes", dict(denied, confirm_conflicts=True),
+                        error="confirmation_required")
+                    wrong = await conflict_preview()
+                    await request(client, phase, "qkm_apply_changes", dict(wrong, confirm_scope=True, confirm_conflicts=True),
+                        error="invalid_arguments")
+                    if multiple:
+                        moved = await conflict_preview()
+                        await product.action("ReadTab1")
+                        await request(client, phase, "qkm_apply_changes", dict(moved, confirm_conflicts=True),
+                            error="context_busy")
+                        await product.action("ReadCommon")
+                        assert (await snapshot(client, phase))[0] == before
+                        # The new preview uses the current source revision after the tab change.
+                        before, refs, revision = await snapshot(client, phase)
+                        change["source_ref"] = refs[index][0]["source_ref"]
+                        for item in disabled:
+                            tab = next(tab for tab, source in enumerate(before) if source["name"] == item["source_name"])
+                            row = refs[tab][item["source_row"]]
+                            item.update(source_ref=row["source_ref"], source_tab_ref=row["source_tab_ref"])
+                    confirmed = await conflict_preview()
+                    status = (await request(client, phase, "qkm_apply_changes", dict(confirmed, confirm_conflicts=True)))["result"]
+                    result = status["result"]
+                    assert status["status"] == "applied" and result["modified"]
+                    assert result["disabled_other_rows"] == len(disabled) and not result["saved"]
+                    assert not result["started_by_operation"] and ini.read_bytes() == original_ini
+                    after, _, after_revision = await snapshot(client, phase)
+                    assert after == expected and after_revision != revision
+                    replayed = (await request(client, phase, "qkm_apply_changes", confirmed))["result"]
+                    assert replayed["replayed"] and replayed["result"] == result
+                    await request(client, phase, "qkm_preview_changes", change, error="stale_source")
+                    assert (await snapshot(client, phase))[2] == after_revision and ini.read_bytes() == original_ini
+                    if not multiple:
+                        (product.output / "gui-comparison.json").write_text(json.dumps(
+                            dict(baseline=str(baseline_path), before=True, after=True), ensure_ascii=False), encoding="utf-8")
+                    if phase == "common_conflict":
+                        saved = (await request(client, phase, "qkm_preview_changes",
+                            dict(action="configuration.save", setting_name="Edit141Seed")))["result"]
+                        applied = (await request(client, phase, "qkm_apply_changes",
+                            dict(preview_id=saved["preview_id"], confirm_scope=True)))["result"]
+                        assert applied["status"] == "applied" and applied["result"]["saved"] and applied["result"]["reloaded"]
+                        after[index]["rows"][0]["derived"]["pure_original_keys"] = ["C"]
+                        assert (await snapshot(client, phase))[0] == after
                     return
                 if phase in SELF_DISABLE_CASES:
                     gui_variant = "normal_common" if phase == "key_common_priority" else "normal_duplicate"
@@ -270,8 +367,24 @@ async def run(args):
                     payload = payload.replace(b"KeyMapData_SendMappingKeyMethod=", b"KeyMapData_Disabled=ON#OFF|OFF#OFF\nKeyMapData_SendMappingKeyMethod=")
                 if phase == "normal_clear_up":
                     payload = payload.replace(b"KeyMapData_SendTiming=NORMAL#NORMAL|NORMAL#NORMAL", b"KeyMapData_SendTiming=KEYDOWN_AND_KEYUP#NORMAL|NORMAL#NORMAL")
-                if phase == "common_conflict":
+                if phase in (*COMMON_CONFLICT_CASES, "common_conflict_read"):
                     payload = payload.replace(b"MappingTable_TabIncludeCommonList=OFF, OFF", b"MappingTable_TabIncludeCommonList=ON, OFF")
+                if phase == "common_conflict_multiple":
+                    payload = (payload.replace(b"MappingTable_TabNameList=Normal, Common", b"MappingTable_TabNameList=Tab1, Second, Excluded, Common")
+                        .replace(b"MappingTable_TabInternalNameList=Edit141Normal, __QKM_COMMON__",
+                                 b"MappingTable_TabInternalNameList=Edit141Normal, Edit141Second, Edit141Excluded, __QKM_COMMON__")
+                        .replace(b"MappingTable_TabIncludeCommonList=ON, OFF", b"MappingTable_TabIncludeCommonList=ON, ON, OFF, OFF")
+                        .replace(b"MappingTable_LastTabName=Normal", b"MappingTable_LastTabName=Tab1")
+                        .replace(b"KeyMapData_OriginalKeys=A#C|F13#F14", b"KeyMapData_OriginalKeys=A#C|C|C|F13#F14")
+                        .replace(b"KeyMapData_MappingKeys=B#D|B#G", b"KeyMapData_MappingKeys=B#D|D|E|B#G")
+                        .replace(b"KeyMapData_MappingKeys_KeyUp=B#D|H#G", b"KeyMapData_MappingKeys_KeyUp=B#D|D|E|H#G")
+                        .replace(b"KeyMapData_SendMappingKeyMethod=3#0|3#0", b"KeyMapData_SendMappingKeyMethod=3#0|0|0|3#0")
+                        .replace(b"KeyMapData_SendTiming=NORMAL#NORMAL|NORMAL#NORMAL",
+                                 b"KeyMapData_SendTiming=NORMAL#NORMAL|NORMAL|NORMAL|NORMAL#NORMAL")
+                        .replace(b"KeyMapData_FloatingButton_SyncGroupId=17#0|21#0",
+                                 b"KeyMapData_FloatingButton_SyncGroupId=17#0|0|0|21#0")
+                        .replace(b"KeyMapData_FloatingButton_Width=93#80|81#80",
+                                 b"KeyMapData_FloatingButton_Width=93#80|80|80|81#80"))
                 if phase == "complex":
                     payload = payload.replace(b"KeyMapData_MappingKeys=B#D|", "KeyMapData_MappingKeys=B»D#D|".encode("utf-8"))
                 if flag and variant in ("common", "common_conflict"):
@@ -289,7 +402,6 @@ async def run(args):
                 if phase == "key_conflict_hidden":
                     payload = payload.replace(b"HideDisabled=false\n", b"HideDisabled=true\n")
                 if phase == "common_conflict_disabled":
-                    payload = payload.replace(b"MappingTable_TabIncludeCommonList=OFF, OFF", b"MappingTable_TabIncludeCommonList=ON, OFF")
                     payload = payload.replace(b"KeyMapData_SendMappingKeyMethod=", b"KeyMapData_Disabled=OFF#OFF|ON#OFF\nKeyMapData_SendMappingKeyMethod=")
                 if phase == "common_self_conflict":
                     payload = payload.replace(b"KeyMapData_OriginalKeys=A#C|F13#F14", b"KeyMapData_OriginalKeys=A#C|F13#C")
@@ -301,7 +413,7 @@ async def run(args):
             product = Product(args.executable, output, lifetime_seconds=600)
             try:
                 await product.started()
-                await session(product, phase, read_only=variant in ("read", "cold"), cold=variant == "cold")
+                await session(product, phase, read_only=variant in ("read", "cold", "common_conflict_read"), cold=variant == "cold")
             finally:
                 await product.close()
                 system_after = filter_keys()
@@ -311,7 +423,7 @@ async def run(args):
                     assert integrity(handle) == 8192
             completed.append(phase)
             (args.output / "completed-phases.json").write_text(json.dumps(completed), encoding="utf-8")
-    compared = sum(phase in ("normal", "normal_clear_up", "disabled", "common", "flag_normal", "flag_disabled", "flag_common", "flag_hidden") or phase in SELF_DISABLE_CASES for phase in completed)
+    compared = sum(phase in ("normal", "normal_clear_up", "disabled", "common", "flag_normal", "flag_disabled", "flag_common", "flag_hidden") or phase in (*SELF_DISABLE_CASES, "common_conflict", "common_conflict_disabled") for phase in completed)
     (args.output / "passed.json").write_text(json.dumps(dict(completed=completed, gui_baselines=compared,
         tools=17, business_capabilities=23, mapping_started=False, system_input_injected=False,
         bridge_peers=peers), ensure_ascii=False, indent=2), encoding="utf-8")
@@ -321,10 +433,12 @@ async def run(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--executable", type=lambda value: Path(value).resolve(strict=True), required=True)
-    parser.add_argument("--bridge-python", type=lambda value: Path(value).resolve(strict=True), required=True)
+    bridge = parser.add_mutually_exclusive_group(required=True)
+    bridge.add_argument("--bridge-python", type=lambda value: Path(value).resolve(strict=True))
+    bridge.add_argument("--rust-exe", type=lambda value: Path(value).resolve(strict=True))
     parser.add_argument("--gui-baseline", type=lambda value: Path(value).resolve(strict=True), required=True)
     parser.add_argument("--output", type=lambda value: Path(value).resolve(), required=True)
     parser.add_argument("--disabled-gui-baseline", type=lambda value: Path(value).resolve(strict=True))
     parser.add_argument("--original-conflict-gui-baseline", type=lambda value: Path(value).resolve(strict=True))
-    parser.add_argument("--case", nargs="+", choices=(*CASES, *FLAG_CASES, *SELF_DISABLE_CASES, *GUARD_CASES), help="Run selected cases; each cold requires its normal case earlier in the same run.")
+    parser.add_argument("--case", nargs="+", choices=(*CASES, *FLAG_CASES, *SELF_DISABLE_CASES, *COMMON_CONFLICT_CASES[1:], *GUARD_CASES), help="Run selected cases; each cold requires its normal case earlier in the same run.")
     asyncio.run(run(parser.parse_args()))

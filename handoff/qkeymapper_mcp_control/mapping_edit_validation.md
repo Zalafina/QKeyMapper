@@ -208,3 +208,19 @@ v3的normal及cold已完整结束：普通行完整sources前后与141的qt6-nor
 11-11最终文档写入因自动审批额度错误未执行，因此没有形成148提交。11-16以实际HEAD898af798及七个既有改动接续：核对完整留存结果、匹配EXE及源码唯一3增／2删差异，暂存区原为空，不重建环境／构建／运行产品／重复验收。今日只补齐收尾记录与聚焦本地提交。按用户请求新申请截至11-16 19:00的缓存，普通35160／instance b838e3bc3a094d51bde65ead1f799068，未登记或派发测试；今日10:15:14按技能off，响应closed／缓存不可用／native0，独立status controller=null／native0；scope及owned／unresolved／pending均0，无其他共享活动，历史未知保留。今日未启动任何产品，原件在同一out下close-20261116。
 
 本片未执行新Default／前台、真实输入／映射、驱动安装或全局写入、Win10／高DPI／三语截图、Qt5新普通产品MCP、独立冷启动／跨登录、完整M1／设备验收。137持久、145冷读／schema、147兼容／纯分析仅沿原范围复用，原件全部仅本机out。Common多行确认后续未启动；148稳定提交后暂停MCP，等待用户另行安排master两项Bug，再明确恢复MCP。
+
+## EDIT-COMMON-154：Common 原键更新的连带禁用
+
+2026-11-18 PC-W11，源码 df500d33 加本片。沿共用冲突分析及 M1 预览存储，逐行列源 Tab／行引用、原键／映射键和禁用差异。复核完整源、同一预览、状态及权限；需要连带禁用时以 confirm_conflicts=true 提交原始预览。缺确认消费 preview 并拒绝，随后须发起新预览；取消和错误确认均不修改数据。候选包括所有连带禁用，通过现有全配置 IbInput 校验。Common 同表自禁用、独立启用连带写入仍按原守卫拒绝。无新工具、权限、GUI 文案或启停。
+
+普通 Qt6 6.8.3 x64 Release、Qt6／Qt5 5.15.2 x64 维护目标均零警告。每套维护目标四个离屏参数／能力用例通过。固定 Rust 1.100.0 MSVC x64 静态构建通过，两种协议 17 项工具 Schema／说明、错误层与条件演示工具对照通过。首次 Rust 启动命令引号错误，改用现有本机 ProcessStartInfo 参数形式后通过；无产品失败轮次。
+
+| Qt6 普通版＋Rust 私有用例 | 调用 | 选验事实 |
+|---|---:|---|
+| common_conflict | 40 | 取消、确认缺失及同 ID 拒绝、错误确认、显式应用、重放、旧引用拒绝；完整数据与 146 的 common_yes 一致，独立保存重载通过 |
+| common_conflict_disabled | 35 | 复用 146 的 common_disabled_yes 完整数据，目标仍禁用，预览逐行明确禁用其他行 |
+| common_conflict_multiple | 66 | 两个包含 Common 的普通表受影响，同键但不包含 Common 的表保持；从 Common 切离时确认被拒，重新预览后才成功 |
+| common_conflict_read／common_self_conflict／flag_common_conflict | 各 9 | Read 写请求、Common 同表自禁用和独立开关的连带启用都被拒绝，所有源和 INI 保持 |
+| key_normal_conflict | 34 | 普通行只禁用当前行，146 数据对照及显式保存重载通过 |
+
+七个独立实际 QkmProduct_* Windows 私有桌面，High 产品／Medium Rust 同登录，各原生退出 0，FilterKeys 前后相等。撤销七个专属配对，客户端凭据均删除，已核实本批自有产品／桥接进程为零、定向登记授权已撤出，PID 6896 保留至 19:00。实际副本 out/mcp_product/common_conflict154_20261118/runtime-中文/QKeyMapperMcpAcceptance_commonconflict154_qt6.exe，测试原件同目录 rust-r01；构建及实际 Rust 在 out/mcp_common_conflict_154_20261118。未新增 Default 图形交互、实际输入、驱动、独立冷启动或 Qt5 正式产品验收。

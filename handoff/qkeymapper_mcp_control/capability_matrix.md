@@ -4,6 +4,8 @@
 
 ## 当前状态与填写规则
 
+EDIT-COMMON-154 接续 153：mapping.update 的 Common 原键更新按行列出采用 Common 的普通表中将被禁用的现有冲突行，含初始禁用的 Common。预览不改源；显式 confirm_conflicts=true 且同一完整计划仍有效才提交。改动只在内存，保存单独确认。Common 同表自禁用和独立开关的连带操作仍拒绝。[选定验收](mapping_edit_validation.md#edit-common-154common-原键更新的连带禁用)。
+
 EDIT-148接续147：普通当前行原键因同表重复或有效Common优先而仅需禁用本行时，候选沿原GUI置Disabled=true并在预览before／after列出；取消不改、提交仅内存／dirty，保存仍独立。影响他行、Common自身冲突禁用／确认仍拒绝，独立disabled启用边界不变，17工具／23能力及Read＋Configure不变。153 已在预览／提交发布 original_key_conflict_policy=disable_current_normal_row_only，旧布尔仍用于通用冲突处理。143／147当时的本行冲突拒绝边界由此有界替代；精确验证与遗漏见[编辑证据](mapping_edit_validation.md#edit-148普通原键冲突仅禁用本行)。
 
 EDIT-147当时共用原键候选纯冲突分析供两处MCP拒绝判断；GUI原确认／写入入口保持。它不增加工具／权限或开放冲突编辑，原143／145支持范围不变；分析及回归事实见[同一编辑证据](mapping_edit_validation.md#edit-147共用纯冲突分析)。

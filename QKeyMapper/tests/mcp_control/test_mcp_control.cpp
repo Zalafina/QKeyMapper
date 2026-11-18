@@ -355,11 +355,17 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(updatePreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.update.preview"));
     QCOMPARE(updateApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.update.apply"));
     QCOMPARE(updatePreview.value(QStringLiteral("original_key_conflicts_supported")), QJsonValue(false));
+    const auto conflictSchema = [](const QJsonValue &entry) {
+        return entry.toObject().value(QStringLiteral("arguments_schema")).toObject()
+            .value(QStringLiteral("properties")).toObject().value(QStringLiteral("confirm_conflicts")).toObject();
+    };
+    QCOMPARE(conflictSchema(updateApply).value(QStringLiteral("type")).toString(), QStringLiteral("boolean"));
+    QCOMPARE(conflictSchema(capabilities.at(9)).value(QStringLiteral("const")), QJsonValue(false));
     for (const auto &update : {updatePreview, updateApply}) {
         QCOMPARE(update.value(QStringLiteral("original_key_conflict_policy")).toString(),
-            QStringLiteral("disable_current_normal_row_only"));
-        QVERIFY(!update.value(QStringLiteral("limitations")).toArray().contains(
-            QStringLiteral("original_key_conflict_updates_not_supported")));
+            QStringLiteral("disable_current_normal_row_or_confirm_common_changes"));
+        QVERIFY(update.value(QStringLiteral("limitations")).toArray().contains(
+            QStringLiteral("common_update_requires_confirmation_to_disable_normal_rows")));
     }
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("preview_ttl_ms")).toInt(), 120000);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));

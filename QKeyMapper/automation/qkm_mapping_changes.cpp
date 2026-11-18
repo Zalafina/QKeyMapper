@@ -322,7 +322,11 @@ QJsonArray mappingChangeCapabilities()
         {QStringLiteral("confirm_scope"), QJsonObject{{QStringLiteral("const"), false}}},
         {QStringLiteral("confirm_overwrite"), QJsonObject{{QStringLiteral("const"), false}}},
         {QStringLiteral("confirm_delete"), QJsonObject{{QStringLiteral("const"), false}}}}, {QStringLiteral("preview_id")});
-    auto updateApply = capability("mapping.update.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    auto updateApplySchema = settingsApplySchema;
+    auto updateConfirmations = updateApplySchema.value(QStringLiteral("properties")).toObject();
+    updateConfirmations.insert(QStringLiteral("confirm_conflicts"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}});
+    updateApplySchema.insert(QStringLiteral("properties"), updateConfirmations);
+    auto updateApply = capability("mapping.update.apply", "qkm_apply_changes", Read | Configure, false, updateApplySchema);
     auto preferencesApply = capability("ibinput.preferences.update.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
     for (auto *item : {&updatePreview, &updateApply, &preferencesPreview, &preferencesApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("memory_only_no_save_or_start"),
@@ -331,9 +335,11 @@ QJsonArray mappingChangeCapabilities()
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
     }
     for (auto *item : {&updatePreview, &updateApply}) {
-        item->insert(QStringLiteral("original_key_conflict_policy"), QStringLiteral("disable_current_normal_row_only"));
+        item->insert(QStringLiteral("original_key_conflict_policy"), QStringLiteral("disable_current_normal_row_or_confirm_common_changes"));
         auto limits = item->value(QStringLiteral("limitations")).toArray();
         limits.append(QStringLiteral("key_updates_single_keyboard_row_only"));
+        limits.append(QStringLiteral("common_update_requires_confirmation_to_disable_normal_rows"));
+        limits.append(QStringLiteral("conflicting_common_row_self_disable_unsupported"));
         limits.append(QStringLiteral("key_up_edit_requires_send_timing_2_3_4"));
         limits.append(QStringLiteral("disabled_updates_are_separate_from_key_and_method_updates"));
         limits.append(QStringLiteral("disabled_updates_require_no_exclusive_side_effects"));

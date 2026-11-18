@@ -38454,11 +38454,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     const bool preferencesUpdate = (!applying && validation.action == MappingChangeAction::UpdateIbInputPreferences)
         || (applyingPreview && applyingPreview->preferences.has_value());
     if (updating || preferencesUpdate) {
-        if (validation.confirmConflicts || validation.confirmScope || validation.confirmOverwrite || validation.confirmDelete) {
+        const auto update = applying && updating ? *applyingPreview->update : validation.update;
+        if ((validation.confirmConflicts && !update.originalKey.has_value())
+            || validation.confirmScope || validation.confirmOverwrite || validation.confirmDelete) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
             return;
         }
-        const auto update = applying && updating ? *applyingPreview->update : validation.update;
         const auto preferenceArguments = applying && preferencesUpdate ? *applyingPreview->preferences : validation.preferences;
         const int tab = updating ? update.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt() : s_KeyMappingTabWidgetCurrentIndex;
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
@@ -38488,6 +38489,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonObject change;
         bool modified = false;
         std::optional<MAP_KEYDATA> updatedRow;
+        QList<QPair<int, int>> conflictRows;
+        QJsonArray conflictChanges;
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
             || update.keyUpMappingKey.has_value());
         if (updating) {
@@ -38569,15 +38572,30 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                         reject(QStringLiteral("context_busy"), QStringLiteral("The source row is no longer available."));
                         return;
                     }
-                    if (!analysis.disableOtherRows.isEmpty() || (analysis.disableCurrentRow && isCommonMappingTabIndex(tab))) {
-                        reject(QStringLiteral("unsupported_capability"), QStringLiteral("Original-key updates that change other rows or disable a conflicting Common row are not supported; resolve this change in the GUI."));
+                    if (analysis.disableCurrentRow && isCommonMappingTabIndex(tab)) {
+                        reject(QStringLiteral("unsupported_capability"), QStringLiteral("Disabling a conflicting Common row itself during an original-key update is not supported; resolve this change in the GUI."));
                         return;
                     }
                     after.Disabled = after.Disabled || analysis.disableCurrentRow;
+                    conflictRows = analysis.disableOtherRows;
                 }
             }
             QHash<int, QList<MAP_KEYDATA>> overrides{{tab, *KeyMappingDataList}};
             overrides[tab][update.sourceRow] = after;
+            for (const auto &row : std::as_const(conflictRows)) {
+                const auto &affectedTab = s_KeyMappingTabInfoList.at(row.first);
+                if (!overrides.contains(row.first)) overrides.insert(row.first, *affectedTab.KeyMappingData);
+                auto &affected = overrides[row.first][row.second];
+                const QString sourceIndex = QString::number(row.first);
+                conflictChanges.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("disable_mapping")},
+                    {QStringLiteral("source_tab_ref"), update.sourceRevision + QStringLiteral(":source:") + sourceIndex},
+                    {QStringLiteral("source_ref"), update.sourceRevision + QStringLiteral(":row:") + sourceIndex + QLatin1Char(':') + QString::number(row.second)},
+                    {QStringLiteral("source_name"), affectedTab.TabName}, {QStringLiteral("source_row"), row.second},
+                    {QStringLiteral("original_key"), affected.Original_Key},
+                    {QStringLiteral("mapping_keys"), QJsonArray::fromStringList(affected.Mapping_Keys)},
+                    {QStringLiteral("disabled_before"), affected.Disabled}, {QStringLiteral("disabled_after"), true}});
+                affected.Disabled = true;
+            }
             const auto conflict = ibInputSaveConflict(overrides);
             if (!conflict.isEmpty()) { reject(QStringLiteral("invalid_mapping"), conflict); return; }
             modified = !(before == after);
@@ -38604,9 +38622,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
         const QString action = updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
-        const QJsonObject description{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
-            {QStringLiteral("changes"), QJsonArray{change}}, {QStringLiteral("modified"), false},
+        conflictChanges.prepend(change);
+        QJsonObject description{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
+            {QStringLiteral("changes"), conflictChanges}, {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+        const bool confirmationRequired = !conflictRows.isEmpty();
+        if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired);
         if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
             reject(QStringLiteral("result_too_large"), QStringLiteral("The complete settings update exceeds the response limit.")); return;
         }
@@ -38623,9 +38644,24 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (store.expired(*applyingPreview)) { reject(QStringLiteral("preview_expired"), QStringLiteral("The settings preview expired before commit.")); return; }
+        if (updating && applyingPreview->description != description) {
+            reject(QStringLiteral("stale_preview"), QStringLiteral("The mapping change no longer matches the preview; query the source and review a fresh preview."));
+            return;
+        }
+        if (confirmationRequired && !validation.confirmConflicts) {
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review every listed row before confirming the Common original-key update in a fresh preview."));
+            return;
+        }
+        if (validation.confirmConflicts && !confirmationRequired) {
+            reject(QStringLiteral("invalid_arguments"), QStringLiteral("This preview does not allow conflict confirmation."));
+            return;
+        }
         if (modified) {
             if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;
+                for (const auto &row : std::as_const(conflictRows)) {
+                    (*s_KeyMappingTabInfoList.at(row.first).KeyMappingData)[row.second].Disabled = true;
+                }
                 ++m_AutomationSourceEpoch;
                 if (keyUpdate || update.disabled.has_value()) {
                     if (isCommonMappingTabIndex(tab)) refreshTabsForSourceTabChange(tab);
@@ -38641,6 +38677,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             {QStringLiteral("modified"), modified}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
             {QStringLiteral("preferences_revision_after"), automationIbInputPreferencesRevision()},
             {QStringLiteral("query_source_again"), updating && modified}};
+        if (confirmationRequired) result.insert(QStringLiteral("disabled_other_rows"), int(conflictRows.size()));
         if (updating) {
             QString bindingError;
             const auto after = collectAutomationSourceSnapshotWithAccess(bindingError);
