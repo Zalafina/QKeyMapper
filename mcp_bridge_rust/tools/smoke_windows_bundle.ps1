@@ -21,7 +21,7 @@ if ($manifest.schema_version -ne 1 -or $manifest.architecture -ne 'x86_64-pc-win
     throw 'Unexpected bundle format.'
 }
 $needsCrt = $manifest.binary -ceq 'qkeymapper-mcp-rust.exe'
-if ($needsCrt -ne [bool]$manifest.app_local.'VCRUNTIME140.dll') {
+if ($needsCrt -ne [bool]$manifest.app_local.PSObject.Properties['VCRUNTIME140.dll']) {
     throw 'The bundled CRT does not match the executable type.'
 }
 foreach ($file in $manifest.files) {
@@ -46,7 +46,7 @@ function Send-Request {
     $read = $Child.StandardOutput.ReadLineAsync()
     if (-not $read.Wait(6000) -or -not $read.Result) { throw "No response to $Method" }
     $reply = $read.Result | ConvertFrom-Json
-    if ($reply.id -ne $Id -or $reply.jsonrpc -ne '2.0' -or $reply.error) { throw "Unexpected response to $Method" }
+    if ($reply.id -ne $Id -or $reply.jsonrpc -ne '2.0' -or $reply.PSObject.Properties['error']) { throw "Unexpected response to $Method" }
     return $reply.result
 }
 

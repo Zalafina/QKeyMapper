@@ -99,6 +99,17 @@ def notices(output):
     return dependencies
 
 
+def rust_sources():
+    files = ["src", "Cargo.toml", "Cargo.lock", "rust-toolchain.toml"]
+    status = subprocess.run(["git", "status", "--porcelain", "--untracked-files=all", "--", *files],
+                            cwd=CRATE, check=True, capture_output=True, text=True, timeout=10)
+    require(not status.stdout, "Build and package from committed Rust sources")
+    refs = [f"HEAD:mcp_bridge_rust/{file}" for file in files]
+    revisions = subprocess.run(["git", "rev-parse", *refs], cwd=CRATE, check=True,
+                               capture_output=True, text=True, timeout=10).stdout.splitlines()
+    return dict(zip(files, revisions, strict=True))
+
+
 def package(args):
     exe, dumpbin = args.executable.absolute(), args.dumpbin.absolute()
     output = args.output.absolute()
@@ -122,6 +133,7 @@ def package(args):
                 and crt.parent.parent.name.lower() == "x64", "Use the installed x64 MSVC redistributable")
         require_x64(crt)
         runtime["VCRUNTIME140.dll"] = signed_runtime(crt)
+    sources = rust_sources()
     output.mkdir(parents=True)
     shutil.copyfile(exe, output / binary)
     if args.crt is not None:
@@ -134,7 +146,7 @@ def package(args):
              for file in sorted(output.rglob("*")) if file.is_file()]
     manifest = {
         "schema_version":1, "architecture":TARGET, "binary":binary,
-        "cargo_lock_sha256":sha256(CRATE / "Cargo.lock"),
+        "cargo_lock_sha256":sha256(CRATE / "Cargo.lock"), "rust_sources":sources,
         "pe_imports":imports, "app_local":runtime,
         "dependencies":release_notices, "files":files,
     }

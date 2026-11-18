@@ -247,7 +247,46 @@ function Build-Variant($Variant, [string]$Jom, [int]$JobCount) {
     $script:CommandLogPath = Join-Path $script:LogDirectory 'commands.log'
 }
 
-function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Repository, [string]$ReleasePath, [string]$WorkRoot, [ValidateSet('x64','x86')][string]$Architecture = 'x64') {
+function Read-McpSidecarInput([string]$PackageRoot, [string]$Repository) {
+    $archive = Join-Path $PackageRoot 'QKeyMapperMcp-x64.zip'
+    $digestFile = Join-Path $PackageRoot 'QKeyMapperMcp-x64.sha256'
+    foreach ($path in @($archive, $digestFile)) {
+        Assert-SafeTree $path $PackageRoot
+        Assert-File $path
+    }
+    $sha256 = (Get-Content -LiteralPath $digestFile -Raw).Trim()
+    if ($sha256 -notmatch '^[0-9a-fA-F]{64}$' -or
+        (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash -ine $sha256) {
+        throw 'MCP Sidecar ZIP 的 SHA256 与预期不符。'
+    }
+    $zip = [IO.Compression.ZipFile]::OpenRead($archive)
+    try {
+        $entries = @($zip.Entries | Where-Object FullName -CMatch '^[^/]+/bundle-manifest\.json$')
+        if ($entries.Count -ne 1) { throw 'MCP Sidecar ZIP 必须包含一个组件清单。' }
+        $reader = [IO.StreamReader]::new($entries[0].Open(), [Text.UTF8Encoding]::new($false, $true))
+        try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json -AsHashtable }
+        finally { $reader.Dispose() }
+    } finally { $zip.Dispose() }
+    if ($manifest['schema_version'] -ne 1 -or $manifest['architecture'] -cne 'x86_64-pc-windows-msvc' -or
+        $manifest['binary'] -cne 'qkeymapper_mcp.exe' -or $null -eq $manifest['app_local'] -or
+        $manifest['app_local'].Count -ne 0 -or $null -eq $manifest['rust_sources']) {
+        throw 'Release 需要带源码身份的 x64 单 EXE MCP 组件。'
+    }
+    $runtimeFiles = @($manifest['files'] | ForEach-Object { $_['path'] } | Where-Object { $_ -match '\.(exe|dll|pyd)$' })
+    if ($runtimeFiles.Count -ne 1 -or $runtimeFiles[0] -cne 'qkeymapper_mcp.exe') {
+        throw 'MCP 组件只能携带一个二进制运行文件。'
+    }
+    $inputs = @('src', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml')
+    $objects = (Invoke-Git $Repository (@('rev-parse') + @($inputs | ForEach-Object { "HEAD:mcp_bridge_rust/$_" }))).Output -split '\r?\n'
+    for ($i = 0; $i -lt $inputs.Count; $i++) {
+        if ($manifest['rust_sources'][$inputs[$i]] -cne $objects[$i]) {
+            throw "MCP Sidecar 组件与发布源码或依赖锁不一致：$($inputs[$i])"
+        }
+    }
+    [pscustomobject]@{ Archive = $archive; Sha256 = $sha256 }
+}
+
+function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Repository, [string]$ReleasePath, [string]$WorkRoot, [ValidateSet('x64','x86')][string]$Architecture = 'x64', [string]$McpComponent) {
     $manual = Join-Path $Repository 'readme/QKeyMapper使用手册.html'
     Assert-File $manual
     $ibRoot = Join-Path $Repository 'QKeyMapper/IbInputSimulator'
@@ -262,6 +301,21 @@ function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Reposit
     Assert-SafeTree $Baseline (Split-Path -Parent $Baseline)
     Reset-WorkDirectory $StagePath $WorkRoot
     Get-ChildItem -LiteralPath $Baseline -Force | Copy-Item -Destination $StagePath -Recurse -Force
+    $mcpTarget = Join-Path $StagePath 'mcp'
+    if (Test-Path -LiteralPath $mcpTarget) {
+        Assert-SafeTree $mcpTarget $WorkRoot
+        Remove-Item -LiteralPath $mcpTarget -Recurse -Force
+    }
+    foreach ($name in @('qkeymapper_mcp.exe', 'qkeymapper-mcp-rust.exe')) {
+        $oldSidecar = Join-Path $StagePath $name
+        if (Test-Path -LiteralPath $oldSidecar -PathType Leaf) { Remove-Item -LiteralPath $oldSidecar -Force }
+    }
+    if ($Architecture -eq 'x64') {
+        if (-not $McpComponent) { throw '缺少已核验的 x64 MCP 组件。' }
+        Assert-SafeTree $McpComponent $WorkRoot
+        Assert-File (Join-Path $McpComponent 'qkeymapper_mcp.exe')
+        Copy-Item -LiteralPath $McpComponent -Destination $mcpTarget -Recurse
+    }
     Get-ChildItem -LiteralPath $StagePath -File -Force | Where-Object { $_.Extension -in @('.ini', '.wav', '.log', '.dmp', '.pdb') } | Remove-Item -Force
     Get-ChildItem -LiteralPath $StagePath -File -Force | Where-Object { $_.Name -in @(
         'QKeyMapper使用说明.pdf', 'QKeyMapper映射键参数速查表.pdf', 'QKeyMapper正则匹配规则说明.pdf', '组合键支持按键列表.pdf'
@@ -310,7 +364,7 @@ function Assert-PackageZip([string]$ZipPath, [string]$StagePath) {
             $relative = [IO.Path]::GetRelativePath($StagePath, $file.FullName).Replace('\', '/')
             $entry = $zip.GetEntry("$rootName/$relative")
             if ($null -eq $entry -or $entry.Length -ne $file.Length) { throw "ZIP 文件缺失或长度不符：$relative" }
-            if ($relative -in @('QKeyMapper.exe', 'QKeyMapperCrashReporter.exe', 'QKeyMapper使用手册.html', 'IbInputSimulator.dll') -or $relative.StartsWith('RazerDriver/') -or $relative -in @($script:IbInputLicenseFiles | ForEach-Object { "licenses/IbInputSimulator/$_" })) {
+            if ($relative -in @('QKeyMapper.exe', 'QKeyMapperCrashReporter.exe', 'QKeyMapper使用手册.html', 'IbInputSimulator.dll') -or $relative.StartsWith('RazerDriver/') -or $relative.StartsWith('mcp/') -or $relative -in @($script:IbInputLicenseFiles | ForEach-Object { "licenses/IbInputSimulator/$_" })) {
                 $stream = $entry.Open()
                 try { $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)) } finally { $stream.Dispose() }
                 if ($hash -ne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash) { throw "ZIP 内文件与本次产物不一致：$relative" }
@@ -392,6 +446,7 @@ try {
     Assert-Environment $variants $packageRoot $jom
     if ($CheckOnly) {
         $localState = Assert-SynchronizedSources $variants
+        Read-McpSidecarInput $packageRoot $variants[0].Repository | Out-Null
         Write-Host "`n本地只读预检通过：$($localState.Version)，提交 $($localState.Commit)"
         Write-Host '未联网、未拉取、未创建日志、未构建或更新发布文件；远端状态尚未刷新。'
         exit 0
@@ -402,6 +457,15 @@ try {
     $source = Assert-SynchronizedSources $variants
     Write-Stage "源码版本 $($source.Version)，提交 $($source.Commit)"
     . (Join-Path $variants[0].Repository 'QKeyMapper/diagnostics/diagnostic_artifacts.ps1')
+    Write-Stage '核对及解包静态 x64 MCP Sidecar'
+    $mcp = Read-McpSidecarInput $packageRoot $variants[0].Repository
+    $mcpWork = Join-Path $workRoot 'mcp-component'
+    Reset-WorkDirectory $mcpWork $workRoot
+    $smoke = Join-Path $variants[0].Repository 'mcp_bridge_rust/tools/smoke_windows_bundle.ps1'
+    Assert-File $smoke
+    $mcpSmoke = & $smoke -Archive $mcp.Archive -Sha256 $mcp.Sha256 -OutputDirectory (Join-Path $mcpWork 'verified')
+    $mcpExe = Join-Path $mcpSmoke.extracted 'qkeymapper_mcp.exe'
+    if ((Get-PeIdentity $mcpExe).Machine -ne 0x8664) { throw "MCP Sidecar 架构不符：$mcpExe" }
     foreach ($variant in $variants) {
         Build-Variant $variant $jom $Jobs
         $exe = Join-Path $variant.BuildDirectory 'release/QKeyMapper.exe'
@@ -419,7 +483,7 @@ try {
         $stagePath = Join-Path $staging $packageName
         $release = Join-Path $variant.BuildDirectory 'release'
         $architecture = if ($variant.Name -eq 'Qt5_x86') { 'x86' } else { 'x64' }
-        Prepare-Package (Join-Path $packageRoot $packageName) $stagePath $variant.Repository $release $workRoot $architecture
+        Prepare-Package (Join-Path $packageRoot $packageName) $stagePath $variant.Repository $release $workRoot $architecture $mcpSmoke.extracted
         $zipPath = Join-Path $pending "QKeyMapper_$($source.Version)_$($variant.Name).zip"
         [IO.Compression.ZipFile]::CreateFromDirectory($stagePath, $zipPath, [IO.Compression.CompressionLevel]::Optimal, $true)
         Assert-PackageZip $zipPath $stagePath

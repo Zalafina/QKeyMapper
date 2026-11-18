@@ -82,7 +82,7 @@ and set `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS=-Ctarget-feature=+crt-sta
 for the build in a separate target directory. Package the result without
 `--crt`. The packager checks the PE imports and names the standalone output
 `qkeymapper_mcp.exe`. Both packages include locked Cargo dependency notices,
-the component guide, and a file manifest. See [BUNDLE_README.md](BUNDLE_README.md).
+the component guide, and a file manifest with the committed Rust input objects. The packager requires a clean Rust source tree. See [BUNDLE_README.md](BUNDLE_README.md).
 
 `tools/smoke_windows_bundle.ps1 -Archive PATH -Sha256 DIGEST -OutputDirectory NEW_PATH`
 verifies package hashes, the runtime modules actually loaded, an MCP image

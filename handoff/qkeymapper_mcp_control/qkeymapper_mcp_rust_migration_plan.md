@@ -1,25 +1,21 @@
 # QKeyMapper MCP Sidecar：Rust 迁移子计划
 
-整理日期 2026-11-17，更新于 2026-11-18。RUST-A 协议样包已在本机 Windows 11 验证。
+整理日期 2026-11-17；2026-11-18 完成当前迁移范围并结项。
 
-本文件是 **Rust 迁移子任务唯一的计划、进度、决策及接续来源**。用户同意在 MCP 主计划接近大小上限时独立跟踪本任务；[MCP 总体计划](qkeymapper_mcp_automation_plan_codex.md)仅保留入口、依赖和总体接续卡，不双写迁移执行进度。[任务导航](../README.md)只提供入口。
+本文件保留 **Rust 迁移的实施决策和验收证据**。后续发行与宿主补验统一由 [MCP 主计划](qkeymapper_mcp_automation_plan_codex.md) 跟踪。[任务导航](../README.md) 提供入口。
 
 ## 当前进度与接续卡
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | RUST-D2 本机两个宿主均取得真实 PNG；D3 Win10 x64 离线单 EXE 组件已验，开始 D4 正式替换 |
-| 分支／源码检查点 | codex/qkeymapper-mcp-control，RUST-A c57476df，RUST-B 75e43a67，C2 产品验收 c8f7893a，C4 私有验收 d69e2360，组件内 Rust 源 f4cc8c7d，D1 ecd22c62，D2 Codex dc3fe016，Antigravity 前期 d3351bb8，单 EXE 组件和本轮证据见本提交。产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
-| 执行机器 | PC-W11，Windows x64 MSVC。项目固定及本机默认 Rust 均核为 1.100.0 |
-| 本轮改动 | Antigravity 在 ASCII 路径直连动态候选并取得真实主窗 PNG；新增单 EXE 候选打包和原生烟测，Win10 离线核对同一 ZIP |
-| 实现状态 | A 至 C 的本机选定范围、两客户端真实工具及图片、Win10 x64 离线组件已验；Antigravity 完整回复、双 Qt 正式产物及切换待验 |
-| 正式实现 | 继续使用现有 Python 桥接；此前 C++、GUI／MCP、打包组件及运行时证据保持原范围 |
-| 决策门槛 | 按 11-18 的连续推进指示接入 B 的组件切片。A 实测供迁移评估，实际产品互操作和默认替换分别沿 B、D 的门槛 |
-| 客户端门槛 | 正式替换须通过 Codex＋Antigravity；其他宿主不默认承诺，QQ gateway 另行联调 |
-| 当前权限 | 上轮一次私有 C4 产品、Read＋CaptureWindows 配对及凭据已清理，20 分钟专用缓存 PID 6784 已核实关闭；Win10 来宾原网线和共享已恢复 |
-| 下一步 | 在本机组装 Qt6／Qt5 x64 Release，复验单 EXE 上的配对复用、权限、截图、退出与切换／回退；补 Antigravity 回合及中文／空格路径 |
-| 证据边界 | 本机原件 out/rust_sidecar/{a,b,c,d}_20261118、out/mcp_product/{rust_b,rust_c,rust_c_demo}_20261118。合成、Qt 夹具、真实产品和包验收各保留原范围 |
-| 提交策略 | 按 11-18 用户授权形成聚焦本地提交，禁止推送 |
+| 当前切片 | RUST-D4 完成本机选定验收，子计划结项 |
+| 分支／源码检查点 | codex/qkeymapper-mcp-control。Rust 运行源码 f4cc8c7d，单 EXE 构建与 Win10 离线选验见 42f5744d，验收范围见 606c2292；正式打包接线及关闭记录见本提交。C++ 产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
+| 实现／交付 | 正式 Qt6／Qt5 x64 Release 默认入口为 mcp/qkeymapper_mcp.exe，随附许可、清单及说明。Python 源码、锁和独立组件供开发／显式回退。Qt5 x86 包省略 MCP，Windows 7 x86 不支持 MCP |
+| 当前验证 | 双 Qt x64 构建、实际本机解包及真实产品配对复用／权限／PNG／退出／回退通过；Codex 实际从中文及空格路径取得 Qt6 PNG；沿用同一单 EXE 的干净 Win10 x64 离线组件通过证据 |
+| 清理 | 两个产品、桥接和固定助手正常退出，专属配对及凭据已清理；16:53:47 关闭本轮缓存 PID 31940，独立查询无控制器／原生会话为零 |
+| 后续入口 | Antigravity 最终单 EXE 的中文／空格路径业务调用、真图及模型回文，以及 Win10 Release PC 的真实三包流程，已转入 [MCP 主计划交付项](qkeymapper_mcp_automation_plan_codex.md#rust-d4sidecar-迁移结项)。干净 Win11 离线复验已按用户决定免除 |
+| 证据边界 | 本机原件 out/rust_sidecar/{a,b,c,d,d4}_20261118、out/mcp_product/rust_d4_20261118 等。合成、Qt 夹具、真实产品、独立离线组件及正式发行各保留实测范围 |
+| 提交策略 | 聚焦本地提交，禁止推送 |
 
 ## 1. 结论、价值与固定边界
 
@@ -33,7 +29,7 @@ Rust 适合承接当前独立普通权限 Sidecar，值得先做有界原型。�
 
 ### 1.1 对外契约与业务职责
 
-- 未来建立一个独立 Rust 二进制项目，与 Python 实现并存。正式 MCP 工具名、参数、默认值、可选字段、注解、权限、错误和业务结果保持兼容；内部有界 IPC v1不改。启动入口由包内 Python 改为 Rust EXE时，保留既有目标／演示参数，显式更新客户端配置，不静默改用户 workspace。
+- Rust Sidecar 为独立二进制项目，Python 实现供开发与显式回退。正式 MCP 工具名、参数、默认值、可选字段、注解、权限、错误和业务结果保持兼容；内部有界 IPC v1不改。启动入口由包内 Python 改为 Rust EXE时，保留既有目标／演示参数，显式更新客户端配置，不静默改用户 workspace。
 - 保留 Schema 和运行时两层校验：严格类型、范围、枚举、未知字段拒绝、空值／省略区别及现有字符串约束。Schema 生成不能代替实际验证；不得借迁移放宽参数或直接写 INI。
 - 保留文本、structuredContent及isError语义；图片仍来自产品自身窗口。ImageContent与不重复包含Base64的结构化元数据分别返回，保持身份／窗口／源关联、PNG完整性和现有160 KiB／8M像素等边界，不生成示意图冒充截图。
 - C++继续负责共用业务校验、完整保存事务、生命周期和执行前复核。Rust不新增业务引擎、任意命令、Qt属性、任意PID／HWND、文件读写接口、HTTP服务或全局实例管理器。
@@ -67,7 +63,7 @@ stdout在服务模式下仅输出UTF-8、正确分帧的MCP JSON-RPC并及时发
 | RUST-A：有界协议／分发原型 | 选定范围通过 | Windows x64 锁定 Release、原始报文与 Python SDK 11 组、Inspector 双协议、解包复验及实际发布样包测量 | 普通权限，合成数据。结果见 §2.1 |
 | RUST-B：Windows IPC／身份／凭据 | 选定范围通过，见 §2.2 | 严格帧及证明、原生身份／ACL／对端、v1／v2 凭据、忙碌、部分帧、取消／超时和实际排空；Qt 私有夹具及普通产品 v1 Read | 两轮原 manifest 测试分别获批。无跨 Windows 登录、PC 重启及完整业务证据 |
 | RUST-C：现有全部行为等价 | 本机选定范围通过，见 §2.3 | 全工具合同、实际只读及事务、四窗口 PNG 和两轮演示回收通过；未验配置变体、跨登录和宿主继续保留原范围 | 自有私有桌面及合成配置。C++ 业务与原 Python 维持，复用未受影响的 GUI 及引擎证据 |
-| RUST-D：实际客户端与交付 | 进行中，见 §3 | Codex＋Antigravity实际通过；离线环境以已验干净 Win10 x64 为准，主要功能在本机 Qt6／Qt5 x64 验证；启动参数、中文／空格路径、权限、图片、退出、CRT／DLL、许可及完整Release增量一致 | 先自有配置试用，全部选定门槛通过后才替换默认入口；PC重启／登录切换、必要UAC／Default另行安排；QQ渠道仍单列 |
+| RUST-D：实际客户端与交付 | 本机选定范围完成，见 §3.5 | x64 单 EXE 接入正式打包，Qt6／Qt5 本机真实包内桥接、Codex 与 Win10 离线组件按各自范围实测；Antigravity 既有动态版工具／图片证据保留 | 最终 Antigravity 回合和 Win10 Release PC 发布流程回归主计划；干净 Win11 离线免验；QQ 渠道仍单列 |
 
 A通过只证明原型选定范围。B–D的投入在A评审后校准，不并入原M1／M2／M3-B旧估算，不因讨论过Rust而自动承诺整迁。若现场推进，按实际源码及有效证据接续，不回退或覆盖工作区。
 
@@ -182,12 +178,6 @@ C3/C4 的真实正例见 out/mcp_product/rust_c_demo_20261118/windows-demo-r01�
 
 VirtualBox Win10 Pro x64 19045.2965，Windows PowerShell 5.1、Medium，虚拟链路断开且来宾观测无活动网络。常用程序入口、Python 注册和用户 Rust 工具链检查均未发现开发运行环境。r01 的动态旧协议及 app-local CRT 已通过，后续模块筛查误把系统 `msvcp_win.dll` 计作需分发的库。r02 校正后，动态组件和独立单 EXE 均通过中文／空格路径下的旧协议 PNG、新协议 17 项正式工具和断开状态、EOF 退出 0。r03 用上述同一单 EXE ZIP 解包复验通过。所有临时网线和共享均恢复，来宾测试材料保存在获准的 `C:\tools\QKeyMapper` 子目录。原件 out/rust_sidecar/d_20261118/d3-win10-r01 至 r03。上述为组件验收，完整 QKeyMapper Release 组装及真实产品业务仍按以下门槛核对。
 
-正式切换前还需完成以下事项。
-
-- Qt6 x64 与 Qt5 x64 Release 默认携带静态 CRT 的 qkeymapper_mcp.exe、许可证与 MCP 使用说明。Qt5 x86 原包流程继续，MCP 交付范围见下。
-- 用最终拟发 EXE 复用既有配对，在真实产品上复验可信目标、权限、读取及图片，完成 Antigravity 正常回合与中文／空格路径直启。必要时用同一交付物抽查保存、退出及清理；动态候选历史保持原范围。
-- 在本机两套完整 x64 Release 中核对解包、用法、运行时、许可证、兼容配置及回退。离线无开发运行环境采用已有 Win10 x64 证据，用户于 2026-11-18 免除干净 Win11 x64 离线重复验收。通过后切换客户端默认命令，正式包仅携带 Rust Sidecar，Python 保留为独立回退入口。
-
 本轮只对 x86 做理论评估。固定 Rust 工具链和当前开发环境均只安装了 x86_64-pc-windows-msvc 标准库，未安装 i686 目标。Rust 提供面向 Windows 10 及以上的 i686-pc-windows-msvc 路径，理论上可另建 32 位程序；Windows 7 的 i686-win7-windows-msvc 是独立 Tier 3 目标，现有工具链与构建脚本没有对应交付能力。本轮不安装、编译或试运行 x86 Sidecar。明确 **Windows 7 x86 不支持 QKeyMapper MCP 功能**，Qt5 x86 包不带 Sidecar，本限制写入[包内 MCP 使用说明](../../mcp_bridge_rust/BUNDLE_README.md)。QKeyMapper 的其他 Qt5 兼容范围另按产品发布说明。[Rust 平台支持](https://doc.rust-lang.org/rustc/platform-support.html)／[Windows 7 Rust 目标](https://doc.rust-lang.org/rustc/platform-support/win7-windows-msvc.html)
 
 ### 3.4 交付与回退
@@ -196,18 +186,28 @@ VirtualBox Win10 Pro x64 19045.2965，Windows PowerShell 5.1、Medium，虚拟�
 2. 两侧用同一压缩器和选项，记录文件数、解压字节、组件ZIP及同一完整Release添加Sidecar前后的ZIP差值。许可、包清单及必要DLL计入，PDB单列；现有25.42 MiB组件ZIP不是完整Release增量。
 3. 记录实际源码／相关差异、工具链／Cargo.lock、EXE路径／架构及必要依赖身份。冷／暖启动至可发现工具、首次认证查询分开测，产品启动与UAC等待不混入桥接性能。
 4. 不为数字删除鉴权、资源上限、诊断或回收功能；不保证单文件、某一体积、毫秒启动或杀软不误报。
-5. 用 A 的实际体积、部署及兼容修补成本判断继续投入。若后续出现不可靠的兼容／退出、需要放宽凭据或排空要求、需要常驻 Python，或完整收益不足，则保留 Python 正式实现并重新评估。默认入口取决于 D 的交付验收。
+5. 用 A 的实际体积、部署及兼容修补成本判断继续投入。若后续出现不可靠的兼容／退出、需要放宽凭据或排空要求、需要常驻 Python，或完整收益不足，则保留 Python 正式实现并重新评估。默认入口切换决定见 §3.5。
 6. 回退用显式启动配置完成；先停止新操作并核对已接受任务／结果，不自动切运行时、换目标或重发写入。旧入口、旧凭据和Python实现保留；不做无必要的第二套密钥存储。
+
+### 3.5 RUST-D4 正式打包接线与迁移结项（2026-11-18）
+
+正式发布脚本对同一 x64 组件依次核对验收 SHA-256、Rust 源树与依赖锁对象、解包清单、原生 stdio／PNG／EOF 和 PE 架构。Qt6 与 Qt5 x64 的 ZIP 默认使用 mcp/qkeymapper_mcp.exe，旧 Python 和别名从本次临时发布树移除，Qt5 x86 仍走原产品发布流程。操作者明确修改客户端项目配置，先断开旧桥接并保留原参数和独立回退组件；不改现有用户项目配置。[发布入口](../../scripts/release/Release使用说明.md)／[包内用户说明](../../mcp_bridge_rust/BUNDLE_README.md)。
+
+在 PC-W11 以 606c2292 上的 C++ 源码（与 3fefc26a 相同）从空输出目录构建 Qt 6.8.3／Qt 5.15.2 x64 Release 和匹配 CrashReporter。Qt6 零警告、Qt5 仅既有 Qt 官方 LNK4099 例外，最早复用目录的 C1902 失败日志保留。用发布脚本实际组装、核对并解包两支本机 ZIP；组件 127 文件、解压 4,847,853 字节／ZIP 1,690,078 字节，唯一运行二进制 SHA-256 与 §3.3 的 Win10 离线样本相同。独立组件 ZIP SHA-256 为 c07ce03f82d2a2515fccf4a07538e079487dc3c500d69e39624a704ff3486b7c。发布脚本本机适配自检通过 154 项，含新摘要、源码身份、双包载荷及 Qt5 x86 包形态；原自检的一项固定 Win10 Qt 厂商库路径夹具保留在正式源码，本机适配副本跳过该项。本机 ZIP 使用现有 Qt／厂商 DLL 和更新器，缺正式站配套 AHK，完整三包流程仍由发布站验收。
+
+双 Qt 使用已核对同一字节的隔离产品副本，在中文及空格路径下按 Python→Rust→Python 顺序走正式 MCP。各自通过真实 GUI 配对 Read，Rust 用同一专属配对重认证并拒绝未授权截图，增加 CaptureWindows 后取得 1130×722 真主窗，切回 Python 仍复用同一配对及许可。实际 Codex App Server 再用同一 Qt6 包内 Rust EXE 完成认证、读取、真图及正常退出。Qt5 与 Qt6 中文画面已查看。首轮 Qt5 固定助手的目录／EXE 命名安全检查拒绝，产品退出 0；后续用现有约束允许的独立副本通过。终轮两产品退出 0，专属配对、凭据和授权均清理，合成 INI／FilterKeys 及观测的输入桌面保持。全程私有桌面，只配置模式，未运行映射或发送系统输入。
+
+最终 EXE 的 Antigravity 无产品预检在发出工具调用前超时（退出 3，空回文）。早期 ASCII 动态版真实图按 §3.2 保留，不据此推出最终单 EXE／完整模型回合通过。用户决定干净离线环境以已验 Win10 x64 样本为准，主要功能由本机双 Qt x64 支持；Windows 7 x86 的说明按 §3.3。当前适合完成的迁移工作结项，默认发布接线生效。Antigravity 定向补验和 Win10 Release PC 正式三包流程转入主计划。原件 out/rust_sidecar/d4_20261118、out/mcp_product/rust_d4_20261118，仅本机。
 
 ## 4. 与现有MCP任务及本轮收尾的关系
 
-完整M1／M2、PERSIST-137真实跨登录／PC重启、普通用户多实例前台绑定、主动设备工具、完整M3-B及QQ渠道目标保持，原证据不扩大。原型通过不代表任何完整阶段完成。Python环境锁继续服务开发／对照测试；只有正式替换通过后，才定向修订M3-B的默认运行包安排。
+完整M1／M2、PERSIST-137真实跨登录／PC重启、普通用户多实例前台绑定、主动设备工具、完整M3-B及QQ渠道目标保持，原证据不扩大。原型通过不代表任何完整阶段完成。Python 环境锁继续服务开发、对照测试和显式回退。M3-B 默认运行包已改用 Rust x64 组件，按主计划完成正式发布。
 
 普通用户的Default前台绑定流程不能套到后台演示；本轮没有新增Default测试。后续若需要实际前台／输入／原生UAC或重启场景，另说明具体动作、影响及验证方法，不从本计划或缓存时长推导授权。
 
 33ebffc8 记录了 2026-11-17 的只读评估和文档检查。11-18 从该提交接续并完成 RUST-A 独立协议原型，随后按依赖推进 B。
 
-后续仅在本文件更新Rust阶段、决定和下一步；原始EXE／日志／截图等留本机out，按实际源码、产品／组件／替身、系统／桌面及权限分开记录。主计划与公共导航只保留依赖和链接，不复制本任务执行日志。
+本文件结项归档；后续仅在主计划推进。EXE、日志和截图留本机 out，复用时分别标明源码、产品／组件／替身、系统／桌面和权限。
 
 ## 官方核对入口
 

@@ -27,6 +27,12 @@ foreach ($name in @('build_release.bat', 'build_release.ps1', 'test_build_releas
 
 运行目录里还应长期保留三个 `QKeyMapper_Qt*` 配套目录；它们提供 Qt DLL、驱动、模板和其他资源，不是可任意删除的构建缓存。迁移电脑时，需要同时迁移这些目录，并核对脚本中的仓库和工具链路径；仅复制四个脚本或拉取 Git 不能替代这些配套文件。
 
+## MCP Sidecar 发布输入
+
+在运行目录放置同一份已验收的 x64 单 EXE 组件，ZIP 命名为 QKeyMapperMcp-x64.zip，旁边的 QKeyMapperMcp-x64.sha256 写入验收时核定的 64 位 SHA256。候选的构建和打包指令在[仓库 Rust 说明](../../mcp_bridge_rust/README.md#windows-x64-component)。以同一发布源码及依赖锁构建，保留批准的摘要和生成记录。
+
+只读预检核对归档摘要、静态 x64 形态和 Rust 源码／构建输入身份。正式构建还会解包、验证文件清单并运行组件烟测。Qt6 x64 和 Qt5 x64 的包内 mcp 目录使用同一份 qkeymapper_mcp.exe、许可证和 MCP 使用说明，Qt5 x86 包省略 MCP 组件。Windows 7 x86 不支持 QKeyMapper MCP 功能。旧 Python 组件可从原存档独立回退。
+
 正式 ZIP 保存在 `latest_release`，最新配套 EXE/PDB 保存在三个 `Qt*_dump_analyze` 目录。若需要保留历史版本供以后下载或分析崩溃，在下一次 Release 前将相应 ZIP 和匹配的 EXE/PDB 一起按版本归档；这两类固定目录会被后续成功发布更新。
 
 本次验收报告和原始日志归档在运行目录的 `release_records\v1.5.0.20261016`。该目录独立于会轮换的 `_work\logs`，不是脚本运行依赖。

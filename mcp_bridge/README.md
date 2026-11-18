@@ -1,8 +1,10 @@
-# QKeyMapper MCP 桥接（开发阶段）
+# QKeyMapper MCP Python 桥接（开发与回退）
+
+Qt6／Qt5 x64 Release 的默认入口使用 Rust 单 EXE。下文继续记录 Python 桥接的开发和回退用法。[正式 MCP 使用说明](../mcp_bridge_rust/BUNDLE_README.md)
 
 官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。IB-MCP-138后当前开发产品返回二十三项业务能力、十七工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 
-桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。PKG-123提供下述免全局Python的桥接组件目录包；完整Release集成及干净双系统交付仍属M3-B，原venv入口继续用于开发和回归。
+桥接面向 Win10／11。统一开发基线为 CPython 3.11.9 Windows x64、`mcp==2.3.0`、`pywin32==312`，C++ 对端分别使用 Qt 6.8.3／Qt 5.15.2。两台机器的逐轮验收分别记录，不能互相替代；完整运行依赖固定在 [requirements-windows.txt](requirements-windows.txt)。PKG-123提供下述免全局Python的桥接组件目录包；PKG-123 中的验收范围按记录保留，原 venv 入口继续用于开发和回归。
 
 ## 启动与使用
 

@@ -39,6 +39,9 @@ Put (Join-Path $testRoot 'fixture-ignore') ''
 Git $seed @('config', 'core.excludesfile', (Join-Path $testRoot 'fixture-ignore'))
 Put "$seed/QKeyMapper/QKeyMapper.rc" 'VALUE "ProductVersion", "v1.5.0.20261016"'
 Put "$seed/tracked.txt" 'initial'
+foreach ($path in @('src/main.rs','Cargo.toml','Cargo.lock','rust-toolchain.toml')) {
+    Put "$seed/mcp_bridge_rust/$path" "fixture-$path"
+}
 Git $seed @('add', '.')
 Git $seed @('commit', '-m', 'fixture baseline')
 $variants = @()
@@ -117,6 +120,30 @@ $baseline = Join-Path $testRoot 'baseline'
 $work = Join-Path $testRoot 'work'
 $release = Join-Path $testRoot 'release'
 $stage = Join-Path $work 'staging/QKeyMapper_Qt6_x64'
+$mcp = Join-Path $work 'verified-sidecar'
+Put "$mcp/qkeymapper_mcp.exe" 'verified Rust EXE fixture'
+Put "$mcp/README.md" 'Sidecar instructions'
+Put "$mcp/QKeyMapper-LICENSE.txt" 'Sidecar license'
+$inputs = @('src','Cargo.toml','Cargo.lock','rust-toolchain.toml')
+$inputObjects = (Invoke-Git $seed (@('rev-parse') + @($inputs | ForEach-Object { "HEAD:mcp_bridge_rust/$_" }))).Output -split '\r?\n'
+$sourceObjects = @{}
+for ($i = 0; $i -lt $inputs.Count; $i++) { $sourceObjects[$inputs[$i]] = $inputObjects[$i] }
+$mcpManifest = @{
+    schema_version = 1; architecture = 'x86_64-pc-windows-msvc'; binary = 'qkeymapper_mcp.exe'
+    app_local = @{}; rust_sources = $sourceObjects; files = @(@{path = 'qkeymapper_mcp.exe'})
+}
+Put "$mcp/bundle-manifest.json" ($mcpManifest | ConvertTo-Json -Depth 4)
+$componentInput = Join-Path $testRoot 'component-input'
+New-Item -ItemType Directory -Path $componentInput | Out-Null
+$archive = Join-Path $componentInput 'QKeyMapperMcp-x64.zip'
+$digestFile = Join-Path $componentInput 'QKeyMapperMcp-x64.sha256'
+[IO.Compression.ZipFile]::CreateFromDirectory($mcp, $archive, [IO.Compression.CompressionLevel]::Optimal, $true)
+Put $digestFile ('0' * 64)
+Expect-Failure { Read-McpSidecarInput $componentInput $seed } 'SHA256.*不符' 'sidecar input rejects a mismatched ZIP digest'
+Put $digestFile (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+Check ((Read-McpSidecarInput $componentInput $seed).Archive -eq $archive) 'sidecar input accepts the authorized ZIP and matching Rust sources'
+Put "$baseline/mcp/runtime/python.exe" 'stale bundled Python'
+Put "$baseline/qkeymapper-mcp-rust.exe" 'stale root bridge'
 Put "$baseline/映射表模版/keep.ini" 'template'
 Put "$baseline/keymapdata.ini" 'private runtime data'
 Put "$baseline/sound.wav" 'runtime wav'
@@ -150,7 +177,16 @@ foreach ($variant in $variants) {
     }
     Put "$baseline/RazerDriver/INTEGRATION_GUIDE.md" 'stale developer reference'
     Put "$baseline/RazerDriver/manage_driver.bat" 'stale manager'
-    Prepare-Package $baseline $variantStage $variantRepo $release $work $architecture
+    Prepare-Package $baseline $variantStage $variantRepo $release $work $architecture $mcp
+    Check (-not (Test-Path -LiteralPath "$variantStage/mcp/runtime/python.exe")) "$($variant.Name) excludes stale Python"
+    Check (-not (Test-Path -LiteralPath "$variantStage/qkeymapper-mcp-rust.exe")) "$($variant.Name) excludes the stale root bridge"
+    if ($architecture -eq 'x64') {
+        Check ((Get-FileHash -LiteralPath "$variantStage/mcp/qkeymapper_mcp.exe").Hash -eq
+               (Get-FileHash -LiteralPath "$mcp/qkeymapper_mcp.exe").Hash) "$($variant.Name) gets the verified Rust binary"
+        Check (Test-Path -LiteralPath "$variantStage/mcp/README.md") "$($variant.Name) includes MCP usage"
+    } else {
+        Check (-not (Test-Path -LiteralPath "$variantStage/mcp")) 'Qt5 x86 excludes the MCP component'
+    }
     Check ([IO.File]::ReadAllText("$variantStage/IbInputSimulator.dll") -ceq "vendor-$architecture") "$($variant.Name) deploys matching IbInput DLL"
     Check (Test-Path -LiteralPath "$variantStage/licenses/IbInputSimulator/IbInputSimulator-LICENSE.txt") "$($variant.Name) includes IbInput license"
     if ($architecture -eq 'x64') {
