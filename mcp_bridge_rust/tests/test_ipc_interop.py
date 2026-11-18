@@ -21,6 +21,7 @@ from qkeymapper_mcp.credentials import CredentialStore
 TOOLS = {
     "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing",
     "qkm_disconnect", "qkm_get_capabilities", "qkm_get_state",
+    "qkm_get_help", "qkm_query", "qkm_get_operation",
 }
 
 
@@ -117,6 +118,13 @@ async def exercise(args):
             assert cap["instance"] == bound["instance"] and cap["stage"] == "transport_only"
             assert cap["scopes"] == 1 and cap["business_capabilities"] == []
             await call(client, "qkm_get_state", error="unsupported_capability")
+            for tool, arguments in (
+                ("qkm_get_help", {"topic": "basic_mapping"}),
+                ("qkm_query", {"entity": "tabs", "offset": 1, "limit": 5}),
+                ("qkm_get_operation", {"operation_id": "a" * 32}),
+            ):
+                denied = await call(client, tool, arguments, error="unsupported_capability")
+                assert denied["message"] == "Business capability is not connected."
             await fixture.wait(lambda value: value["authenticated"] == 1)
         assert store.load() is not None
         async with Client(python) as client:
@@ -135,7 +143,7 @@ async def exercise(args):
             await call(client, "qkm_connect")
             await connection(client, "failed")
             assert not fixture.state()["pending"]
-        passed("Rust writes v1 DPAPI credential, Python reauthenticates, busy peer and revocation")
+        passed("Rust writes v1 DPAPI credential, authenticated queries, Python reauthenticates, busy peer and revocation")
 
         store.forget()
         await asyncio.sleep(1.05)

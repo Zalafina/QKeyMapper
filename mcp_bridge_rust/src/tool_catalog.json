@@ -1,0 +1,497 @@
+{
+  "feedback": {
+    "busy_or_closed": [
+      "桥接正在处理或关闭请求。",
+      "查询连接状态，等待当前作业清理；已关闭的桥接需由客户端重新启动。"
+    ],
+    "cancelled": [
+      "本端等待已取消，已接受的变更仍可能完成。",
+      "重新核对连接，并查询原操作ID的结果；取消等待不代表回滚或停止，不盲目重发变更。"
+    ],
+    "capture_failed": [
+      "本次窗口图像未能取得。",
+      "核对已显示的受支持窗口，重新查询窗口和源。"
+    ],
+    "capture_timeout": [
+      "截图未在本次时限内完成。",
+      "核对实例及窗口状态后重新查询；不会返回上一张图片。"
+    ],
+    "confirmation_required": [
+      "尚未确认预览要求的完整范围或连带变化。",
+      "向用户说明预览内容，取得同意后重新预览；按操作分别确认映射冲突、源行删除，或完整保存范围及独立覆盖意图。"
+    ],
+    "connection_closed": [
+      "连接已关闭。",
+      "重新核验目标并连接，再核对原操作结果。"
+    ],
+    "context_busy": [
+      "当前状态不能安全完成此操作。",
+      "查询产品状态和受阻原因；操作不会自动停止映射。需要空闲的修改须取得停止同意、等待清理后重新预览。"
+    ],
+    "demo_context_changed": [
+      "演示源或非行设定已变化，无法证明本轮回收范围。",
+      "查询demo_state和原操作结果，保留现场；不要认领相似行、清空配置或自动重试。"
+    ],
+    "demo_not_enabled": [
+      "宿主未启用专用演示写入。",
+      "由部署端核对独立演示实例和显式配置；客户端不能自行扩大权限。"
+    ],
+    "demo_quarantined": [
+      "演示会话已隔离，自动修改已停止。",
+      "查询demo_state的阶段和操作ID，保留源与窗口；由部署端处理，不盲目重试、清空草稿或更换实例。"
+    ],
+    "demo_source_binding_unavailable": [
+      "变更已提交，但未取得可用的提交源绑定。",
+      "按原操作ID核对结果并保留现场；不可推断未修改或自动认领当前行。"
+    ],
+    "editor_draft_changed": [
+      "窗口输入、待应用内容或子窗状态不能安全关闭，本次未关闭。",
+      "保留草稿，先在原窗口处理未应用内容或已打开子窗；本工具不自动应用或丢弃。处理后重新核对窗口、源和打开记录。"
+    ],
+    "editor_not_owned": [
+      "此窗口不属于本认证会话的正式打开记录。",
+      "本工具不会关闭仅经GUI打开或已失效的编辑窗。保留内容，通过原GUI处理后再使用正式打开流程。"
+    ],
+    "image_too_large": [
+      "窗口图片超过像素或PNG大小上限。",
+      "缩小已核实的目标窗口或选择受支持页面，重新查询；不会自动缩放或截断。"
+    ],
+    "invalid_arguments": [
+      "请求参数不符合接口约束。",
+      "核对工具参数、范围及示例后修正请求。"
+    ],
+    "invalid_image": [
+      "图像结果未通过身份、格式或大小校验。",
+      "未返回图片；核对目标及错误码，保留本次记录后调查。"
+    ],
+    "invalid_source_data": [
+      "当前源数据不能安全读取。",
+      "查询实际配置来源和加载状态，保留错误码用于调查。"
+    ],
+    "item_too_large": [
+      "单个查询项超过接口限制。",
+      "核对该项及能力限制；减小页数不能缩小单个查询项。"
+    ],
+    "not_connected": [
+      "尚未连接 QKeyMapper。",
+      "查询连接状态，再使用已有配对连接；需要配对时由用户在产品内批准。"
+    ],
+    "operation_limit": [
+      "进行中操作已占满结果存储。",
+      "先查询已接受操作；等待完成后核对原预览是否仍有效，再由明确意图提交。"
+    ],
+    "permission_denied": [
+      "该操作尚未获授权。",
+      "请用户在 QKeyMapper 管理窗口核对并授予所需权限。"
+    ],
+    "pipe_busy": [
+      "目标连接端点持续忙碌，尚未建立认证连接。",
+      "若已有会话占用，请等待其主动断开后再显式连接原目标；不会抢占连接或自动更换实例。"
+    ],
+    "preview_expired": [
+      "预览已过期，未执行本次修改。",
+      "重新查询源并预览，核对后提交新的预览。"
+    ],
+    "preview_limit": [
+      "待处理预览达到有界上限。",
+      "取消自己的待处理预览或等待过期后重新预览。"
+    ],
+    "preview_superseded": [
+      "较新的预览已替换原预览。",
+      "核对当前预览内容及其 ID，勿提交旧预览。"
+    ],
+    "result_too_large": [
+      "查询结果超过接口限制。",
+      "核对能力限制；减少单页请求，若全量快照超限则报告该限制。"
+    ],
+    "save_reload_failed": [
+      "配置已经写盘，但重新加载失败。",
+      "查询同一操作结果和当前配置，按实际磁盘／加载结果恢复；不能视为完全回滚或盲目重发。"
+    ],
+    "save_write_failed": [
+      "配置写盘失败，内存准备可能已变化。",
+      "先以同一操作ID查询分段结果及当前状态；不要盲目重发，核对后再决定是否重新预览保存。"
+    ],
+    "stale_catalog": [
+      "配置或 Tab 目录已变化。",
+      "重新查询目录，使用新引用核对原操作目标。"
+    ],
+    "stale_preview": [
+      "预览已失效、被消费或结果不可用。",
+      "先用 operation_id 查询结果；未知时重新核对实际源，勿盲目重复写入。"
+    ],
+    "stale_source": [
+      "源数据或其身份／授权上下文已变化。",
+      "重新查询实际源，核对目标后重新预览，勿直接重发旧写入。"
+    ],
+    "stale_window": [
+      "窗口引用已失效。",
+      "重新查询本实例窗口，核对角色及当前源后再请求。"
+    ],
+    "timeout": [
+      "请求等待超时。",
+      "核对连接及原操作结果，避免盲目重试变更。"
+    ],
+    "unsupported_capability": [
+      "此实例尚未提供该业务能力。",
+      "查询实际能力，选择已支持的操作。"
+    ],
+    "unsupported_desktop": [
+      "目标不在可核实的后台私有桌面。",
+      "本接口不打开Default或当前输入桌面窗口。检查已授权专用演示实例；不会自行切换桌面或启动新实例。"
+    ],
+    "unsupported_method": [
+      "此实例不支持该方法。",
+      "查询实际能力，使用声明的工具和参数。"
+    ],
+    "unsupported_query": [
+      "此实例不支持该查询。",
+      "核对可查询对象及参数说明。"
+    ],
+    "window_unavailable": [
+      "目标窗口未显示或仍最小化。",
+      "通过获准的显示流程恢复目标，再重新查询窗口；截图不会自动激活。"
+    ]
+  },
+  "reviewed_product_errors": [
+    "capture_failed",
+    "capture_timeout",
+    "confirmation_required",
+    "context_busy",
+    "editor_draft_changed",
+    "editor_not_owned",
+    "image_too_large",
+    "invalid_arguments",
+    "invalid_mapping",
+    "invalid_source_data",
+    "invalid_target",
+    "item_too_large",
+    "operation_limit",
+    "permission_denied",
+    "preview_expired",
+    "preview_limit",
+    "preview_superseded",
+    "result_too_large",
+    "save_reload_failed",
+    "save_write_failed",
+    "stale_catalog",
+    "stale_preview",
+    "stale_source",
+    "stale_window",
+    "unsupported_capability",
+    "unsupported_desktop",
+    "unsupported_method",
+    "unsupported_query",
+    "window_unavailable"
+  ],
+  "tools": [
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "返回桥接连接的最近核验状态；不代表映射引擎状态，也不会申请权限。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "qkm_get_connection_stateArguments",
+        "type": "object"
+      },
+      "name": "qkm_get_connection_state",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_get_connection_stateDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "使用已有本机配对连接。立即返回，随后查询连接状态；不会自动重新配对或提升权限。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "qkm_connectArguments",
+        "type": "object"
+      },
+      "name": "qkm_connect",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_connectDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "申请新的配对。须用户在 QKeyMapper 内核对真实 EXE 并批准；本工具不能自行批准。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "qkm_request_pairingArguments",
+        "type": "object"
+      },
+      "name": "qkm_request_pairing",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_request_pairingDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "断开桥接并取消本端等待，保留已保存配对。已接受的业务仍可能完成，断开不代表撤销、回滚或停止；重连后先按原操作ID查询结果，不盲目重发变更。不会停止或启动映射。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "qkm_disconnectArguments",
+        "type": "object"
+      },
+      "name": "qkm_disconnect",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_disconnectDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "通过已认证 IPC 查询此实例实际提供的能力。未实现能力不会报告为可用。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "qkm_get_capabilitiesArguments",
+        "type": "object"
+      },
+      "name": "qkm_get_capabilities",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_get_capabilitiesDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "读取已认证产品的配置选择、最近映射加载的实际结果／代次、GUI 状态、Worker 状态采样与实际停止快捷键。加载记录不证明磁盘已保存或后续数据未变；未观测的停止清理和不可用的业务修订号会明确报告。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "qkm_get_stateArguments",
+        "type": "object"
+      },
+      "name": "qkm_get_state",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_get_stateDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "读取基础映射语法、毫秒单位／范围／默认值和 A→B 示例，或分页查询产品解析器的真实按键名称。repeat 指映射项的重复设置，宏的 xN 语法另行校验。名称区分大小写；列表不证明设备可用，帮助不代替完整校验或编辑授权，实际可用操作仍以能力查询为准。offset 从 0 开始，limit 为 1–100；使用 next_offset 续页。只读，不停止映射。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "maximum": 2147483647,
+            "minimum": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "topic": {
+            "enum": [
+              "basic_mapping",
+              "original_keys",
+              "mapping_keys"
+            ],
+            "title": "Topic",
+            "type": "string"
+          }
+        },
+        "required": [
+          "topic"
+        ],
+        "title": "qkm_get_helpArguments",
+        "type": "object"
+      },
+      "name": "qkm_get_help",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_get_helpDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "只读查询，目录／源分页，demo_context为单条观察。configurations/tabs 使用 catalog_revision，catalog_ref 不能作为编辑目标。mapping_sources 返回当前实际普通/共通源表的不透明引用；mappings 必须同时传该 source_revision 和 source_tab_ref，返回源行及完整字段。源查询要求加载成功、GUI 空闲且 Worker 停止，并且是初始静止或已有仍有效的完整清理读取许可；新运行活动使许可失效，运行中和停止清理中拒绝，不主动停止。completed_cleanup 及清理代次仅证明只读上下文，不授予编辑权限或替代异步操作结果。来源只证明当前内存源，不证明磁盘保存或共通备份加载自哪组。源修订不是完整业务修订，引用不授予写入权限；变化后重新查询。windows 仅需 Read，观察本实例 main/item_setup 的身份、可见／最小化／前台采样和不透明窗口生命周期引用；不创建、显示或截取窗口，不证明映射源／场景未变。默认返回main／item_setup；显式window_role=mapping_advanced或ibinput_settings只观察对应固定窗口，不创建、显示或激活。windows仅接收entity/offset/limit及此可选角色，目录／源参数须省略；其他实体不接受window_role。demo_context另须Read+Configure及实际后台私有桌面，观察当前普通配置的非行保存足迹签名和GUI保存名；仅排除74项源行存储键，须另用完整源修订核验行，不能作写入许可、场景租约或完整重置证明。只接受entity/offset/limit，offset须0；不创建保存预览、不写配置或重载。未加载配置内容尚未接入。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "catalog_revision": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 64,
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Catalog Revision"
+          },
+          "entity": {
+            "enum": [
+              "configurations",
+              "tabs",
+              "mapping_sources",
+              "mappings",
+              "windows",
+              "demo_context"
+            ],
+            "title": "Entity",
+            "type": "string"
+          },
+          "limit": {
+            "default": 50,
+            "maximum": 100,
+            "minimum": 1,
+            "title": "Limit",
+            "type": "integer"
+          },
+          "offset": {
+            "default": 0,
+            "maximum": 2147483647,
+            "minimum": 0,
+            "title": "Offset",
+            "type": "integer"
+          },
+          "source_revision": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "minLength": 64,
+                "pattern": "^[0-9a-f]{64}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Revision"
+          },
+          "source_tab_ref": {
+            "anyOf": [
+              {
+                "maxLength": 128,
+                "pattern": "^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Source Tab Ref"
+          },
+          "window_role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "mapping_advanced",
+                  "ibinput_settings"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Window Role"
+          }
+        },
+        "required": [
+          "entity"
+        ],
+        "title": "qkm_queryArguments",
+        "type": "object"
+      },
+      "name": "qkm_query",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_queryDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "查询本实例／本配对及权限代次内的预览或提交结果，失败状态查询本身仍可成功。保存预览另带所属实例／配置组／保存修订。结果带采样时间，完成记录为历史事实，不代表当前运行／保存状态；最多64条，进行中记录保留，完成后保留10分钟并受容量限制，接口重置或进程退出后丢失。unknown时核对当前配置及源，不能假定未修改或盲目重发。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "operation_id": {
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[0-9a-f]{32}$",
+            "title": "Operation Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "operation_id"
+        ],
+        "title": "qkm_get_operationArguments",
+        "type": "object"
+      },
+      "name": "qkm_get_operation",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_get_operationDictOutput",
+        "type": "object"
+      }
+    }
+  ]
+}

@@ -8,10 +8,11 @@ use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
 use crate::native::{Cancel, Connection, NativeError, Result, Target, require_pristine_thread};
+use crate::wire::Object;
 
 enum Operation {
     Connect { pair: bool },
-    Read(&'static str),
+    Read(&'static str, Object),
 }
 
 enum Command {
@@ -120,11 +121,18 @@ impl Bridge {
         state
     }
 
-    pub fn read(&self, method: &'static str) -> Result<Pending> {
-        if !matches!(method, "qkm_get_state" | "qkm_get_capabilities") {
+    pub fn read(&self, method: &'static str, arguments: Object) -> Result<Pending> {
+        if !matches!(
+            method,
+            "qkm_get_state"
+                | "qkm_get_capabilities"
+                | "qkm_get_help"
+                | "qkm_query"
+                | "qkm_get_operation"
+        ) {
             return Err(NativeError::new("unsupported_method"));
         }
-        self.submit(Operation::Read(method))
+        self.submit(Operation::Read(method, arguments))
     }
 
     pub fn disconnect(&self) -> Value {
@@ -211,11 +219,11 @@ fn perform(
             state.lock().unwrap().status = status.clone();
             Ok(status)
         }
-        Operation::Read(method) => {
+        Operation::Read(method, arguments) => {
             let session = session
                 .as_mut()
                 .ok_or_else(|| NativeError::new("not_connected"))?;
-            let value = session.call_read(method, cancel)?;
+            let value = session.call_read(method, arguments, cancel)?;
             state.lock().unwrap().status = session.info();
             Ok(value)
         }

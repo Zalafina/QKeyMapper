@@ -200,11 +200,16 @@ impl Connection {
         })
     }
 
-    pub(crate) fn call_read(&mut self, method: &'static str, cancel: &Cancel) -> Result<Value> {
+    pub(crate) fn call_read(
+        &mut self,
+        method: &'static str,
+        arguments: Object,
+        cancel: &Cancel,
+    ) -> Result<Value> {
         let mut random_id = [0; 16];
         getrandom::fill(&mut random_id).map_err(|_| NativeError::new("random_unavailable"))?;
         let id = lower_hex(&random_id);
-        let request = object(json!({"id": id, "method": method, "arguments": {}}));
+        let request = object(json!({"id": id, "method": method, "arguments": arguments}));
         let deadline = Instant::now() + CALL_WAIT;
         self.pipe.send(&request, MAX_FRAME, cancel, deadline)?;
         let mut response = self.pipe.receive(MAX_FRAME, cancel, deadline)?;
