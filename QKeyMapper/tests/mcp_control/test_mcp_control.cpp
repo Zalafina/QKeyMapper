@@ -350,6 +350,17 @@ void McpControlTest::mappingChangeArguments()
         {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
     const auto capabilities = mappingChangeCapabilities();
     QCOMPARE(capabilities.size(), 12);
+    const auto updatePreview = capabilities.at(6).toObject();
+    const auto updateApply = capabilities.at(7).toObject();
+    QCOMPARE(updatePreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.update.preview"));
+    QCOMPARE(updateApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.update.apply"));
+    QCOMPARE(updatePreview.value(QStringLiteral("original_key_conflicts_supported")), QJsonValue(false));
+    for (const auto &update : {updatePreview, updateApply}) {
+        QCOMPARE(update.value(QStringLiteral("original_key_conflict_policy")).toString(),
+            QStringLiteral("disable_current_normal_row_only"));
+        QVERIFY(!update.value(QStringLiteral("limitations")).toArray().contains(
+            QStringLiteral("original_key_conflict_updates_not_supported")));
+    }
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("preview_ttl_ms")).toInt(), 120000);
     QCOMPARE(capabilities.first().toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     const auto operation = capabilities.last().toObject();

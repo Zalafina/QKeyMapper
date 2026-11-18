@@ -304,6 +304,7 @@ QJsonArray mappingChangeCapabilities()
     updateSchema.insert(QStringLiteral("anyOf"), updateFields);
     auto updatePreview = capability("mapping.update.preview", "qkm_preview_changes", Read | Configure, true, updateSchema);
     updatePreview.insert(QStringLiteral("key_up_send_timings"), QJsonArray{2, 3, 4});
+    // Keep the legacy flag for general conflict resolution.
     updatePreview.insert(QStringLiteral("original_key_conflicts_supported"), false);
     QJsonObject preferencesSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ibinput.preferences.update")}}},
         {QStringLiteral("preferences_revision"), revision},
@@ -330,9 +331,9 @@ QJsonArray mappingChangeCapabilities()
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
     }
     for (auto *item : {&updatePreview, &updateApply}) {
+        item->insert(QStringLiteral("original_key_conflict_policy"), QStringLiteral("disable_current_normal_row_only"));
         auto limits = item->value(QStringLiteral("limitations")).toArray();
         limits.append(QStringLiteral("key_updates_single_keyboard_row_only"));
-        limits.append(QStringLiteral("original_key_conflict_updates_not_supported"));
         limits.append(QStringLiteral("key_up_edit_requires_send_timing_2_3_4"));
         limits.append(QStringLiteral("disabled_updates_are_separate_from_key_and_method_updates"));
         limits.append(QStringLiteral("disabled_updates_require_no_exclusive_side_effects"));

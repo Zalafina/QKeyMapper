@@ -18,14 +18,14 @@ IB-MCP-138于2026-11-09接纳MCP `94f0bb8485e7e607cff5c73bf6c0a45725e052d9`与�
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | RUST-D4 迁移结项，回归 M1 映射编辑及业务闭环 |
+| 当前切片 | EDIT-CAP-153 对齐原键冲突能力说明，选定验收完成 |
 | 执行机器 | PC-W11 已验双 Qt x64；干净离线沿用 Win10 x64 组件证据 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
-| 核心基线 | C++ 3fefc26a846b8ad5db1ba381cecff870c570a670，IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6）；Rust 运行源码 f4cc8c7d，RUST-D4 正式接线见结项提交 |
-| 当前已完成 | x64 Release 打包默认 Rust 单 EXE，原配对、权限校验、真实图片、退出及显式 Python 回退选验；151 运行时证据保持 |
-| 当前验证／证据 | Qt6／Qt5 x64 本机隔离产品及实际 Codex 通过，详细范围见[迁移归档](qkeymapper_mcp_rust_migration_plan.md#35-rust-d4-正式打包接线与迁移结项2026-11-18)。原件 out/rust_sidecar/d4_20261118、out/mcp_product/rust_d4_20261118 均仅本机 |
+| 核心基线 | RUST-D4 正式接线 349d889c（当时 C++ 3fefc26a、Rust 运行源码 f4cc8c7d）；当前 C++ 能力说明接续见本提交。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
+| 当前已完成 | 正式 x64 包默认 Rust 单 EXE；原键更新预览／提交的能力说明与 EDIT-148 已有行为一致 |
+| 当前验证／证据 | 153 双 Qt x64 维护目标零警告、各四定向用例通过；D4 双 Qt 真产品及 Codex 见[迁移归档](qkeymapper_mcp_rust_migration_plan.md#35-rust-d4-正式打包接线与迁移结项2026-11-18)。原始材料均仅本机 |
 | 当前控制器 | 11-18 16:53:47 关闭本轮 PID 31940，产品、专属配对和凭据清理完成；独立核验无控制器／原生会话0 |
-| 下一项动作 | 对齐 EDIT-148 已支持的本行禁用与正式 capability 说明；沿 M1 继续核对 Common 确认及运行闭环，新增系统行为仍单独决定 |
+| 下一项动作 | 沿 EDIT-GUI-146 核对 Common 原键更新所需的逐行预览、显式确认及提交前复核，再推进运行闭环；新增系统行为仍单独决定 |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
 
 ### BUG02-FOLLOWUP-151：三项运行时边界补充（选定完成，停止）
@@ -33,6 +33,10 @@ IB-MCP-138于2026-11-09接纳MCP `94f0bb8485e7e607cff5c73bf6c0a45725e052d9`与�
 用户11-17批准，在干净fe2eb674上组入Gemini三项修正：仅序列任务继承身份、FakerInput按行／pending／本地报告／借键释放、成功显式UP移除记账。另修原补丁遗漏的force_sendinput控制键已受理DOWN且无Hook回声的释放，只认九种已知原生控制键；普通HID缺项不触发回落。探针固定替身至析构，局部源前排空任务及解除引用；末次零VK哨兵保护以双Qt／实际ASan无界面单元复验、final04重编／分析通过，缓存保持关闭。MCP／权限／文案不变。
 
 修前旧七绿／新增七红；原补丁七项转绿但回落对照红，适配后双Qt17项全过。双Qt普通Release／探针、Qt6九运行态／28repeat／六实际ASan及最后夹具复验、三编译上下文定向分析、39 Python检查、27调用正式MCP两图／10零输出及回收选验通过。首轮夹具C2248、版本与实际范围见[既有事实页](runtime_bugfix_validation.md#bug02-followup-151三项运行时边界补充2026-11-17选定完成)。本会话无Default／真实输入；Gemini转交结果单列。本地报告不是设备回读、脚本注入不是物理键；同VK及既有SendInput松开边界登记待办，不承诺零误伤。原件out/runtime_followup151_20261117仅本机。15:18:29缓存off并独立核实，聚焦本地提交后停止，不自动恢复MCP。
+
+### EDIT-CAP-153：原键冲突能力说明
+
+原键更新预览／提交统一公布 original_key_conflict_policy=disable_current_normal_row_only；旧布尔字段仍表示通用冲突处理不可用。业务、权限及两种 Sidecar 无改动。基于 349d889c 的双 Qt x64 零警告维护构建及四个离屏用例通过；首轮缺 IPC 夹具路径即停止，补传匹配路径后各原生退出 0。无新产品、图形交互或系统输入；原件 out/edit_capability_153_20261118 仅本机。
 
 ### RUST-D4：Sidecar 迁移结项
 
