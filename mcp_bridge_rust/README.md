@@ -42,6 +42,9 @@ The IPC candidate uses `--executable PATH --discovery-file PATH/instance.json`
 or `--executable PATH --persistent-target`. Starting it leaves the connection
 disconnected. Use `qkm_connect` with an existing pairing or
 `qkm_request_pairing` followed by approval on the verified target.
+Add either `--demo-record PATH` or `--product-demo-record` to expose the
+read-only demo readiness check for a dedicated private product. The
+record is verified after authentication against the selected target.
 
 On Windows, `cargo test --locked` also covers argument handling, framing,
 proof vectors, identity and pipe cancellation. Run `tests/test_tool_contract.py --exe $exe`

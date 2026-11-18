@@ -25,8 +25,9 @@ pub struct Target {
 }
 
 pub struct Connection {
-    pipe: Pipe,
+    pub(super) pipe: Pipe,
     credential: Credential,
+    pub(super) discovery_path: PathBuf,
 }
 
 fn invalid() -> NativeError {
@@ -185,7 +186,11 @@ impl Connection {
             credential.scopes = granted;
             store.save(&credential)?;
         }
-        Ok(Some(Self { pipe, credential }))
+        Ok(Some(Self {
+            pipe,
+            credential,
+            discovery_path,
+        }))
     }
 
     pub fn info(&self) -> Value {
@@ -198,6 +203,10 @@ impl Connection {
             "scopes": self.credential.scopes,
             "last_verified_unix": timestamp.as_secs_f64(),
         })
+    }
+
+    pub(crate) fn scopes(&self) -> u16 {
+        self.credential.scopes
     }
 
     pub(crate) fn call(

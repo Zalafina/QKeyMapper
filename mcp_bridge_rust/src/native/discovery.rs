@@ -246,7 +246,7 @@ pub(super) fn normcase(path: &Path) -> Result<String> {
     String::from_utf16(&output).map_err(|_| NativeError::new(code))
 }
 
-fn normalized(path: &Path) -> Result<String> {
+pub(super) fn normalized(path: &Path) -> Result<String> {
     let code = "executable_rejected";
     if !absolute_file_path(path) {
         return Err(NativeError::new(code));
@@ -269,9 +269,13 @@ fn normalized(path: &Path) -> Result<String> {
     )))
 }
 
-pub fn discover(path: &Path, expected_executable: &Path, own: &Identity) -> Result<Discovery> {
+pub(super) fn read_private_record(
+    path: &Path,
+    own: &Identity,
+    limit: usize,
+) -> Result<crate::wire::Object> {
     let invalid = NativeError::new("invalid_discovery");
-    if !absolute_file_path(path) || !absolute_file_path(expected_executable) {
+    if !absolute_file_path(path) {
         return Err(invalid);
     }
     let parent = path.parent().ok_or(invalid)?;
@@ -281,13 +285,21 @@ pub fn discover(path: &Path, expected_executable: &Path, own: &Identity) -> Resu
         .metadata()
         .map_err(|_| NativeError::new("discovery_rejected"))?
         .len();
-    if !(1..=DISCOVERY_LIMIT as u64).contains(&length) {
+    if !(1..=limit as u64).contains(&length) {
         return Err(invalid);
     }
     let mut bytes = vec![0u8; length as usize];
     file.read_exact(&mut bytes)
         .map_err(|_| NativeError::new("discovery_rejected"))?;
-    let mut record = decode(&bytes, DISCOVERY_LIMIT).map_err(|_| invalid)?;
+    decode(&bytes, limit).map_err(|_| invalid)
+}
+
+pub fn discover(path: &Path, expected_executable: &Path, own: &Identity) -> Result<Discovery> {
+    let invalid = NativeError::new("invalid_discovery");
+    if !absolute_file_path(expected_executable) {
+        return Err(invalid);
+    }
+    let mut record = read_private_record(path, own, DISCOVERY_LIMIT)?;
     if record.len() != 7 || record.get("version").and_then(Value::as_u64) != Some(1) {
         return Err(invalid);
     }

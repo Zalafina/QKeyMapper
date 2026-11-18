@@ -14,6 +14,8 @@ sys.path.insert(0, str(ROOT / "mcp_bridge/src"))
 from qkeymapper_mcp.__main__ import _ERROR_FEEDBACK, _PRODUCT_ERRORS
 
 CATALOG = HERE.parents[1] / "src/tool_catalog.json"
+DEMO_STATE = "qkm_get_demo_state"
+RECORD = ROOT / "out/rust_sidecar/catalog-only/creation.json"
 TOOLS = {
     "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect",
     "qkm_get_capabilities", "qkm_get_state", "qkm_get_help", "qkm_query", "qkm_get_operation",
@@ -35,9 +37,10 @@ def metadata(tools):
 
 
 async def selected_catalog():
-    async with Client(config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py"))) as client:
-        tools = [tool for tool in (await client.list_tools()).tools if tool.name in TOOLS]
-        assert {tool.name for tool in tools} == TOOLS
+    async with Client(config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py"), "--demo-record", str(RECORD))) as client:
+        expected = TOOLS | {DEMO_STATE}
+        tools = [tool for tool in (await client.list_tools()).tools if tool.name in expected]
+        assert {tool.name for tool in tools} == expected
         return {"tools": metadata(tools), "feedback": {key: list(value) for key, value in _ERROR_FEEDBACK.items()},
                 "reviewed_product_errors": sorted(_PRODUCT_ERRORS)}
 
@@ -56,10 +59,12 @@ async def compare(exe):
         async with Client(config(exe), mode=mode) as client, Client(
             config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py")), mode=mode,
         ) as python:
-            assert metadata((await client.list_tools()).tools) == baseline["tools"]
+            assert metadata((await client.list_tools()).tools) == [
+                tool for tool in baseline["tools"] if tool["name"] != DEMO_STATE]
             for sidecar in (client, python):
-                unknown = await sidecar.call_tool("qkm_unknown")
-                assert unknown.is_error and unknown.structured_content is None
+                for name in ("qkm_unknown", DEMO_STATE):
+                    unknown = await sidecar.call_tool(name)
+                    assert unknown.is_error and unknown.structured_content is None
             for name, valid, invalids in (
                 ("qkm_get_help", {"topic": "basic_mapping"}, (
                     {}, {"topic": "unknown"}, {"topic": True}, {"topic": "mapping_keys", "offset": -1},
@@ -108,6 +113,16 @@ async def compare(exe):
                     else:
                         assert left.structured_content is None and right.structured_content is None
             print("PASS", mode, len(TOOLS), "tool contracts and error layers")
+        for flags in (("--demo-record", str(RECORD)), ("--product-demo-record",)):
+            async with Client(config(exe, *flags), mode=mode) as rust, Client(
+                config(sys.executable, str(ROOT / "mcp_bridge/run_bridge.py"), *flags), mode=mode,
+            ) as python:
+                assert metadata((await rust.list_tools()).tools) == baseline["tools"]
+                left = await rust.call_tool(DEMO_STATE)
+                right = await python.call_tool(DEMO_STATE)
+                assert left.is_error and right.is_error
+                assert left.structured_content == right.structured_content and left.structured_content["error"] == "not_connected"
+        print("PASS", mode, "explicit and product demo-record tool gates")
 
 
 if __name__ == "__main__":

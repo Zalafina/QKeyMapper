@@ -7,7 +7,9 @@ use std::{
 use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
-use crate::native::{Cancel, Connection, NativeError, Result, Target, require_pristine_thread};
+use crate::native::{
+    Cancel, Connection, DemoRecord, NativeError, Result, Target, require_pristine_thread,
+};
 use crate::wire::Object;
 
 enum Operation {
@@ -45,7 +47,7 @@ pub struct Pending {
 }
 
 impl Worker {
-    pub fn start(target: Target) -> io::Result<Self> {
+    pub fn start(target: Target, demo: Option<DemoRecord>) -> io::Result<Self> {
         let (sender, queue) = mpsc::channel();
         let state = Arc::new(Mutex::new(State {
             status: json!({"status": "disconnected"}),
@@ -59,7 +61,7 @@ impl Worker {
         };
         let thread = thread::Builder::new()
             .name("qkm-pipe".to_owned())
-            .spawn(move || run(target, queue, state))?;
+            .spawn(move || run(target, demo, queue, state))?;
         Ok(Self {
             client,
             thread: Some(thread),
@@ -137,6 +139,7 @@ impl Bridge {
                 | "qkm_open_mapping_settings"
                 | "qkm_close_mapping_settings"
                 | "qkm_capture_window"
+                | "qkm_get_demo_state"
         ) {
             return Err(NativeError::new("unsupported_method"));
         }
@@ -173,13 +176,26 @@ impl Bridge {
     }
 }
 
-fn run(target: Target, queue: mpsc::Receiver<Command>, state: Arc<Mutex<State>>) {
+fn run(
+    target: Target,
+    demo: Option<DemoRecord>,
+    queue: mpsc::Receiver<Command>,
+    state: Arc<Mutex<State>>,
+) {
     let mut session = None;
     while let Ok(command) = queue.recv() {
         match command {
             Command::Run(operation, cancel, reply) => {
-                let result = require_pristine_thread()
-                    .and_then(|()| perform(operation, &target, &cancel, &state, &mut session));
+                let result = require_pristine_thread().and_then(|()| {
+                    perform(
+                        operation,
+                        &target,
+                        demo.as_ref(),
+                        &cancel,
+                        &state,
+                        &mut session,
+                    )
+                });
                 if let Err(error) = &result {
                     drop(session.take());
                     let status = if error.code == "cancelled" {
@@ -209,6 +225,7 @@ fn run(target: Target, queue: mpsc::Receiver<Command>, state: Arc<Mutex<State>>)
 fn perform(
     operation: Operation,
     target: &Target,
+    demo: Option<&DemoRecord>,
     cancel: &Cancel,
     state: &Mutex<State>,
     session: &mut Option<Connection>,
@@ -231,7 +248,12 @@ fn perform(
             let session = session
                 .as_mut()
                 .ok_or_else(|| NativeError::new("not_connected"))?;
-            let value = session.call(method, arguments, cancel)?;
+            let value = if method == "qkm_get_demo_state" {
+                let mode = demo.ok_or_else(|| NativeError::new("demo_not_configured"))?;
+                session.demo_state(mode, &target.executable, cancel)?
+            } else {
+                session.call(method, arguments, cancel)?
+            };
             state.lock().unwrap().status = session.info();
             Ok(value)
         }

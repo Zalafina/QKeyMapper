@@ -6,7 +6,7 @@ use std::{
 
 use qkeymapper_mcp_rust::{
     bridge::{Bridge, Worker},
-    native::{NativeError, Target},
+    native::{DemoRecord, NativeError, Target},
     wire::Object,
 };
 use rmcp::{
@@ -30,8 +30,11 @@ struct Contracts {
     reviewed_product_errors: BTreeSet<String>,
 }
 
-pub fn parse_target(args: &mut impl Iterator<Item = OsString>) -> Option<Target> {
+pub fn parse_target(
+    args: &mut impl Iterator<Item = OsString>,
+) -> Option<(Target, Option<DemoRecord>)> {
     let (mut executable, mut discovery, mut persistent) = (None, None, false);
+    let mut demo = None;
     while let Some(flag) = args.next() {
         match flag.to_str()? {
             "--executable" if executable.is_none() => {
@@ -45,21 +48,29 @@ pub fn parse_target(args: &mut impl Iterator<Item = OsString>) -> Option<Target>
                 discovery = Some(name);
             }
             "--persistent-target" if discovery.is_none() && !persistent => persistent = true,
+            "--demo-record" if demo.is_none() => {
+                demo = Some(DemoRecord::Explicit(path::absolute(args.next()?).ok()?));
+            }
+            "--product-demo-record" if demo.is_none() => demo = Some(DemoRecord::Product),
             _ => return None,
         }
     }
     if discovery.is_none() && !persistent {
         return None;
     }
-    Some(Target {
-        executable: executable?,
-        discovery,
-    })
+    Some((
+        Target {
+            executable: executable?,
+            discovery,
+        },
+        demo,
+    ))
 }
 
 struct Handler {
     bridge: Bridge,
     contracts: Contracts,
+    demo_configured: bool,
 }
 
 impl ServerHandler for Handler {
@@ -132,6 +143,9 @@ impl ServerHandler for Handler {
                     .await
             }
             "qkm_capture_window" => self.request("qkm_capture_window", arguments, context).await,
+            "qkm_get_demo_state" if self.demo_configured => {
+                self.request("qkm_get_demo_state", arguments, context).await
+            }
             _ => return Ok(CallToolResult::error(vec![ContentBlock::text("未知工具。")]).into()),
         };
         let result = if request.name == "qkm_capture_window" {
@@ -225,14 +239,21 @@ impl Contracts {
     }
 }
 
-pub fn run(target: Target) -> Result<(), &'static str> {
-    let contracts = serde_json::from_str(include_str!("tool_catalog.json"))
+pub fn run(target: Target, demo: Option<DemoRecord>) -> Result<(), &'static str> {
+    let mut contracts: Contracts = serde_json::from_str(include_str!("tool_catalog.json"))
         .map_err(|_| "Invalid embedded MCP tool catalog")?;
-    let worker = Worker::start(target).map_err(|_| "Could not start the IPC worker")?;
+    let demo_configured = demo.is_some();
+    if !demo_configured {
+        contracts
+            .tools
+            .retain(|tool| tool.name != "qkm_get_demo_state");
+    }
+    let worker = Worker::start(target, demo).map_err(|_| "Could not start the IPC worker")?;
     let client = worker.client.clone();
     let handler = Handler {
         bridge: worker.client.clone(),
         contracts,
+        demo_configured,
     };
     let outcome = crate::stdio::run(handler, MAX_REQUEST_LINE, move || client.stop());
     worker.join().map_err(|_| "IPC worker did not finish")?;

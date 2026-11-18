@@ -209,6 +209,26 @@
       "annotations": {
         "destructiveHint": false,
         "openWorldHint": false,
+        "readOnlyHint": true
+      },
+      "description": "只读核对宿主显式配置的version2专用演示创建记录、实际认证实例／私有桌面与只配置策略、独立窗口权限及固定配置的空源基线。ready只代表本次观察，不是后续写入许可、场景租约或重置证明；失败保留现场，不创建／切换目标、不显示／激活窗口、不配对扩权／提权或修改配置。记录由受信启动链制备，不能用客户端自报身份替代进程／认证／权限核验。宿主另行启用串行演示时，demo_session提供最近阶段／操作ID和内存回收记录的观察；receipt_available不授予下一轮写入许可，实际调用仍会完整核验。产品自身记录已实现，完整Release预热／交付仍待。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {},
+        "title": "qkm_get_demo_stateArguments",
+        "type": "object"
+      },
+      "name": "qkm_get_demo_state",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_get_demo_stateDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
         "readOnlyHint": false
       },
       "description": "使用已有本机配对连接。立即返回，随后查询连接状态；不会自动重新配对或提升权限。",

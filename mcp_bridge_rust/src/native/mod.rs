@@ -15,12 +15,14 @@ use windows_sys::Win32::{
 
 mod capture;
 mod credentials;
+pub(crate) mod demo;
 mod discovery;
 mod identity;
 mod pipe;
 mod session;
 
 pub use credentials::{Credential, CredentialStore};
+pub use demo::DemoRecord;
 pub use discovery::{Discovery, discover, file_identity};
 pub use identity::{Identity, identity, own_identity, require_pristine_thread};
 pub use pipe::{Cancel, Pipe};
