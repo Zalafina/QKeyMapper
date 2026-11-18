@@ -8,16 +8,16 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | RUST-D2 本机两个宿主均取得真实 PNG；D3 Win10 x64 离线单 EXE 组件已验，最终替换进行中 |
+| 当前切片 | RUST-D2 本机两个宿主均取得真实 PNG；D3 Win10 x64 离线单 EXE 组件已验，开始 D4 正式替换 |
 | 分支／源码检查点 | codex/qkeymapper-mcp-control，RUST-A c57476df，RUST-B 75e43a67，C2 产品验收 c8f7893a，C4 私有验收 d69e2360，组件内 Rust 源 f4cc8c7d，D1 ecd22c62，D2 Codex dc3fe016，Antigravity 前期 d3351bb8，单 EXE 组件和本轮证据见本提交。产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
 | 执行机器 | PC-W11，Windows x64 MSVC。项目固定及本机默认 Rust 均核为 1.100.0 |
 | 本轮改动 | Antigravity 在 ASCII 路径直连动态候选并取得真实主窗 PNG；新增单 EXE 候选打包和原生烟测，Win10 离线核对同一 ZIP |
-| 实现状态 | A 至 C 的本机选定范围、两客户端真实工具及图片、Win10 x64 离线组件已验；Antigravity 完整回复、最终产物与干净 Win11 待验 |
+| 实现状态 | A 至 C 的本机选定范围、两客户端真实工具及图片、Win10 x64 离线组件已验；Antigravity 完整回复、双 Qt 正式产物及切换待验 |
 | 正式实现 | 继续使用现有 Python 桥接；此前 C++、GUI／MCP、打包组件及运行时证据保持原范围 |
 | 决策门槛 | 按 11-18 的连续推进指示接入 B 的组件切片。A 实测供迁移评估，实际产品互操作和默认替换分别沿 B、D 的门槛 |
 | 客户端门槛 | 正式替换须通过 Codex＋Antigravity；其他宿主不默认承诺，QQ gateway 另行联调 |
-| 当前权限 | 本轮一次私有 C4 产品、Read＋CaptureWindows 配对及凭据已清理，20 分钟专用缓存 PID 6784 已核实关闭；Win10 来宾原网线和共享已恢复 |
-| 下一步 | 定版单 EXE 及发布架构，复验正式文件的真实产品、Antigravity 回合及中文／空格直启；完成干净 Win11 和完整 Release 组装、切换与回退 |
+| 当前权限 | 上轮一次私有 C4 产品、Read＋CaptureWindows 配对及凭据已清理，20 分钟专用缓存 PID 6784 已核实关闭；Win10 来宾原网线和共享已恢复 |
+| 下一步 | 在本机组装 Qt6／Qt5 x64 Release，复验单 EXE 上的配对复用、权限、截图、退出与切换／回退；补 Antigravity 回合及中文／空格路径 |
 | 证据边界 | 本机原件 out/rust_sidecar/{a,b,c,d}_20261118、out/mcp_product/{rust_b,rust_c,rust_c_demo}_20261118。合成、Qt 夹具、真实产品和包验收各保留原范围 |
 | 提交策略 | 按 11-18 用户授权形成聚焦本地提交，禁止推送 |
 
@@ -67,7 +67,7 @@ stdout在服务模式下仅输出UTF-8、正确分帧的MCP JSON-RPC并及时发
 | RUST-A：有界协议／分发原型 | 选定范围通过 | Windows x64 锁定 Release、原始报文与 Python SDK 11 组、Inspector 双协议、解包复验及实际发布样包测量 | 普通权限，合成数据。结果见 §2.1 |
 | RUST-B：Windows IPC／身份／凭据 | 选定范围通过，见 §2.2 | 严格帧及证明、原生身份／ACL／对端、v1／v2 凭据、忙碌、部分帧、取消／超时和实际排空；Qt 私有夹具及普通产品 v1 Read | 两轮原 manifest 测试分别获批。无跨 Windows 登录、PC 重启及完整业务证据 |
 | RUST-C：现有全部行为等价 | 本机选定范围通过，见 §2.3 | 全工具合同、实际只读及事务、四窗口 PNG 和两轮演示回收通过；未验配置变体、跨登录和宿主继续保留原范围 | 自有私有桌面及合成配置。C++ 业务与原 Python 维持，复用未受影响的 GUI 及引擎证据 |
-| RUST-D：实际客户端与交付 | 进行中，见 §3 | Codex＋Antigravity实际通过；干净Win10／Win11、离线、无Python／Rust环境验证；启动参数、中文／空格路径、权限、图片、退出、CRT／DLL、许可及完整Release增量一致 | 先自有配置试用，全部选定门槛通过后才替换默认入口；PC重启／登录切换、必要UAC／Default另行安排；QQ渠道仍单列 |
+| RUST-D：实际客户端与交付 | 进行中，见 §3 | Codex＋Antigravity实际通过；离线环境以已验干净 Win10 x64 为准，主要功能在本机 Qt6／Qt5 x64 验证；启动参数、中文／空格路径、权限、图片、退出、CRT／DLL、许可及完整Release增量一致 | 先自有配置试用，全部选定门槛通过后才替换默认入口；PC重启／登录切换、必要UAC／Default另行安排；QQ渠道仍单列 |
 
 A通过只证明原型选定范围。B–D的投入在A评审后校准，不并入原M1／M2／M3-B旧估算，不因讨论过Rust而自动承诺整迁。若现场推进，按实际源码及有效证据接续，不回退或覆盖工作区。
 
@@ -160,7 +160,7 @@ C3/C4 的真实正例见 out/mcp_product/rust_c_demo_20261118/windows-demo-r01�
 
 实际 Codex CLI 0.169.0 App Server 在中文／空格解包路径加载原 Rust 二进制。显式会话覆盖关闭其他服务器，独立 SQLite 和记录均在 out。真实本地 MCP 列表及 text、ImageContent、structuredContent、isError 分别通过，EOF 后 App Server 退出 0。此次使用合成工具，未调用模型。早期轮次遇到 App Server 引导配置、沙箱本地状态和测试客户端 64 KiB 读取上限，修正隔离配置及测试客户端后确认通过。原件 out/rust_sidecar/d_20261118/codex-host-r07。
 
-同一 Codex 以正式模式发现全部 17 项普通工具，断开时返回原结构化错误。经用户单独批准，复用合成 INI 和既有原 manifest Qt6 只配置产品启动一次。通过 GUI 为解包 EXE 本次配对授 Read＋CaptureWindows；正式 Codex 重新认证，读取真实产品状态、源和窗口，并取得 1130×722、56,622 字节的真实主窗 PNG，目视核对中文及预期窗口。产品和 App Server 原生退出 0，INI 及 FilterKeys 保持原值，目标未成为输入桌面前台，专属配对、凭据及固定授权均清理。原件 out/rust_sidecar/d_20261118/codex-product-r01 和 out/mcp_product/rust_c_demo_20261118/codex-read-r01。
+同一 Codex 以正式模式发现全部 17 项普通工具，断开时返回原结构化错误。经用户单独批准，复用合成 INI 和既有原 manifest Qt6 只配置产品启动一次。通过 GUI 向本次解包的 EXE 授予 Read＋CaptureWindows；正式 Codex 重新认证，读取真实产品状态、源和窗口，并取得 1130×722、56,622 字节的真实主窗 PNG，目视核对中文及预期窗口。产品和 App Server 原生退出 0，INI 及 FilterKeys 保持原值，目标未成为输入桌面前台，专属配对、凭据及固定授权均清理。原件 out/rust_sidecar/d_20261118/codex-product-r01 和 out/mcp_product/rust_c_demo_20261118/codex-read-r01。
 
 实际 Antigravity CLI 1.5.10 独立 ACP 通过 initialize 和带显式本地 stdio 服务器参数的 session/new。r05 观察到独立解包 EXE 直启，r06 仅用开发诊断转发观察实际 `server/discover`、`tools/list` 和返回的合成工具名，两轮宿主退出 0。转发器只用于核验报文，不属于候选包。早期命令行列表未确认工作区发现，绝对配置目录被宿主拒绝。独立配置尚未登录，实际 tools/call、用户可见图片及活动工作区配置接线仍待授权账号验收。原件 out/rust_sidecar/d_20261118/agy-acp-r05、agy-acp-r06。[Antigravity CLI 官方配置](https://antigravity.google/docs/cli/gcli-migration?authuser=0)
 
@@ -184,9 +184,11 @@ VirtualBox Win10 Pro x64 19045.2965，Windows PowerShell 5.1、Medium，虚拟�
 
 正式切换前还需完成以下事项。
 
-- 定版发布名称、x64 目标和构建配方，将 Sidecar 放入已经支持 MCP 的 QKeyMapper Release。归档继续提供许可和客户端配置。若 32 位 Windows 包也要交付 MCP，确定对应架构及独立验收范围。
+- Qt6 x64 与 Qt5 x64 Release 默认携带静态 CRT 的 qkeymapper_mcp.exe、许可证与 MCP 使用说明。Qt5 x86 原包流程继续，MCP 交付范围见下。
 - 用最终拟发 EXE 复用既有配对，在真实产品上复验可信目标、权限、读取及图片，完成 Antigravity 正常回合与中文／空格路径直启。必要时用同一交付物抽查保存、退出及清理；动态候选历史保持原范围。
-- 补干净 Win11 x64 离线测试，并在拟发布的完整 Release 中验证解包、用法、运行时、许可证、兼容配置及回退。通过后再将客户端默认命令切换到 Rust，并在正式默认包移除随包 Python 运行时。
+- 在本机两套完整 x64 Release 中核对解包、用法、运行时、许可证、兼容配置及回退。离线无开发运行环境采用已有 Win10 x64 证据，用户于 2026-11-18 免除干净 Win11 x64 离线重复验收。通过后切换客户端默认命令，正式包仅携带 Rust Sidecar，Python 保留为独立回退入口。
+
+本轮只对 x86 做理论评估。固定 Rust 工具链和当前开发环境均只安装了 x86_64-pc-windows-msvc 标准库，未安装 i686 目标。Rust 提供面向 Windows 10 及以上的 i686-pc-windows-msvc 路径，理论上可另建 32 位程序；Windows 7 的 i686-win7-windows-msvc 是独立 Tier 3 目标，现有工具链与构建脚本没有对应交付能力。本轮不安装、编译或试运行 x86 Sidecar。明确 **Windows 7 x86 不支持 QKeyMapper MCP 功能**，Qt5 x86 包不带 Sidecar，本限制写入[包内 MCP 使用说明](../../mcp_bridge_rust/BUNDLE_README.md)。QKeyMapper 的其他 Qt5 兼容范围另按产品发布说明。[Rust 平台支持](https://doc.rust-lang.org/rustc/platform-support.html)／[Windows 7 Rust 目标](https://doc.rust-lang.org/rustc/platform-support/win7-windows-msvc.html)
 
 ### 3.4 交付与回退
 

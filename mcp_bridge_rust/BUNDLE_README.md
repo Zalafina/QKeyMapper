@@ -1,6 +1,6 @@
 # QKeyMapper MCP Rust Sidecar Windows x64 候选组件
 
-将整个目录解压到本机。若清单的 `app_local` 列出 `VCRUNTIME140.dll`，请将它与 Sidecar EXE 放在同一目录。单 EXE 候选的 `app_local` 为空。本组件由普通权限客户端通过 stdio 启动。运行端需要 Windows x64 和包含 MCP 接口的 QKeyMapper，Sidecar 自身无需 Python、Rust 或开发工具。
+将整个目录解压到本机。若清单的 `app_local` 列出 `VCRUNTIME140.dll`，请将它与 Sidecar EXE 放在同一目录。单 EXE 候选的 `app_local` 为空。本组件由普通权限客户端通过 stdio 启动。运行端需要 64 位 Windows 10／11 和包含 MCP 接口的 QKeyMapper，Sidecar 自身无需 Python、Rust 或开发工具。Windows 7 x86 不支持 QKeyMapper MCP 功能，Qt5 x86 Release 不包含 Sidecar。
 
 在目标 QKeyMapper 的 MCP 控制窗启用接口并复制连接信息文件路径。客户端配置使用本目录的绝对 EXE 路径，将 `--executable` 指向同一个实际目标，并将 `--discovery-file` 指向它的 `instance.json`。
 
