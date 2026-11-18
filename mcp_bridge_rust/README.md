@@ -73,13 +73,18 @@ checks real product images and recovers both demonstration scenes.
 
 ## Windows x64 component
 
-`tools/package_windows.py` takes the tested Release EXE, the installed
-x64 MSVC `VCRUNTIME140.dll`, MSVC `dumpbin.exe`, and a new `--output`
-directory under `out/`. It uses the locked offline Cargo metadata and
-includes original dependency notices. The component guide is
-[BUNDLE_README.md](BUNDLE_README.md).
+`tools/package_windows.py` takes the cargo-built `--executable`, MSVC
+`--dumpbin`, and a new `--output` directory under `out/`. For the dynamic
+build, pass the installed x64 MSVC `VCRUNTIME140.dll` with `--crt`.
+
+To build the single-runtime-file candidate, use `--target x86_64-pc-windows-msvc`
+and set `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS=-Ctarget-feature=+crt-static`
+for the build in a separate target directory. Package the result without
+`--crt`. The packager checks the PE imports and names the standalone output
+`qkeymapper_mcp.exe`. Both packages include locked Cargo dependency notices,
+the component guide, and a file manifest. See [BUNDLE_README.md](BUNDLE_README.md).
 
 `tools/smoke_windows_bundle.ps1 -Archive PATH -Sha256 DIGEST -OutputDirectory NEW_PATH`
-uses PowerShell and the extracted component. It checks package hashes,
-the actual app-local runtime, MCP image and structured content, and normal
-exit. The synthetic smoke does not start QKeyMapper or need Python.
+verifies package hashes, the runtime modules actually loaded, an MCP image
+with structured content, and normal exit. The synthetic smoke uses Windows
+PowerShell and runs independently of QKeyMapper and Python.

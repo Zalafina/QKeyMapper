@@ -16,8 +16,13 @@ $roots = @(Get-ChildItem -LiteralPath $destination -Directory)
 if ($roots.Count -ne 1) { throw 'Expected one component directory.' }
 $root = $roots[0].FullName
 $manifest = Get-Content -LiteralPath (Join-Path $root 'bundle-manifest.json') -Raw -Encoding UTF8 | ConvertFrom-Json
-if ($manifest.schema_version -ne 1 -or $manifest.architecture -ne 'x86_64-pc-windows-msvc') {
+if ($manifest.schema_version -ne 1 -or $manifest.architecture -ne 'x86_64-pc-windows-msvc' -or
+    $manifest.binary -cnotin @('qkeymapper-mcp-rust.exe', 'qkeymapper_mcp.exe') -or $null -eq $manifest.app_local) {
     throw 'Unexpected bundle format.'
+}
+$needsCrt = $manifest.binary -ceq 'qkeymapper-mcp-rust.exe'
+if ($needsCrt -ne [bool]$manifest.app_local.'VCRUNTIME140.dll') {
+    throw 'The bundled CRT does not match the executable type.'
 }
 foreach ($file in $manifest.files) {
     $path = [IO.Path]::GetFullPath((Join-Path $root $file.path))
@@ -45,7 +50,7 @@ function Send-Request {
     return $reply.result
 }
 
-$executable = Join-Path $root 'qkeymapper-mcp-rust.exe'
+$executable = Join-Path $root $manifest.binary
 $info = [Diagnostics.ProcessStartInfo]::new($executable)
 $info.WorkingDirectory = $root
 $info.Arguments = '--protocol-fixture'
@@ -72,9 +77,15 @@ try {
         $image[0].mimeType -ne 'image/png' -or [Convert]::FromBase64String($image[0].data).Length -ne 75) {
         throw 'Structured PNG smoke failed.'
     }
-    $runtime = @($child.Modules | Where-Object ModuleName -IEQ 'VCRUNTIME140.dll')
-    if ($runtime.Count -ne 1 -or $runtime[0].FileName -ine (Join-Path $root 'VCRUNTIME140.dll')) {
-        throw 'App-local Visual C++ runtime was not observed.'
+    $modules = @($child.Modules | Where-Object ModuleName -Match '^(vcruntime[0-9]|msvcp[0-9]|python[0-9]|rust_std)')
+    $runtime = $null
+    if ($needsCrt) {
+        $runtime = Join-Path $root 'VCRUNTIME140.dll'
+        if ($modules.Count -ne 1 -or $modules[0].FileName -ine $runtime) {
+            throw 'App-local Visual C++ runtime was not observed.'
+        }
+    } elseif ($modules.Count -ne 0) {
+        throw 'The standalone executable unexpectedly loaded a redistributable runtime.'
     }
     $child.StandardInput.Close()
     if (-not $child.WaitForExit(7000) -or $child.ExitCode -ne 0 -or
@@ -82,7 +93,7 @@ try {
         throw 'Unexpected stdio output or exit after EOF.'
     }
     [pscustomobject]@{ bundle_sha256 = $Sha256; protocol = $initial.protocolVersion; image_bytes = 75
-        runtime = $runtime[0].FileName; native_exit = $child.ExitCode; extracted = $root }
+        runtime = $runtime; native_exit = $child.ExitCode; extracted = $root }
 } finally {
     if (-not $child.HasExited) {
         $child.StandardInput.Close()

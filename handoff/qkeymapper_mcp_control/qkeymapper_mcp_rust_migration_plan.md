@@ -8,16 +8,16 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | RUST-D2 本机 Codex 真实产品及 PNG 已验；Antigravity 正式工具经诊断转发调用及合成 PNG 已验，真产品截图待补 |
-| 分支／源码检查点 | codex/qkeymapper-mcp-control，RUST-A c57476df，RUST-B 75e43a67，C2 产品验收 c8f7893a，C4 私有验收 d69e2360，组件内 Rust 源 f4cc8c7d，D1 ecd22c62，D2 Codex dc3fe016，Antigravity 记录见本提交。产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
+| 当前切片 | RUST-D2 本机两个宿主均取得真实 PNG；D3 Win10 x64 离线单 EXE 组件已验，最终替换进行中 |
+| 分支／源码检查点 | codex/qkeymapper-mcp-control，RUST-A c57476df，RUST-B 75e43a67，C2 产品验收 c8f7893a，C4 私有验收 d69e2360，组件内 Rust 源 f4cc8c7d，D1 ecd22c62，D2 Codex dc3fe016，Antigravity 前期 d3351bb8，单 EXE 组件和本轮证据见本提交。产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
 | 执行机器 | PC-W11，Windows x64 MSVC。项目固定及本机默认 Rust 均核为 1.100.0 |
-| 本轮改动 | 已登录 Antigravity CLI 在独立工作区直启解包 EXE，实际调用合成工具并保存 PNG；ACP 核对正式 17 项工具及原生直启，CLI 经诊断转发完成正式断开状态查询；真产品尝试已清理 |
-| 实现状态 | A 至 C 的本机选定范围、D1 和 D2 Codex 真产品已验；D2 Antigravity 真产品、D3 干净机器及最终替换仍待 |
+| 本轮改动 | Antigravity 在 ASCII 路径直连动态候选并取得真实主窗 PNG；新增单 EXE 候选打包和原生烟测，Win10 离线核对同一 ZIP |
+| 实现状态 | A 至 C 的本机选定范围、两客户端真实工具及图片、Win10 x64 离线组件已验；Antigravity 完整回复、最终产物与干净 Win11 待验 |
 | 正式实现 | 继续使用现有 Python 桥接；此前 C++、GUI／MCP、打包组件及运行时证据保持原范围 |
 | 决策门槛 | 按 11-18 的连续推进指示接入 B 的组件切片。A 实测供迁移评估，实际产品互操作和默认替换分别沿 B、D 的门槛 |
 | 客户端门槛 | 正式替换须通过 Codex＋Antigravity；其他宿主不默认承诺，QQ gateway 另行联调 |
-| 当前权限 | 本轮获批一次私有 C4 产品启动与 Read＋CaptureWindows。已撤销专属配对、清除专属凭据并退出；25 分钟专用缓存 PID 27208 已核实关闭，无在途或未决自有请求 |
-| 下一步 | 先用已登录 Antigravity 原生直连完成正式断开状态查询，再安排一次私有真产品读取和截图。VirtualBox 按用户安排；D3 仍需干净 Win10／Win11 |
+| 当前权限 | 本轮一次私有 C4 产品、Read＋CaptureWindows 配对及凭据已清理，20 分钟专用缓存 PID 6784 已核实关闭；Win10 来宾原网线和共享已恢复 |
+| 下一步 | 定版单 EXE 及发布架构，复验正式文件的真实产品、Antigravity 回合及中文／空格直启；完成干净 Win11 和完整 Release 组装、切换与回退 |
 | 证据边界 | 本机原件 out/rust_sidecar/{a,b,c,d}_20261118、out/mcp_product/{rust_b,rust_c,rust_c_demo}_20261118。合成、Qt 夹具、真实产品和包验收各保留原范围 |
 | 提交策略 | 按 11-18 用户授权形成聚焦本地提交，禁止推送 |
 
@@ -170,9 +170,25 @@ C3/C4 的真实正例见 out/mcp_product/rust_c_demo_20261118/windows-demo-r01�
 
 缓存关闭后的补查区分了启动与调用。CLI 的独立诊断转发实际发送 2026-07-28 版 `tools/call`，正式 `qkm_get_connection_state` 返回 `disconnected`、`busy=false`，Rust 退出 0；回文包含该状态，模型服务仍记录一次 EOF。CLI 换独立名称后直启的对照轮没有生成正式工具缓存或发出调用。ACP 显式配置能直接启动同一正式 EXE，已登录复查也生成了正式工具 Schema，但提示在 90 秒内没有返回工具调用。当前证据不足以定位 CLI 直启差异的原因。下次先完成无产品的原生直连正式调用，再沿同一入口申请私有真产品及截图复验。原件 out/rust_sidecar/d_20261118/agy-formal-r04 至 agy-formal-r06-direct、agy-acp-native-formal-r01 和 agy-acp-signed-formal-r01。
 
-用户选择先在本机完成验证。VirtualBox 只读核对发现关机的 Win10_x64 已配置 Win10_x64_share，缓存来宾工具版本 7.2.16。安排 D3 时先核对实际来宾在线、登录、网络隔离、共享访问与可用执行入口，再传输已核验 SHA-256 的候选 ZIP 和原生 PowerShell 验证脚本；缓存的版本只是准备线索。当前未进行来宾操作、干净 Win10／Win11 及正式默认替换。[VirtualBox 来宾工具](https://docs.oracle.com/en/virtualization/virtualbox/7.2/user/guestadditions.html)
+后续 r07 用相同 SHA-256 的动态 EXE 和 CRT 在 ASCII 目录启动，已登录 Antigravity CLI 完成正式 `qkm_get_connection_state`，模型轮返回 SUCCESS。用户随后批准的一次 r02 私有 Qt6 真产品试验使用该 ASCII 部署和 Read＋CaptureWindows，正式调用完成认证、状态、来源、窗口及截图，断开请求已受理。Antigravity 原生落盘的 1130×722 PNG 为 56,622 字节，SHA-256 为 `d06c7c68747faf98ac252f6feb943c075ec644754f2782ad0a23b51bea831669`，与 IPC 返回摘要一致，目视确认中文主窗。临时检查器原先读取错误的尺寸字段，随后以同一原件和正式像素字段通过复核。截图与工具结果已取得，最后模型回复超时，CLI 返回 3。产品退出 0，专属配对与凭据已清理，合成 INI、FilterKeys 和所采样的前后台状态符合基线。原件 out/rust_sidecar/d_20261118/agy-formal-r07-ascii、agy-product-r02、out/mcp_product/rust_c_demo_20261118/agy-read-r02。单 EXE 的 r08 与新 ZIP 中文／空格路径 r09 在模型会话超时前没有实际工具调用，原件同目录。
 
-### 3.3 交付与回退
+用户选择先在本机完成验证。VirtualBox 只读核对发现关机的 Win10_x64 已配置 Win10_x64_share，缓存来宾工具版本 7.2.16。安排 D3 时先核对实际来宾在线、登录、网络隔离、共享访问与可用执行入口，再传输已核验 SHA-256 的候选 ZIP 和原生 PowerShell 验证脚本；缓存的版本只是准备线索。这是进入本轮前的资源核对，实际来宾结果见 §3.3。[VirtualBox 来宾工具](https://docs.oracle.com/en/virtualization/virtualbox/7.2/user/guestadditions.html)
+
+### 3.3 RUST-D3 单 EXE 候选与离线验收
+
+用已有固定 Rust 1.100.0 和 Windows x64 MSVC 执行锁定离线 Release 构建，独立目标目录设置 `+crt-static`。同一正式 Rust 源编出的 `qkeymapper_mcp.exe` 为 4,131,328 字节，SHA-256 为 `e7517fd55a2ae730cea9e0d7a6d02a9cedef51bf7b52c8397d42fecd6cec9f8f`。PE 导入仅含 Windows 系统库，无单独 VC Redistributable DLL。Win11 开发机通过 11 项 stdio 定向测试，旧／新协议各自的 17 项正式工具合同和条件演示工具门槛均通过。[Rust C 运行时链接说明](https://doc.rust-lang.org/reference/linkage.html)
+
+[候选打包和烟测入口](../../mcp_bridge_rust/README.md#windows-x64-component)按 PE 导入决定随包 CRT。动态分支仍核验和携带签名 CRT，单 EXE 分支输出 `qkeymapper_mcp.exe`，清单 `app_local` 为空。动态缺 CRT 和静态误带 CRT 均在落盘前拒绝。两次独立生成的单 EXE ZIP 摘要相同 `ec308f89723465d0b24c7fe180ab0790940c38daffde31e7fd4503a3de14e6c5`，1,690,757 字节，127 个文件中只有一个二进制运行文件，其余为许可证、清单和用法。Win11 开发机用 Windows PowerShell 验证原动态 ZIP、重打动态 ZIP 及新单 EXE ZIP 的清单、模块加载、PNG 和 EOF 退出。原件 out/rust_sidecar/d_20261118/static-crt-r02、component-shape-r01。
+
+VirtualBox Win10 Pro x64 19045.2965，Windows PowerShell 5.1、Medium，虚拟链路断开且来宾观测无活动网络。常用程序入口、Python 注册和用户 Rust 工具链检查均未发现开发运行环境。r01 的动态旧协议及 app-local CRT 已通过，后续模块筛查误把系统 `msvcp_win.dll` 计作需分发的库。r02 校正后，动态组件和独立单 EXE 均通过中文／空格路径下的旧协议 PNG、新协议 17 项正式工具和断开状态、EOF 退出 0。r03 用上述同一单 EXE ZIP 解包复验通过。所有临时网线和共享均恢复，来宾测试材料保存在获准的 `C:\tools\QKeyMapper` 子目录。原件 out/rust_sidecar/d_20261118/d3-win10-r01 至 r03。上述为组件验收，完整 QKeyMapper Release 组装及真实产品业务仍按以下门槛核对。
+
+正式切换前还需完成以下事项。
+
+- 定版发布名称、x64 目标和构建配方，将 Sidecar 放入已经支持 MCP 的 QKeyMapper Release。归档继续提供许可和客户端配置。若 32 位 Windows 包也要交付 MCP，确定对应架构及独立验收范围。
+- 用最终拟发 EXE 复用既有配对，在真实产品上复验可信目标、权限、读取及图片，完成 Antigravity 正常回合与中文／空格路径直启。必要时用同一交付物抽查保存、退出及清理；动态候选历史保持原范围。
+- 补干净 Win11 x64 离线测试，并在拟发布的完整 Release 中验证解包、用法、运行时、许可证、兼容配置及回退。通过后再将客户端默认命令切换到 Rust，并在正式默认包移除随包 Python 运行时。
+
+### 3.4 交付与回退
 
 1. A的最小原型单列能力范围，不与完整Python组件直接得出全量节省比例；C／D再比较相同能力的完整组件。
 2. 两侧用同一压缩器和选项，记录文件数、解压字节、组件ZIP及同一完整Release添加Sidecar前后的ZIP差值。许可、包清单及必要DLL计入，PDB单列；现有25.42 MiB组件ZIP不是完整Release增量。
