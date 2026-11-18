@@ -8,17 +8,17 @@
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | RUST-C3/C4 真实私有窗口、两轮演示和回收通过，转入 D 候选交付 |
-| 分支／源码检查点 | codex/qkeymapper-mcp-control，RUST-A c57476df，RUST-B 75e43a67，C2 产品验收 c8f7893a，C3 08c1bbb6，C4b 候选 f4cc8c7d。产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
+| 当前切片 | RUST-D1 完整组件及本机解包通过；D2 的 Codex 夹具通过，Antigravity 已建立隔离会话 |
+| 分支／源码检查点 | codex/qkeymapper-mcp-control，RUST-A c57476df，RUST-B 75e43a67，C2 产品验收 c8f7893a，C4 私有验收 d69e2360，组件内 Rust 源 f4cc8c7d，D1 为记录本切片的提交。产品基线 3fefc26a846b8ad5db1ba381cecff870c570a670 |
 | 执行机器 | PC-W11，Windows x64 MSVC。项目固定及本机默认 Rust 均核为 1.100.0 |
-| 本轮改动 | 同一原生作业内建立示例、打开并捕获授权窗口、核对已提交行和非行足迹、按归属回收。演示工具由可信记录及显式标志分别启用 |
-| 实现状态 | A 至 C 的本机选定范围通过，普通 17 项和条件演示 2 项均已实现。D 完整交付、实际宿主及干净机器仍待 |
+| 本轮改动 | 已冻结完整 Rust EXE，核验 x64 DLL、签名、依赖许可和包摘要，生成可重复的 ZIP 及原生 PowerShell 检查入口 |
+| 实现状态 | A 至 C 的本机选定范围通过。D1 候选已准备，实际宿主、干净机器及最终替换待验 |
 | 正式实现 | 继续使用现有 Python 桥接；此前 C++、GUI／MCP、打包组件及运行时证据保持原范围 |
 | 决策门槛 | 按 11-18 的连续推进指示接入 B 的组件切片。A 实测供迁移评估，实际产品互操作和默认替换分别沿 B、D 的门槛 |
 | 客户端门槛 | 正式替换须通过 Codex＋Antigravity；其他宿主不默认承诺，QQ gateway 另行联调 |
 | 当前权限 | B、C2 和 C3/C4 的私有产品验收分别获批；均已清理。19:00 缓存保留，无自有目标、在途或未决请求 |
-| 下一步 | D 生成同功能 Rust 组件候选，核对可复现封装、同口径体积和实际宿主接线，再安排干净 Win10／Win11 验收 |
-| 证据边界 | 本机原件 out/rust_sidecar/{a,b,c}_20261118、out/mcp_product/{rust_b,rust_c,rust_c_demo}_20261118。合成、Qt 夹具、真实产品分别记录 |
+| 下一步 | D2 实际产品的 Codex／Antigravity 工具及图片，Antigravity 需要可用的已授权会话。D3 干净 Win10／Win11 仍待安排 |
+| 证据边界 | 本机原件 out/rust_sidecar/{a,b,c,d}_20261118、out/mcp_product/{rust_b,rust_c,rust_c_demo}_20261118。合成、Qt 夹具、真实产品和包验收各保留原范围 |
 | 提交策略 | 按 11-18 用户授权形成聚焦本地提交，禁止推送 |
 
 ## 1. 结论、价值与固定边界
@@ -67,7 +67,7 @@ stdout在服务模式下仅输出UTF-8、正确分帧的MCP JSON-RPC并及时发
 | RUST-A：有界协议／分发原型 | 选定范围通过 | Windows x64 锁定 Release、原始报文与 Python SDK 11 组、Inspector 双协议、解包复验及实际发布样包测量 | 普通权限，合成数据。结果见 §2.1 |
 | RUST-B：Windows IPC／身份／凭据 | 选定范围通过，见 §2.2 | 严格帧及证明、原生身份／ACL／对端、v1／v2 凭据、忙碌、部分帧、取消／超时和实际排空；Qt 私有夹具及普通产品 v1 Read | 两轮原 manifest 测试分别获批。无跨 Windows 登录、PC 重启及完整业务证据 |
 | RUST-C：现有全部行为等价 | 本机选定范围通过，见 §2.3 | 全工具合同、实际只读及事务、四窗口 PNG 和两轮演示回收通过；未验配置变体、跨登录和宿主继续保留原范围 | 自有私有桌面及合成配置。C++ 业务与原 Python 维持，复用未受影响的 GUI 及引擎证据 |
-| RUST-D：实际客户端与交付 | 未开始；依赖C | Codex＋Antigravity实际通过；干净Win10／Win11、离线、无Python／Rust环境验证；启动参数、中文／空格路径、权限、图片、退出、CRT／DLL、许可及完整Release增量一致 | 先自有配置试用，全部选定门槛通过后才替换默认入口；PC重启／登录切换、必要UAC／Default另行安排；QQ渠道仍单列 |
+| RUST-D：实际客户端与交付 | 进行中，见 §3 | Codex＋Antigravity实际通过；干净Win10／Win11、离线、无Python／Rust环境验证；启动参数、中文／空格路径、权限、图片、退出、CRT／DLL、许可及完整Release增量一致 | 先自有配置试用，全部选定门槛通过后才替换默认入口；PC重启／登录切换、必要UAC／Default另行安排；QQ渠道仍单列 |
 
 A通过只证明原型选定范围。B–D的投入在A评审后校准，不并入原M1／M2／M3-B旧估算，不因讨论过Rust而自动承诺整迁。若现场推进，按实际源码及有效证据接续，不回退或覆盖工作区。
 
@@ -140,6 +140,31 @@ C3/C4 的真实正例见 out/mcp_product/rust_c_demo_20261118/windows-demo-r01�
 新C++业务、驱动行为或系统副作用不包含在迁移顺带改动中；确需改变时先提交具体方案及验证范围。gsudo仅在必要已授权测试启动／关闭时按技能和公共登记入口使用，缓存时长不增加范围、不接管共享或历史未知请求。
 
 ## 3. 同口径测量与Python回退
+
+### 3.1 RUST-D1 完整组件候选
+
+本机产物 out/rust_sidecar/d_20261118/component-r02/QKeyMapper MCP Rust 中文.zip，SHA-256 为 `3a1a8d27cb9d2f1ee2e210682df74a120c9602109e0dc809fd248b208d339c7b`。包含完整普通 17 项及条件演示 2 项的已验 Qt 对照候选（EXE 摘要前缀 e0a43aa76796）、应用目录 VCRUNTIME140.dll、项目许可、依赖许可／清单和用法。两次独立封装得到相同摘要。Windows x64 PE 导入只含系统库及所带 CRT，后者取自官方 MSVC 14.44.35112 x64 redistributable 并核对有效 Microsoft 签名。[再分发依据](https://learn.microsoft.com/en-us/visualstudio/releases/2022/redistribution)
+
+原生 PowerShell 7 及本机 Windows 自带 PowerShell 均完成解包、摘要、实际 app-local CRT 加载、stdio／结构化 PNG 和 EOF 退出 0 检查。受限沙箱首次不能直接加载 Windows PowerShell 安全模块或执行本机脚本；封装改为既有的精确模块加载，脚本以普通 Medium 复验通过。解包后的新旧 SDK 工具及启动模式对照通过。本机仍是开发 Win11，缩减子进程 PATH 及观察加载模块不等于干净机器试验。
+
+两侧使用 Python ZIP Deflate-9 和同一个 QKeyMapper Qt6 部署样本，Python 的九个桥接模块与当前保留源码相同。体积保留包内许可和 DLL，PDB 单列。原始字节统计见 out/rust_sidecar/d_20261118/size-final-r02/result.json。
+
+| Sidecar | 文件数 | 解压 | 同口径组件 ZIP | 同一 QKeyMapper 样本的 ZIP 增量 |
+|---|---:|---:|---:|---:|
+| Python | 1615 | 60.08 MiB | 25.41 MiB | 25.44 MiB |
+| Rust | 128 | 4.65 MiB | 1.62 MiB | 1.62 MiB |
+
+局部组件 ZIP 缩减约 93.6%。比较使用实际完整工具合同和同一普通 Qt6 部署样本，正式三包发布与 Win10 Release PC 验收沿原计划。
+
+### 3.2 RUST-D2 本机宿主验证
+
+实际 Codex CLI 0.169.0 App Server 在中文／空格解包路径加载原 Rust 二进制。显式会话覆盖关闭其他服务器，独立 SQLite 和记录均在 out。真实本地 MCP 列表及 text、ImageContent、structuredContent、isError 分别通过，EOF 后 App Server 退出 0。此次使用合成工具，未调用模型。早期轮次遇到 App Server 引导配置、沙箱本地状态和测试客户端 64 KiB 读取上限，修正隔离配置及测试客户端后确认通过。原件 out/rust_sidecar/d_20261118/codex-host-r07。
+
+实际 Antigravity CLI 1.5.10 独立 ACP 通过 initialize 和带显式本地 stdio 服务器参数的 session/new，宿主退出 0。较早尝试中的命令行列表未确认工作区发现，绝对配置目录被宿主拒绝。独立配置未登录，未观察到实际 MCP 工具结果或图片。只记录会话启动，仍需在授权账号、固定测试工作区及实际客户端内验收。[Antigravity CLI 官方配置](https://antigravity.google/docs/cli/gcli-migration?authuser=0)
+
+当前会话未取得干净 Win10／Win11 测试端，本机未找到 Windows Sandbox 入口。在相应环境、宿主和完整产品接线补验之前保留 Python 默认方案。
+
+### 3.3 交付与回退
 
 1. A的最小原型单列能力范围，不与完整Python组件直接得出全量节省比例；C／D再比较相同能力的完整组件。
 2. 两侧用同一压缩器和选项，记录文件数、解压字节、组件ZIP及同一完整Release添加Sidecar前后的ZIP差值。许可、包清单及必要DLL计入，PDB单列；现有25.42 MiB组件ZIP不是完整Release增量。

@@ -70,3 +70,16 @@ and both sidecars stay at ordinary Medium integrity.
 `tests/test_product_demo.py` uses an approved configuration-only product
 and the fixed private GUI helper for the two window permissions. It
 checks real product images and recovers both demonstration scenes.
+
+## Windows x64 component
+
+`tools/package_windows.py` takes the tested Release EXE, the installed
+x64 MSVC `VCRUNTIME140.dll`, MSVC `dumpbin.exe`, and a new `--output`
+directory under `out/`. It uses the locked offline Cargo metadata and
+includes original dependency notices. The component guide is
+[BUNDLE_README.md](BUNDLE_README.md).
+
+`tools/smoke_windows_bundle.ps1 -Archive PATH -Sha256 DIGEST -OutputDirectory NEW_PATH`
+uses PowerShell and the extracted component. It checks package hashes,
+the actual app-local runtime, MCP image and structured content, and normal
+exit. The synthetic smoke does not start QKeyMapper or need Python.
