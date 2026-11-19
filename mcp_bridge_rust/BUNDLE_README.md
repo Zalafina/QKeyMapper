@@ -2,13 +2,13 @@
 
 将整个目录解压到本机。若清单的 `app_local` 列出 `VCRUNTIME140.dll`，请将它与 Sidecar EXE 放在同一目录。单 EXE 候选的 `app_local` 为空。本组件由普通权限客户端通过 stdio 启动。运行端需要 64 位 Windows 10／11 和包含 MCP 接口的 QKeyMapper，Sidecar 自身无需 Python、Rust 或开发工具。Windows 7 x86 不支持 QKeyMapper MCP 功能，Qt5 x86 Release 不包含 Sidecar。
 
-正式 x64 Release 的 Sidecar 位于 QKeyMapper.exe 同级的 mcp 目录。在目标 QKeyMapper 的 MCP 控制窗启用接口并复制连接信息文件路径。客户端配置使用本目录的绝对 EXE 路径，将 `--executable` 指向同一个实际目标，并将 `--discovery-file` 指向它的 `instance.json`。
+正式 x64 Release 的 Sidecar 与 `QKeyMapper.exe` 同级，客户端以普通权限用其绝对路径启动。若从独立组件运行，请使用组件清单中 `binary` 指定的 EXE。在目标 QKeyMapper 的 MCP 控制窗启用接口并复制连接信息文件路径。将客户端的 `--executable` 指向实际目标，并将 `--discovery-file` 指向它的 `instance.json`。
 
 ## Codex 项目配置
 
 ```toml
 [mcp_servers.qkeymapper]
-command = "D:/Tools/QKeyMapper/mcp/qkeymapper-mcp-rust.exe"
+command = "D:/Tools/QKeyMapper/qkeymapper_mcp.exe"
 args = ["--executable", "D:/Tools/QKeyMapper/QKeyMapper.exe", "--discovery-file", "C:/Path/from/management/instance.json"]
 ```
 
@@ -18,7 +18,7 @@ args = ["--executable", "D:/Tools/QKeyMapper/QKeyMapper.exe", "--discovery-file"
 {
   "mcpServers": {
     "qkeymapper": {
-      "command": "D:/Tools/QKeyMapper/mcp/qkeymapper-mcp-rust.exe",
+      "command": "D:/Tools/QKeyMapper/qkeymapper_mcp.exe",
       "args": ["--executable", "D:/Tools/QKeyMapper/QKeyMapper.exe", "--discovery-file", "C:/Path/from/management/instance.json"]
     }
   }
@@ -33,4 +33,4 @@ args = ["--executable", "D:/Tools/QKeyMapper/QKeyMapper.exe", "--discovery-file"
 
 从 Python 切换时，先断开并退出旧 Sidecar，备份客户端这项 MCP 配置。将启动命令改为本包的 Rust EXE，移除 Python 启动器参数，原目标参数继续使用。启动新会话并用 qkm_connect 核对目标和已有配对。需要回退时，先断开并退出 Rust Sidecar，再恢复旧配置并使用另存的 Python 组件。两个入口顺序使用，配对密钥仍由 Windows 凭据管理器保管。
 
-`bundle-manifest.json` 包含依赖清单及组件文件摘要。第三方许可原件位于 `third-party`，主项目许可见 `QKeyMapper-LICENSE.txt`。Microsoft Visual C++ 运行库适用对应的 Visual Studio 许可和再分发条款。
+构建用组件的 `bundle-manifest.json` 包含依赖清单及文件摘要。第三方许可原件位于 `third-party`，主项目许可见 `QKeyMapper-LICENSE.txt`。正式 x64 Release 的合并许可位于 `licenses/QKeyMapper-MCP-Licenses.txt`。随动态测试组件分发的 Microsoft Visual C++ 运行库适用对应的 Visual Studio 许可和再分发条款。

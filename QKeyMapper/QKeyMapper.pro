@@ -328,3 +328,27 @@ TRANSLATIONS += \
 }
 
 include(ibinput.pri)
+
+# Maintenance projects include this file without building the Sidecar.
+QKM_ROOT_PROJECT = $$lower($$basename(_PRO_FILE_))
+win32-msvc*:equals(QKM_ROOT_PROJECT, qkeymapper.pro) {
+    isEmpty(QKM_BUILD_MCP_BRIDGE): QKM_BUILD_MCP_BRIDGE = 1
+    !equals(QKM_BUILD_MCP_BRIDGE, 0):!equals(QKM_BUILD_MCP_BRIDGE, 1) {
+        error("QKM_BUILD_MCP_BRIDGE must be 0 or 1.")
+    }
+
+    !equals(QT_ARCH, x86_64) {
+        !build_pass:message("MCP Sidecar: skipped for Qt target architecture $$QT_ARCH (requires x64).")
+    } else:equals(QKM_BUILD_MCP_BRIDGE, 1) {
+        build_pass|!debug_and_release {
+            QKM_MCP_BUILD_SCRIPT = $$clean_path($$PWD/../mcp_bridge_rust/tools/build_windows.ps1)
+            QKM_MCP_TARGET_DIR = $$PWD/build/mcp_bridge
+            qkm_mcp_bridge.target = qkm_mcp_bridge
+            qkm_mcp_bridge.depends = FORCE
+            qkm_mcp_bridge.commands = powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File $$shell_quote($$system_path($$QKM_MCP_BUILD_SCRIPT)) -TargetDirectory $$shell_quote($$system_path($$QKM_MCP_TARGET_DIR))
+            QMAKE_EXTRA_TARGETS += qkm_mcp_bridge
+            # Let Cargo decide what to rebuild without forcing a Qt relink.
+            ALL_DEPS += qkm_mcp_bridge
+        }
+    }
+}

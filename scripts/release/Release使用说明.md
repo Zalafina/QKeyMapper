@@ -29,9 +29,11 @@ foreach ($name in @('build_release.bat', 'build_release.ps1', 'test_build_releas
 
 ## MCP Sidecar 发布输入
 
-在运行目录放置同一份已验收的 x64 单 EXE 组件，ZIP 命名为 QKeyMapperMcp-x64.zip，旁边的 QKeyMapperMcp-x64.sha256 写入验收时核定的 64 位 SHA256。候选的构建和打包指令在[仓库 Rust 说明](../../mcp_bridge_rust/README.md#windows-x64-component)。以同一发布源码及依赖锁构建，保留批准的摘要和生成记录。
+按[仓库 Rust 说明](../../mcp_bridge_rust/README.md#windows-x64-component)用同一发布源码及依赖锁独立构建并打包一次。将验收通过的 `QKeyMapperMcp-x64.zip` 放在运行目录，旁边的 `QKeyMapperMcp-x64.sha256` 写入核定的 64 位 SHA-256。保留构建与摘要记录。旧组件需用当前工具重新打包，生成合并许可及其清单记录。
 
-只读预检核对归档摘要、静态 x64 形态和 Rust 源码／构建输入身份。正式构建还会解包、验证文件清单并运行组件烟测。Qt6 x64 和 Qt5 x64 的包内 mcp 目录使用同一份 qkeymapper_mcp.exe、许可证和 MCP 使用说明，Qt5 x86 包省略 MCP 组件。Windows 7 x86 不支持 QKeyMapper MCP 功能。旧 Python 组件可从原存档独立回退。
+只读预检核对归档摘要、静态 x64 形态、Rust 源码／依赖锁身份及合并许可条目。正式构建还会解包、校验文件清单、运行组件烟测并核验 EXE 架构。Release 脚本在三套 Qt 构建的 qmake 命令中传入 `QKM_BUILD_MCP_BRIDGE=0`，两个 x64 包共用已核验的独立组件。
+
+Qt6 x64 和 Qt5 x64 正式 ZIP 均包含与 `QKeyMapper.exe` 同级的 `qkeymapper_mcp.exe`，以及 `licenses/QKeyMapper-MCP-Licenses.txt`。组件说明、清单和原始许可留在构建用组件，客户端使用[配置示例](../../mcp_bridge_rust/BUNDLE_README.md)中的包根启动路径。Qt5 x86 排除上述两个 Sidecar 文件，Windows 7 x86 不支持 MCP。旧 Python 组件可从原存档独立回退。
 
 正式 ZIP 保存在 `latest_release`，最新配套 EXE/PDB 保存在三个 `Qt*_dump_analyze` 目录。若需要保留历史版本供以后下载或分析崩溃，在下一次 Release 前将相应 ZIP 和匹配的 EXE/PDB 一起按版本归档；这两类固定目录会被后续成功发布更新。
 
@@ -91,6 +93,7 @@ pwsh -NoProfile -File .\build_release.ps1
 临时包位于 `_work\staging\QKeyMapper_Qt*`，复制配套目录后：
 
 - 覆盖本次 `QKeyMapper.exe` 和 `QKeyMapperCrashReporter.exe`。
+- 仅在暂存目录清除旧 `mcp/`、Sidecar EXE 和旧合并许可。x64 从核验后的组件放入同级 EXE 和合并许可，保留 `licenses/IbInputSimulator/`。
 - 完整替换 `utils\script`，同步 `utils\readme.txt`，防止旧 AHK 脚本残留。
 - 从对应源码仓库的 `readme\QKeyMapper使用手册.html` 更新包根目录同名离线手册；直接使用已提交的发布HTML，不在Release时运行手册生成器。
 - 从对应源码仓库的 `QKeyMapper_Keyname.pdf` 更新并保留 `QKeyMapper按键名称说明.pdf`；不再要求或复制参数速查PDF。
@@ -98,7 +101,7 @@ pwsh -NoProfile -File .\build_release.ps1
 - 删除包根目录的 INI、WAV、LOG、DMP、PDB，以及明确的 `log`、`crash_dumps` 运行目录；排除包内所有 PDB。**保留“映射表模版”中的 INI。**
 - 其他配套内容原样保留。
 
-ZIP 保持一个 `QKeyMapper_Qt*` 根目录，HTML位于该根目录内。发布前检查 ZIP 文件清单、长度和主程序/CrashReporter/HTML手册内容哈希，并用当前更新器的文件名正则校验：
+ZIP 保持一个 `QKeyMapper_Qt*` 根目录，HTML位于该根目录内。发布前检查 ZIP 文件清单、长度、主程序／CrashReporter／HTML 手册等内容哈希，并检查两个 x64 包中 Sidecar 和合并许可的路径及 SHA-256、x86 包的排除项。文件名沿用当前更新器规则：
 
 ```text
 QKeyMapper_v1.5.0.20261016_Qt6_x64.zip

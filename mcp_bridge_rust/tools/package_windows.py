@@ -9,6 +9,7 @@ import struct
 import subprocess
 import sys
 import zipfile
+from html.parser import HTMLParser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +17,7 @@ CRATE = ROOT / "mcp_bridge_rust"
 TARGET = "x86_64-pc-windows-msvc"
 EXE = "qkeymapper-mcp-rust.exe"
 STANDALONE_EXE = "qkeymapper_mcp.exe"
+MERGED_LICENSE = "QKeyMapper-MCP-Licenses.txt"
 CRT = "vcruntime140.dll"
 SYSTEM_LIBRARIES = {
     "advapi32.dll", "bcryptprimitives.dll", "combase.dll", "crypt32.dll",
@@ -92,11 +94,57 @@ def notices(output):
         for file in sorted(files):
             no_reparse(file)
             require(file.resolve().is_relative_to(source.resolve()), "License file escapes its package")
+            require(not (directory / file.name).exists(), f"Duplicate notice name for {name} {version}: {file.name}")
             shutil.copyfile(file, directory / file.name)
         dependencies.append({"name":name, "version":version, "license":package["license"],
                              "notices":[file.name for file in sorted(files)]})
     require(dependencies, "No crates were resolved for the x64 package")
     return dependencies
+
+
+class NoticeText(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.parts = []
+
+    def handle_data(self, data):
+        self.parts.append(data)
+
+
+def rust_library_notices():
+    sysroot = subprocess.run(["rustc", "--print", "sysroot"], cwd=CRATE, check=True,
+                             capture_output=True, encoding="utf-8", timeout=15).stdout.strip()
+    docs = Path(sysroot) / "share" / "doc" / "rust"
+    report = docs / "COPYRIGHT-library.html"
+    require(report.is_file(), "Install the Rust Standard Library copyright notices for the selected toolchain.")
+    parser = NoticeText()
+    parser.feed(report.read_text(encoding="utf-8-sig"))
+    parser.close()
+    yield f"Rust Standard Library / {report.name}", "".join(parser.parts)
+    # The upstream report includes out-of-tree texts and names the in-tree licenses.
+    for name in ("Apache-2.0", "MIT", "Unicode-3.0", "LLVM-exception", "BSD-2-Clause"):
+        path = docs / "licenses" / f"{name}.txt"
+        yield f"Rust Standard Library / {name}", path.read_text(encoding="utf-8-sig")
+
+
+def merge_notices(output, dependencies):
+    resource = (ROOT / "QKeyMapper" / "QKeyMapper.rc").read_text(encoding="utf-8-sig")
+    copyright_notice = re.search(r'VALUE\s+"LegalCopyright",\s*"([^"]+)"', resource)
+    require(copyright_notice is not None, "Missing QKeyMapper copyright notice.")
+    with (output / MERGED_LICENSE).open("w", encoding="utf-8", newline="\n") as merged:
+        def section(title, text):
+            merged.write(f"{title}\n{'=' * len(title)}\n\n{text}\n\n")
+
+        project_license = (output / "QKeyMapper-LICENSE.txt").read_text(encoding="utf-8-sig")
+        section("QKeyMapper and QKeyMapper MCP Sidecar (GPL-3.0-only)",
+                f"{copyright_notice[1]}\n\n{project_license}")
+        for dependency in dependencies:
+            crate = f"{dependency['name']}-{dependency['version']}"
+            for name in dependency["notices"]:
+                text = (output / "third-party" / crate / name).read_text(encoding="utf-8-sig")
+                section(f"{crate} / {name}", text)
+        for title, text in rust_library_notices():
+            section(title, text)
 
 
 def rust_sources():
@@ -139,9 +187,11 @@ def package(args):
     if args.crt is not None:
         shutil.copyfile(crt, output / "VCRUNTIME140.dll")
     shutil.copyfile(ROOT / "LICENSE", output / "QKeyMapper-LICENSE.txt")
-    readme = (CRATE / "BUNDLE_README.md").read_text(encoding="utf-8").replace(EXE, binary)
+    readme = (CRATE / "BUNDLE_README.md").read_text(encoding="utf-8").replace(STANDALONE_EXE, binary)
     (output / "README.md").write_text(readme, encoding="utf-8", newline="\n")
     release_notices = notices(output)
+    if not needs_crt:
+        merge_notices(output, release_notices)
     files = [{"path":file.relative_to(output).as_posix(), "bytes":file.stat().st_size, "sha256":sha256(file)}
              for file in sorted(output.rglob("*")) if file.is_file()]
     manifest = {

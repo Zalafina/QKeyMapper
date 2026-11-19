@@ -1,23 +1,37 @@
 # QKeyMapper MCP Sidecar in Rust
 
-This project provides the RUST-A protocol fixture and a candidate for pairing
-and authenticated IPC, including queries, configuration transactions and
-restricted windows with verified PNG results.
-Follow the [migration plan](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_rust_migration_plan.md)
-for validation status and the remaining product and delivery work.
+The Rust Sidecar provides stdio MCP, authenticated IPC, configuration
+transactions and restricted windows with verified PNG results. It also includes
+a standalone protocol fixture.
+See the [MCP development plan](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)
+for current delivery work and the [Rust migration record](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_rust_migration_plan.md)
+for earlier validation.
 
-Build from the repository root in an ordinary Windows x64 development shell
-with the MSVC C++ build tools. The existing Python environment is used for the
-test client only.
+The main `QKeyMapper.pro` build enables `QKM_BUILD_MCP_BRIDGE=1` for Qt5 and Qt6
+Windows x64 MSVC. Pass `QKM_BUILD_MCP_BRIDGE=0` on the qmake command line or in
+Qt Creator's additional qmake arguments to build only the Qt application.
+Qt5 x86 skips the Sidecar. Qt Debug and Release share this Rust Release output
+under the repository root, including across Qt shadow builds.
+
+```text
+QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe
+```
+
+For a separate build or a fixture, use the same build script from the repository
+root in a normal Windows x64 MSVC development shell. It uses an installed Rust
+`1.100.0-x86_64-pc-windows-msvc` toolchain or an installed x64 `stable` at
+exactly `1.100.0`. Python is used for packaging and fixture tests.
 
 ```powershell
-$env:RUSTUP_HOME = Join-Path (Get-Location) 'out/rust_sidecar/toolchain'
-$env:CARGO_HOME = Join-Path (Get-Location) 'out/rust_sidecar/cargo'
-$env:CARGO_TARGET_DIR = Join-Path (Get-Location) 'out/rust_sidecar/target'
-$rust = '1.100.0-x86_64-pc-windows-msvc'
-rustup toolchain install $rust --profile minimal --component rustfmt,clippy --no-self-update
-cargo "+$rust" build --locked --release --manifest-path mcp_bridge_rust/Cargo.toml
-$exe = 'out/rust_sidecar/target/release/qkeymapper-mcp-rust.exe'
+$rustTarget = Join-Path (Get-Location) 'out/rust_sidecar/release-cargo'
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\mcp_bridge_rust\tools\build_windows.ps1 -TargetDirectory $rustTarget
+if ($LASTEXITCODE -ne 0) { throw 'Sidecar build failed.' }
+$exe = Join-Path $rustTarget 'x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe'
+```
+
+Run the stdio fixture with the prepared test environment.
+
+```powershell
 & 'out/mcp_bridge/venv/Scripts/python.exe' -B -X utf8 mcp_bridge_rust/tests/test_stdio.py --exe $exe -v
 ```
 
@@ -73,16 +87,29 @@ checks real product images and recovers both demonstration scenes.
 
 ## Windows x64 component
 
-`tools/package_windows.py` takes the cargo-built `--executable`, MSVC
-`--dumpbin`, and a new `--output` directory under `out/`. For the dynamic
-build, pass the installed x64 MSVC `VCRUNTIME140.dll` with `--crt`.
+Package the static build above using the same installed Rust toolchain and a
+clean Rust source tree. Use `stable-x86_64-pc-windows-msvc` for `$rust` if that is
+the exact-version toolchain reported by the build script. The packager uses
+the selected toolchain's installed Rust standard library notices.
 
-To build the single-runtime-file candidate, use `--target x86_64-pc-windows-msvc`
-and set `CARGO_TARGET_X86_64_PC_WINDOWS_MSVC_RUSTFLAGS=-Ctarget-feature=+crt-static`
-for the build in a separate target directory. Package the result without
-`--crt`. The packager checks the PE imports and names the standalone output
-`qkeymapper_mcp.exe`. Both packages include locked Cargo dependency notices,
-the component guide, and a file manifest with the committed Rust input objects. The packager requires a clean Rust source tree. See [BUNDLE_README.md](BUNDLE_README.md).
+```powershell
+$rust = '1.100.0-x86_64-pc-windows-msvc'
+$component = Join-Path (Get-Location) 'out/rust_sidecar/release-input/QKeyMapperMcp-x64'
+$dumpbin = (Get-Command dumpbin.exe).Source
+rustup.exe run $rust python.exe -B -X utf8 mcp_bridge_rust/tools/package_windows.py --executable $exe --dumpbin $dumpbin --output $component
+```
+
+The packager checks x64 PE imports, retains the locked dependency notices and
+source identities, and generates `QKeyMapperMcp-x64.zip` with its SHA-256 printed
+in the result. The two x64 Release variants share this input. Their product
+ZIPs copy `qkeymapper_mcp.exe` next to `QKeyMapper.exe` and the combined notice
+to `licenses/QKeyMapper-MCP-Licenses.txt`. The guide, file manifest and original
+dependency notices stay in the build component. See the
+[client configuration examples](BUNDLE_README.md) and
+[Win10 Release instructions](../scripts/release/Release使用说明.md).
+
+For a separate dynamic test component, build with the default MSVC runtime
+linkage and pass the installed x64 `VCRUNTIME140.dll` with `--crt`.
 
 `tools/smoke_windows_bundle.ps1 -Archive PATH -Sha256 DIGEST -OutputDirectory NEW_PATH`
 verifies package hashes, the runtime modules actually loaded, an MCP image

@@ -121,7 +121,9 @@ $work = Join-Path $testRoot 'work'
 $release = Join-Path $testRoot 'release'
 $stage = Join-Path $work 'staging/QKeyMapper_Qt6_x64'
 $mcp = Join-Path $work 'verified-sidecar'
-Put "$mcp/qkeymapper_mcp.exe" 'verified Rust EXE fixture'
+Put "$mcp/$script:McpBinary" 'verified Rust EXE fixture'
+Put "$mcp/$script:McpLicense" 'combined project and dependency notices'
+$verifiedLicense = Get-Item -LiteralPath "$mcp/$script:McpLicense"
 Put "$mcp/README.md" 'Sidecar instructions'
 Put "$mcp/QKeyMapper-LICENSE.txt" 'Sidecar license'
 $inputs = @('src','Cargo.toml','Cargo.lock','rust-toolchain.toml')
@@ -130,7 +132,11 @@ $sourceObjects = @{}
 for ($i = 0; $i -lt $inputs.Count; $i++) { $sourceObjects[$inputs[$i]] = $inputObjects[$i] }
 $mcpManifest = @{
     schema_version = 1; architecture = 'x86_64-pc-windows-msvc'; binary = 'qkeymapper_mcp.exe'
-    app_local = @{}; rust_sources = $sourceObjects; files = @(@{path = 'qkeymapper_mcp.exe'})
+    app_local = @{}; rust_sources = $sourceObjects
+    files = @(
+        @{path = $script:McpBinary}
+        @{path = $script:McpLicense; bytes = $verifiedLicense.Length; sha256 = (Get-FileHash -LiteralPath $verifiedLicense.FullName).Hash}
+    )
 }
 Put "$mcp/bundle-manifest.json" ($mcpManifest | ConvertTo-Json -Depth 4)
 $componentInput = Join-Path $testRoot 'component-input'
@@ -141,9 +147,17 @@ $digestFile = Join-Path $componentInput 'QKeyMapperMcp-x64.sha256'
 Put $digestFile ('0' * 64)
 Expect-Failure { Read-McpSidecarInput $componentInput $seed } 'SHA256.*不符' 'sidecar input rejects a mismatched ZIP digest'
 Put $digestFile (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
-Check ((Read-McpSidecarInput $componentInput $seed).Archive -eq $archive) 'sidecar input accepts the authorized ZIP and matching Rust sources'
+Check ((Read-McpSidecarInput $componentInput $seed).Archive -eq $archive) 'sidecar input accepts the authorized ZIP, license and matching Rust sources'
+$componentZip = [IO.Compression.ZipFile]::Open($archive, [IO.Compression.ZipArchiveMode]::Update)
+try { $componentZip.GetEntry("verified-sidecar/$script:McpLicense").Delete() } finally { $componentZip.Dispose() }
+Put $digestFile (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+Expect-Failure { Read-McpSidecarInput $componentInput $seed } '缺少有效的.*QKeyMapper-MCP-Licenses.txt' 'sidecar input rejects an archive without the combined license even when the archive digest matches'
 Put "$baseline/mcp/runtime/python.exe" 'stale bundled Python'
+Put "$baseline/mcp/bundle-manifest.json" 'stale component manifest'
+Put "$baseline/mcp/README.md" 'stale component guide'
 Put "$baseline/qkeymapper-mcp-rust.exe" 'stale root bridge'
+Put "$baseline/$script:McpBinary" 'stale standalone bridge'
+Put "$baseline/licenses/$script:McpLicense" 'stale combined license'
 Put "$baseline/映射表模版/keep.ini" 'template'
 Put "$baseline/keymapdata.ini" 'private runtime data'
 Put "$baseline/sound.wav" 'runtime wav'
@@ -178,14 +192,18 @@ foreach ($variant in $variants) {
     Put "$baseline/RazerDriver/INTEGRATION_GUIDE.md" 'stale developer reference'
     Put "$baseline/RazerDriver/manage_driver.bat" 'stale manager'
     Prepare-Package $baseline $variantStage $variantRepo $release $work $architecture $mcp
-    Check (-not (Test-Path -LiteralPath "$variantStage/mcp/runtime/python.exe")) "$($variant.Name) excludes stale Python"
+    Check (-not (Test-Path -LiteralPath "$variantStage/mcp")) "$($variant.Name) excludes the component directory, manifest and guide"
     Check (-not (Test-Path -LiteralPath "$variantStage/qkeymapper-mcp-rust.exe")) "$($variant.Name) excludes the stale root bridge"
     if ($architecture -eq 'x64') {
-        Check ((Get-FileHash -LiteralPath "$variantStage/mcp/qkeymapper_mcp.exe").Hash -eq
-               (Get-FileHash -LiteralPath "$mcp/qkeymapper_mcp.exe").Hash) "$($variant.Name) gets the verified Rust binary"
-        Check (Test-Path -LiteralPath "$variantStage/mcp/README.md") "$($variant.Name) includes MCP usage"
+        Check ((Get-FileHash -LiteralPath "$variantStage/$script:McpBinary").Hash -eq
+               (Get-FileHash -LiteralPath "$mcp/$script:McpBinary").Hash) "$($variant.Name) gets the verified sibling Rust binary"
+        Check ((Get-FileHash -LiteralPath "$variantStage/licenses/$script:McpLicense").Hash -eq
+               (Get-FileHash -LiteralPath $verifiedLicense.FullName).Hash) "$($variant.Name) gets the verified combined notice"
+        Check (-not (Test-Path -LiteralPath "$variantStage/bundle-manifest.json")) "$($variant.Name) excludes the component manifest at the root"
+        Check (-not (Test-Path -LiteralPath "$variantStage/README.md")) "$($variant.Name) excludes the component guide at the root"
     } else {
-        Check (-not (Test-Path -LiteralPath "$variantStage/mcp")) 'Qt5 x86 excludes the MCP component'
+        Check (-not (Test-Path -LiteralPath "$variantStage/$script:McpBinary")) 'Qt5 x86 excludes the standalone bridge'
+        Check (-not (Test-Path -LiteralPath "$variantStage/licenses/$script:McpLicense")) 'Qt5 x86 excludes stale MCP licenses'
     }
     Check ([IO.File]::ReadAllText("$variantStage/IbInputSimulator.dll") -ceq "vendor-$architecture") "$($variant.Name) deploys matching IbInput DLL"
     Check (Test-Path -LiteralPath "$variantStage/licenses/IbInputSimulator/IbInputSimulator-LICENSE.txt") "$($variant.Name) includes IbInput license"
@@ -214,6 +232,11 @@ foreach ($variant in $variants) {
         }
         foreach ($name in $obsoleteDocuments) { Check ($null -eq $archive.GetEntry("QKeyMapper_$($variant.Name)/$name")) "$($variant.Name) ZIP excludes $name" }
     } finally { $archive.Dispose() }
+    if ($architecture -eq 'x86') {
+        $archive = [IO.Compression.ZipFile]::Open($variantZip, [IO.Compression.ZipArchiveMode]::Update)
+        try { $null = $archive.CreateEntry("QKeyMapper_$($variant.Name)/$script:McpBinary") } finally { $archive.Dispose() }
+        Expect-Failure { Assert-PackageZip $variantZip $variantStage } '不适用的 MCP' 'Qt5 x86 ZIP rejects a misplaced standalone bridge'
+    }
 }
 $driverSource = "$repo/QKeyMapper/RazerDriver/x64/RzDev_0306.sys"
 $driverSaved = [IO.File]::ReadAllText($driverSource)
@@ -238,7 +261,19 @@ Check (Test-Path -LiteralPath "$baseline/keymapdata.ini") 'maintained baseline u
 Check (-not (Test-Path -LiteralPath "$stage/old.pdb")) 'PDB excluded'
 $zip = Join-Path $work 'QKeyMapper_v1.5.0.20261016_Qt6_x64.zip'
 Assert-PackageZip $zip $stage
-Check $true 'ZIP root, contents, EXE and manual hashes and updater name checked'
+Check $true 'ZIP root, contents, EXE, manual and MCP file hashes and updater name checked'
+foreach ($relative in @($script:McpBinary, "licenses/$script:McpLicense")) {
+    $file = Join-Path $stage $relative
+    $original = [IO.File]::ReadAllText($file)
+    Put $file ('!' * $original.Length)
+    Expect-Failure { Assert-PackageZip $zip $stage } ('不一致.*' + [regex]::Escape($relative)) "same-length stale ZIP member $relative rejected by hash"
+    Put $file $original
+}
+$stagedLicense = Join-Path $stage "licenses/$script:McpLicense"
+$originalLicense = [IO.File]::ReadAllText($stagedLicense)
+Remove-Item -LiteralPath $stagedLicense
+Expect-Failure { Assert-PackageZip $zip $stage } '缺少必需文件.*QKeyMapper-MCP-Licenses.txt' 'x64 ZIP requires the combined license in stage'
+Put $stagedLicense $originalLicense
 Expect-Failure { Assert-PackageZip "$work/invalid.zip" $stage } '文件名不符合' 'invalid updater filename rejected'
 Put "$stage/QKeyMapper使用手册.html" ($originalManual.Replace('current', 'changed'))
 Expect-Failure { Assert-PackageZip $zip $stage } '不一致.*QKeyMapper使用手册.html' 'same-length stale ZIP manual rejected by hash'

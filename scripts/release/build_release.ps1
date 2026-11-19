@@ -8,6 +8,8 @@ $script:LogDirectory = $null
 $script:CommandLogPath = $null
 $script:Stage = '启动'
 $script:AssetPattern = '^QKeyMapper_(v\d+\.\d+\.\d+\.\d{8})_(Qt[56]_x(?:64|86))\.zip$'
+$script:McpBinary = 'qkeymapper_mcp.exe'
+$script:McpLicense = 'QKeyMapper-MCP-Licenses.txt'
 $script:SymbolNames = @('QKeyMapper.exe', 'QKeyMapper.pdb', 'QKeyMapperCrashReporter.exe', 'QKeyMapperCrashReporter.pdb')
 
 $script:RazerDriverFiles = @('README.md', 'LICENSE-nefcon.txt', 'manage_driver.bat', 'manage_driver.ps1', 'install_driver.bat', 'uninstall_driver.bat', 'x64/nefconw.exe', 'x64/rzcommon.cat', 'x64/RzCommon.sys', 'x64/RzCommonU.inf', 'x64/RzDev_0306.sys', 'x64/rzdev_0306_kbd.cat', 'x64/rzdev_0306_mou.cat', 'x64/rzdev_0306_vbus.cat', 'x64/rzdev_0306_vcon.cat', 'x64/rzdev_0306_vkbd.cat', 'x64/rzdev_0306_vmou.cat', 'x64/RzDevU_0306_Kbd.inf', 'x64/RzDevU_0306_Mou.inf', 'x64/RzDevU_0306_VBus.inf', 'x64/RzDevU_0306_VCon.inf', 'x64/RzDevU_0306_VKbd.inf', 'x64/RzDevU_0306_VMou.inf')
@@ -235,7 +237,7 @@ function Build-Variant($Variant, [string]$Jom, [int]$JobCount) {
     Write-Stage "完整重建 $($Variant.Name)：$($Variant.BuildDirectory)"
     Reset-WorkDirectory $Variant.BuildDirectory $Variant.Repository
     $script:CommandLogPath = Join-Path $script:LogDirectory "$($Variant.Name)-build.log"
-    $command = ('call "{0}" {1} && "{2}" "{3}" -spec win32-msvc "CONFIG-=debug" "CONFIG+=release" && "{4}" -j{5} release' -f
+    $command = ('call "{0}" {1} && "{2}" "{3}" -spec win32-msvc "CONFIG-=debug" "CONFIG+=release" "QKM_BUILD_MCP_BRIDGE=0" && "{4}" -j{5} release' -f
         $Variant.CompilerEnvironment, $Variant.CompilerArgument, $Variant.QMake, (Join-Path $Variant.Repository 'QKeyMapper/QKeyMapper.pro'), $Jom, $JobCount)
     Invoke-Native $env:ComSpec @('/d', '/s', '/c', $command) $Variant.BuildDirectory | Out-Null
     Assert-BuildWarnings $script:CommandLogPath $Variant
@@ -266,15 +268,27 @@ function Read-McpSidecarInput([string]$PackageRoot, [string]$Repository) {
         $reader = [IO.StreamReader]::new($entries[0].Open(), [Text.UTF8Encoding]::new($false, $true))
         try { $manifest = $reader.ReadToEnd() | ConvertFrom-Json -AsHashtable }
         finally { $reader.Dispose() }
+        $componentDirectory = $entries[0].FullName.Split('/')[0]
+        $licensePath = "$componentDirectory/$script:McpLicense"
+        $license = @($zip.Entries | Where-Object FullName -IEQ $licensePath)
+        if ($license.Count -ne 1 -or $license[0].FullName -cne $licensePath -or $license[0].Length -le 0) {
+            throw "MCP Sidecar ZIP 缺少有效的 $($script:McpLicense)，请用当前组件打包工具重新打包。"
+        }
+        $licenseBytes = $license[0].Length
     } finally { $zip.Dispose() }
     if ($manifest['schema_version'] -ne 1 -or $manifest['architecture'] -cne 'x86_64-pc-windows-msvc' -or
-        $manifest['binary'] -cne 'qkeymapper_mcp.exe' -or $null -eq $manifest['app_local'] -or
+        $manifest['binary'] -cne $script:McpBinary -or $null -eq $manifest['app_local'] -or
         $manifest['app_local'].Count -ne 0 -or $null -eq $manifest['rust_sources']) {
         throw 'Release 需要带源码身份的 x64 单 EXE MCP 组件。'
     }
     $runtimeFiles = @($manifest['files'] | ForEach-Object { $_['path'] } | Where-Object { $_ -match '\.(exe|dll|pyd)$' })
-    if ($runtimeFiles.Count -ne 1 -or $runtimeFiles[0] -cne 'qkeymapper_mcp.exe') {
+    if ($runtimeFiles.Count -ne 1 -or $runtimeFiles[0] -cne $script:McpBinary) {
         throw 'MCP 组件只能携带一个二进制运行文件。'
+    }
+    $licenseFiles = @($manifest['files'] | Where-Object { $_['path'] -ceq $script:McpLicense })
+    if ($licenseFiles.Count -ne 1 -or $licenseFiles[0]['bytes'] -ne $licenseBytes -or
+        $licenseFiles[0]['sha256'] -notmatch '^[0-9a-fA-F]{64}$') {
+        throw "MCP Sidecar 清单中的 $($script:McpLicense) 缺失或无效。"
     }
     $inputs = @('src', 'Cargo.toml', 'Cargo.lock', 'rust-toolchain.toml')
     $objects = (Invoke-Git $Repository (@('rev-parse') + @($inputs | ForEach-Object { "HEAD:mcp_bridge_rust/$_" }))).Output -split '\r?\n'
@@ -297,24 +311,20 @@ function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Reposit
     if ($Architecture -eq 'x64') {
         Assert-SafeTree $razerSource $Repository
         foreach ($name in $script:RazerDriverFiles) { Assert-File (Join-Path $razerSource $name) }
+        if (-not $McpComponent) { throw '缺少已核验的 x64 MCP 组件。' }
+        Assert-SafeTree $McpComponent $WorkRoot
+        Assert-File (Join-Path $McpComponent $script:McpBinary)
+        Assert-File (Join-Path $McpComponent $script:McpLicense)
     }
     Assert-SafeTree $Baseline (Split-Path -Parent $Baseline)
     Reset-WorkDirectory $StagePath $WorkRoot
     Get-ChildItem -LiteralPath $Baseline -Force | Copy-Item -Destination $StagePath -Recurse -Force
-    $mcpTarget = Join-Path $StagePath 'mcp'
-    if (Test-Path -LiteralPath $mcpTarget) {
-        Assert-SafeTree $mcpTarget $WorkRoot
-        Remove-Item -LiteralPath $mcpTarget -Recurse -Force
-    }
-    foreach ($name in @('qkeymapper_mcp.exe', 'qkeymapper-mcp-rust.exe')) {
+    foreach ($name in @('mcp', $script:McpBinary, 'qkeymapper-mcp-rust.exe', "licenses/$script:McpLicense")) {
         $oldSidecar = Join-Path $StagePath $name
-        if (Test-Path -LiteralPath $oldSidecar -PathType Leaf) { Remove-Item -LiteralPath $oldSidecar -Force }
-    }
-    if ($Architecture -eq 'x64') {
-        if (-not $McpComponent) { throw '缺少已核验的 x64 MCP 组件。' }
-        Assert-SafeTree $McpComponent $WorkRoot
-        Assert-File (Join-Path $McpComponent 'qkeymapper_mcp.exe')
-        Copy-Item -LiteralPath $McpComponent -Destination $mcpTarget -Recurse
+        if (Test-Path -LiteralPath $oldSidecar) {
+            Assert-SafeTree $oldSidecar $WorkRoot
+            Remove-Item -LiteralPath $oldSidecar -Recurse -Force
+        }
     }
     Get-ChildItem -LiteralPath $StagePath -File -Force | Where-Object { $_.Extension -in @('.ini', '.wav', '.log', '.dmp', '.pdb') } | Remove-Item -Force
     Get-ChildItem -LiteralPath $StagePath -File -Force | Where-Object { $_.Name -in @(
@@ -336,6 +346,10 @@ function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Reposit
     foreach ($name in $script:IbInputLicenseFiles) {
         Copy-Item -LiteralPath (Join-Path $ibRoot "licenses/$name") -Destination (Join-Path $StagePath "licenses/IbInputSimulator/$name") -Force
     }
+    if ($Architecture -eq 'x64') {
+        Copy-Item -LiteralPath (Join-Path $McpComponent $script:McpBinary) -Destination (Join-Path $StagePath $script:McpBinary)
+        Copy-Item -LiteralPath (Join-Path $McpComponent $script:McpLicense) -Destination (Join-Path $StagePath "licenses/$script:McpLicense")
+    }
     $razerTarget = Join-Path $StagePath 'RazerDriver'
     if (Test-Path -LiteralPath $razerTarget) {
         Assert-SafeTree $razerTarget $WorkRoot
@@ -352,11 +366,26 @@ function Prepare-Package([string]$Baseline, [string]$StagePath, [string]$Reposit
 }
 
 function Assert-PackageZip([string]$ZipPath, [string]$StagePath) {
-    if ([IO.Path]::GetFileName($ZipPath) -cnotmatch $script:AssetPattern) { throw "文件名不符合更新器规则：$ZipPath" }
+    $asset = [regex]::Match([IO.Path]::GetFileName($ZipPath), $script:AssetPattern)
+    if (-not $asset.Success) { throw "文件名不符合更新器规则：$ZipPath" }
     Assert-File (Join-Path $StagePath 'QKeyMapper使用手册.html')
+    $mcpPaths = @($script:McpBinary, "licenses/$script:McpLicense")
+    $excludedMcpPaths = @('mcp', 'qkeymapper-mcp-rust.exe')
+    if ($asset.Groups[2].Value.EndsWith('_x64', [StringComparison]::Ordinal)) {
+        foreach ($path in $mcpPaths) { Assert-File (Join-Path $StagePath $path) }
+    } else {
+        $excludedMcpPaths += $mcpPaths
+    }
     $rootName = Split-Path -Leaf $StagePath
     $zip = [IO.Compression.ZipFile]::OpenRead($ZipPath)
     try {
+        foreach ($path in $excludedMcpPaths) {
+            $entryPath = "$rootName/$path"
+            if (($zip.Entries.FullName -contains $entryPath) -or ($zip.Entries.FullName -like "$entryPath/*") -or
+                (Test-Path -LiteralPath (Join-Path $StagePath $path))) {
+                throw "ZIP 包含不适用的 MCP 文件或目录：$path"
+            }
+        }
         $expectedFiles = @(Get-ChildItem -LiteralPath $StagePath -Recurse -File -Force)
         $actualFiles = @($zip.Entries | Where-Object { $_.Name })
         if ($actualFiles.Count -ne $expectedFiles.Count) { throw "ZIP 文件数量不匹配：$ZipPath" }
@@ -364,7 +393,7 @@ function Assert-PackageZip([string]$ZipPath, [string]$StagePath) {
             $relative = [IO.Path]::GetRelativePath($StagePath, $file.FullName).Replace('\', '/')
             $entry = $zip.GetEntry("$rootName/$relative")
             if ($null -eq $entry -or $entry.Length -ne $file.Length) { throw "ZIP 文件缺失或长度不符：$relative" }
-            if ($relative -in @('QKeyMapper.exe', 'QKeyMapperCrashReporter.exe', 'QKeyMapper使用手册.html', 'IbInputSimulator.dll') -or $relative.StartsWith('RazerDriver/') -or $relative.StartsWith('mcp/') -or $relative -in @($script:IbInputLicenseFiles | ForEach-Object { "licenses/IbInputSimulator/$_" })) {
+            if ($relative -in @('QKeyMapper.exe', 'QKeyMapperCrashReporter.exe', 'QKeyMapper使用手册.html', 'IbInputSimulator.dll') -or $relative.StartsWith('RazerDriver/') -or $relative -in $mcpPaths -or $relative -in @($script:IbInputLicenseFiles | ForEach-Object { "licenses/IbInputSimulator/$_" })) {
                 $stream = $entry.Open()
                 try { $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData($stream)) } finally { $stream.Dispose() }
                 if ($hash -ne (Get-FileHash -LiteralPath $file.FullName -Algorithm SHA256).Hash) { throw "ZIP 内文件与本次产物不一致：$relative" }
@@ -464,7 +493,7 @@ try {
     $smoke = Join-Path $variants[0].Repository 'mcp_bridge_rust/tools/smoke_windows_bundle.ps1'
     Assert-File $smoke
     $mcpSmoke = & $smoke -Archive $mcp.Archive -Sha256 $mcp.Sha256 -OutputDirectory (Join-Path $mcpWork 'verified')
-    $mcpExe = Join-Path $mcpSmoke.extracted 'qkeymapper_mcp.exe'
+    $mcpExe = Join-Path $mcpSmoke.extracted $script:McpBinary
     if ((Get-PeIdentity $mcpExe).Machine -ne 0x8664) { throw "MCP Sidecar 架构不符：$mcpExe" }
     foreach ($variant in $variants) {
         Build-Variant $variant $jom $Jobs
