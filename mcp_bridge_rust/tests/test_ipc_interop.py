@@ -38,6 +38,65 @@ def new_discovery(output, name, user, value, *, private=True):
     return hint
 
 
+async def read_wait_states(client, fixture, instance):
+    async def set_observation(observation):
+        fixture.command(observation)
+        await fixture.wait(lambda value: value.get("sequence") == fixture.sequence)
+
+    async def wait(condition, timeout_ms):
+        value = (await call(client, "qkm_wait_state", {
+            "condition": condition, "timeout_ms": timeout_ms
+        }))["result"]
+        assert value["condition"] == condition and value["state"]["instance"] == instance
+        return value
+
+    await set_observation("wait-idle")
+    idle = await wait("stopped_and_quiescent", 200)
+    assert idle["outcome"] == "timed_out" and idle["state"]["run"]["stop_completion"] == "unobserved"
+    assert (await call(client, "qkm_get_connection_state"))["status"] == "connected"
+
+    await set_observation("wait-checking")
+    monitoring = await wait("monitoring_enabled", 1000)
+    assert monitoring["outcome"] == "satisfied" and monitoring["state"]["run"]["gui_state"] == "checking"
+    samples = (await fixture.wait(lambda value: "wait_samples" in value))["wait_samples"]
+    waiting = asyncio.create_task(wait("mapping_active", 4000))
+    try:
+        await fixture.wait(lambda value: value.get("wait_samples", 0) > samples)
+        await call(client, "qkm_get_state", error="busy_or_closed")
+        await set_observation("wait-active")
+        active = await waiting
+        assert active["outcome"] == "satisfied" and active["state"]["run"]["gui_state"] == "mapping_matched"
+    finally:
+        if not waiting.done():
+            waiting.cancel()
+            await asyncio.gather(waiting, return_exceptions=True)
+
+    await set_observation("wait-cleaned")
+    stopped = await wait("stopped_and_quiescent", 1000)
+    assert stopped["outcome"] == "satisfied" and stopped["state"]["run"]["stop_completion"] == "observed"
+
+    await set_observation("wait-stall")
+    samples = (await fixture.wait(lambda value: "wait_samples" in value))["wait_samples"]
+    waiting = asyncio.create_task(call(client, "qkm_wait_state",
+        {"condition": "monitoring_enabled", "timeout_ms": 4000}, error="cancelled"))
+    try:
+        await fixture.wait(lambda value: value.get("wait_samples", 0) > samples)
+        await call(client, "qkm_disconnect")
+        await waiting
+        await connection(client, "disconnected")
+    finally:
+        if not waiting.done():
+            waiting.cancel()
+            await asyncio.gather(waiting, return_exceptions=True)
+
+    await call(client, "qkm_connect")
+    assert (await connection(client, "connected"))["instance"] == instance
+    started = time.monotonic()
+    await call(client, "qkm_wait_state", {"condition": "monitoring_enabled", "timeout_ms": 300}, error="timeout")
+    assert time.monotonic() - started < 3
+    assert (await connection(client, "failed"))["error"] == "timeout"
+
+
 async def exercise(args):
     assert elevation(win32api.GetCurrentProcess()) == 0
     checks = []
@@ -183,6 +242,14 @@ async def exercise(args):
         assert time.monotonic() - started < 5
         assert fixture.state()["authenticated"] == 4
         passed("closing stdio drains a pending native job")
+
+        for sidecar, settings in (("Rust", rust), ("Python", python)):
+            async with Client(settings) as client:
+                await call(client, "qkm_connect")
+                connected = await connection(client, "connected")
+                assert connected["scopes"] == 1
+                await read_wait_states(client, fixture, connected["instance"])
+            passed(f"{sidecar} bounded wait over private IPC, healthy condition timeout and bounded transport timeout")
     finally:
         try:
             if store is not None and owns_credential:

@@ -2737,6 +2737,8 @@ int runInteropFixture(QApplication &app, const QString &statePath)
     if (!dialog.server().isEnabled()) return 25;
     int sequence = 0;
     int authenticated = 0;
+    int waitSamples = 0;
+    QString waitObservation;
     quint32 clientPid = 0;
     QObject::connect(&dialog.server(), &AutomationSessionServer::authenticated, &dialog, [&]() { ++authenticated; });
     QObject::connect(&dialog.server(), &AutomationSessionServer::pairingRequested, &dialog,
@@ -2762,6 +2764,29 @@ int runInteropFixture(QApplication &app, const QString &statePath)
                 } else if (action == QStringLiteral("corrupt-store")) {
                     QFile store(root.path() + QStringLiteral("/server/pairings.dat"));
                     if (!store.open(QIODevice::WriteOnly) || store.write("invalid") != 7) { app.exit(29); return; }
+                } else if (action == QStringLiteral("wait-idle") || action == QStringLiteral("wait-checking")
+                    || action == QStringLiteral("wait-active") || action == QStringLiteral("wait-cleaned")
+                    || action == QStringLiteral("wait-stall")) {
+                    waitObservation = action;
+                    dialog.server().setRequestHandler([&](const AutomationRequest &request) {
+                        auto &server = dialog.server();
+                        if (request.method != QStringLiteral("qkm_get_state") || !request.arguments.isEmpty()) {
+                            server.replyError(request.connectionId, request.requestId, QStringLiteral("unsupported_capability"),
+                                QStringLiteral("Synthetic wait-state samples only."));
+                            return;
+                        }
+                        ++waitSamples;
+                        if (waitObservation == QStringLiteral("wait-stall")) return;
+                        const bool active = waitObservation == QStringLiteral("wait-active");
+                        const bool monitoring = active || waitObservation == QStringLiteral("wait-checking");
+                        server.reply(request.connectionId, request.requestId, {{QStringLiteral("schema_version"), 1},
+                            {QStringLiteral("instance"), server.instanceId()}, {QStringLiteral("run"), QJsonObject{
+                                {QStringLiteral("monitoring_enabled"), monitoring},
+                                {QStringLiteral("gui_state"), QString::fromLatin1(active ? "mapping_matched" : monitoring ? "checking" : "idle")},
+                                {QStringLiteral("worker_state_sample"), QString::fromLatin1(monitoring ? "started" : "stopped")},
+                                {QStringLiteral("stop_completion"), QString::fromLatin1(waitObservation == QStringLiteral("wait-cleaned")
+                                    ? "observed" : "unobserved")}}}});
+                    });
                 } else if (action == QStringLiteral("quit")) app.quit();
                 else { qWarning("Unexpected interop fixture command"); app.exit(26); return; }
             }
@@ -2775,7 +2800,7 @@ int runInteropFixture(QApplication &app, const QString &statePath)
         const QJsonObject state{{QStringLiteral("pid"), int(GetCurrentProcessId())},
             {QStringLiteral("desktop"), QString::fromWCharArray(desktop)},
             {QStringLiteral("sequence"), sequence}, {QStringLiteral("authenticated"), authenticated},
-            {QStringLiteral("client_pid"), int(clientPid)},
+            {QStringLiteral("wait_samples"), waitSamples}, {QStringLiteral("client_pid"), int(clientPid)},
             {QStringLiteral("pending"), !widget<QLabel>(dialog, "mcpPairRequest")->text().isEmpty()},
             {QStringLiteral("pair_count"), dialog.server().pairings().size()},
             {QStringLiteral("enabled"), dialog.server().isEnabled()},
