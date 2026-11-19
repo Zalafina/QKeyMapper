@@ -1,4 +1,4 @@
-"""Compare Rust and Python transactions on an explicitly authorized private product."""
+"""Verify Rust transactions on an explicitly authorized private product."""
 
 import argparse
 import asyncio
@@ -18,7 +18,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "mcp_bridge/tests"))
 from test_product_interop import Product, connection_pending
 from test_product_persistence import filter_keys
-from test_sdk_interop import call, connection, integrity, parameters
+from test_sdk_interop import call, connection, integrity
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.windows import identity
 
@@ -106,7 +106,6 @@ async def run(args):
             assert candidate.load() is None, "The test must not replace an existing pairing."
             store = candidate
             rust = rust_config(discovery, app)
-            python = parameters(discovery, args.executable, app.output)
             async with Client(rust, cache=None) as client:
                 await call(client, "qkm_request_pairing")
                 await connection_pending(client)
@@ -121,7 +120,7 @@ async def run(args):
                 initial = await source(client)
                 assert not (await request(client, "qkm_query", dict(initial, entity="mappings")))["items"]
                 discard = await preview(client, **initial, original_key="C", mapping_key="D")
-            async with connected(python, bound) as client:
+            async with connected(rust, bound) as client:
                 assert await request(client, "qkm_get_help", help_arguments) == help_page
                 assert await source(client) == initial
                 assert (await request(client, "qkm_cancel_changes", {"preview_id": discard}))["status"] == "cancelled"
@@ -151,12 +150,12 @@ async def run(args):
                 assert not result["result"]["started_by_operation"] and ini.read_bytes() != before
                 previous = await source(client)
                 pending = await preview(client, **previous, original_key="C", mapping_key="D")
-            async with connected(python, bound) as client:
+            async with connected(rust, bound) as client:
                 assert (await operation(client, saved))["status"] == "applied"
                 assert (await operation(client, failed))["status"] == "failed"
             gui = await app.action("ReadMapping")
             assert gui["mapping_rows"] == [dict(original="A", mapping="B")]
-        print("PASS same-pair Python/Rust preview, cancel, commit, save failure and recovery", flush=True)
+        print("PASS same-pair Rust sessions, preview, cancel, commit, save failure and recovery", flush=True)
 
         async with product("cold") as app:
             assert await enable(app, 1) == discovery

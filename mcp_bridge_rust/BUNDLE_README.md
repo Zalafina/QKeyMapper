@@ -31,6 +31,6 @@ args = ["--executable", "D:/Tools/QKeyMapper/QKeyMapper.exe", "--discovery-file"
 
 `--persistent-target` 是 `--discovery-file` 的显式替代选项，沿用产品现有的持久配对及当前登录发现范围。专用只配置演示部署可选 `--product-demo-record` 或 `--demo-record PATH`；只有宿主明确允许写入演示时才附加 `--enable-demo-mapping`。演示图片由支持 MCP 图片的客户端消费，渠道发送由对应 gateway 处理。
 
-从 Python 切换时，先断开并退出旧 Sidecar，备份客户端这项 MCP 配置。将启动命令改为本包的 Rust EXE，移除 Python 启动器参数，原目标参数继续使用。启动新会话并用 qkm_connect 核对目标和已有配对。需要回退时，先断开并退出 Rust Sidecar，再恢复旧配置并使用另存的 Python 组件。两个入口顺序使用，配对密钥仍由 Windows 凭据管理器保管。
+Rust 是唯一受支持的 Sidecar。仍配置旧 Python 入口时，先断开并退出旧进程，再由用户显式将客户端启动命令改为本包 EXE，保留原目标参数并移除 Python 启动器参数。启动新会话，用 `qkm_connect` 核对实际实例和已有配对。配对凭据继续由 Windows 凭据管理器保护。
 
 构建用组件的 `bundle-manifest.json` 包含依赖清单及文件摘要。第三方许可原件位于 `third-party`，主项目许可见 `QKeyMapper-LICENSE.txt`。正式 x64 Release 的合并许可位于 `licenses/QKeyMapper-MCP-Licenses.txt`。随动态测试组件分发的 Microsoft Visual C++ 运行库适用对应的 Visual Studio 许可和再分发条款。

@@ -33,7 +33,7 @@ foreach ($name in @('build_release.bat', 'build_release.ps1', 'test_build_releas
 
 只读预检核对归档摘要、静态 x64 形态、Rust 源码／依赖锁身份及合并许可条目。正式构建还会解包、校验文件清单、运行组件烟测并核验 EXE 架构。Release 脚本在三套 Qt 构建的 qmake 命令中传入 `QKM_BUILD_MCP_BRIDGE=0`，两个 x64 包共用已核验的独立组件。
 
-Qt6 x64 和 Qt5 x64 正式 ZIP 均包含与 `QKeyMapper.exe` 同级的 `qkeymapper_mcp.exe`，以及 `licenses/QKeyMapper-MCP-Licenses.txt`。组件说明、清单和原始许可留在构建用组件，客户端使用[配置示例](../../mcp_bridge_rust/BUNDLE_README.md)中的包根启动路径。Qt5 x86 排除上述两个 Sidecar 文件，Windows 7 x86 不支持 MCP。旧 Python 组件可从原存档独立回退。
+Qt6 x64 和 Qt5 x64 正式 ZIP 均包含与 `QKeyMapper.exe` 同级的 `qkeymapper_mcp.exe`，以及 `licenses/QKeyMapper-MCP-Licenses.txt`。组件说明、清单和原始许可留在构建用组件，客户端使用[配置示例](../../mcp_bridge_rust/BUNDLE_README.md)中的包根启动路径。Qt5 x86 排除上述两个 Sidecar 文件，Windows 7 x86 不支持 MCP。x64 正式包只交付 Rust Sidecar，旧 Python 组件归档。
 
 正式 ZIP 保存在 `latest_release`，最新配套 EXE/PDB 保存在三个 `Qt*_dump_analyze` 目录。若需要保留历史版本供以后下载或分析崩溃，在下一次 Release 前将相应 ZIP 和匹配的 EXE/PDB 一起按版本归档；这两类固定目录会被后续成功发布更新。
 

@@ -13,7 +13,7 @@ import win32api
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "mcp_bridge/tests"))
 from test_product_interop import Product, connection_pending
-from test_sdk_interop import business_state, call, connection, elevation, identity, integrity, parameters
+from test_sdk_interop import business_state, call, connection, elevation, identity, integrity
 from qkeymapper_mcp.credentials import CredentialStore
 
 
@@ -71,16 +71,10 @@ async def exercise(args):
             assert rust_state["instance"] == binding["instance"]
             await call(client, "qkm_disconnect")
             await connection(client, "disconnected")
-        python = parameters(discovery, args.executable, args.output)
-        async with Client(python) as client:
-            await call(client, "qkm_connect")
-            assert (await connection(client, "connected"))["instance"] == binding["instance"]
-            assert await compare_state(client, baseline) == rust_state
-            await call(client, "qkm_disconnect")
-            await connection(client, "disconnected")
         async with Client(config, mode="legacy") as client:
             await call(client, "qkm_connect")
-            assert (await connection(client, "connected"))["scopes"] == 1
+            reconnected = await connection(client, "connected")
+            assert reconnected["scopes"] == 1 and reconnected["instance"] == binding["instance"]
             assert await compare_state(client, baseline) == rust_state
             assert ini.read_bytes() == before
             await product.action("Revoke")
@@ -88,7 +82,7 @@ async def exercise(args):
             await call(client, "qkm_connect")
             await connection(client, "failed")
         await product.action("Disable")
-        print("PASS private stock product, Read only, Rust/Python/new Rust state match, INI unchanged during reads")
+        print("PASS private stock product, Read only, new Rust session matches the GUI and earlier read, INI unchanged during reads")
         print("PASS revocation rejected stored pairing")
     finally:
         try:

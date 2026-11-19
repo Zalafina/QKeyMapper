@@ -1,13 +1,14 @@
 """Package a built x64 Rust sidecar and its actual app-local dependencies."""
 
 import argparse
+import hashlib
 import json
 import os
 import re
 import shutil
+import stat
 import struct
 import subprocess
-import sys
 import zipfile
 from html.parser import HTMLParser
 from pathlib import Path
@@ -24,8 +25,22 @@ SYSTEM_LIBRARIES = {
     "kernel32.dll", "ntdll.dll", "shell32.dll",
 }
 
-sys.path.insert(0, str(ROOT / "mcp_bridge/tools"))
-from build_windows_bundle import no_reparse, require, sha256
+def require(condition, message):
+    if not condition:
+        raise ValueError(message)
+
+
+def sha256(path):
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def no_reparse(path):
+    path = path.absolute()
+    for candidate in (path, *path.parents):
+        if candidate.exists() or candidate.is_symlink():
+            attributes = candidate.lstat().st_file_attributes
+            require(not (attributes & stat.FILE_ATTRIBUTE_REPARSE_POINT), f"Reparse path rejected: {candidate}")
 
 
 def require_x64(path):

@@ -3878,6 +3878,12 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
         this, [this](bool enabled) {
             if (!enabled && isInitialized() && m_AutomationMappingChanges) m_AutomationMappingChanges->clear();
         });
+    connect(this, &QKeyMapper::mappingCleanupTimedOut_Signal, this, [this](quint64 generation) {
+        if (m_AutomationMappingChanges) m_AutomationMappingChanges->observeStop(generation, false, true);
+    });
+    connect(this, &QKeyMapper::mappingCleanupCompleted_Signal, this, [this](quint64 generation, bool timedOut) {
+        if (m_AutomationMappingChanges) m_AutomationMappingChanges->observeStop(generation, true, timedOut);
+    });
     connect(m_GeneralAdvancedDialog, &QGeneralAdvancedDialog::mcpControlRequested, this, &QKeyMapper::showMcpControlDialog);
     m_IgnoreRulesListDialog = new QIgnoreWindowInfoListDialog(this);
     m_MappingAdvancedDialog = new QMappingAdvancedDialog(this);
@@ -38405,6 +38411,75 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     const MappingChangeOwner owner{server.instanceId(), request.pairId, request.permissionEpoch};
     if (!m_AutomationMappingChanges) m_AutomationMappingChanges = std::make_unique<MappingChangeStore>();
     auto &store = *m_AutomationMappingChanges;
+    if (validation.method == MappingChangeMethod::Stop) {
+        if (validation.instance != owner.instance) {
+            fail(QStringLiteral("wrong_instance"), QStringLiteral("Read the instance identity from the connected product."));
+            return;
+        }
+        if (configurationOnlyDemo() || !server.isRequestCurrent(request)) {
+            fail(QStringLiteral("permission_denied"), QStringLiteral("Stopping requires current Read and RunMapping permission."));
+            return;
+        }
+        auto previous = store.operation(owner, validation.id);
+        if (previous.value(QStringLiteral("action")) == QLatin1String("mapping.stop")) {
+            previous.insert(QStringLiteral("replayed"), true);
+            server.reply(request.connectionId, request.requestId, previous);
+            return;
+        }
+        const bool idle = m_KeyMapStatus == KEYMAP_IDLE;
+        const bool initiated = !idle && m_KeyMapStatus != KEYMAP_STOPPING;
+        MappingChangeStore::StopReservation reservation;
+        if (initiated) {
+            // Match the runtime submission fence before inspecting GUI-owned source rows.
+            // Once admitted, no newly queued start may consume those rows before the stop.
+            QMutexLocker sourceAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+            const bool sourceStable = m_KeyMapStatus == KEYMAP_CHECKING && !loadSetting_flag && !m_MappingSourceLoading
+                && m_MappingSourceLoadAccepted
+                && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED
+                && QKeyMapper_Worker::s_SourceReadAccess.readBasis(m_AutomationSourceCleanupRevision)
+                    != MappingSourceAccess::ReadBasis::Unavailable;
+            if (!sourceStable) {
+                sourceAccess.unlock();
+                fail(QStringLiteral("unsupported_capability"),
+                    QStringLiteral("An explicit stop can start only while monitoring with stable, inactive mapping sources."));
+                return;
+            }
+            bool currentSourceFound = false;
+            for (const auto &tab : std::as_const(s_KeyMappingTabInfoList)) {
+                currentSourceFound = currentSourceFound || tab.KeyMappingData == KeyMappingDataList;
+                if (!tab.KeyMappingData || findOriKeyInKeyMappingDataList(
+                    QLatin1String(SENDON_MAPPINGSTOP_STR), tab.KeyMappingData) >= 0) {
+                    sourceAccess.unlock();
+                    fail(QStringLiteral("unsupported_capability"),
+                        QStringLiteral("This stop requires a separately reviewed stop action or source."));
+                    return;
+                }
+            }
+            if (!currentSourceFound) {
+                sourceAccess.unlock();
+                fail(QStringLiteral("unsupported_capability"), QStringLiteral("The active source is not a verified source tab."));
+                return;
+            }
+            reservation = store.reserveStop(owner, validation.id, false, true, false);
+            if (reservation == MappingChangeStore::StopReservation::Reserved)
+                QKeyMapper_Worker::s_MappingInputClosed.storeRelease(true);
+        } else {
+            reservation = store.reserveStop(owner, validation.id, idle, false,
+                idle && automationSourceReadBasis() == QLatin1String("completed_cleanup"));
+        }
+        if (reservation == MappingChangeStore::StopReservation::Conflict) {
+            fail(QStringLiteral("request_id_conflict"), QStringLiteral("Pick an unused request ID for a different operation."));
+            return;
+        }
+        if (reservation == MappingChangeStore::StopReservation::Full) {
+            fail(QStringLiteral("operation_limit"), QStringLiteral("All result slots belong to in-flight operations."));
+            return;
+        }
+        if (initiated) beginMappingStop();
+        if (!idle) store.bindStop(validation.id, m_mappingStopOperation, m_mappingStopTimedOut);
+        server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
+        return;
+    }
     if (validation.method == MappingChangeMethod::Operation) {
         server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
         return;
@@ -39511,7 +39586,7 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                 {QStringLiteral("limitations"), QJsonArray{QStringLiteral("private_background_only"), QStringLiteral("single_current_normal_source"),
                     QStringLiteral("non_row_save_footprint_only"), QStringLiteral("source_rows_require_separate_validation"),
                     QStringLiteral("not_write_permission_or_a_scene_lease")}}}};
-        const QJsonArray mappingCapabilities = QkmAutomation::mappingChangeCapabilities();
+        const QJsonArray mappingCapabilities = QkmAutomation::mappingChangeCapabilities(!QkmAutomation::configurationOnlyDemo());
         for (const auto &capability : mappingCapabilities) businessCapabilities.append(capability);
         server.replyCapabilities(request.connectionId, request.requestId, businessCapabilities);
         return;

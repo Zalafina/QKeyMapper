@@ -1,5 +1,9 @@
 # QKeyMapper MCP Sidecar in Rust
 
+Rust is the supported QKeyMapper MCP Sidecar. The Python Sidecar source
+and its earlier evidence are archived. Python remains useful for test
+clients, Windows fixture utilities and packaging.
+
 The Rust Sidecar provides stdio MCP, authenticated IPC, configuration
 transactions and restricted windows with verified PNG results. It also includes
 a standalone protocol fixture.
@@ -64,13 +68,13 @@ product. The bridge runs each scene as one native job, returns a verified
 image after cleanup, and keeps the cleanup receipt in its own process.
 
 On Windows, `cargo test --locked` also covers argument handling, framing,
-proof vectors, identity and pipe cancellation. Run `tests/test_tool_contract.py --exe $exe`
-with the locked Python environment to compare the tool catalog and result
-format on both protocol versions. Use its `--export-catalog` option when
-synchronizing reviewed Python tool descriptions, schemas or error messages.
-The ignored `dedicated_credential_roundtrip`
-test uses the locked Python environment to cross-check two newly generated
-credential contexts and removes both entries. The private Qt fixture uses
+proof vectors, identity and pipe cancellation. Edit the reviewed MCP contract
+in `src/tool_catalog.json` directly when changing tools, schemas or reviewed
+errors. Run `tests/test_tool_contract.py --exe $exe` in the locked test
+environment. It checks published tools, independent invalid arguments and
+structured error expectations in both protocol modes. The opt-in
+`dedicated_credential_roundtrip` test verifies and removes its own v1 and v2
+DPAPI-protected Windows entries. The private Qt fixture uses
 `tests/test_ipc_interop.py` and the repository's asInvoker
 `QKeyMapperMcpControlTest.exe`. Run the Windows credential and Qt cases in
 ordinary Medium integrity.
@@ -79,11 +83,32 @@ ordinary Medium integrity.
 for configuration changes. It needs a separately approved and registered
 product copy, the untouched synthetic persistence fixture, and an exact Rust
 client executable for the Read and Configure approval. The test controller
-and both sidecars stay at ordinary Medium integrity.
+and each Rust session stay at ordinary Medium integrity.
 
 `tests/test_product_demo.py` uses an approved configuration-only product
 and the fixed private GUI helper for the two window permissions. It
 checks real product images and recovers both demonstration scenes.
+
+## Monitoring and stop results
+
+`qkm_wait_state` samples the authenticated target for `monitoring_enabled`,
+`mapping_active` or `stopped_and_quiescent`. The caller sets a timeout of
+100–5000 ms (default 1000). A condition timeout includes the last sample.
+
+With Read and RunMapping permission, `qkm_stop_mapping` accepts the current
+`instance` from `qkm_get_state` and a new 32-character lowercase hex
+`request_id`. It can stop unmatched monitoring with stable sources and no
+configured stop actions. It can also observe a stop already started in the
+GUI. Idle targets return `already_idle`. Matched or global mapping and
+configured stop actions still use the GUI. The configuration-only demo
+does not expose `mapping.stop`.
+
+The request ID is also the operation ID. Poll `qkm_get_operation` after
+`waiting_cleanup` or a disconnect. `completed` means the product observed
+cleanup for that operation. A cleanup timeout leaves the operation pending.
+A repeated ID returns the retained result for the same instance, pairing
+and permission epoch. Verify current state if the history is unavailable.
+`tests/test_product_stop.py` covers the selected private GUI and Rust flow.
 
 ## Windows x64 component
 

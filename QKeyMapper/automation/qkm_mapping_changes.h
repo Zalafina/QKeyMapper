@@ -46,7 +46,7 @@ struct IbInputPreferencesArguments {
     QString unavailablePolicy;
 };
 
-enum class MappingChangeMethod { Preview, Apply, Cancel, Operation };
+enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop };
 enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
@@ -57,6 +57,7 @@ struct MappingChangeRequest {
     IbInputPreferencesArguments preferences;
     QString settingName;
     QString id;
+    QString instance;
     bool confirmConflicts = false;
     bool confirmScope = false;
     bool confirmOverwrite = false;
@@ -68,7 +69,7 @@ struct MappingChangeRequest {
 
 bool isMappingChangeMethod(const QString &method);
 MappingChangeRequest validateMappingChangeRequest(const QString &method, const QJsonObject &arguments);
-QJsonArray mappingChangeCapabilities();
+QJsonArray mappingChangeCapabilities(bool allowStop = true);
 
 struct MappingChangeOwner {
     QString instance;
@@ -123,6 +124,11 @@ public:
     void finish(const MappingChangeOwner &owner, const QString &id, const QString &status,
         const QJsonObject &result, const QString &errorCode = {}, const QString &message = {});
     bool cancel(const MappingChangeOwner &owner, const QString &id);
+    enum class StopReservation { Reserved, Conflict, Full };
+    StopReservation reserveStop(const MappingChangeOwner &owner, const QString &id, bool idle, bool initiated,
+        bool cleanupObserved);
+    void bindStop(const QString &id, quint64 generation, bool timedOut);
+    void observeStop(quint64 generation, bool completed, bool timedOut);
     QJsonObject operation(const MappingChangeOwner &owner, const QString &id);
     void clear();
 private:
@@ -133,11 +139,14 @@ private:
         MappingChangeOwner owner;
         QJsonObject value;
         qint64 created = 0;
+        quint64 stopGeneration = 0;
     };
     qint64 now();
     void prune();
     bool remember(const MappingChangePreview &preview, const QString &status,
         const QString &errorCode = {}, const QString &message = {});
+    bool remember(const MappingChangeOwner &owner, const QString &id, QJsonObject value);
+    void updateStop(Operation &operation, bool completed, bool timedOut);
     QElapsedTimer m_clock;
     QHash<QString, MappingChangePreview> m_previews;
     QHash<QString, Operation> m_results;

@@ -93,6 +93,13 @@ struct Operation {
     operation_id: String,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct Stop {
+    instance: String,
+    request_id: String,
+}
+
 #[derive(Default, Deserialize, Serialize)]
 enum Action {
     #[default]
@@ -300,11 +307,12 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 && v.source_tab_ref.as_deref().is_none_or(tab_ref)
         }),
         "qkm_get_operation" => typed(arguments, |v: &Operation| id(&v.operation_id)),
+        "qkm_stop_mapping" => typed(arguments, |v: &Stop| id(&v.instance) && id(&v.request_id)),
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
             let mut values = typed(arguments, Preview::valid)?;
             values.retain(|_, value| !value.is_null());
-            // Match Python's existing wire defaults. Qt validates each action's field set.
+            // Keep the IPC defaults. Qt validates each action's field set.
             if values.get("action").and_then(Value::as_str) == Some("mapping.add") {
                 values.remove("action");
                 values.entry("insert_row".to_owned()).or_insert(Value::Null);

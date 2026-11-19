@@ -292,24 +292,6 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore = "compares this process with the locked Windows Python implementation"]
-    fn current_link_query_matches_python() {
-        use std::{path::Path, process::Command};
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
-        let code = "import sys; from qkeymapper_mcp.windows import identity; \
-                    print(int(bool(identity(int(sys.argv[1])).linked_authentication)))";
-        let result = Command::new(root.join("out/mcp_bridge/venv/Scripts/python.exe"))
-            .env("PYTHONPATH", root.join("mcp_bridge/src"))
-            .args(["-B", "-X", "utf8", "-c", code])
-            .arg(std::process::id().to_string())
-            .output()
-            .unwrap();
-        assert!(result.status.success(), "Python identity helper failed");
-        let expected = std::str::from_utf8(&result.stdout).unwrap().trim() == "1";
-        assert_eq!(own_identity().unwrap().linked.is_some(), expected);
-    }
-
-    #[test]
     fn verifies_live_process_and_reciprocal_login() {
         require_pristine_thread().unwrap();
         let first = own_identity().unwrap();

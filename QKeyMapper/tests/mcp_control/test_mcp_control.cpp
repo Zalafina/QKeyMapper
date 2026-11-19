@@ -203,6 +203,7 @@ private slots:
     void mappingRemovalLifecycle();
     void mappingChangeLifecycle();
     void mappingChangeLimits();
+    void mappingStopLifecycle();
     void configurationSaveLifecycle();
     void configurationSaveExpiry();
     void configurationSaveLimits();
@@ -349,7 +350,11 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
         {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
     const auto capabilities = mappingChangeCapabilities();
-    QCOMPARE(capabilities.size(), 12);
+    QCOMPARE(capabilities.size(), 13);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 12);
+    const auto stop = capabilities.at(11).toObject();
+    QCOMPARE(stop.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.stop"));
+    QCOMPARE(stop.value(QStringLiteral("required_scopes")).toInt(), int(Read | RunMapping));
     const auto updatePreview = capabilities.at(6).toObject();
     const auto updateApply = capabilities.at(7).toObject();
     QCOMPARE(updatePreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.update.preview"));
@@ -582,6 +587,67 @@ void McpControlTest::mappingChangeLimits()
     QCOMPARE(MappingChangeStoreTestAccess::previews(store), MappingChangeStore::MaxPreviews);
     QVERIFY(store.create({owner.instance, QStringLiteral("0"), 2}, {}, {}));
     QCOMPARE(MappingChangeStoreTestAccess::previews(store), MappingChangeStore::MaxPreviews);
+}
+
+void McpControlTest::mappingStopLifecycle()
+{
+    MappingChangeStore store;
+    const QString id(32, QLatin1Char('a'));
+    const QString instance(32, QLatin1Char('b'));
+    const MappingChangeOwner owner{instance, QStringLiteral("pair"), 1};
+    const QString method = QStringLiteral("qkm_stop_mapping");
+    const QJsonObject arguments{{QStringLiteral("instance"), instance}, {QStringLiteral("request_id"), id}};
+    auto extra = arguments;
+    extra.insert(QStringLiteral("force"), true);
+    QVERIFY(!validateMappingChangeRequest(method, extra).ok());
+    QVERIFY(!validateMappingChangeRequest(method, {{QStringLiteral("instance"), instance}}).ok());
+    const auto request = validateMappingChangeRequest(method, arguments);
+    QVERIFY(request.ok() && request.method == MappingChangeMethod::Stop);
+    QCOMPARE(request.instance, instance);
+    QCOMPARE(request.id, id);
+
+    using Reservation = MappingChangeStore::StopReservation;
+    const QString status = QStringLiteral("status");
+    const QString timedOut = QStringLiteral("cleanup_timed_out");
+    const QString waiting = QStringLiteral("waiting_cleanup");
+    const auto preview = store.create(owner, {}, {});
+    QVERIFY(preview);
+    QVERIFY(store.reserveStop(owner, preview->id, true, false, false) == Reservation::Conflict);
+    QVERIFY(store.reserveStop(owner, id, false, true, false) == Reservation::Reserved);
+    QVERIFY(store.reserveStop(owner, id, false, true, false) == Reservation::Conflict);
+    QVERIFY(store.reserveStop({instance, QStringLiteral("pair"), 2}, id, false, true, false) == Reservation::Conflict);
+    QCOMPARE(store.operation({instance, QStringLiteral("other"), 1}, id).value(status).toString(), QStringLiteral("unknown"));
+    QCOMPARE(store.operation({instance, owner.pairId, 2}, id).value(status).toString(), QStringLiteral("unknown"));
+
+    store.bindStop(id, 100, false);
+    store.observeStop(99, true, false);
+    QCOMPARE(store.operation(owner, id).value(status).toString(), waiting);
+    store.observeStop(100, false, true);
+    const auto timed = store.operation(owner, id);
+    QCOMPARE(timed.value(status).toString(), waiting);
+    QCOMPARE(timed.value(QStringLiteral("error")).toObject().value(QStringLiteral("code")).toString(), QStringLiteral("stop_timeout"));
+
+    MappingChangeStoreTestAccess::expireResult(store, id);
+    for (int index = 1; index < MappingChangeStore::MaxResults; ++index) {
+        const QString duplicate = QString::number(index);
+        QVERIFY(store.reserveStop(owner, duplicate, false, false, false) == Reservation::Reserved);
+        store.bindStop(duplicate, 100, true);
+    }
+    QVERIFY(store.reserveStop(owner, QStringLiteral("extra"), true, false, false) == Reservation::Full);
+    QCOMPARE(store.operation(owner, id).value(status).toString(), waiting);
+    store.observeStop(100, true, false);
+    const auto done = store.operation(owner, id);
+    QCOMPARE(done.value(status).toString(), QStringLiteral("completed"));
+    QVERIFY(done.value(timedOut).toBool());
+    QVERIFY(!done.contains(QStringLiteral("error")) && !done.contains(QStringLiteral("pending_steps")));
+    QVERIFY(done.value(QStringLiteral("stop_initiated")).toBool());
+    QVERIFY(!store.operation(owner, QStringLiteral("1")).value(QStringLiteral("stop_initiated")).toBool());
+    store.observeStop(100, false, true);
+    QCOMPARE(store.operation(owner, id), done);
+    MappingChangeStoreTestAccess::expireResult(store, id);
+    QCOMPARE(store.operation(owner, id).value(status).toString(), QStringLiteral("unknown"));
+    QVERIFY(store.reserveStop(owner, QStringLiteral("idle"), true, false, false) == Reservation::Reserved);
+    QCOMPARE(store.operation(owner, QStringLiteral("idle")).value(status).toString(), QStringLiteral("already_idle"));
 }
 
 void McpControlTest::configurationSaveLifecycle()

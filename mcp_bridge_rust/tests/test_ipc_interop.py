@@ -15,7 +15,7 @@ import win32security
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "mcp_bridge/tests"))
-from test_sdk_interop import Fixture, call, connection, elevation, identity, parameters, pending
+from test_sdk_interop import Fixture, call, connection, elevation, identity, pending
 from test_tool_contract import TOOLS
 from qkeymapper_mcp.credentials import CredentialStore
 
@@ -125,7 +125,6 @@ async def exercise(args):
         assert store.load() is None, "fixture must start without a stored credential"
         owns_credential = True
         rust = rust_parameters(args, discovery, args.test_exe)
-        python = parameters(discovery, args.test_exe, args.output)
         original = json.loads(discovery.read_text(encoding="utf-8"))
 
         async with Client(rust_parameters(args, discovery, Path(sys.executable))) as client:
@@ -184,6 +183,7 @@ async def exercise(args):
                 ("qkm_preview_changes", {"action": "configuration.save", "setting_name": "Synthetic"}),
                 ("qkm_apply_changes", {"preview_id": "a" * 32}),
                 ("qkm_cancel_changes", {"preview_id": "a" * 32}),
+                ("qkm_stop_mapping", {"instance": bound["instance"], "request_id": "b" * 32}),
             ):
                 await call(client, tool, arguments, error="permission_denied")
             revision = "a" * 64
@@ -203,7 +203,7 @@ async def exercise(args):
                 await call(client, tool, arguments, error="permission_denied")
             await fixture.wait(lambda value: value["authenticated"] == 1)
         assert store.load() is not None
-        async with Client(python) as client:
+        async with Client(rust) as client:
             await call(client, "qkm_connect")
             assert (await connection(client, "connected"))["instance"] == bound["instance"]
             await fixture.wait(lambda value: value["authenticated"] == 2)
@@ -214,16 +214,16 @@ async def exercise(args):
             assert (await call(client, "qkm_get_capabilities"))["result"]["scopes"] == 1
             fixture.command("revoke")
             await fixture.wait(lambda value: value["pair_count"] == 0)
-            await call(client, "qkm_get_capabilities", error=("connection_closed", "native_operation_failed"))
+            await call(client, "qkm_get_capabilities", error=("connection_closed", "identity_rejected"))
         async with Client(rust) as client:
             await call(client, "qkm_connect")
             await connection(client, "failed")
             assert not fixture.state()["pending"]
-        passed("Rust writes v1 DPAPI credential, authenticated queries, Python reauthenticates, busy peer and revocation")
+        passed("v1 DPAPI credential, Rust reconnect, busy peer and revocation")
 
         store.forget()
         await asyncio.sleep(1.05)
-        async with Client(python) as client:
+        async with Client(rust) as client:
             await pending(client, fixture)
             fixture.command("approve")
             assert (await connection(client, "connected"))["scopes"] == 1
@@ -232,7 +232,7 @@ async def exercise(args):
             assert (await connection(client, "connected"))["instance"] == bound["instance"]
             assert (await call(client, "qkm_get_capabilities"))["result"]["scopes"] == 1
         await fixture.wait(lambda value: value["authenticated"] == 4)
-        passed("Python writes v1 DPAPI credential, new Rust process reauthenticates")
+        passed("fresh v1 credential reused by a new legacy stdio session")
 
         await asyncio.sleep(1.05)
         started = time.monotonic()
@@ -243,13 +243,13 @@ async def exercise(args):
         assert fixture.state()["authenticated"] == 4
         passed("closing stdio drains a pending native job")
 
-        for sidecar, settings in (("Rust", rust), ("Python", python)):
-            async with Client(settings) as client:
+        for mode in ("legacy", "2026-07-28"):
+            async with Client(rust, mode=mode) as client:
                 await call(client, "qkm_connect")
                 connected = await connection(client, "connected")
                 assert connected["scopes"] == 1
                 await read_wait_states(client, fixture, connected["instance"])
-            passed(f"{sidecar} bounded wait over private IPC, healthy condition timeout and bounded transport timeout")
+            passed(f"{mode} bounded wait over private IPC, condition timeout, cancellation and transport timeout")
     finally:
         try:
             if store is not None and owns_credential:

@@ -4,6 +4,8 @@
 
 本文件保留 **Rust 迁移的实施决策和验收证据**。后续发行与宿主补验统一由 [MCP 主计划](qkeymapper_mcp_automation_plan_codex.md) 跟踪。[任务导航](../README.md) 提供入口。
 
+本页记录结项时的历史策略。2026-11-19 起，[MCP 主计划](qkeymapper_mcp_automation_plan_codex.md) 采用 Rust 单一正式入口，历史对照和原回退设计保留原范围。
+
 ## 当前进度与接续卡
 
 | 项目 | 当前记录 |

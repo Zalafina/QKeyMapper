@@ -100,6 +100,10 @@
       "较新的预览已替换原预览。",
       "核对当前预览内容及其 ID，勿提交旧预览。"
     ],
+    "request_id_conflict": [
+      "请求 ID 已用于其他操作。",
+      "查询该 ID 的原操作；新的明确意图使用新的 ID。"
+    ],
     "result_too_large": [
       "查询结果超过接口限制。",
       "核对能力限制；减少单页请求，若全量快照超限则报告该限制。"
@@ -151,6 +155,10 @@
     "window_unavailable": [
       "目标窗口未显示或仍最小化。",
       "通过获准的显示流程恢复目标，再重新查询窗口；截图不会自动激活。"
+    ],
+    "wrong_instance": [
+      "请求所用的实例 ID 与连接目标不同。",
+      "读取当前实例身份并与用户指定目标核对。待判定的旧操作仍须查询原实例。"
     ]
   },
   "reviewed_product_errors": [
@@ -171,6 +179,7 @@
     "preview_expired",
     "preview_limit",
     "preview_superseded",
+    "request_id_conflict",
     "result_too_large",
     "save_reload_failed",
     "save_write_failed",
@@ -182,7 +191,8 @@
     "unsupported_desktop",
     "unsupported_method",
     "unsupported_query",
-    "window_unavailable"
+    "window_unavailable",
+    "wrong_instance"
   ],
   "tools": [
     {
@@ -1473,11 +1483,51 @@
     },
     {
       "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "按用户明确意图停止所选实例，需要Read+RunMapping。instance来自qkm_get_state；request_id也是operation_id。当前仅主动停止未匹配、源稳定且无配置停止动作的监视，空闲返回already_idle，已有停止仅观察原清理。在结果保留期间，同配对和权限代次重复同ID只返回原结果。waiting_cleanup及stop_timeout均须继续查询，completed表示已观察该次真实清理。断线后查询原ID；unknown时核对目标和状态，避免盲目重发。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "instance": {
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[0-9a-f]{32}$",
+            "title": "Instance",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[0-9a-f]{32}$",
+            "title": "Request Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instance",
+          "request_id"
+        ],
+        "title": "qkm_stop_mappingArguments",
+        "type": "object"
+      },
+      "name": "qkm_stop_mapping",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_stop_mappingDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
         "destructiveHint": false,
         "openWorldHint": false,
         "readOnlyHint": true
       },
-      "description": "查询本实例／本配对及权限代次内的预览或提交结果，失败状态查询本身仍可成功。保存预览另带所属实例／配置组／保存修订。结果带采样时间，完成记录为历史事实，不代表当前运行／保存状态；最多64条，进行中记录保留，完成后保留10分钟并受容量限制，接口重置或进程退出后丢失。unknown时核对当前配置及源，不能假定未修改或盲目重发。",
+      "description": "查询本实例／本配对及权限代次内的预览、提交或运行控制结果，失败状态查询本身仍可成功。保存预览另带所属实例／配置组／保存修订。结果带采样时间，完成记录为历史事实，不代表当前运行／保存状态；最多64条，进行中记录保留，完成后保留10分钟并受容量限制，接口重置或进程退出后丢失。unknown时核对当前配置及源，不能假定未修改或盲目重发。",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {

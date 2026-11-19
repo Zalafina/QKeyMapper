@@ -23,7 +23,7 @@ sys.path.insert(0, str(ROOT / "mcp_bridge/tests"))
 from demo_scene_acceptance import exercise
 from test_product_interop import connection_pending
 from test_product_persistence import filter_keys
-from test_sdk_interop import call, close_desktop, connection, integrity, managed_action, parameters
+from test_sdk_interop import call, close_desktop, connection, integrity, managed_action
 from window_checks import verify_capture_reply
 from qkeymapper_mcp.credentials import CredentialStore
 from qkeymapper_mcp.windows import identity
@@ -177,9 +177,9 @@ async def run(args):
         await gui("CloseMcp")
         await native_gui("return_to_mapping")
         creation = discovery.with_name(f"demo-{info['instance']}.json")
-        python = parameters(discovery, exe, output)
-        python.args.extend(["--demo-record", str(creation)])
-        async with Client(python, cache=None) as client:
+        explicit_record = StdioServerParameters(command=str(rust), cwd=str(output),
+            args=[*options, "--demo-record", str(creation)])
+        async with Client(explicit_record, mode="legacy", cache=None) as client:
             await call(client, "qkm_connect")
             assert (await connection(client, "connected"))["scopes"] == 387
             expected = (await request(client, "qkm_get_demo_state"))["result"]

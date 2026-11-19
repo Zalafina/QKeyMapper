@@ -1,6 +1,6 @@
-# QKeyMapper MCP Python 桥接（开发与回退）
+# QKeyMapper MCP Python 桥接（历史归档）
 
-Qt6／Qt5 x64 Release 的默认入口使用 Rust 单 EXE。下文继续记录 Python 桥接的开发和回退用法。[正式 MCP 使用说明](../mcp_bridge_rust/BUNDLE_README.md)
+2026-11-19 起，Rust 是唯一受支持的 Sidecar。Python 实现保留于此，以下启动、打包和验证说明记录历史基线。普通 Python 测试客户端和维护工具继续按需使用。正式入口及当前契约见 [Rust 使用说明](../mcp_bridge_rust/BUNDLE_README.md) 和 [MCP 主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。
 
 官方 Python MCP SDK 的 stdio 适配层。已有连接／GUI 配对、能力查询、只读状态、配置／Tab 目录、安全源表／源行分页及解析器帮助、基本映射的预览／内存提交／取消／结果查询；SAVE-97接通完整保存的预览与显式提交，P1-107接本实例窗口观察、P1-108接有界真实PNG捕获、P1-109／110接私有后台源行设定窗安全开关，DELETE-113接稳定源行删除预览／提交，实际范围见[唯一主计划](../handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md)。**其他设置变更、启停及输入测试尚未接入，M1仍未完成**。IB-MCP-138后当前开发产品返回二十三项业务能力、十七工具；未接入业务处理器的维护服务仍返回 `transport_only` 和空列表，须查询目标实际能力，不能只看工具枚举。
 

@@ -7,10 +7,16 @@
 #include <QJsonArray>
 #include <QSet>
 #include <QUuid>
+#include <utility>
 
 namespace QkmAutomation {
 namespace {
 QString sampleTime() { return QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs); }
+bool operationPending(const QJsonObject &operation)
+{
+    const auto status = operation.value(QStringLiteral("status"));
+    return status == QLatin1String("applying") || status == QLatin1String("waiting_cleanup");
+}
 QJsonObject saveOperationTarget(const MappingChangePreview &preview)
 {
     return {{QStringLiteral("instance_id"), preview.owner.instance}, {QStringLiteral("group"), preview.save->settingName},
@@ -27,7 +33,8 @@ QJsonObject removalOperationTarget(const MappingChangePreview &preview)
 bool isMappingChangeMethod(const QString &method)
 {
     return method == QStringLiteral("qkm_preview_changes") || method == QStringLiteral("qkm_apply_changes")
-        || method == QStringLiteral("qkm_cancel_changes") || method == QStringLiteral("qkm_get_operation");
+        || method == QStringLiteral("qkm_cancel_changes") || method == QStringLiteral("qkm_get_operation")
+        || method == QStringLiteral("qkm_stop_mapping");
 }
 
 MappingChangeRequest validateMappingChangeRequest(const QString &method, const QJsonObject &arguments)
@@ -39,6 +46,14 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         return result;
     };
     if (!isMappingChangeMethod(method)) { return fail("Unsupported mapping change method."); }
+    if (method == QStringLiteral("qkm_stop_mapping")) {
+        result.method = MappingChangeMethod::Stop;
+        result.id = arguments.value(QStringLiteral("request_id")).toString();
+        result.instance = arguments.value(QStringLiteral("instance")).toString();
+        if (arguments.size() != 2 || !isLowerHex(result.id, 32) || !isLowerHex(result.instance, 32))
+            return fail("Provide only a lowercase hexadecimal instance and request_id, each 32 characters.");
+        return result;
+    }
     const bool preview = method == QStringLiteral("qkm_preview_changes");
     const bool apply = method == QStringLiteral("qkm_apply_changes");
     const bool query = method == QStringLiteral("qkm_get_operation");
@@ -196,7 +211,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     return result;
 }
 
-QJsonArray mappingChangeCapabilities()
+QJsonArray mappingChangeCapabilities(bool allowStop)
 {
     const auto string = [](const QString &pattern, int maximum) {
         return QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
@@ -345,10 +360,21 @@ QJsonArray mappingChangeCapabilities()
         limits.append(QStringLiteral("hidden_rows_require_explicit_gui_reveal"));
         item->insert(QStringLiteral("limitations"), limits);
     }
-    return {previewCapability, saveCapability, addApply,
+    QJsonArray capabilities{previewCapability, saveCapability, addApply,
         saveApplyCapability, deleteCapability, deleteApply, updatePreview, updateApply, preferencesPreview, preferencesApply,
         capability("mapping.preview.cancel", "qkm_cancel_changes", Read | Configure, false,
-            schema({{QStringLiteral("preview_id"), identifierSchema}}, {QStringLiteral("preview_id")})), operation};
+            schema({{QStringLiteral("preview_id"), identifierSchema}}, {QStringLiteral("preview_id")}))};
+    if (allowStop) {
+        auto stop = capability("mapping.stop", "qkm_stop_mapping", Read | RunMapping, false,
+            schema({{QStringLiteral("instance"), identifierSchema}, {QStringLiteral("request_id"), identifierSchema}},
+                {QStringLiteral("instance"), QStringLiteral("request_id")}));
+        stop.insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("monitoring_only_with_stable_sources"),
+            QStringLiteral("no_configured_stop_actions"), QStringLiteral("existing_cleanup_is_observable"),
+            QStringLiteral("result_is_bounded_and_instance_local")});
+        capabilities.append(stop);
+    }
+    capabilities.append(operation);
+    return capabilities;
 }
 
 qint64 MappingChangeStore::now()
@@ -360,32 +386,87 @@ qint64 MappingChangeStore::now()
 bool MappingChangeStore::remember(const MappingChangePreview &preview, const QString &status,
     const QString &errorCode, const QString &message)
 {
-    if (!m_results.contains(preview.id) && m_results.size() >= MaxResults) {
-        auto oldest = m_results.end();
-        for (auto it = m_results.begin(); it != m_results.end(); ++it) {
-            if (it->value.value(QStringLiteral("status")) != QStringLiteral("applying")
-                && (oldest == m_results.end() || it->created < oldest->created)) oldest = it;
-        }
-        if (oldest == m_results.end()) return false;
-        m_results.erase(oldest);
-    }
-    QJsonObject value{{QStringLiteral("operation_id"), preview.id}, {QStringLiteral("status"), status},
-        {QStringLiteral("sampled_at_utc"), sampleTime()}, {QStringLiteral("result_known"), true},
-        {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
+    QJsonObject value{{QStringLiteral("status"), status}, {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
     if (preview.save) value.insert(QStringLiteral("target"), saveOperationTarget(preview));
     if (preview.removal) value.insert(QStringLiteral("target"), removalOperationTarget(preview));
     if (preview.update || preview.preferences) value.insert(QStringLiteral("target"), preview.description.value(QStringLiteral("target")));
     if (!errorCode.isEmpty()) value.insert(QStringLiteral("error"), QJsonObject{
         {QStringLiteral("code"), errorCode}, {QStringLiteral("message"), message}});
-    m_results.insert(preview.id, {preview.owner, value, now()});
+    return remember(preview.owner, preview.id, std::move(value));
+}
+
+bool MappingChangeStore::remember(const MappingChangeOwner &owner, const QString &id, QJsonObject value)
+{
+    if (!m_results.contains(id) && m_results.size() >= MaxResults) {
+        auto oldest = m_results.end();
+        for (auto it = m_results.begin(); it != m_results.end(); ++it) {
+            if (!operationPending(it->value) && (oldest == m_results.end() || it->created < oldest->created))
+                oldest = it;
+        }
+        if (oldest == m_results.end()) return false;
+        m_results.erase(oldest);
+    }
+    value.insert(QStringLiteral("operation_id"), id);
+    value.insert(QStringLiteral("sampled_at_utc"), sampleTime());
+    value.insert(QStringLiteral("result_known"), true);
+    m_results.insert(id, {owner, std::move(value), now()});
     return true;
+}
+
+MappingChangeStore::StopReservation MappingChangeStore::reserveStop(const MappingChangeOwner &owner,
+    const QString &id, bool idle, bool initiated, bool cleanupObserved)
+{
+    prune();
+    if (m_previews.contains(id) || m_results.contains(id)) return StopReservation::Conflict;
+    QJsonObject value{{QStringLiteral("action"), QStringLiteral("mapping.stop")},
+        {QStringLiteral("status"), idle ? QStringLiteral("already_idle") : QStringLiteral("waiting_cleanup")},
+        {QStringLiteral("target"), QJsonObject{{QStringLiteral("instance_id"), owner.instance}}},
+        {QStringLiteral("stop_initiated"), initiated},
+        {QStringLiteral("stop_completion"), cleanupObserved ? QStringLiteral("observed") : QStringLiteral("unobserved")},
+        {QStringLiteral("cleanup_timed_out"), false}, {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
+    if (!idle) value.insert(QStringLiteral("pending_steps"), QJsonArray{QStringLiteral("stop_cleanup")});
+    return remember(owner, id, std::move(value)) ? StopReservation::Reserved : StopReservation::Full;
+}
+
+void MappingChangeStore::bindStop(const QString &id, quint64 generation, bool timedOut)
+{
+    const auto it = m_results.find(id);
+    if (it == m_results.end() || it->value.value(QStringLiteral("status")) != QLatin1String("waiting_cleanup")) return;
+    it->stopGeneration = generation;
+    if (timedOut) updateStop(it.value(), false, true);
+}
+
+void MappingChangeStore::observeStop(quint64 generation, bool completed, bool timedOut)
+{
+    if (generation == 0) return;
+    for (auto it = m_results.begin(); it != m_results.end(); ++it) {
+        if (it->stopGeneration == generation && it->value.value(QStringLiteral("status")) == QLatin1String("waiting_cleanup"))
+            updateStop(it.value(), completed, timedOut);
+    }
+}
+
+void MappingChangeStore::updateStop(Operation &operation, bool completed, bool timedOut)
+{
+    auto &value = operation.value;
+    value.insert(QStringLiteral("sampled_at_utc"), sampleTime());
+    value.insert(QStringLiteral("cleanup_timed_out"), timedOut || value.value(QStringLiteral("cleanup_timed_out")).toBool());
+    if (completed) {
+        value.insert(QStringLiteral("status"), QStringLiteral("completed"));
+        value.insert(QStringLiteral("stop_completion"), QStringLiteral("observed"));
+        value.remove(QStringLiteral("error"));
+        value.remove(QStringLiteral("pending_steps"));
+        operation.created = now();
+    } else if (timedOut) {
+        value.insert(QStringLiteral("error"), QJsonObject{{QStringLiteral("code"), QStringLiteral("stop_timeout")},
+            {QStringLiteral("message"), QStringLiteral("Stop cleanup is still pending.")}});
+    }
 }
 
 void MappingChangeStore::prune()
 {
     const qint64 tick = now();
     for (auto it = m_results.begin(); it != m_results.end();) {
-        if (it->value.value(QStringLiteral("status")) != QStringLiteral("applying") && tick - it->created >= ResultTtlMs)
+        if (!operationPending(it->value) && tick - it->created >= ResultTtlMs)
             it = m_results.erase(it);
         else ++it;
     }

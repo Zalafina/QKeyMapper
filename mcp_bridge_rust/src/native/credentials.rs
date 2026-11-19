@@ -401,9 +401,25 @@ mod tests {
     }
 
     #[test]
+    fn loads_existing_credential_record_format() {
+        let data = br#"{"pair_id":"0123456789abcdef0123456789abcdef","epoch":"18446744073709551615","scopes":129,"secret":"2525252525252525252525252525252525252525252525252525252525252525"}"#;
+        let result = Credential::from_plain(data).unwrap();
+        assert_eq!(
+            result.pair_id,
+            [
+                0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab,
+                0xcd, 0xef
+            ]
+        );
+        assert_eq!(result.epoch, NonZeroU64::MAX);
+        assert_eq!(result.scopes, 129);
+        assert!(*result.secret == [0x25; 32]);
+    }
+
+    #[test]
     #[ignore = "writes and removes a dedicated synthetic Windows credential"]
     fn dedicated_credential_roundtrip() {
-        use std::{fs, os::windows::process::CommandExt, process::Command};
+        use std::fs;
 
         let mut nonce = [0u8; 16];
         getrandom::fill(&mut nonce).unwrap();
@@ -455,38 +471,7 @@ mod tests {
         assert!(
             matches!(wrong_entropy.load(), Err(error) if error.code == REJECTED && error.win32.is_some())
         );
-        let root = Path::new(env!("CARGO_MANIFEST_DIR")).parent().unwrap();
-        let outcome = Command::new(root.join("out/mcp_bridge/venv/Scripts/python.exe"))
-            .creation_flags(0x08000000) // CREATE_NO_WINDOW
-            .env("PYTHONPATH", root.join("mcp_bridge/src"))
-            .args(["-B", "-X", "utf8", "-c"])
-            .arg(
-                r#"
-from dataclasses import replace
-from pathlib import Path
-import sys
-from qkeymapper_mcp.credentials import CredentialStore
-for persistent in (False, True):
-    store = CredentialStore(Path(sys.argv[1]), Path(sys.argv[2]), 1, persistent=persistent)
-    cred = store.load()
-    assert cred is not None and cred.epoch == (1 << 64) - 1 and cred.scopes == 129
-    assert cred.secret == bytes([0x25]) * 32
-    store.save(replace(cred, scopes=257))
-"#,
-            )
-            .arg(&hint)
-            .arg(&files.1)
-            .status()
-            .unwrap();
-        assert!(
-            outcome.success(),
-            "Python credential fixture failed: {outcome}"
-        );
         for store in cleanup.0 {
-            let read = store.load().unwrap().unwrap();
-            assert_eq!(read.pair_id, credential.pair_id);
-            assert_eq!(read.scopes, 257);
-            assert!(*read.secret == *credential.secret);
             store.forget().unwrap();
         }
         drop(cleanup);
