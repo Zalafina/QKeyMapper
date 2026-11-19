@@ -38672,8 +38672,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
-        if (update.moveUp && (isCommonMappingTabIndex(tab) || isMappingDataTableFiltered())) {
-            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Moving up requires the current unfiltered normal Tab."));
+        const bool movingRow = update.rowOffset != 0;
+        if (movingRow && (isCommonMappingTabIndex(tab) || isMappingDataTableFiltered())) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Moving rows requires the current unfiltered normal Tab."));
             return;
         }
         const quint64 runtimeRevision = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
@@ -38699,8 +38700,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         bool modified = false;
         std::optional<MAP_KEYDATA> updatedRow;
         QList<QPair<int, int>> conflictRows;
-        QJsonArray conflictChanges;
+        QJsonArray changes;
         int displayRow = -1;
+        int rowAfter = update.sourceRow;
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
             || update.keyUpMappingKey.has_value());
         if (updating) {
@@ -38721,12 +38723,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             }
             target.insert(QStringLiteral("source_ref"), update.sourceReference);
         }
-        if (update.moveUp) {
-            const int previous = update.sourceRow - 1;
-            if (previous < 0) {
-                reject(QStringLiteral("invalid_target"), QStringLiteral("The first row cannot move up."));
+        if (movingRow) {
+            if ((update.rowOffset < 0 && update.sourceRow == 0)
+                || (update.rowOffset > 0 && update.sourceRow >= KeyMappingDataList->size() - 1)) {
+                reject(QStringLiteral("invalid_target"), update.rowOffset < 0
+                    ? QStringLiteral("The first row cannot move up.") : QStringLiteral("The last row cannot move down."));
                 return;
             }
+            rowAfter += update.rowOffset;
             const auto movement = [&](int from, int to) {
                 return QJsonObject{{QStringLiteral("kind"), QStringLiteral("move_mapping_row")},
                     {QStringLiteral("source_ref"), update.sourceReference.section(QLatin1Char(':'), 0, 2)
@@ -38734,8 +38738,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("from_source_row"), from}, {QStringLiteral("to_source_row"), to},
                     {QStringLiteral("mapping"), automationSourceRow(KeyMappingDataList->at(from))}};
             };
-            change = movement(update.sourceRow, previous);
-            conflictChanges.append(movement(previous, update.sourceRow));
+            change = movement(update.sourceRow, rowAfter);
+            changes.append(movement(rowAfter, update.sourceRow));
             modified = true;
         } else if (updating) {
             const auto &before = KeyMappingDataList->at(update.sourceRow);
@@ -38812,7 +38816,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 if (!overrides.contains(row.first)) overrides.insert(row.first, *affectedTab.KeyMappingData);
                 auto &affected = overrides[row.first][row.second];
                 const QString sourceIndex = QString::number(row.first);
-                conflictChanges.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("disable_mapping")},
+                changes.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("disable_mapping")},
                     {QStringLiteral("source_tab_ref"), update.sourceRevision + QStringLiteral(":source:") + sourceIndex},
                     {QStringLiteral("source_ref"), update.sourceRevision + QStringLiteral(":row:") + sourceIndex + QLatin1Char(':') + QString::number(row.second)},
                     {QStringLiteral("source_name"), affectedTab.TabName}, {QStringLiteral("source_row"), row.second},
@@ -38845,11 +38849,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = update.moveUp ? QStringLiteral("mapping.move_up")
+        const QString action = movingRow
+            ? (update.rowOffset < 0 ? QStringLiteral("mapping.move_up") : QStringLiteral("mapping.move_down"))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
-        conflictChanges.prepend(change);
+        changes.prepend(change);
         QJsonObject description{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
-            {QStringLiteral("changes"), conflictChanges}, {QStringLiteral("modified"), false},
+            {QStringLiteral("changes"), changes}, {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
         const bool confirmationRequired = !conflictRows.isEmpty();
         if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired);
@@ -38882,8 +38887,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (update.moveUp) {
-                moveMappingRowsUp(update.sourceRow, update.sourceRow, displayRow, displayRow);
+            if (movingRow) {
+                moveMappingRowsByOne(update.sourceRow, update.sourceRow, displayRow, displayRow, update.rowOffset);
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;
                 for (const auto &row : std::as_const(conflictRows)) {
@@ -38908,7 +38913,6 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (updating) {
             QString bindingError;
             const auto after = collectAutomationSourceSnapshotWithAccess(bindingError);
-            const int rowAfter = update.moveUp ? update.sourceRow - 1 : update.sourceRow;
             const auto binding = bindingError.isEmpty() ? automationPostChangeSourceBinding(after, owner, tab, rowAfter) : QJsonObject();
             result.insert(QStringLiteral("source_binding_status"), binding.isEmpty() ? QStringLiteral("unavailable") : QStringLiteral("captured"));
             result.insert(QStringLiteral("source_binding_after"), binding.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(binding));
@@ -42568,18 +42572,21 @@ void QKeyMapper::selectedItemsMoveUp()
     closeSetupDialog_OnDataChanged();
 #endif
 
-    moveMappingRowsUp(topSourceInfo.SourceRow, bottomSourceInfo.SourceRow, topRow, bottomRow);
+    moveMappingRowsByOne(topSourceInfo.SourceRow, bottomSourceInfo.SourceRow, topRow, bottomRow, -1);
     markSaveSettingDirty();
 }
 
-void QKeyMapper::moveMappingRowsUp(int topSourceRow, int bottomSourceRow, int topDisplayRow, int bottomDisplayRow)
+void QKeyMapper::moveMappingRowsByOne(int topSourceRow, int bottomSourceRow, int topDisplayRow, int bottomDisplayRow, int step)
 {
-    for (int row = topSourceRow; row <= bottomSourceRow; ++row) {
-        KeyMappingDataList->move(row, row - 1);
+    Q_ASSERT(step == -1 || step == 1);
+    const bool up = step < 0;
+    for (int row = up ? topSourceRow : bottomSourceRow; topSourceRow <= row && row <= bottomSourceRow; row -= step) {
+        KeyMappingDataList->move(row, row + step);
     }
 
 #ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[selectedItemsMoveUp] MoveUp: topRow(" << topDisplayRow << "), bottomRow(" << bottomDisplayRow << ")";
+    qDebug().nospace().noquote() << (up ? "[selectedItemsMoveUp]" : "[selectedItemsMoveDown]")
+        << " topRow(" << topDisplayRow << "), bottomRow(" << bottomDisplayRow << ")";
 #endif
 
 #ifdef DEBUG_LOGOUT_ON
@@ -42588,22 +42595,22 @@ void QKeyMapper::moveMappingRowsUp(int topSourceRow, int bottomSourceRow, int to
     refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
 
     // Reselect the moved rows
-    QTableWidgetSelectionRange newSelection(topDisplayRow - 1, 0, bottomDisplayRow - 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+    QTableWidgetSelectionRange newSelection(topDisplayRow + step, 0, bottomDisplayRow + step, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->clearSelection();
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
-    // Update current cell to the top of the new selection for Ctrl/Shift+Click consistency
-    m_KeyMappingDataTable->setCurrentCell(newSelection.topRow(), 0, QItemSelectionModel::NoUpdate);
+    const int selectedRow = up ? newSelection.topRow() : newSelection.bottomRow();
+    m_KeyMappingDataTable->setCurrentCell(selectedRow, 0, QItemSelectionModel::NoUpdate);
 
-    // Scroll to make the selected items visible
-    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.topRow(), 0);
+    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(selectedRow, 0);
     if (itemToScrollTo) {
         m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
     }
 
 #ifdef DEBUG_LOGOUT_ON
     if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
-        qDebug("MoveUp:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
+        qDebug("MoveMappingRowsByOne: KeyMapData sync error, DataTableSize(%d), DataListSize(%d)",
+            m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
 }
@@ -42741,40 +42748,7 @@ void QKeyMapper::selectedItemsMoveDown()
     closeSetupDialog_OnDataChanged();
 #endif
 
-    // Move the selected rows down by one
-    for (int row = bottomSourceInfo.SourceRow; row >= topSourceInfo.SourceRow; --row) {
-        KeyMappingDataList->move(row, row + 1);
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[selectedItemsMoveDown] MoveDown: topRow(" << topRow << "), bottomRow(" << bottomRow << ")";
-#endif
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << __func__ << ": refreshKeyMappingDataTable()";
-#endif
-    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
-
-    // Reselect the moved rows
-    QTableWidgetSelectionRange newSelection(topRow + 1, 0, bottomRow + 1, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-    m_KeyMappingDataTable->clearSelection();
-    m_KeyMappingDataTable->setRangeSelected(newSelection, true);
-
-    // Update current cell to the bottom of the new selection for Ctrl/Shift+Click consistency
-    m_KeyMappingDataTable->setCurrentCell(newSelection.bottomRow(), 0, QItemSelectionModel::NoUpdate);
-
-    // Scroll to make the selected items visible
-    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.bottomRow(), 0);
-    if (itemToScrollTo) {
-        m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
-        qDebug("MoveDown:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
-    }
-#endif
-
+    moveMappingRowsByOne(topSourceInfo.SourceRow, bottomSourceInfo.SourceRow, topRow, bottomRow, 1);
     markSaveSettingDirty();
 }
 

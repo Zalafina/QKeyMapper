@@ -56,6 +56,7 @@ async def check_contract(exe):
     row = revision + ":row:0:0"
     window = "b" * 64
     move = {"action": "mapping.move_up", "source_ref": row}
+    down = {**move, "action": "mapping.move_down"}
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
     capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
@@ -79,7 +80,7 @@ async def check_contract(exe):
             assert start_tool.input_schema["properties"]["save_policy"]["const"] == "start_only"
             previews = next(tool.input_schema for tool in tools if tool.name == "qkm_preview_changes")
             move_rule, = (rule for rule in previews["oneOf"]
-                          if rule["properties"]["action"].get("const") == "mapping.move_up")
+                          if rule["properties"]["action"].get("enum") == ["mapping.move_up", "mapping.move_down"])
             assert set(move_rule["required"]) == {"action", "source_ref"}
             assert move_rule["properties"]["source_ref"] == {"type": "string"}
             assert set(move_rule["properties"]) == set(previews["properties"])
@@ -124,6 +125,9 @@ async def check_contract(exe):
                     {"action": "mapping.move_up"}, {**move, "source_ref": None},
                     {**move, "source_ref": tab}, {**move, "insert_row": 0},
                     {**move, "send_method": 0}, {**move, "source_tab_ref": tab})),
+                ("qkm_preview_changes", down, (
+                    {"action": "mapping.move_down"}, {**down, "source_ref": window},
+                    {**down, "source_refs": [row]}, {**down, "disabled": False})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),

@@ -92,11 +92,12 @@ checks real product images and recovers both demonstration scenes.
 ## Reordering a mapping row
 
 Query the current mapping source and pass its row's `source_ref` with
-`action: "mapping.move_up"` to `qkm_preview_changes`. Read and Configure
-are required. The preview lists both changed positions. Review it and
-commit with `qkm_apply_changes` using its `preview_id`. The action moves
-one row up in the current unfiltered normal table and updates the memory
-draft. To persist it, preview and confirm a separate `configuration.save`.
+`action: "mapping.move_up"` or `action: "mapping.move_down"` to
+`qkm_preview_changes`. Read and Configure are required. The preview lists
+both changed positions, numbered from zero. Review it and commit with
+`qkm_apply_changes` using its `preview_id`. Each action moves one row
+by one position in the current unfiltered normal table and updates the
+memory draft. To persist it, preview and confirm a separate `configuration.save`.
 Query the source again before using row references.
 
 ## Monitoring and stop results

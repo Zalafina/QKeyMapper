@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','SaveStartup','ApproveRead','ApproveConfigure','ApproveRunMapping','ApproveConfigureRunMapping','Revoke','Disable','CloseMcp',
-        'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows',
+        'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','RestoreFirstRows',
         'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent',
         'AddBasicMapping','ClearBasicMapping','ShowForCapture','OpenFloatingSetup','CloseFloatingSetup',
         'SyncGroupOne','SyncGroupZero','StartMapping','StopMapping','StartPrivateMonitoring','StopPrivateMonitoring')][string]$Action,
@@ -28,7 +28,10 @@ $engineDefault = $AllowDefaultDesktop -and $DesktopName -eq 'Default' -and
     [IO.Path]::GetFileName($expected) -match '^QKeyMapperMcpAcceptance_engine61_(baseline|current)\.exe$'
 $privateMonitoring = $DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
     [IO.Path]::GetFileName($expected) -ceq 'QKeyMapperMcpAcceptance_Monitoring.exe'
+$privateRowOrder = $DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
+    [IO.Path]::GetFileName($expected) -ceq 'QKeyMapperMcpAcceptance_RowOrder.exe'
 if (($Action -in 'StartPrivateMonitoring','StopPrivateMonitoring','ApproveRunMapping','ApproveConfigureRunMapping' -and -not $privateMonitoring) -or
+    ($Action -eq 'MoveFirstDown' -and -not $privateRowOrder) -or
     -not $expected.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     -not $resultPath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     [IO.Path]::GetExtension($resultPath) -ine '.json' -or
@@ -253,7 +256,7 @@ function Select-Control {
     }
 }
 
-$viewActions = @('ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup')
+$viewActions = @('ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup')
 $mappingActions = $viewActions + @('SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')
 function Get-MappingGrid {
     $condition = [Windows.Automation.OrCondition]::new(
@@ -375,7 +378,7 @@ if ($Action -eq 'AddBasicMapping') {
 } elseif ($Action -in $mappingActions) {
     $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')
     Select-Control $mappingTab
-    if ($Action -in 'ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
+    if ($Action -in 'ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
         $names = switch ($Action) {
             'ReadTab2' { @('Tab2') }
             'ReadCommon' { @('共通','Common') }
@@ -383,7 +386,7 @@ if ($Action -eq 'AddBasicMapping') {
         }
         Select-Control (Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' $names)
     }
-    if ($Action -in 'MoveSecondUp','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
+    if ($Action -in 'MoveSecondUp','MoveFirstDown','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
         $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
         $fixedBasic = $Action -in 'ClearBasicMapping','OpenFloatingSetup'
         $expectedGroup = if ($fixedBasic) { 'Engine61' } else { 'McpSaved' }
@@ -392,8 +395,8 @@ if ($Action -eq 'AddBasicMapping') {
         }
         $table = Get-MappingGrid
         $grid = $table.GetCurrentPattern([Windows.Automation.GridPattern]::Pattern)
-        $first = if ($Action -eq 'MoveSecondUp') { 'A' } else { 'G' }
-        $second = if ($Action -eq 'MoveSecondUp') { 'G' } else { 'A' }
+        $first = if ($Action -eq 'RestoreFirstRows') { 'G' } else { 'A' }
+        $second = if ($Action -eq 'RestoreFirstRows') { 'A' } else { 'G' }
         if ($fixedBasic) {
             if ($grid.Current.RowCount -ne 1 -or $grid.GetItem(0,0).Current.Name -cne 'A' -or
                 $grid.GetItem(0,1).Current.Name -cne 'B' -or (Read-MappingView).mapping_button_text -cne '映射开始') {
@@ -403,7 +406,7 @@ if ($Action -eq 'AddBasicMapping') {
             $grid.GetItem(0,0).Current.Name -cne $first -or $grid.GetItem(1,0).Current.Name -cne $second) {
             throw 'The fixed source rows changed; refusing reordering.'
         }
-        $cell = $grid.GetItem($(if ($fixedBasic) { 0 } else { 1 }),0)
+        $cell = $grid.GetItem($(if ($fixedBasic -or $Action -eq 'MoveFirstDown') { 0 } else { 1 }),0)
         $selection = $null
         if ($cell.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern, [ref]$selection)) { $selection.Select() }
         $bounds = $cell.Current.BoundingRectangle
@@ -426,6 +429,7 @@ if ($Action -eq 'AddBasicMapping') {
                         $wantedNames = switch ($Action) {
                             'ClearBasicMapping' { @('删除','Delete','削除') }
                             'OpenFloatingSetup' { $floatingNames }
+                            'MoveFirstDown' { @('下移','Move Down','下へ移動') }
                             default { @('上移','Move Up','上へ移動') }
                         }
                         if ($item.Current.ProcessId -eq $TargetProcessId -and $wantedNames -ccontains $item.Current.Name) {
@@ -527,7 +531,9 @@ if ($Action -eq 'AddBasicMapping') {
     }
     if ($Action -eq 'OpenFloatingSetup') { $null = Find-OwnedWindow $floatingNames }
     $mappingObservation = Read-MappingView
-    $mappingObservation.gui_event_method = if ($Action -in 'MoveSecondUp','RestoreFirstRows') {
+    $mappingObservation.gui_event_method = if ($Action -eq 'MoveFirstDown') {
+        'owned_cell_right_click_UIA_MoveDown'
+    } elseif ($Action -in 'MoveSecondUp','RestoreFirstRows') {
         'owned_cell_right_click_UIA_MoveUp'
     } elseif ($Action -eq 'ClearBasicMapping') { 'owned_cell_right_click_UIA_Delete' }
     elseif ($Action -in 'ReadTab1','ReadTab2','ReadCommon') { 'owned_UIA_tab_select' }
