@@ -380,7 +380,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         auto stop = capability("mapping.stop", "qkm_stop_mapping", Read | RunMapping, false,
             schema({{QStringLiteral("instance"), identifierSchema}, {QStringLiteral("request_id"), identifierSchema}},
                 {QStringLiteral("instance"), QStringLiteral("request_id")}));
-        stop.insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("monitoring_only_with_stable_sources"),
+        stop.insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("monitoring_with_stable_sources_or_verified_mcp_started_match"),
             QStringLiteral("no_configured_stop_actions"), QStringLiteral("existing_cleanup_is_observable"),
             QStringLiteral("result_is_bounded_and_instance_local")});
         capabilities.append(stop);

@@ -1488,7 +1488,7 @@
         "openWorldHint": false,
         "readOnlyHint": false
       },
-      "description": "按用户明确意图停止所选实例，需要Read+RunMapping。instance来自qkm_get_state；request_id也是operation_id。当前仅主动停止未匹配、源稳定且无配置停止动作的监视，空闲返回already_idle，已有停止仅观察原清理。在结果保留期间，同配对和权限代次重复同ID只返回原结果。waiting_cleanup及stop_timeout均须继续查询，completed表示已观察该次真实清理。断线后查询原ID；unknown时核对目标和状态，避免盲目重发。",
+      "description": "按用户明确意图停止所选实例，需要Read+RunMapping。instance来自qkm_get_state；request_id也是operation_id。主动停止支持无配置停止动作的稳定未匹配监视，以及由MCP开启、已匹配且源身份仍相同的活动映射。空闲返回already_idle，已有停止仅观察原清理。在结果保留期间，同配对和权限代次重复同ID只返回原结果。waiting_cleanup及stop_timeout均须继续查询，completed表示已观察该次真实清理。断线后查询原ID；unknown时核对目标和状态，避免盲目重发。",
       "inputSchema": {
         "additionalProperties": false,
         "properties": {

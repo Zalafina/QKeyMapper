@@ -4,7 +4,7 @@ param(
         'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows',
         'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent',
         'AddBasicMapping','ClearBasicMapping','ShowForCapture','OpenFloatingSetup','CloseFloatingSetup',
-        'SyncGroupOne','SyncGroupZero','StartMapping','StopMapping','StartPrivateMonitoring')][string]$Action,
+        'SyncGroupOne','SyncGroupZero','StartMapping','StopMapping','StartPrivateMonitoring','StopPrivateMonitoring')][string]$Action,
     [Parameter(Mandatory)][int]$TargetProcessId,
     [Parameter(Mandatory)][string]$ExecutablePath,
     [Parameter(Mandatory)][long]$StartTicks,
@@ -28,7 +28,7 @@ $engineDefault = $AllowDefaultDesktop -and $DesktopName -eq 'Default' -and
     [IO.Path]::GetFileName($expected) -match '^QKeyMapperMcpAcceptance_engine61_(baseline|current)\.exe$'
 $privateMonitoring = $DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
     [IO.Path]::GetFileName($expected) -ceq 'QKeyMapperMcpAcceptance_Monitoring.exe'
-if (($Action -in 'StartPrivateMonitoring','ApproveRunMapping' -and -not $privateMonitoring) -or
+if (($Action -in 'StartPrivateMonitoring','StopPrivateMonitoring','ApproveRunMapping' -and -not $privateMonitoring) -or
     -not $expected.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     -not $resultPath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     [IO.Path]::GetExtension($resultPath) -ine '.json' -or
@@ -568,7 +568,7 @@ if ($Action -eq 'AddBasicMapping') {
     Select-Control (Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定'))
     [QkmProductUiDesktop]::RaiseForSnapshot($main, $TargetProcessId, $DesktopName)
     $mappingObservation = Read-MappingView
-} elseif ($Action -in 'StartMapping','StopMapping','StartPrivateMonitoring') {
+} elseif ($Action -in 'StartMapping','StopMapping','StartPrivateMonitoring','StopPrivateMonitoring') {
     if ($Action -eq 'StartPrivateMonitoring') {
         foreach ($handle in @([QkmProductUiDesktop]::NamedWindows($TargetProcessId,
             @('通用高级设定','General Advanced Setting','一般高度設定')))) {

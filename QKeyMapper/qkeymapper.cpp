@@ -16832,6 +16832,7 @@ void QKeyMapper::beginMappingStop()
 {
     if (QkmAutomation::denyDemoEffect()) return;
     const bool wasMatched = m_KeyMapStatus == KEYMAP_MAPPING_MATCHED;
+    m_AutomationRunLoadGeneration = 0;
     m_mappingStopRestoreSetting.clear();
     if (ui->settingselectComboBox->currentIndex() == GLOBALSETTING_INDEX
         && checkGlobalSettingAutoStart() && m_LastAutoMatchedSettingTimer.isActive()) {
@@ -17021,6 +17022,7 @@ void QKeyMapper::MappingSwitch(QKeyMapper::MappingStartMode startmode)
     }
 
     Q_UNUSED(startmode);
+    m_AutomationRunLoadGeneration = 0;
     beginSystemFilterKeysSession();
 #ifdef CYCLECHECKTIMER_ENABLED
     m_CycleCheckTimer.start(CYCLE_CHECK_TIMEOUT);
@@ -38537,9 +38539,15 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 return;
             }
             if (!reserved(store.reserveStart(owner, validation.id, startTarget))) return;
+            const quint64 loadGeneration = m_MappingLoadGeneration;
+            const quint64 sourceEpoch = m_AutomationSourceEpoch;
             // Use the shared GUI monitoring path after checking idle, so it cannot take its stop branch.
             MappingSwitch(MAPPINGSTART_BUTTONCLICK);
             const bool monitoring = m_KeyMapStatus != KEYMAP_IDLE && m_KeyMapStatus != KEYMAP_STOPPING;
+            if (monitoring) {
+                m_AutomationRunLoadGeneration = loadGeneration;
+                m_AutomationRunSourceEpoch = sourceEpoch;
+            }
             store.finish(owner, validation.id, monitoring ? QStringLiteral("completed") : QStringLiteral("rejected"),
                 {{QStringLiteral("monitoring_enabled"), monitoring}, {QStringLiteral("saved"), false}},
                 monitoring ? QString() : QStringLiteral("start_blocked"),
@@ -38554,32 +38562,40 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             // Match the runtime submission fence before inspecting GUI-owned source rows.
             // Once admitted, no newly queued start may consume those rows before the stop.
             QMutexLocker sourceAccess(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
-            const bool sourceStable = m_KeyMapStatus == KEYMAP_CHECKING && !loadSetting_flag && !m_MappingSourceLoading
-                && m_MappingSourceLoadAccepted
-                && QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire() == HOOKPROC_STATE_STOPPED
-                && QKeyMapper_Worker::s_SourceReadAccess.readBasis(m_AutomationSourceCleanupRevision)
-                    != MappingSourceAccess::ReadBasis::Unavailable;
-            if (!sourceStable) {
-                sourceAccess.unlock();
-                fail(QStringLiteral("unsupported_capability"),
-                    QStringLiteral("An explicit stop can start only while monitoring with stable, inactive mapping sources."));
-                return;
-            }
-            bool currentSourceFound = false;
-            for (const auto &tab : std::as_const(s_KeyMappingTabInfoList)) {
-                currentSourceFound = currentSourceFound || tab.KeyMappingData == KeyMappingDataList;
-                if (!tab.KeyMappingData || findOriKeyInKeyMappingDataList(
-                    QLatin1String(SENDON_MAPPINGSTOP_STR), tab.KeyMappingData) >= 0) {
+            const int workerState = QKeyMapper_Worker::s_AtomicHookProcState.loadAcquire();
+            const bool sourceLoaded = !loadSetting_flag && !m_MappingSourceLoading && m_MappingSourceLoadAccepted;
+            // Every source tab was classified before this MCP start. Compare the GUI source identity
+            // here rather than accessing a Worker-owned active list.
+            const bool verifiedActive = m_KeyMapStatus == KEYMAP_MAPPING_MATCHED && workerState == HOOKPROC_STATE_STARTED
+                && sourceLoaded && m_AutomationRunLoadGeneration != 0
+                && m_AutomationRunLoadGeneration == m_MappingLoadGeneration
+                && m_AutomationRunSourceEpoch == m_AutomationSourceEpoch;
+            if (!verifiedActive) {
+                const bool stableMonitoring = sourceLoaded && m_KeyMapStatus == KEYMAP_CHECKING && workerState == HOOKPROC_STATE_STOPPED
+                    && QKeyMapper_Worker::s_SourceReadAccess.readBasis(m_AutomationSourceCleanupRevision)
+                        != MappingSourceAccess::ReadBasis::Unavailable;
+                if (!stableMonitoring) {
                     sourceAccess.unlock();
                     fail(QStringLiteral("unsupported_capability"),
-                        QStringLiteral("This stop requires a separately reviewed stop action or source."));
+                        QStringLiteral("Stop requires stable unmatched monitoring or a verified active source started by MCP."));
                     return;
                 }
-            }
-            if (!currentSourceFound) {
-                sourceAccess.unlock();
-                fail(QStringLiteral("unsupported_capability"), QStringLiteral("The active source is not a verified source tab."));
-                return;
+                bool currentSourceFound = false;
+                for (const auto &tab : std::as_const(s_KeyMappingTabInfoList)) {
+                    currentSourceFound = currentSourceFound || tab.KeyMappingData == KeyMappingDataList;
+                    if (!tab.KeyMappingData || findOriKeyInKeyMappingDataList(
+                        QLatin1String(SENDON_MAPPINGSTOP_STR), tab.KeyMappingData) >= 0) {
+                        sourceAccess.unlock();
+                        fail(QStringLiteral("unsupported_capability"),
+                            QStringLiteral("This stop requires a separately reviewed stop action or source."));
+                        return;
+                    }
+                }
+                if (!currentSourceFound) {
+                    sourceAccess.unlock();
+                    fail(QStringLiteral("unsupported_capability"), QStringLiteral("The active source is not a verified source tab."));
+                    return;
+                }
             }
             reservation = store.reserveStop(owner, validation.id, false, true, false);
             if (reservation == MappingChangeStore::RunReservation::Reserved)

@@ -106,10 +106,11 @@ Use `qkm_wait_state` to observe actual mapping activation.
 With the same permissions, `qkm_stop_mapping` accepts the current
 `instance` from `qkm_get_state` and a new 32-character lowercase hex
 `request_id`. It can stop unmatched monitoring with stable sources and no
-configured stop actions. It can also observe a stop already started in the
-GUI. Idle targets return `already_idle`. Matched or global mapping and
-configured stop actions still use the GUI. The configuration-only demo
-does not expose `mapping.stop`.
+configured stop actions. It also accepts an active match started through
+`qkm_start_mapping` if the source identity still matches. The tool observes
+an existing GUI stop and returns `already_idle` for an idle target. Use the
+GUI for other active configurations and configured stop actions.
+The configuration-only demo omits the run controls.
 
 The request ID is also the operation ID. Poll `qkm_get_operation` after
 `waiting_cleanup` or a disconnect. `completed` means the product observed

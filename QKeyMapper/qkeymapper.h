@@ -2709,6 +2709,8 @@ private:
     std::unique_ptr<const QSettings> m_AutomationSettingsReader;
     quint64 m_MappingLoadGeneration = 0;
     quint64 m_AutomationSourceEpoch = 0;
+    quint64 m_AutomationRunLoadGeneration = 0;
+    quint64 m_AutomationRunSourceEpoch = 0;
     quint64 m_AutomationSourceCleanupRevision = 0;
     quint64 m_AutomationSourceCleanupGeneration = 0;
     QString m_LoadedMappingSettingGroup;

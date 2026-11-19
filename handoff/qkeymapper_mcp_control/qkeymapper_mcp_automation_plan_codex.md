@@ -14,15 +14,19 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | START-158 显式开始及真实 Qt6 私有启停选验完成 |
+| 当前切片 | ACTIVE-STOP-159 活动态停止的维护目标选验完成 |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | Rust 显式启停、状态等待及操作查询 |
-| 当前验证／证据 | Qt6 私有 GUI／MCP 启停、双 Qt 组件。原件仅本机 |
+| 当前已完成 | Rust 显式启停、源归属、状态及操作查询 |
+| 当前验证／证据 | 普通 Qt6 监视启停和输出替身活动态选验。原件仅本机 |
 | 当前控制器 | PID 34180 至 19:00，本轮测试登记授权已撤出 |
-| 下一项动作 | 运行源归属与活动映射的停止准入。Win10 三包和 Antigravity 中文／空格路径真调用待验 |
+| 下一项动作 | 复核 Rust 客户端交付，继续运行与写入边界。Win10 三包另行安排 |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### ACTIVE-STOP-159：已核验活动源显式停止
+
+仅扩展 MCP 开启且已匹配、Worker 已启动、加载代次与源 epoch 未变的活动态。新 GUI 运行清除该证明。Qt6 普通 Release 构建通过；私有输出截获目标 `5e2c582e`＋Rust `7b7bc36a` 验证 GUI 活动态拒绝、GUI 清理、MCP 活动态接受及同代排空。原生探针五项零，FakerInput 替身键鼠各5次空报告，FilterKeys／INI 不变，进程退出0并清理专属配对／凭据。原件 `out/mcp_product/active_stop_159_20261119/`。普通 Release 活动态、含停止动作与真实输入待另验。
 
 ### START-158：固定当前源显式开启监视
 
@@ -195,7 +199,7 @@ STOP-57 仅恢复安全只读：既有停止流程完成前后所有者／池／
 
 ### CACHE-SKILL-69：工作区专用缓存技能及本机补验
 
-2026-10-25用户批准工作区普通PID缓存；默认5分钟、restore重设5分钟、上限24小时，不扩测试授权或恢复暂停。6bfacd88基础26项，Win10补验最终51项；同21496的product12／source10及已批Default只读、off／到期／迟到批准／共存检查通过。source_cleanup在缓存关闭后仍靠原UAC正常退出0，不能用off代替产品清理。夹具拒绝与两次UIA失败保留，a5097898修正受限鼠标消息入口后源组通过。约14分钟驻留、模拟时钟及5小时参数不证明长期／真实休眠；Win11等只按各轮原件。后续70改为自然观察，见[技能证据](gsudo_cache_pending_validation.md)；旧B1暂停已由后续接续取代。
+2026-10-25批准工作区普通 PID 缓存，默认及 restore 5分钟、上限24小时。6bfacd88基础26项、Win10最终51项，a5097898修正源组夹具。原 UAC 关闭 source_cleanup 后实际退出0。短驻留和模拟按原范围，细节见[技能证据](gsudo_cache_pending_validation.md)及本页 Git 历史。
 
 ### CACHE-LOG-84：固定动作失败诊断补充（2026-10-26，PC-W11）
 
@@ -203,7 +207,7 @@ SAVE-83的8f0cf8ef后仅补缓存诊断：保留实际gsudo退出码／子PID／
 
 ### CACHE-SKILL-70：日常摘要与自然覆盖复查
 
-用户将跨PC／长时专项改为日常日志自然覆盖，未覆盖不计通过。[用法](../../.agents/skills/qkeymapper-gsudo-cache/references/usage.md)规定白名单JSONL：匿名机器／登录、实际版本／脚本摘要、关键请求／关闭及最多60秒心跳；不记SID／用户名／凭据／私人映射／命令／reason。心跳不探测、续期或提权；原生可用性须结合采样时间。30天／20MiB／约1MiB轮转只处理自身文件；日志异常保留缺口而不改控制结果。普通67项及无缓存Medium五事件后退出通过，周期／到期／故障多为模拟；没有本轮真实UAC／产品／输入／性能或系统休眠证明。旧cache_available、空档、长时参数不能代替[实际证据](gsudo_cache_pending_validation.md)，仅异常／关键缺证时补最小检查。
+跨PC／长时专项采用日常自然覆盖，必要时定向补验。普通67项及无缓存 Medium 五事件通过，周期、到期和故障主要为模拟。详见[证据](gsudo_cache_pending_validation.md)与[JSONL 用法](../../.agents/skills/qkeymapper-gsudo-cache/references/usage.md)。
 
 ### MAP-67-B0 检查点与接续方式
 
