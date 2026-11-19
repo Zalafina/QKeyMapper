@@ -12,7 +12,7 @@
 
 `sourceSnapshotEncodingBoundaries` 核对精确 4 MiB 前后边界及完整绑定的原修订字节，包含中日文、emoji、引号／反斜杠／换行。`sourceSnapshotQueryCost` 用 1／100／1,000 行合成不可变快照分别测目录和单行助手，QtTest 可用 `-iterations 32 -median 3` 固定比较。该数值不含产品源复制、锁占用、IPC／SDK 或 GUI 响应，不能当作完整查询或输入性能。
 
-`mappingStopLifecycle` 验证显式停止的严格参数、请求 ID 冲突、结果归属、超时与迟到代次，以及清理中结果不被容量或过期淘汰。真实私有监视流程由 [test_product_stop.py](../../../mcp_bridge_rust/tests/test_product_stop.py) 验证。请使用新建的隔离产品副本 `QKeyMapperMcpAcceptance_Monitoring.exe`，由脚本创建空映射、不会匹配的合成配置。固定助手 `ApproveRunMapping` 和 `StartPrivateMonitoring` 仅用于该自有私有夹具，使用现有公共登记入口。测试先验证 Read 拒绝，再验证 Read＋RunMapping、GUI 开启监视、MCP 清理、重连后查询及重放。
+`mappingStopLifecycle` 验证显式停止的严格参数、请求 ID 冲突、结果归属、超时与迟到代次，以及清理中结果不被容量或过期淘汰。真实私有监视流程由 [test_product_stop.py](../../../mcp_bridge_rust/tests/test_product_stop.py) 验证。请使用新建的隔离产品副本 `QKeyMapperMcpAcceptance_Monitoring.exe`，由脚本创建空映射、不会匹配的合成配置。固定助手 `ApproveRunMapping` 和 `StartPrivateMonitoring` 仅用于该自有私有夹具，使用现有公共登记入口。测试先验证 Read 拒绝，再验证 Read＋RunMapping、GUI 开启监视、MCP 清理、重连后查询及重放。`--verify-write-after-stop` 另用固定 `ApproveConfigureRunMapping`，核对运行中提交拒绝、排空后旧源失效，以及新预览提交、保存和 GUI 读回。
 
 `mappingChangeArguments`／`mappingChangeLifecycle`／`mappingChangeLimits` 验证基本新增预览基础：严格参数、单字母／数字与源引用、有界120秒预览、实例／配对／权限代次归属、消费／取消／替换、10分钟／64条结果、未知结果及重置。存储本身不授权或修改映射；产品实际提交另外检查完整源、业务状态、当前请求／权限和到期。`sourceSnapshotReferences`验证同步组单改的完整修订；正式B1业务证据见[独立记录](../../../handoff/qkeymapper_mcp_control/map67b1_validation.md)。
 

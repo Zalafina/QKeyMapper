@@ -14,15 +14,19 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | ACTIVE-STOP-159 活动态停止的维护目标选验完成 |
+| 当前切片 | RUN-WRITE-161 运行中拒绝及停净后保存选验完成 |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
 | 当前已完成 | Rust 显式启停、源归属、状态及操作查询 |
-| 当前验证／证据 | 普通 Qt6 监视启停和输出替身活动态选验。原件仅本机 |
+| 当前验证／证据 | 普通 Qt6 监视启停、私有输出截获下的活动停止和写入边界。原件仅本机 |
 | 当前控制器 | PID 34180 至 19:00，本轮测试登记授权已撤出 |
-| 下一项动作 | 继续运行中写入拒绝、停净后重新预览与保存。Win10 三包另验 |
+| 下一项动作 | M2-A 先接当前未筛选普通表的单行上移，复用实际 GUI 入口。Win10 三包另验 |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### RUN-WRITE-161：停止并排空后的写入边界
+
+沿用 Qt6 输出截获目标 `5e2c582e` 与 Rust `7b7bc36a`，私有桌面专属 Read＋Configure＋RunMapping。运行中提交已预览编辑得 `context_busy`，保留拒绝结果且 INI 不变；停止完成后旧源失效，新预览提交 A→B、显式保存并读回 GUI。原生五项零，FakerInput 替身键鼠空报告各3次，FilterKeys 不变。配对及专属凭据已清理，退出0，控制器无本轮未决。原件 `out/mcp_product/run_write_161_20261119/`。未增加普通产品活动态、带停时动作或真实输入验收。
 
 ### AGY-160：静态 Rust 组件与 Antigravity 选验
 
@@ -207,15 +211,15 @@ STOP-57 仅恢复安全只读：既有停止流程完成前后所有者／池／
 
 ### CACHE-LOG-84：固定动作失败诊断补充（2026-10-26，PC-W11）
 
-SAVE-83 后补充 gsudo 实取退出码、子 PID、耗时、失败阶段、响应状态及清理计数。未知结果保留，OS 码缺失记 null。普通模拟19项及日志失败清理通过；原件 `out/cache_diagnostics_w11_20261026`，细节见 Git 历史。
+SAVE-83 后补充原生失败与清理字段，未知保留。普通模拟19项通过，见 `out/cache_diagnostics_w11_20261026` 与 Git 原文。
 
 ### CACHE-SKILL-70：日常摘要与自然覆盖复查
 
-跨PC／长时专项采用日常自然覆盖，必要时定向补验。普通67项及无缓存 Medium 五事件通过，周期、到期和故障主要为模拟。详见[证据](gsudo_cache_pending_validation.md)与[JSONL 用法](../../.agents/skills/qkeymapper-gsudo-cache/references/usage.md)。
+普通67项及无缓存 Medium 五事件通过，周期、到期和故障主要为模拟。见[证据](gsudo_cache_pending_validation.md)和[日志用法](../../.agents/skills/qkeymapper-gsudo-cache/references/usage.md)。
 
 ### MAP-67-B0 检查点与接续方式
 
-B0仅纯基础：120秒预览、实例／配对／权限归属、单客户端待预览、消费／取消／替换、64条／10分钟结果及采样时间，清空后unknown；无Worker／保存／重试或产品业务。双Qt见MAP-20261024-67-B0。3a12a434曾保存五文件25,370字节草稿，已于4c5d04f3实际吸收并补守卫形成[B1](map67b1_validation.md)；归档已删除，**不得再次应用**。unknown不表示未执行，不能盲目重放。旧暂停与C1接续以当前卡片取代，out／凭据／PID不跨机冒用。
+B0 固定预览／结果容量、归属、期限及查询语义，unknown 不证明未执行。B0 草稿已于 `4c5d04f3` 吸收进[B1](map67b1_validation.md)，不得再次应用。双 Qt 见 MAP-20261024-67-B0，旧暂停见 Git 原文。
 
 ### MAP-67-B1 的 Default 补验范围
 

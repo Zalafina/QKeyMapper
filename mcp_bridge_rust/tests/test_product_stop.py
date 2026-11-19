@@ -46,6 +46,11 @@ async def start_request(client, instance):
             "source_revision": sources["source_snapshot"]["revision"], "source_tab_ref": current["source_tab_ref"]}
 
 
+def add_arguments(start):
+    return {"source_revision": start["source_revision"], "source_tab_ref": start["source_tab_ref"],
+            "original_key": "A", "mapping_key": "B"}
+
+
 async def stopped(client, request):
     wait = (await call(client, "qkm_wait_state",
         {"condition": "stopped_and_quiescent", "timeout_ms": 5000}))["result"]
@@ -79,7 +84,8 @@ async def run(args):
         rust = StdioServerParameters(command=str(args.rust_exe), cwd=str(args.output),
             args=["--executable", str(args.executable), "--discovery-file", str(discovery)])
         async with Client(rust) as client:
-            for approval, scopes in (("ApproveRead", 1), ("ApproveRunMapping", 5)):
+            run_approval = ("ApproveConfigureRunMapping", 7) if args.verify_write_after_stop else ("ApproveRunMapping", 5)
+            for approval, scopes in (("ApproveRead", 1), run_approval):
                 await call(client, "qkm_connect")
                 await connection(client, "pairing_required")
                 await call(client, "qkm_request_pairing")
@@ -121,6 +127,8 @@ async def run(args):
             assert (await connection(client, "connected"))["instance"] == first["instance"]
             evidence["first"] = await stopped(client, first)
             start = await start_request(client, first["instance"])
+            if args.verify_write_after_stop:
+                pending = (await call(client, "qkm_preview_changes", add_arguments(start)))["result"]["preview_id"]
             result = (await call(client, "qkm_start_mapping", start))["result"]
             assert result["operation_id"] == start["request_id"] and result["status"] == "completed", result
             assert result["result"] == {"monitoring_enabled": True, "saved": False}
@@ -129,6 +137,12 @@ async def run(args):
             wait = (await call(client, "qkm_wait_state", {"condition": "mapping_active", "timeout_ms": 200}))["result"]
             assert wait["outcome"] == "timed_out" and wait["state"]["run"]["gui_state"] == "checking"
             await call(client, "qkm_start_mapping", start | {"request_id": uuid.uuid4().hex}, error="context_busy")
+            if args.verify_write_after_stop:
+                await call(client, "qkm_apply_changes", {"preview_id": pending}, error="context_busy")
+                rejected = (await call(client, "qkm_get_operation", {"operation_id": pending}))["result"]
+                assert rejected["status"] == "rejected" and rejected["error"]["code"] == "context_busy", rejected
+                evidence["running_write_rejected"] = rejected
+                assert ini.read_bytes() == fixture_ini()
             replay = (await call(client, "qkm_stop_mapping", first))["result"]
             assert replay.pop("replayed") is True, replay
             assert replay.pop("query_sampled_at_utc")
@@ -145,6 +159,21 @@ async def run(args):
             await call(client, "qkm_start_mapping", fresh | {"request_id": start["request_id"]},
                        error="request_id_conflict")
             assert ini.read_bytes() == fixture_ini()
+            if args.verify_write_after_stop:
+                await call(client, "qkm_preview_changes", add_arguments(start), error="stale_source")
+                listing = (await call(client, "qkm_query", {"entity": "mapping_sources"}))["result"]
+                assert all(tab["row_count"] == 0 for tab in listing["items"])
+                preview = (await call(client, "qkm_preview_changes", add_arguments(fresh)))["result"]["preview_id"]
+                applied = (await call(client, "qkm_apply_changes", {"preview_id": preview}))["result"]
+                assert applied["status"] == "applied" and ini.read_bytes() == fixture_ini(), applied
+                save = (await call(client, "qkm_preview_changes", {
+                    "action": "configuration.save", "setting_name": "Monitoring157"}))["result"]["preview_id"]
+                saved = (await call(client, "qkm_apply_changes", {"preview_id": save, "confirm_scope": True}))["result"]
+                assert saved["status"] == "applied" and saved["result"]["saved"] and saved["result"]["reloaded"], saved
+                gui = await product.action("ReadMapping")
+                assert gui["mapping_rows"] == [{"original": "A", "mapping": "B"}], gui
+                assert ini.read_bytes() != fixture_ini()
+                evidence["save_after_cleanup"] = saved
             await product.action("OpenAdvanced")
             await product.action("OpenMcp")
             revoked = await product.action("Revoke")
@@ -160,7 +189,9 @@ async def run(args):
             await product.close()
     evidence.update(desktop=product.desktop_name, executable=str(args.executable), bridge=str(args.rust_exe))
     (args.output / "result.json").write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
-    print("PASS private GUI start, Rust monitoring start/stop, reauthentication, replay, cleanup and unchanged INI")
+    print("PASS private GUI start, Rust monitoring start/stop, reauthentication, replay and cleanup")
+    if args.verify_write_after_stop:
+        print("PASS running write rejection, stale source and fresh save after cleanup")
 
 
 if __name__ == "__main__":
@@ -168,6 +199,7 @@ if __name__ == "__main__":
     parser.add_argument("--executable", type=Path, required=True)
     parser.add_argument("--rust-exe", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--verify-write-after-stop", action="store_true")
     args = parser.parse_args()
     args.executable = args.executable.resolve(strict=True)
     args.rust_exe = args.rust_exe.resolve(strict=True)

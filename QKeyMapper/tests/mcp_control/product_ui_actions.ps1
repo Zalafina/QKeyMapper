@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','SaveStartup','ApproveRead','ApproveConfigure','ApproveRunMapping','Revoke','Disable','CloseMcp',
+    [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','SaveStartup','ApproveRead','ApproveConfigure','ApproveRunMapping','ApproveConfigureRunMapping','Revoke','Disable','CloseMcp',
         'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','RestoreFirstRows',
         'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent',
         'AddBasicMapping','ClearBasicMapping','ShowForCapture','OpenFloatingSetup','CloseFloatingSetup',
@@ -28,7 +28,7 @@ $engineDefault = $AllowDefaultDesktop -and $DesktopName -eq 'Default' -and
     [IO.Path]::GetFileName($expected) -match '^QKeyMapperMcpAcceptance_engine61_(baseline|current)\.exe$'
 $privateMonitoring = $DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
     [IO.Path]::GetFileName($expected) -ceq 'QKeyMapperMcpAcceptance_Monitoring.exe'
-if (($Action -in 'StartPrivateMonitoring','StopPrivateMonitoring','ApproveRunMapping' -and -not $privateMonitoring) -or
+if (($Action -in 'StartPrivateMonitoring','StopPrivateMonitoring','ApproveRunMapping','ApproveConfigureRunMapping' -and -not $privateMonitoring) -or
     -not $expected.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     -not $resultPath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     [IO.Path]::GetExtension($resultPath) -ine '.json' -or
@@ -639,7 +639,7 @@ if ($Action -eq 'AddBasicMapping') {
             } while ([DateTime]::UtcNow -lt $deadline)
             if ($expectedStatus -cnotcontains $savedStatus) { throw "Startup choice was not saved: $savedStatus" }
         }
-        { $_ -in 'ApproveRead','ApproveConfigure','ApproveRunMapping' } {
+        { $_ -in 'ApproveRead','ApproveConfigure','ApproveRunMapping','ApproveConfigureRunMapping' } {
             if (-not $ClientExecutable) { throw 'A trusted client executable is required.' }
             $field = Find-Control $dialog ([Windows.Automation.ControlType]::Edit) 'mcpClientExecutable' @('系统核实的客户端程序路径','Verified client executable path','確認済みクライアントのパス')
             $actual = $field.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
@@ -649,7 +649,7 @@ if ($Action -eq 'AddBasicMapping') {
             $run = Check-State $dialog 'mcpRunMapping' @('开始与停止映射（可能发送输入）','Start and stop mapping (may send input)','マッピングの開始と停止（入力を送信する場合あり）')
             if ($read -ne [Windows.Automation.ToggleState]::On -or $configure -ne [Windows.Automation.ToggleState]::Off -or
                 $run -ne [Windows.Automation.ToggleState]::Off) { throw 'Only read permission may be approved by this test helper.' }
-            if ($Action -eq 'ApproveConfigure') {
+            if ($Action -in 'ApproveConfigure','ApproveConfigureRunMapping') {
                 $box = Find-Control $dialog ([Windows.Automation.ControlType]::CheckBox) 'mcpConfigure' @('更改映射与软件设定','Change mappings and settings','マッピングと設定の変更')
                 $box.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle()
                 if ((Check-State $dialog 'mcpConfigure' @('更改映射与软件设定','Change mappings and settings','マッピングと設定の変更')) -ne [Windows.Automation.ToggleState]::On -or
@@ -657,15 +657,18 @@ if ($Action -eq 'AddBasicMapping') {
                     throw 'Expected Configure only, without RunMapping.'
                 }
             }
-            if ($Action -eq 'ApproveRunMapping') {
+            if ($Action -in 'ApproveRunMapping','ApproveConfigureRunMapping') {
                 foreach ($id in 'mcpShowWindows','mcpCaptureWindows') {
                     if ((Check-State $dialog $id @()) -ne [Windows.Automation.ToggleState]::Off) { throw 'Unexpected window permission.' }
                 }
                 $box = Find-Control $dialog ([Windows.Automation.ControlType]::CheckBox) 'mcpRunMapping' @()
                 $box.GetCurrentPattern([Windows.Automation.TogglePattern]::Pattern).Toggle()
+                $expectedConfigure = if ($Action -eq 'ApproveConfigureRunMapping') {
+                    [Windows.Automation.ToggleState]::On
+                } else { [Windows.Automation.ToggleState]::Off }
                 if ((Check-State $dialog 'mcpRunMapping' @()) -ne [Windows.Automation.ToggleState]::On -or
-                    (Check-State $dialog 'mcpConfigure' @()) -ne [Windows.Automation.ToggleState]::Off) {
-                    throw 'Expected RunMapping without Configure.'
+                    (Check-State $dialog 'mcpConfigure' @()) -ne $expectedConfigure) {
+                    throw 'The selected RunMapping approval did not match the fixed permission set.'
                 }
             }
             Invoke-Button $dialog 'mcpApprove' @('批准选定权限','Approve selected permissions','選択した権限で承認')
@@ -701,7 +704,7 @@ if ($Action -eq 'OpenAdvanced') {
     $result.configuration_display = $configurationDisplay
     $result.configuration_read_method = 'ValuePattern'
 }
-if ($Action -in 'OpenMcp','Enable','SaveStartup','ApproveRead','ApproveConfigure','ApproveRunMapping','Revoke','Disable') {
+if ($Action -in 'OpenMcp','Enable','SaveStartup','ApproveRead','ApproveConfigure','ApproveRunMapping','ApproveConfigureRunMapping','Revoke','Disable') {
     $dialog = Find-OwnedWindow $mcpNames
     $result.dialog_window = $dialog.Current.NativeWindowHandle
     $field = Find-Control $dialog ([Windows.Automation.ControlType]::Edit) 'mcpConnection' @('连接信息文件路径','Connection information file','接続情報ファイルのパス')
