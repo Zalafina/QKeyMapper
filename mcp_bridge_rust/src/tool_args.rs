@@ -127,6 +127,8 @@ enum Action {
     MoveToTop,
     #[serde(rename = "mapping.move_to_bottom")]
     MoveToBottom,
+    #[serde(rename = "tab.rename")]
+    RenameTab,
     #[serde(rename = "configuration.save")]
     Save,
     #[serde(rename = "ibinput.preferences.update")]
@@ -168,6 +170,7 @@ struct Preview {
     unavailable_policy: Option<UnavailablePolicy>,
     key_up_mapping_key: Option<String>,
     disabled: Option<bool>,
+    tab_name: Option<String>,
 }
 
 impl Preview {
@@ -191,6 +194,9 @@ impl Preview {
                 .key_up_mapping_key
                 .as_deref()
                 .is_none_or(|key| key.chars().count() <= 1)
+            && self.tab_name.as_deref().is_none_or(|name| {
+                name.encode_utf16().count() <= 32767 && !name.contains(['\0', '\r', '\n'])
+            })
     }
 }
 
@@ -354,7 +360,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 }
                 _ => true,
             };
-            if !valid_move {
+            let rename = values.get("action").and_then(Value::as_str) == Some("tab.rename");
+            if !valid_move
+                || rename != values.contains_key("tab_name")
+                || (rename && (values.len() != 3 || !values.contains_key("source_tab_ref")))
+            {
                 return Err(InvalidMessage);
             }
             // Keep the IPC defaults. Qt validates each action's field set.

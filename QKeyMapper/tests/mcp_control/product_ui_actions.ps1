@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','SaveStartup','ApproveRead','ApproveConfigure','ApproveRunMapping','ApproveConfigureRunMapping','Revoke','Disable','CloseMcp',
-        'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows',
+        'ReadMapping','ReadTab1','ReadTab2','ReadCommon','ReadRenamedTab168','MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows',
         'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent',
         'AddBasicMapping','ClearBasicMapping','ShowForCapture','OpenFloatingSetup','CloseFloatingSetup',
         'SyncGroupOne','SyncGroupZero','StartMapping','StopMapping','StartPrivateMonitoring','StopPrivateMonitoring')][string]$Action,
@@ -30,8 +30,11 @@ $privateMonitoring = $DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
     [IO.Path]::GetFileName($expected) -ceq 'QKeyMapperMcpAcceptance_Monitoring.exe'
 $privateRowOrder = $DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
     [IO.Path]::GetFileName($expected) -ceq 'QKeyMapperMcpAcceptance_RowOrder.exe'
+$privateTabName = $DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
+    [IO.Path]::GetFileName($expected) -ceq 'QKeyMapperMcpAcceptance_TabName.exe'
 if (($Action -in 'StartPrivateMonitoring','StopPrivateMonitoring','ApproveRunMapping','ApproveConfigureRunMapping' -and -not $privateMonitoring) -or
     ($Action -in 'MoveFirstDown','MoveLastToTop','MoveFirstToBottom' -and -not $privateRowOrder) -or
+    ($Action -eq 'ReadRenamedTab168' -and -not $privateTabName) -or
     -not $expected.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     -not $resultPath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     [IO.Path]::GetExtension($resultPath) -ine '.json' -or
@@ -256,7 +259,7 @@ function Select-Control {
     }
 }
 
-$viewActions = @('ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup')
+$viewActions = @('ReadMapping','ReadTab1','ReadTab2','ReadCommon','ReadRenamedTab168','MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup')
 $mappingActions = $viewActions + @('SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')
 function Get-MappingGrid {
     $condition = [Windows.Automation.OrCondition]::new(
@@ -378,10 +381,11 @@ if ($Action -eq 'AddBasicMapping') {
 } elseif ($Action -in $mappingActions) {
     $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')
     Select-Control $mappingTab
-    if ($Action -in 'ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
+    if ($Action -in 'ReadTab1','ReadTab2','ReadCommon','ReadRenamedTab168','MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
         $names = switch ($Action) {
             'ReadTab2' { @('Tab2') }
             'ReadCommon' { @('共通','Common') }
+            'ReadRenamedTab168' { @('Mcp Tab 168') }
             default { @('Tab1') }
         }
         Select-Control (Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' $names)
@@ -558,7 +562,7 @@ if ($Action -eq 'AddBasicMapping') {
     } elseif ($Action -in 'MoveSecondUp','RestoreFirstRows') {
         'owned_cell_right_click_UIA_MoveUp'
     } elseif ($Action -eq 'ClearBasicMapping') { 'owned_cell_right_click_UIA_Delete' }
-    elseif ($Action -in 'ReadTab1','ReadTab2','ReadCommon') { 'owned_UIA_tab_select' }
+    elseif ($Action -in 'ReadTab1','ReadTab2','ReadCommon','ReadRenamedTab168') { 'owned_UIA_tab_select' }
     elseif ($Action -eq 'ReadMapping') { 'read_only' } else { $openMethod }
     if ($Action -notin $viewActions) {
         $mappingObservation.requested_configuration = $wanted
@@ -634,7 +638,9 @@ if ($Action -eq 'AddBasicMapping') {
     $stopShortcut = $stopKey.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value
     $startButton = Find-Control $mainRoot ([Windows.Automation.ControlType]::Button) 'keymapButton' @()
     $mappingButtonText = $startButton.Current.Name
-    $sourceTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('Tab1','Normal')
+    $sourceTabNames = @('Tab1','Normal')
+    if ($privateTabName) { $sourceTabNames += 'Mcp Tab 168' }
+    $sourceTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' $sourceTabNames
     $sourceTabName = $sourceTab.Current.Name
     $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
     $configurationDisplay = $configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value

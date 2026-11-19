@@ -105,13 +105,15 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         }
     }
     const bool movePreview = rowMove != MappingRowMove::None;
+    const bool renamePreview = preview && action == QLatin1String("tab.rename");
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
-        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !preferencesPreview))) return fail("Unsupported preview action.");
+        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !renamePreview && !preferencesPreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
     const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")}
         : preferencesPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("preferences_revision"),
             QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")}
+        : renamePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_name")}
         : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
         : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled")}
@@ -145,6 +147,23 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             QStringLiteral("sendinput_before_start")}.contains(policy.toString()))) return fail("Unsupported unavailable policy.");
         result.action = MappingChangeAction::UpdateIbInputPreferences;
         result.preferences = {revision.toString(), backend.toString(), policy.toString()};
+        return result;
+    }
+    if (renamePreview) {
+        const auto reference = arguments.value(QStringLiteral("source_tab_ref"));
+        const auto name = arguments.value(QStringLiteral("tab_name"));
+        const QString text = name.toString();
+        if (!name.isString() || text.size() > 32767 || text.contains(QLatin1Char('\0'))
+            || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n')))
+            return fail("A Tab name must be a single line of at most 32767 UTF-16 code units.");
+        const QString revision = reference.toString().left(64);
+        const auto source = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
+            {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), reference}});
+        if (!source.ok()) return fail("A canonical current source Tab reference is required.");
+        result.action = MappingChangeAction::UpdateMapping;
+        result.update.sourceRevision = revision;
+        result.update.sourceTabRef = reference.toString();
+        result.update.tabName = text;
         return result;
     }
     if (updatePreview || movePreview) {
@@ -466,6 +485,22 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         capabilities.append(movePreview);
         capabilities.append(moveApply);
     }
+    const auto renameSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("tab.rename")}}},
+        {QStringLiteral("source_tab_ref"), reference},
+        {QStringLiteral("tab_name"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")}, {QStringLiteral("maxLength"), 32767}}}},
+        {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_name")});
+    auto renamePreview = capability("tab.rename.preview", "qkm_preview_changes", Read | Configure, true, renameSchema);
+    auto renameApply = capability("tab.rename.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&renamePreview, &renameApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_attached_normal_source_only"),
+            QStringLiteral("memory_only_no_save_or_start"), QStringLiteral("no_open_editor_or_popup"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("gui_tab_name_rules")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    renamePreview.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
+    renameApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));
+    capabilities.append(renamePreview);
+    capabilities.append(renameApply);
     capabilities.append(operation);
     return capabilities;
 }

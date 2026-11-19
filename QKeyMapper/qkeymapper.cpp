@@ -12975,6 +12975,16 @@ int QKeyMapper::countNormalMappingTabs(void)
     return count;
 }
 
+QKeyMapper::TabNameCheck QKeyMapper::checkMappingTabName(int tabIndex, const QString &name)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) return TabNameCheck::InvalidTab;
+    if (name.isEmpty()) return TabNameCheck::Empty;
+    if (name == s_KeyMappingTabInfoList.at(tabIndex).TabName) return TabNameCheck::Unchanged;
+    if (isReservedCommonTabDisplayName(name)) return TabNameCheck::Reserved;
+    if (isTabTextDuplicate(name)) return TabNameCheck::Duplicate;
+    return TabNameCheck::Accepted;
+}
+
 bool QKeyMapper::isTabTextDuplicate(const QString &tabName)
 {
     // Iterate through tabinfolist to check if there is a duplicate tabname
@@ -32721,6 +32731,7 @@ void QKeyMapper::updateKeyMappingTabWidgetTabName(int tabindex, const QString &t
 
     if (s_KeyMappingTabInfoList.at(tabindex).TabName != tabname) {
         s_KeyMappingTabInfoList[tabindex].TabName = tabname;
+        ++m_AutomationSourceEpoch;
         updateKeyMappingTabWidgetTabDisplay(tabindex);
     }
 }
@@ -38660,6 +38671,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         || (applyingPreview && applyingPreview->preferences.has_value());
     if (updating || preferencesUpdate) {
         const auto update = applying && updating ? *applyingPreview->update : validation.update;
+        const bool renamingTab = updating && update.tabName.has_value();
         if ((validation.confirmConflicts && !update.originalKey.has_value())
             || validation.confirmScope || validation.confirmOverwrite || validation.confirmDelete) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
@@ -38670,6 +38682,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
             || m_KeyMappingDataTable->hasActiveEditor()) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
+            return;
+        }
+        if (renamingTab && isCommonMappingTabIndex(tab)) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Only the current normal Tab can be renamed."));
             return;
         }
         const bool movingRow = update.move != MappingRowMove::None;
@@ -38705,7 +38721,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         int rowAfter = update.sourceRow;
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
             || update.keyUpMappingKey.has_value());
-        if (updating) {
+        if (updating && !renamingTab) {
             const auto page = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
                 {{QStringLiteral("entity"), QStringLiteral("mappings")}, {QStringLiteral("source_revision"), update.sourceRevision},
                     {QStringLiteral("source_tab_ref"), update.sourceTabRef}, {QStringLiteral("offset"), update.sourceRow}, {QStringLiteral("limit"), 1}});
@@ -38723,7 +38739,29 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             }
             target.insert(QStringLiteral("source_ref"), update.sourceReference);
         }
-        if (movingRow) {
+        if (renamingTab) {
+            const auto page = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
+                {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), update.sourceRevision},
+                    {QStringLiteral("offset"), tab}, {QStringLiteral("limit"), 1}});
+            if (!page.ok()) { reject(page.errorCode, page.message); return; }
+            const auto items = page.page.value(QStringLiteral("items")).toArray();
+            const auto item = items.isEmpty() ? QJsonObject() : items.first().toObject();
+            if (item.value(QStringLiteral("source_tab_ref")) != update.sourceTabRef
+                || !item.value(QStringLiteral("attached_to_ui")).toBool() || item.value(QStringLiteral("ui_index")).toInt(-1) != tab) {
+                reject(QStringLiteral("stale_source"), QStringLiteral("The Tab reference is no longer attached to the current source."));
+                return;
+            }
+            const auto check = checkMappingTabName(tab, *update.tabName);
+            if (check != TabNameCheck::Accepted && check != TabNameCheck::Unchanged) {
+                reject(QStringLiteral("invalid_tab_name"), QStringLiteral("Use a nonempty, unique Tab name other than the reserved Common names."));
+                return;
+            }
+            modified = check == TabNameCheck::Accepted;
+            target.insert(QStringLiteral("source_tab_ref"), update.sourceTabRef);
+            change = {{QStringLiteral("kind"), QStringLiteral("rename_tab")},
+                {QStringLiteral("before"), item.value(QStringLiteral("name"))},
+                {QStringLiteral("after"), *update.tabName}};
+        } else if (movingRow) {
             const int lastStart = int(KeyMappingDataList->size()) - update.rowCount;
             if (update.sourceRow > lastStart) {
                 reject(QStringLiteral("invalid_target"), QStringLiteral("The selected range extends past the current normal Tab."));
@@ -38877,8 +38915,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = movingRow
-            ? QString::fromLatin1(mappingRowMoveAction(update.move))
+        const QString action = renamingTab ? QStringLiteral("tab.rename")
+            : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
         changes.prepend(change);
         QJsonObject description{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
@@ -38915,7 +38953,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (movingRow) {
+            if (renamingTab) {
+                updateKeyMappingTabWidgetTabName(tab, *update.tabName);
+            } else if (movingRow) {
                 const int lastSourceRow = update.sourceRow + update.rowCount - 1;
                 if (update.move == MappingRowMove::Top || update.move == MappingRowMove::Bottom) {
                     moveMappingRowsToEdge(update.sourceRow, lastSourceRow, update.move == MappingRowMove::Top);

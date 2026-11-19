@@ -1487,6 +1487,8 @@ public:
     void syncCommonMappingDataForSave(void);
     static int firstNormalMappingTabIndex(void);
     static int countNormalMappingTabs(void);
+    enum class TabNameCheck { InvalidTab, Empty, Unchanged, Reserved, Duplicate, Accepted };
+    static TabNameCheck checkMappingTabName(int tabIndex, const QString &name);
     static bool isTabTextDuplicate(const QString &tabName);
     static bool isTabTextDuplicateInStringList(const QString &tabName, const QStringList &tabNameList);
     static ValidationResult validateCombinationKey(QString &input);

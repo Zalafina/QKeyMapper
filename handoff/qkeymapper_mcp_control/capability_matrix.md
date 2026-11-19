@@ -246,7 +246,7 @@ ENV-38 保留为 PC-W10 的版本／漂移检查历史。ENV-39 已在 PC-W11 �
 | MAP-002 | 连发、锁定、长按／双击、时机、发送方式、抬起键 | [映射项窗口](../../QKeyMapper/qitemsetupdialog.cpp)、[映射引擎](../../QKeyMapper/qkeymapper_worker.cpp) | 所有参数与相互限制、实际有效数据、Worker 消费值、释放与保存 | M2-A／EQ-ITEM-001 |
 | MAP-003 | 映射码、浮动按钮样式码 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`applyMappingCodeToSourceRow()` | 解析不等于完整业务提交；运行状态、禁用保留、冲突及忽略字段 | M2-A／EQ-CODE-001 |
 | MAP-004 | 表格选择、分类／筛选、复制／移动／排序 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | ROW-ORDER-162～167 接未筛选普通表单行与连续行的菜单排序及保存；拖拽、分类和复制待分片 | M2-A／EQ-TABLE-001 |
-| MAP-005 | Tab、共通映射、属性及 Tab 快捷键 | [Tab 设定](../../QKeyMapper/qtablesetupdialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 自有／共通来源、互斥及优先级、运行表、跨 Tab 影响 | M2-A／EQ-COMMON-001 |
+| MAP-005 | Tab、共通映射、属性及 Tab 快捷键 | [Tab 设定](../../QKeyMapper/qtablesetupdialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | TAB-NAME-168 选验当前普通 Tab 重命名、名称校验、旧引用和保存冷读；其他 Tab 属性、优先级和侧效应待分片 | M2-A／EQ-COMMON-001 |
 | MAC-001 | 普通宏、通用宏、分类、重命名／覆盖及导入导出 | [宏列表](../../QKeyMapper/qmacrolistdialog.cpp) | 实际有序宏表、引用解析、范围、依赖与覆盖选择；逐动作盘点 | M2-A／EQ-MACRO-001 |
 | CFG-001 | 保存、另存、加载及配置切换 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`saveKeyMapSetting()`／`loadKeyMapSetting()` | 草稿、同名覆盖、加载副作用、sync／status、冷启动及失败保护 | M1／EQ-SAVE-001 |
 | CFG-002 | 配置／单表导入导出、备份及恢复 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)、[Tab 设定](../../QKeyMapper/qtablesetupdialog.cpp) | 内存与磁盘来源、全局组范围、覆盖、校验和已有草稿 | M2-A／EQ-TRANSFER-001 |

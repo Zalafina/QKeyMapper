@@ -43,6 +43,7 @@ struct MappingUpdateArguments {
     std::optional<bool> disabled;
     MappingRowMove move = MappingRowMove::None;
     int rowCount = 1;
+    std::optional<QString> tabName;
 };
 
 struct IbInputPreferencesArguments {

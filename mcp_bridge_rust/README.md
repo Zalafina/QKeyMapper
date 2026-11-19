@@ -103,6 +103,15 @@ from the same source and revision in ascending order. To persist the
 draft, preview and confirm a separate `configuration.save`.
 Query the source again before using row references.
 
+## Renaming a mapping tab
+
+Use `tab.rename` with the current normal tab's `source_tab_ref` and the
+new `tab_name` in `qkm_preview_changes`. Read and Configure are required.
+The existing product rules reject empty, reserved and duplicate names.
+Submitting the current name leaves the source revision and draft intact.
+A successful change gives a new source reference, including after a
+rename back to the old name. Persist the draft with `configuration.save`.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

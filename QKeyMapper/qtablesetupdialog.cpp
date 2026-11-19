@@ -589,38 +589,39 @@ void QTableSetupDialog::on_tabNameUpdateButton_clicked()
         return;
     }
 
-    QString tabNameString = ui->tabNameLineEdit->text();
-    bool isduplicate = QKeyMapper::isTabTextDuplicate(tabNameString);
+    const QString tabNameString = ui->tabNameLineEdit->text();
+    using TabNameCheck = QKeyMapper::TabNameCheck;
 
     QString popupMessage;
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
 
-    if (tabNameString.isEmpty()) {
+    switch (QKeyMapper::checkMappingTabName(m_TabIndex, tabNameString)) {
+    case TabNameCheck::InvalidTab:
+        return;
+    case TabNameCheck::Empty:
         popupMessageColor = FAILURE_COLOR;
         popupMessage = tr("TabName is empty!");
-    }
-    else if (tabNameString == QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName) {
+        break;
+    case TabNameCheck::Unchanged:
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_tabNameUpdateButton_clicked]" << "TabName was not modified, no action required.";
 #endif
-    }
-    else if (QKeyMapper::isReservedCommonTabDisplayName(tabNameString)) {
+        break;
+    case TabNameCheck::Reserved:
         popupMessageColor = FAILURE_COLOR;
         popupMessage = tr("Tab name cannot be the same as the Common mapping table name.");
-    }
-    else if (isduplicate) {
+        break;
+    case TabNameCheck::Duplicate:
         popupMessageColor = FAILURE_COLOR;
         popupMessage = tr("TabName is duplicate: ") + tabNameString;
-    }
-    else {
+        break;
+    case TabNameCheck::Accepted:
         popupMessageColor = SUCCESS_COLOR;
         popupMessage = tr("TabName update success: ") + tabNameString;
-
-        if (QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName != tabNameString) {
-            QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabName(m_TabIndex, tabNameString);
-            QKeyMapper::getInstance()->requestSaveSettingDirty();
-        }
+        QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabName(m_TabIndex, tabNameString);
+        QKeyMapper::getInstance()->requestSaveSettingDirty();
+        break;
     }
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
 }

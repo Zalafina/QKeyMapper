@@ -62,6 +62,7 @@ async def check_contract(exe):
     refs = [row, revision + ":row:0:1"]
     batch = {"action": "mapping.move_to_top", "source_refs": refs}
     moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
+    rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
     capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
@@ -96,6 +97,14 @@ async def check_contract(exe):
             assert set(move_rule["properties"]) == set(previews["properties"])
             assert all(rule == {"type": "null"} for field, rule in move_rule["properties"].items()
                        if field not in {"action", "source_ref", "source_refs"})
+            rename_rule, = (rule for rule in previews["oneOf"]
+                            if rule["properties"]["action"].get("const") == "tab.rename")
+            assert set(rename_rule["required"]) == set(rename)
+            assert rename_rule["properties"]["source_tab_ref"] == {"type": "string"}
+            assert rename_rule["properties"]["tab_name"] == {"type": "string"}
+            assert set(rename_rule["properties"]) == set(previews["properties"])
+            assert all(rule == {"type": "null"} for field, rule in rename_rule["properties"].items()
+                       if field not in rename)
             for name in ("qkm_unknown", DEMO_STATE, DEMO_MAPPING):
                 unknown = await client.call_tool(name)
                 assert unknown.is_error is True and unknown.structured_content is None
@@ -130,7 +139,7 @@ async def check_contract(exe):
                     {"source_ref": "a" * 64 + ":row:0:01"}, {"source_refs": []},
                     {"setting_name": ""}, {"setting_name": "A" * 32768}, {"key_up_mapping_key": "AB"},
                     {"insert_row": 2147483648}, {"original_key": "a"}, {"disabled": 1},
-                    {"unavailable_policy": "fallback"})),
+                    {"unavailable_policy": "fallback"}, {"tab_name": "Tab"})),
                 ("qkm_preview_changes", move, (
                     {"action": "mapping.move_up"}, {**move, "source_ref": None},
                     {**move, "source_ref": tab}, {**move, "insert_row": 0},
@@ -153,6 +162,10 @@ async def check_contract(exe):
                 ("qkm_preview_changes", {**batch, "action": "mapping.move_down"}, (
                     {"action": "mapping.move_down", "source_refs": [row]},
                     {"action": "mapping.move_down", "source_refs": [row, window]})),
+                ("qkm_preview_changes", rename, (
+                    {"action": "tab.rename", "source_tab_ref": tab}, {**rename, "source_tab_ref": row},
+                    {**rename, "source_ref": row}, {**rename, "tab_name": "two\nlines"},
+                    {**rename, "tab_name": "\u0000"}, {**rename, "tab_name": "A" * 32768})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),

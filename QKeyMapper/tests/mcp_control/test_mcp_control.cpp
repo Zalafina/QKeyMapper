@@ -400,8 +400,30 @@ void McpControlTest::mappingChangeArguments()
         changed = batch; changed.insert(QStringLiteral("source_refs"), invalid);
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     }
-    QCOMPARE(capabilities.size(), 22);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 20);
+    const QJsonObject rename{{QStringLiteral("action"), QStringLiteral("tab.rename")},
+        {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")},
+        {QStringLiteral("tab_name"), QStringLiteral("测试 Tab")}};
+    const auto renameRequest = validateMappingChangeRequest(previewMethod, rename);
+    QVERIFY(renameRequest.ok() && renameRequest.update.tabName == QStringLiteral("测试 Tab"));
+    QCOMPARE(renameRequest.update.sourceRevision, revision);
+    changed = rename; changed.insert(QStringLiteral("source_tab_ref"), sourceRef);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = rename; changed.insert(QStringLiteral("source_ref"), sourceRef);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = rename; changed.remove(QStringLiteral("tab_name"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = rename; changed.insert(QStringLiteral("tab_name"), QString(32767, QLatin1Char('A')));
+    QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());
+    for (const auto &badName : {QStringLiteral("Line\nBreak"), QStringLiteral("A\rB"), QString(QChar(0)),
+        QString(32768, QLatin1Char('A'))}) {
+        changed = rename; changed.insert(QStringLiteral("tab_name"), badName);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    QCOMPARE(capabilities.size(), 24);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 22);
+    QCOMPARE(capabilities.at(21).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.rename.preview"));
+    QCOMPARE(capabilities.at(21).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QCOMPARE(capabilities.at(22).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.rename.apply"));
     QCOMPARE(capabilities.at(17).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_top.preview"));
     QCOMPARE(capabilities.at(18).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_top.apply"));
     QCOMPARE(capabilities.at(19).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_bottom.preview"));
