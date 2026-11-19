@@ -97,8 +97,8 @@ one of `mapping.move_up`, `mapping.move_down`, `mapping.move_to_top` or
 and Configure are required. The preview lists every affected row and
 its zero-based old and new positions. Review it and commit with
 `qkm_apply_changes` using its `preview_id`. The four actions update the
-memory draft of the current unfiltered normal table. For top and bottom,
-`source_refs` may replace `source_ref` with 2–100 consecutive references
+memory draft of the current unfiltered normal table. For any of the four
+moves, `source_refs` may replace `source_ref` with 2–100 consecutive references
 from the same source and revision in ascending order. To persist the
 draft, preview and confirm a separate `configuration.save`.
 Query the source again before using row references.

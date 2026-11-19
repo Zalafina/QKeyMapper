@@ -91,9 +91,8 @@ async def check_contract(exe):
             assert single_rule["required"] == ["source_ref"]
             assert single_rule["properties"] == {"source_ref": {"type": "string"}, "source_refs": {"type": "null"}}
             assert batch_rule["required"] == ["source_refs"]
-            assert batch_rule["properties"]["action"]["enum"] == ["mapping.move_to_top", "mapping.move_to_bottom"]
-            assert batch_rule["properties"]["source_refs"] == {"type": "array", "minItems": 2}
-            assert batch_rule["properties"]["source_ref"] == {"type": "null"}
+            assert batch_rule["properties"] == {
+                "source_ref": {"type": "null"}, "source_refs": {"type": "array", "minItems": 2}}
             assert set(move_rule["properties"]) == set(previews["properties"])
             assert all(rule == {"type": "null"} for field, rule in move_rule["properties"].items()
                        if field not in {"action", "source_ref", "source_refs"})
@@ -146,8 +145,14 @@ async def check_contract(exe):
                     {**bottom, "source_ref": row + ":0"})),
                 ("qkm_preview_changes", batch, (
                     {**batch, "source_ref": row}, {**batch, "source_refs": [row]},
-                    {**batch, "source_refs": [row, tab]}, {"action": "mapping.move_up", "source_refs": refs},
+                    {**batch, "source_refs": [row, tab]},
                     {**batch, "source_refs": [revision + f":row:0:{i}" for i in range(101)]})),
+                ("qkm_preview_changes", {**batch, "action": "mapping.move_up"}, (
+                    {"action": "mapping.move_up", "source_refs": []},
+                    {"action": "mapping.move_up", "source_ref": row, "source_refs": refs})),
+                ("qkm_preview_changes", {**batch, "action": "mapping.move_down"}, (
+                    {"action": "mapping.move_down", "source_refs": [row]},
+                    {"action": "mapping.move_down", "source_refs": [row, window]})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),

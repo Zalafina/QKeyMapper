@@ -38916,10 +38916,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         if (modified) {
             if (movingRow) {
-                if (update.move == MappingRowMove::Top || update.move == MappingRowMove::Bottom)
-                    moveMappingRowsToEdge(update.sourceRow, update.sourceRow + update.rowCount - 1, update.move == MappingRowMove::Top);
-                else
-                    moveMappingRowsByOne(update.sourceRow, update.sourceRow, displayRow, displayRow, rowAfter - update.sourceRow);
+                const int lastSourceRow = update.sourceRow + update.rowCount - 1;
+                if (update.move == MappingRowMove::Top || update.move == MappingRowMove::Bottom) {
+                    moveMappingRowsToEdge(update.sourceRow, lastSourceRow, update.move == MappingRowMove::Top);
+                } else {
+                    const int lastDisplayRow = displayRow + update.rowCount - 1;
+                    moveMappingRowsByOne(update.sourceRow, lastSourceRow, displayRow, lastDisplayRow, rowAfter - update.sourceRow);
+                }
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;
                 for (const auto &row : std::as_const(conflictRows)) {

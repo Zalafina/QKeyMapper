@@ -338,13 +338,16 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         "qkm_preview_changes" => {
             let mut values = typed(arguments, Preview::valid)?;
             values.retain(|_, value| !value.is_null());
-            let single_row = values.len() == 2 && values.contains_key("source_ref");
             let valid_move = match values.get("action").and_then(Value::as_str) {
-                Some("mapping.move_up" | "mapping.move_down") => single_row,
-                Some("mapping.move_to_top" | "mapping.move_to_bottom") => {
-                    single_row
-                        || (values.len() == 2
-                            && values
+                Some(
+                    "mapping.move_up"
+                    | "mapping.move_down"
+                    | "mapping.move_to_top"
+                    | "mapping.move_to_bottom",
+                ) => {
+                    values.len() == 2
+                        && (values.contains_key("source_ref")
+                            || values
                                 .get("source_refs")
                                 .and_then(Value::as_array)
                                 .is_some_and(|rows| rows.len() >= 2))

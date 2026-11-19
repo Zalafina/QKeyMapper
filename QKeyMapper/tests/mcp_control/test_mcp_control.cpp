@@ -387,8 +387,12 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(batchRequest.update.rowCount, 2);
     changed = batch; changed.insert(QStringLiteral("source_ref"), sourceRef);
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    changed = batch; changed.insert(QStringLiteral("action"), QStringLiteral("mapping.move_down"));
-    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    for (const auto direction : {MappingRowMove::Up, MappingRowMove::Down, MappingRowMove::Bottom}) {
+        changed = batch; changed.insert(QStringLiteral("action"), QString::fromLatin1(mappingRowMoveAction(direction)));
+        const auto request = validateMappingChangeRequest(previewMethod, changed);
+        QVERIFY(request.ok() && request.update.move == direction);
+        QCOMPARE(request.update.rowCount, 2);
+    }
     for (const auto &invalid : {QJsonArray{sourceRef}, QJsonArray{sourceRef, sourceRef}, QJsonArray{adjacent, sourceRef},
         QJsonArray{sourceRef, revision + QStringLiteral(":row:0:3")}, QJsonArray{sourceRef, revision + QStringLiteral(":row:1:2")},
         QJsonArray{sourceRef, QString(64, QLatin1Char('b')) + QStringLiteral(":row:0:2")},

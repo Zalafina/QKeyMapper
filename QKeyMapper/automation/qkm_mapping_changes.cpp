@@ -105,7 +105,6 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         }
     }
     const bool movePreview = rowMove != MappingRowMove::None;
-    const bool edgePreview = rowMove == MappingRowMove::Top || rowMove == MappingRowMove::Bottom;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -113,8 +112,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")}
         : preferencesPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("preferences_revision"),
             QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")}
-        : edgePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
-        : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref")}
+        : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
         : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled")}
         : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
@@ -154,7 +152,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         const auto batch = arguments.value(QStringLiteral("source_refs"));
         const auto references = batch.toArray();
         if (!batch.isUndefined() && (!singleReference.isUndefined() || references.size() < 2 || references.size() > 100))
-            return fail("Edge moves accept either one source_ref or 2 to 100 source_refs.");
+            return fail("Moves accept either one source_ref or 2 to 100 source_refs.");
         const auto reference = references.isEmpty() ? singleReference : references.first();
         const auto original = arguments.value(QStringLiteral("original_key"));
         const auto mapping = arguments.value(QStringLiteral("mapping_key"));
@@ -443,26 +441,19 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     for (const auto move : RowMoves) {
         const QByteArray action = mappingRowMoveAction(move);
-        const bool edge = move == MappingRowMove::Top || move == MappingRowMove::Bottom;
-        QJsonObject properties{{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QString::fromLatin1(action)}}},
-            {QStringLiteral("source_ref"), rowReference}};
-        QJsonArray required{QStringLiteral("action")};
-        if (edge) {
-            properties.insert(QStringLiteral("source_refs"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
-                {QStringLiteral("minItems"), 2}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("items"), rowReference}});
-        } else {
-            required.append(QStringLiteral("source_ref"));
-        }
-        auto moveSchema = schema(properties, required);
-        if (edge) {
-            moveSchema.insert(QStringLiteral("oneOf"), QJsonArray{
-                QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_ref")}}},
-                QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_refs")}}}});
-        }
+        auto moveSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QString::fromLatin1(action)}}},
+            {QStringLiteral("source_ref"), rowReference},
+            {QStringLiteral("source_refs"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
+                {QStringLiteral("minItems"), 2}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("items"), rowReference}}}},
+            {QStringLiteral("action")});
+        moveSchema.insert(QStringLiteral("oneOf"), QJsonArray{
+            QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_ref")}}},
+            QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_refs")}}}});
         auto movePreview = capability((action + ".preview").constData(), "qkm_preview_changes", Read | Configure, true, moveSchema);
         auto moveApply = capability((action + ".apply").constData(), "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-        const auto allowedMove = move == MappingRowMove::Up ? QStringLiteral("single_row_one_position_up")
-            : move == MappingRowMove::Down ? QStringLiteral("single_row_one_position_down") : QStringLiteral("one_or_contiguous_rows_to_table_edge");
+        const auto allowedMove = move == MappingRowMove::Up ? QStringLiteral("one_or_contiguous_rows_one_position_up")
+            : move == MappingRowMove::Down ? QStringLiteral("one_or_contiguous_rows_one_position_down")
+            : QStringLiteral("one_or_contiguous_rows_to_table_edge");
         for (auto *item : {&movePreview, &moveApply}) {
             item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("memory_only_no_save_or_start"),
                 allowedMove, QStringLiteral("all_displaced_rows_in_preview"),
