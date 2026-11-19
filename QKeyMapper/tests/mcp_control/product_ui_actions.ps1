@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][ValidateSet('OpenAdvanced','OpenMcp','Enable','SaveStartup','ApproveRead','ApproveConfigure','ApproveRunMapping','ApproveConfigureRunMapping','Revoke','Disable','CloseMcp',
-        'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','RestoreFirstRows',
+        'ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows',
         'SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent',
         'AddBasicMapping','ClearBasicMapping','ShowForCapture','OpenFloatingSetup','CloseFloatingSetup',
         'SyncGroupOne','SyncGroupZero','StartMapping','StopMapping','StartPrivateMonitoring','StopPrivateMonitoring')][string]$Action,
@@ -31,7 +31,7 @@ $privateMonitoring = $DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
 $privateRowOrder = $DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
     [IO.Path]::GetFileName($expected) -ceq 'QKeyMapperMcpAcceptance_RowOrder.exe'
 if (($Action -in 'StartPrivateMonitoring','StopPrivateMonitoring','ApproveRunMapping','ApproveConfigureRunMapping' -and -not $privateMonitoring) -or
-    ($Action -eq 'MoveFirstDown' -and -not $privateRowOrder) -or
+    ($Action -in 'MoveFirstDown','MoveLastToTop','MoveFirstToBottom' -and -not $privateRowOrder) -or
     -not $expected.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     -not $resultPath.StartsWith($runtimeRoot, [StringComparison]::OrdinalIgnoreCase) -or
     [IO.Path]::GetExtension($resultPath) -ine '.json' -or
@@ -256,7 +256,7 @@ function Select-Control {
     }
 }
 
-$viewActions = @('ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup')
+$viewActions = @('ReadMapping','ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup')
 $mappingActions = $viewActions + @('SelectSaved','SelectSecond','SelectInvalid','SelectBlank','ReloadCurrent')
 function Get-MappingGrid {
     $condition = [Windows.Automation.OrCondition]::new(
@@ -378,7 +378,7 @@ if ($Action -eq 'AddBasicMapping') {
 } elseif ($Action -in $mappingActions) {
     $mappingTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' @('映射设定','Mapping','マッピング設定')
     Select-Control $mappingTab
-    if ($Action -in 'ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
+    if ($Action -in 'ReadTab1','ReadTab2','ReadCommon','MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
         $names = switch ($Action) {
             'ReadTab2' { @('Tab2') }
             'ReadCommon' { @('共通','Common') }
@@ -386,9 +386,10 @@ if ($Action -eq 'AddBasicMapping') {
         }
         Select-Control (Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' $names)
     }
-    if ($Action -in 'MoveSecondUp','MoveFirstDown','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
+    if ($Action -in 'MoveSecondUp','MoveFirstDown','MoveLastToTop','MoveFirstToBottom','RestoreFirstRows','ClearBasicMapping','OpenFloatingSetup') {
         $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()
         $fixedBasic = $Action -in 'ClearBasicMapping','OpenFloatingSetup'
+        $fixedEdge = $Action -in 'MoveLastToTop','MoveFirstToBottom'
         $expectedGroup = if ($fixedBasic) { 'Engine61' } else { 'McpSaved' }
         if ($configuration.GetCurrentPattern([Windows.Automation.ValuePattern]::Pattern).Current.Value -cne $expectedGroup) {
             throw 'The fixed source fixture is not selected.'
@@ -402,11 +403,26 @@ if ($Action -eq 'AddBasicMapping') {
                 $grid.GetItem(0,1).Current.Name -cne 'B' -or (Read-MappingView).mapping_button_text -cne '映射开始') {
                 throw 'The fixed GUI action requires exactly the owned idle A to B row.'
             }
+        } elseif ($fixedEdge) {
+            $wantedRows = if ($Action -eq 'MoveLastToTop') { @('A','G','I') } else { @('I','A','G') }
+            if ($grid.Current.RowCount -ne 5 -or (Read-MappingView).mapping_button_text -cne '映射开始') {
+                throw 'The fixed edge move requires the isolated idle three-row Tab1 and appended Common.'
+            }
+            for ($r = 0; $r -lt $wantedRows.Count; ++$r) {
+                if ($grid.GetItem($r,0).Current.Name -cne $wantedRows[$r]) {
+                    throw 'The owned Tab1 source order changed; refusing edge move.'
+                }
+            }
         } elseif ($grid.Current.RowCount -gt 8 -or $grid.Current.RowCount -lt 2 -or
             $grid.GetItem(0,0).Current.Name -cne $first -or $grid.GetItem(1,0).Current.Name -cne $second) {
             throw 'The fixed source rows changed; refusing reordering.'
         }
-        $cell = $grid.GetItem($(if ($fixedBasic -or $Action -eq 'MoveFirstDown') { 0 } else { 1 }),0)
+        $row = switch ($Action) {
+            'MoveLastToTop' { 2 }
+            { $fixedBasic -or $_ -in 'MoveFirstDown','MoveFirstToBottom' } { 0 }
+            default { 1 }
+        }
+        $cell = $grid.GetItem($row,0)
         $selection = $null
         if ($cell.TryGetCurrentPattern([Windows.Automation.SelectionItemPattern]::Pattern, [ref]$selection)) { $selection.Select() }
         $bounds = $cell.Current.BoundingRectangle
@@ -430,6 +446,8 @@ if ($Action -eq 'AddBasicMapping') {
                             'ClearBasicMapping' { @('删除','Delete','削除') }
                             'OpenFloatingSetup' { $floatingNames }
                             'MoveFirstDown' { @('下移','Move Down','下へ移動') }
+                            'MoveLastToTop' { @('上移到顶部','Move to Top','先頭へ移動') }
+                            'MoveFirstToBottom' { @('下移到底部','Move to Bottom','末尾へ移動') }
                             default { @('上移','Move Up','上へ移動') }
                         }
                         if ($item.Current.ProcessId -eq $TargetProcessId -and $wantedNames -ccontains $item.Current.Name) {
@@ -533,6 +551,10 @@ if ($Action -eq 'AddBasicMapping') {
     $mappingObservation = Read-MappingView
     $mappingObservation.gui_event_method = if ($Action -eq 'MoveFirstDown') {
         'owned_cell_right_click_UIA_MoveDown'
+    } elseif ($Action -eq 'MoveLastToTop') {
+        'owned_cell_right_click_UIA_MoveToTop'
+    } elseif ($Action -eq 'MoveFirstToBottom') {
+        'owned_cell_right_click_UIA_MoveToBottom'
     } elseif ($Action -in 'MoveSecondUp','RestoreFirstRows') {
         'owned_cell_right_click_UIA_MoveUp'
     } elseif ($Action -eq 'ClearBasicMapping') { 'owned_cell_right_click_UIA_Delete' }

@@ -245,7 +245,7 @@ ENV-38 保留为 PC-W10 的版本／漂移检查历史。ENV-39 已在 PC-W11 �
 | MAP-001 | 普通映射新增／修改／删除 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`on_addmapdataButton_clicked()`；[映射项窗口](../../QKeyMapper/qitemsetupdialog.cpp) | 校验、数据来源、派生字段、冲突、刷新和 dirty；按操作拆行 | M1／EQ-MAP-001 |
 | MAP-002 | 连发、锁定、长按／双击、时机、发送方式、抬起键 | [映射项窗口](../../QKeyMapper/qitemsetupdialog.cpp)、[映射引擎](../../QKeyMapper/qkeymapper_worker.cpp) | 所有参数与相互限制、实际有效数据、Worker 消费值、释放与保存 | M2-A／EQ-ITEM-001 |
 | MAP-003 | 映射码、浮动按钮样式码 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`applyMappingCodeToSourceRow()` | 解析不等于完整业务提交；运行状态、禁用保留、冲突及忽略字段 | M2-A／EQ-CODE-001 |
-| MAP-004 | 表格选择、分类／筛选、复制／移动／排序 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | ROW-ORDER-162／163 接当前未筛选普通表单行相邻移动及保存；分类、复制及其他排序待分片 | M2-A／EQ-TABLE-001 |
+| MAP-004 | 表格选择、分类／筛选、复制／移动／排序 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | ROW-ORDER-162～164 接当前未筛选普通表单行相邻移动、置顶／置底及保存；多选、拖拽、分类和复制待分片 | M2-A／EQ-TABLE-001 |
 | MAP-005 | Tab、共通映射、属性及 Tab 快捷键 | [Tab 设定](../../QKeyMapper/qtablesetupdialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 自有／共通来源、互斥及优先级、运行表、跨 Tab 影响 | M2-A／EQ-COMMON-001 |
 | MAC-001 | 普通宏、通用宏、分类、重命名／覆盖及导入导出 | [宏列表](../../QKeyMapper/qmacrolistdialog.cpp) | 实际有序宏表、引用解析、范围、依赖与覆盖选择；逐动作盘点 | M2-A／EQ-MACRO-001 |
 | CFG-001 | 保存、另存、加载及配置切换 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`saveKeyMapSetting()`／`loadKeyMapSetting()` | 草稿、同名覆盖、加载副作用、sync／status、冷启动及失败保护 | M1／EQ-SAVE-001 |
@@ -431,7 +431,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-CATEGORY-ASSIGN | 选定分类／输入新分类／批量分类 | 表格 `contextMenuEvent` 的内嵌文本和 QWidgetAction；M2-A；可见行转源行、混合来源限制 |
 | ACT-MAP-STATE | 单项／批量启用禁用、连发开关、锁定开关、浮动按钮开关 | 表格状态菜单与 `keyMappingTableItemCheckStateChanged`；M2-A／M2-B；与映射项窗口逐项等价 |
 | ACT-MAP-TRIGGER | 普通／长按／双击及时间的单项／批量更改 | 表格触发类型菜单、内嵌 combo／spin；M2-A；完整原始键解析与互斥组变化 |
-| ACT-MAP-ORDER | 上移、下移、置顶、置底及拖拽 | `selectedItemsMove*`／`keyMappingTableDragDropMove`；M2-A；单行相邻移动复用 GUI 业务，排除筛选、跨表和共通，其他排序待验 |
+| ACT-MAP-ORDER | 上移、下移、置顶、置底及拖拽 | `selectedItemsMove*`／`keyMappingTableDragDropMove`；M2-A；单行相邻和两端移动共用 GUI，排除筛选、跨表和共通；多行和拖拽待验 |
 | ACT-MAP-COPYPASTE | 复制／向顶部、尾部、上方、下方插入 | 表格 `contextMenuEvent`；M2-A；剪贴板、内部拷贝缓冲、位置与批量校验 |
 | ACT-MAP-CODE | 复制映射码／应用剪贴板映射码 | 表格／映射项窗口；M2-A；字符串解析与业务提交不能混同 |
 | ACT-MAP-EDIT | 双击／右键编辑、打开单项／表格／浮动按钮设定 | 表格 `contextMenuEvent` 和事件处理；M1／M2；焦点、未提交编辑与明确源目标 |

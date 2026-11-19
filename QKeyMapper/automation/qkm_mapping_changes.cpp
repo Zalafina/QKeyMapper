@@ -11,6 +11,8 @@
 
 namespace QkmAutomation {
 namespace {
+constexpr MappingRowMove RowMoves[] = {MappingRowMove::Up, MappingRowMove::Down, MappingRowMove::Top, MappingRowMove::Bottom};
+
 QString sampleTime() { return QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs); }
 bool operationPending(const QJsonObject &operation)
 {
@@ -28,6 +30,18 @@ QJsonObject removalOperationTarget(const MappingChangePreview &preview)
         {QStringLiteral("source_revision"), preview.removal->sourceRevision},
         {QStringLiteral("source_tab_ref"), preview.removal->sourceTabRef}};
 }
+}
+
+const char *mappingRowMoveAction(MappingRowMove move)
+{
+    switch (move) {
+    case MappingRowMove::Up: return "mapping.move_up";
+    case MappingRowMove::Down: return "mapping.move_down";
+    case MappingRowMove::Top: return "mapping.move_to_top";
+    case MappingRowMove::Bottom: return "mapping.move_to_bottom";
+    case MappingRowMove::None: break;
+    }
+    return "";
 }
 
 bool isBasicMappingKey(const QString &text)
@@ -80,9 +94,16 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
-    const int rowOffset = !preview ? 0 : action == QLatin1String("mapping.move_up") ? -1
-        : action == QLatin1String("mapping.move_down") ? 1 : 0;
-    const bool movePreview = rowOffset != 0;
+    MappingRowMove rowMove = MappingRowMove::None;
+    if (preview) {
+        for (const auto move : RowMoves) {
+            if (action == QLatin1String(mappingRowMoveAction(move))) {
+                rowMove = move;
+                break;
+            }
+        }
+    }
+    const bool movePreview = rowMove != MappingRowMove::None;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -150,7 +171,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             return fail("A canonical current source row is required.");
         result.action = MappingChangeAction::UpdateMapping;
         result.update = {reference.toString(), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, updatePreview ? sendMethod() : -1};
-        result.update.rowOffset = rowOffset;
+        result.update.move = rowMove;
         if (!original.isUndefined()) result.update.originalKey = original.toString();
         if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
         if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
@@ -401,17 +422,17 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
             QStringLiteral("monitoring_acceptance_not_mapping_active")});
         capabilities.append(start);
     }
-    for (bool up : {true, false}) {
-        const auto action = up ? QStringLiteral("mapping.move_up") : QStringLiteral("mapping.move_down");
-        const auto moveSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), action}}},
+    for (const auto move : RowMoves) {
+        const QByteArray action = mappingRowMoveAction(move);
+        const auto moveSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QString::fromLatin1(action)}}},
             {QStringLiteral("source_ref"), rowReference}}, {QStringLiteral("action"), QStringLiteral("source_ref")});
-        auto movePreview = capability(up ? "mapping.move_up.preview" : "mapping.move_down.preview",
-            "qkm_preview_changes", Read | Configure, true, moveSchema);
-        auto moveApply = capability(up ? "mapping.move_up.apply" : "mapping.move_down.apply",
-            "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+        auto movePreview = capability((action + ".preview").constData(), "qkm_preview_changes", Read | Configure, true, moveSchema);
+        auto moveApply = capability((action + ".apply").constData(), "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+        const auto allowedMove = move == MappingRowMove::Up ? QStringLiteral("single_row_one_position_up")
+            : move == MappingRowMove::Down ? QStringLiteral("single_row_one_position_down") : QStringLiteral("single_row_to_table_edge");
         for (auto *item : {&movePreview, &moveApply}) {
             item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("memory_only_no_save_or_start"),
-                up ? QStringLiteral("single_row_one_position_up") : QStringLiteral("single_row_one_position_down"),
+                allowedMove, QStringLiteral("all_displaced_rows_in_preview"),
                 QStringLiteral("current_unfiltered_normal_source_only"), QStringLiteral("idle_after_completed_cleanup"),
                 QStringLiteral("no_open_editor_or_popup")});
             item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);

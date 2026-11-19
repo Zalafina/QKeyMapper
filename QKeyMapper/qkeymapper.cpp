@@ -38672,7 +38672,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
-        const bool movingRow = update.rowOffset != 0;
+        const bool movingRow = update.move != MappingRowMove::None;
         if (movingRow && (isCommonMappingTabIndex(tab) || isMappingDataTableFiltered())) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("Moving rows requires the current unfiltered normal Tab."));
             return;
@@ -38724,22 +38724,42 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             target.insert(QStringLiteral("source_ref"), update.sourceReference);
         }
         if (movingRow) {
-            if ((update.rowOffset < 0 && update.sourceRow == 0)
-                || (update.rowOffset > 0 && update.sourceRow >= KeyMappingDataList->size() - 1)) {
-                reject(QStringLiteral("invalid_target"), update.rowOffset < 0
-                    ? QStringLiteral("The first row cannot move up.") : QStringLiteral("The last row cannot move down."));
+            const int lastRow = int(KeyMappingDataList->size()) - 1;
+            switch (update.move) {
+            case MappingRowMove::Top: rowAfter = 0; break;
+            case MappingRowMove::Bottom: rowAfter = lastRow; break;
+            case MappingRowMove::Up: rowAfter = qMax(0, update.sourceRow - 1); break;
+            case MappingRowMove::Down: rowAfter = update.sourceRow < lastRow ? update.sourceRow + 1 : lastRow; break;
+            case MappingRowMove::None: break;
+            }
+            if (rowAfter == update.sourceRow) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("The mapping row is already at this edge."));
                 return;
             }
-            rowAfter += update.rowOffset;
+            const auto rows = snapshot.value(QStringLiteral("sources")).toArray().at(tab)
+                .toObject().value(QStringLiteral("rows")).toArray();
+            if (rows.size() != KeyMappingDataList->size()) {
+                reject(QStringLiteral("context_busy"), QStringLiteral("The source rows changed during move validation."));
+                return;
+            }
+            const QString rowPrefix = update.sourceReference.section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
             const auto movement = [&](int from, int to) {
                 return QJsonObject{{QStringLiteral("kind"), QStringLiteral("move_mapping_row")},
-                    {QStringLiteral("source_ref"), update.sourceReference.section(QLatin1Char(':'), 0, 2)
-                        + QLatin1Char(':') + QString::number(from)},
+                    {QStringLiteral("source_ref"), rowPrefix + QString::number(from)},
                     {QStringLiteral("from_source_row"), from}, {QStringLiteral("to_source_row"), to},
-                    {QStringLiteral("mapping"), automationSourceRow(KeyMappingDataList->at(from))}};
+                    {QStringLiteral("mapping"), rows.at(from)}};
             };
             change = movement(update.sourceRow, rowAfter);
-            changes.append(movement(rowAfter, update.sourceRow));
+            const int shift = rowAfter < update.sourceRow ? 1 : -1;
+            const int firstAffected = qMin(update.sourceRow, rowAfter);
+            const int lastAffected = qMax(update.sourceRow, rowAfter);
+            for (int from = firstAffected; from <= lastAffected; ++from) {
+                if (validationBudget.hasExpired(MappingChangeBudgetMs)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The move could not be validated within the request budget."));
+                    return;
+                }
+                if (from != update.sourceRow) changes.append(movement(from, from + shift));
+            }
             modified = true;
         } else if (updating) {
             const auto &before = KeyMappingDataList->at(update.sourceRow);
@@ -38850,7 +38870,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
         const QString action = movingRow
-            ? (update.rowOffset < 0 ? QStringLiteral("mapping.move_up") : QStringLiteral("mapping.move_down"))
+            ? QString::fromLatin1(mappingRowMoveAction(update.move))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
         changes.prepend(change);
         QJsonObject description{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
@@ -38888,7 +38908,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         if (modified) {
             if (movingRow) {
-                moveMappingRowsByOne(update.sourceRow, update.sourceRow, displayRow, displayRow, update.rowOffset);
+                if (update.move == MappingRowMove::Top || update.move == MappingRowMove::Bottom)
+                    moveMappingRowsToEdge(update.sourceRow, update.sourceRow, update.move == MappingRowMove::Top);
+                else
+                    moveMappingRowsByOne(update.sourceRow, update.sourceRow, displayRow, displayRow, rowAfter - update.sourceRow);
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;
                 for (const auto &row : std::as_const(conflictRows)) {
@@ -42589,17 +42612,32 @@ void QKeyMapper::moveMappingRowsByOne(int topSourceRow, int bottomSourceRow, int
         << " topRow(" << topDisplayRow << "), bottomRow(" << bottomDisplayRow << ")";
 #endif
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << __func__ << ": refreshKeyMappingDataTable()";
-#endif
-    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
+    refreshMovedMappingRows(topDisplayRow + step, bottomDisplayRow + step, up);
+}
 
-    // Reselect the moved rows
-    QTableWidgetSelectionRange newSelection(topDisplayRow + step, 0, bottomDisplayRow + step, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
+void QKeyMapper::moveMappingRowsToEdge(int firstSourceRow, int lastSourceRow, bool toTop)
+{
+    const int count = lastSourceRow - firstSourceRow + 1;
+    const auto items = KeyMappingDataList->mid(firstSourceRow, count);
+    for (int row = lastSourceRow; row >= firstSourceRow; --row)
+        KeyMappingDataList->removeAt(row);
+    const int firstDestination = toTop ? 0 : int(KeyMappingDataList->size());
+    if (toTop) {
+        for (int i = count - 1; i >= 0; --i) KeyMappingDataList->prepend(items.at(i));
+    } else {
+        for (const auto &item : items) KeyMappingDataList->append(item);
+    }
+    refreshMovedMappingRows(firstDestination, firstDestination + count - 1, toTop);
+}
+
+void QKeyMapper::refreshMovedMappingRows(int firstDisplayRow, int lastDisplayRow, bool anchorAtStart)
+{
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
+    QTableWidgetSelectionRange newSelection(firstDisplayRow, 0, lastDisplayRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
     m_KeyMappingDataTable->clearSelection();
     m_KeyMappingDataTable->setRangeSelected(newSelection, true);
 
-    const int selectedRow = up ? newSelection.topRow() : newSelection.bottomRow();
+    const int selectedRow = anchorAtStart ? firstDisplayRow : lastDisplayRow;
     m_KeyMappingDataTable->setCurrentCell(selectedRow, 0, QItemSelectionModel::NoUpdate);
 
     QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(selectedRow, 0);
@@ -42609,7 +42647,7 @@ void QKeyMapper::moveMappingRowsByOne(int topSourceRow, int bottomSourceRow, int
 
 #ifdef DEBUG_LOGOUT_ON
     if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
-        qDebug("MoveMappingRowsByOne: KeyMapData sync error, DataTableSize(%d), DataListSize(%d)",
+        qDebug("refreshMovedMappingRows: KeyMapData sync error, DataTableSize(%d), DataListSize(%d)",
             m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
     }
 #endif
@@ -42658,50 +42696,7 @@ void QKeyMapper::selectedItemsMoveToTop()
     closeSetupDialog_OnDataChanged();
 #endif
 
-    // Move the selected rows to the top (preserve order)
-    QList<MAP_KEYDATA> tempItems;
-    // Save selected items in order
-    for (int row = topSourceInfo.SourceRow; row <= bottomSourceInfo.SourceRow; ++row) {
-        tempItems.append(KeyMappingDataList->at(row));
-    }
-    // Remove selected items from bottom to top
-    for (int row = bottomSourceInfo.SourceRow; row >= topSourceInfo.SourceRow; --row) {
-        KeyMappingDataList->removeAt(row);
-    }
-    // Insert items at the top in reverse order to maintain original sequence
-    for (int i = tempItems.size() - 1; i >= 0; --i) {
-        KeyMappingDataList->insert(0, tempItems.at(i));
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[selectedItemsMoveToTop] MoveTop: topRow(" << topRow << "), bottomRow(" << bottomRow << ")";
-#endif
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << __func__ << ": refreshKeyMappingDataTable()";
-#endif
-    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
-
-    // Reselect the moved rows at the top
-    QTableWidgetSelectionRange newSelection(0, 0, bottomRow - topRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-    m_KeyMappingDataTable->clearSelection();
-    m_KeyMappingDataTable->setRangeSelected(newSelection, true);
-
-    // Update current cell to the top of the new selection for Ctrl/Shift+Click consistency
-    m_KeyMappingDataTable->setCurrentCell(newSelection.topRow(), 0, QItemSelectionModel::NoUpdate);
-
-    // Scroll to make the selected items visible
-    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.topRow(), 0);
-    if (itemToScrollTo) {
-        m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
-        qDebug("MoveToTop:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
-    }
-#endif
-
+    moveMappingRowsToEdge(topSourceInfo.SourceRow, bottomSourceInfo.SourceRow, true);
     markSaveSettingDirty();
 }
 
@@ -42795,52 +42790,7 @@ void QKeyMapper::selectedItemsMoveToBottom()
     closeSetupDialog_OnDataChanged();
 #endif
 
-    // Move the selected rows to the bottom (preserve order)
-    QList<MAP_KEYDATA> tempItems;
-    // Save selected items in order
-    for (int row = topSourceInfo.SourceRow; row <= bottomSourceInfo.SourceRow; ++row) {
-        tempItems.append(KeyMappingDataList->at(row));
-    }
-    // Remove selected items from bottom to top
-    for (int row = bottomSourceInfo.SourceRow; row >= topSourceInfo.SourceRow; --row) {
-        KeyMappingDataList->removeAt(row);
-    }
-    // Append items to the bottom in original order
-    for (int i = 0; i < tempItems.size(); ++i) {
-        KeyMappingDataList->append(tempItems.at(i));
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace().noquote() << "[selectedItemsMoveToBottom] MoveBottom: topRow(" << topRow << "), bottomRow(" << bottomRow << ")";
-#endif
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << __func__ << ": refreshKeyMappingDataTable()";
-#endif
-    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex, true);
-
-    // Reselect the moved rows at the bottom of the local rows, excluding appended Common rows.
-    const int movedRowCount = bottomSourceInfo.SourceRow - topSourceInfo.SourceRow + 1;
-    const int localBottomRow = KeyMappingDataList->size() - 1;
-    QTableWidgetSelectionRange newSelection(localBottomRow - movedRowCount + 1, 0, localBottomRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
-    m_KeyMappingDataTable->clearSelection();
-    m_KeyMappingDataTable->setRangeSelected(newSelection, true);
-
-    // Update current cell to the bottom of the new selection for Ctrl/Shift+Click consistency
-    m_KeyMappingDataTable->setCurrentCell(newSelection.bottomRow(), 0, QItemSelectionModel::NoUpdate);
-
-    // Scroll to make the selected items visible
-    QTableWidgetItem *itemToScrollTo = m_KeyMappingDataTable->item(newSelection.bottomRow(), 0);
-    if (itemToScrollTo) {
-        m_KeyMappingDataTable->scrollToItem(itemToScrollTo, QAbstractItemView::EnsureVisible);
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    if (m_KeyMappingDataTable->rowCount() != KeyMappingDataList->size()) {
-        qDebug("MoveToBottom:KeyMapData sync error!!! DataTableSize(%d), DataListSize(%d)", m_KeyMappingDataTable->rowCount(), KeyMappingDataList->size());
-    }
-#endif
-
+    moveMappingRowsToEdge(topSourceInfo.SourceRow, bottomSourceInfo.SourceRow, false);
     markSaveSettingDirty();
 }
 

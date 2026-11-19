@@ -57,6 +57,9 @@ async def check_contract(exe):
     window = "b" * 64
     move = {"action": "mapping.move_up", "source_ref": row}
     down = {**move, "action": "mapping.move_down"}
+    top = {**move, "action": "mapping.move_to_top"}
+    bottom = {**move, "action": "mapping.move_to_bottom"}
+    moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
     capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
@@ -80,7 +83,7 @@ async def check_contract(exe):
             assert start_tool.input_schema["properties"]["save_policy"]["const"] == "start_only"
             previews = next(tool.input_schema for tool in tools if tool.name == "qkm_preview_changes")
             move_rule, = (rule for rule in previews["oneOf"]
-                          if rule["properties"]["action"].get("enum") == ["mapping.move_up", "mapping.move_down"])
+                          if rule["properties"]["action"].get("enum") == moves)
             assert set(move_rule["required"]) == {"action", "source_ref"}
             assert move_rule["properties"]["source_ref"] == {"type": "string"}
             assert set(move_rule["properties"]) == set(previews["properties"])
@@ -128,6 +131,11 @@ async def check_contract(exe):
                 ("qkm_preview_changes", down, (
                     {"action": "mapping.move_down"}, {**down, "source_ref": window},
                     {**down, "source_refs": [row]}, {**down, "disabled": False})),
+                ("qkm_preview_changes", top, (
+                    {"action": "mapping.move_to_top"}, {**top, "insert_row": 0}, {**top, "source_ref": tab})),
+                ("qkm_preview_changes", bottom, (
+                    {"action": "mapping.move_to_bottom"}, {**bottom, "source_revision": revision},
+                    {**bottom, "source_ref": row + ":0"})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),

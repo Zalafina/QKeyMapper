@@ -123,6 +123,10 @@ enum Action {
     MoveUp,
     #[serde(rename = "mapping.move_down")]
     MoveDown,
+    #[serde(rename = "mapping.move_to_top")]
+    MoveToTop,
+    #[serde(rename = "mapping.move_to_bottom")]
+    MoveToBottom,
     #[serde(rename = "configuration.save")]
     Save,
     #[serde(rename = "ibinput.preferences.update")]
@@ -336,7 +340,12 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             values.retain(|_, value| !value.is_null());
             if matches!(
                 values.get("action").and_then(Value::as_str),
-                Some("mapping.move_up" | "mapping.move_down")
+                Some(
+                    "mapping.move_up"
+                        | "mapping.move_down"
+                        | "mapping.move_to_top"
+                        | "mapping.move_to_bottom"
+                )
             ) && (values.len() != 2 || !values.contains_key("source_ref"))
             {
                 return Err(InvalidMessage);

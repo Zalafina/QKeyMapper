@@ -354,13 +354,11 @@ void McpControlTest::mappingChangeArguments()
         {QStringLiteral("source_ref"), sourceRef}};
     const auto previewMethod = QStringLiteral("qkm_preview_changes");
     const auto moveRequest = validateMappingChangeRequest(previewMethod, move);
-    QVERIFY(moveRequest.ok());
-    QCOMPARE(moveRequest.update.rowOffset, -1);
+    QVERIFY(moveRequest.ok() && moveRequest.update.move == MappingRowMove::Up);
     auto down = move;
     down.insert(QStringLiteral("action"), QStringLiteral("mapping.move_down"));
     const auto downRequest = validateMappingChangeRequest(previewMethod, down);
-    QVERIFY(downRequest.ok());
-    QCOMPARE(downRequest.update.rowOffset, 1);
+    QVERIFY(downRequest.ok() && downRequest.update.move == MappingRowMove::Down);
     down.insert(QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0"));
     QVERIFY(!validateMappingChangeRequest(previewMethod, down).ok());
     QCOMPARE(moveRequest.update.sourceRow, 1);
@@ -372,8 +370,20 @@ void McpControlTest::mappingChangeArguments()
     changed = move; changed.insert(QStringLiteral("insert_row"), 0);
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     const auto capabilities = mappingChangeCapabilities();
-    QCOMPARE(capabilities.size(), 18);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 16);
+    for (const auto direction : {MappingRowMove::Top, MappingRowMove::Bottom}) {
+        auto edge = move;
+        edge.insert(QStringLiteral("action"), QString::fromLatin1(mappingRowMoveAction(direction)));
+        const auto request = validateMappingChangeRequest(previewMethod, edge);
+        QVERIFY(request.ok() && request.update.move == direction);
+        edge.insert(QStringLiteral("insert_row"), 0);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, edge).ok());
+    }
+    QCOMPARE(capabilities.size(), 22);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 20);
+    QCOMPARE(capabilities.at(17).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_top.preview"));
+    QCOMPARE(capabilities.at(18).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_top.apply"));
+    QCOMPARE(capabilities.at(19).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_bottom.preview"));
+    QCOMPARE(capabilities.at(20).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_bottom.apply"));
     const auto downPreview = capabilities.at(15).toObject();
     QCOMPARE(downPreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_down.preview"));
     QCOMPARE(downPreview.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));

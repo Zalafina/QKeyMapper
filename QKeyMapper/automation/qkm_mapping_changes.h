@@ -28,6 +28,9 @@ struct MappingRemovalArguments {
     QList<int> sourceRows;
 };
 
+enum class MappingRowMove { None, Up, Down, Top, Bottom };
+const char *mappingRowMoveAction(MappingRowMove move);
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -38,7 +41,7 @@ struct MappingUpdateArguments {
     std::optional<QString> mappingKey;
     std::optional<QString> keyUpMappingKey;
     std::optional<bool> disabled;
-    int rowOffset = 0;
+    MappingRowMove move = MappingRowMove::None;
 };
 
 struct IbInputPreferencesArguments {
