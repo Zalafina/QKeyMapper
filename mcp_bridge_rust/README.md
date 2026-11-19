@@ -89,6 +89,16 @@ and each Rust session stay at ordinary Medium integrity.
 and the fixed private GUI helper for the two window permissions. It
 checks real product images and recovers both demonstration scenes.
 
+## Reordering a mapping row
+
+Query the current mapping source and pass its row's `source_ref` with
+`action: "mapping.move_up"` to `qkm_preview_changes`. Read and Configure
+are required. The preview lists both changed positions. Review it and
+commit with `qkm_apply_changes` using its `preview_id`. The action moves
+one row up in the current unfiltered normal table and updates the memory
+draft. To persist it, preview and confirm a separate `configuration.save`.
+Query the source again before using row references.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

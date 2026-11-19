@@ -349,9 +349,29 @@ void McpControlTest::mappingChangeArguments()
         {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), true}}).ok());
     QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
         {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
+    const QString sourceRef = revision + QStringLiteral(":row:0:1");
+    const QJsonObject move{{QStringLiteral("action"), QStringLiteral("mapping.move_up")},
+        {QStringLiteral("source_ref"), sourceRef}};
+    const auto previewMethod = QStringLiteral("qkm_preview_changes");
+    const auto moveRequest = validateMappingChangeRequest(previewMethod, move);
+    QVERIFY(moveRequest.ok() && moveRequest.update.moveUp);
+    QCOMPARE(moveRequest.update.sourceRow, 1);
+    QCOMPARE(moveRequest.update.sourceTabRef, revision + QStringLiteral(":source:0"));
+    changed = move; changed.remove(QStringLiteral("source_ref"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = move; changed.insert(QStringLiteral("source_ref"), revision + QStringLiteral(":row:0:01"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = move; changed.insert(QStringLiteral("insert_row"), 0);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     const auto capabilities = mappingChangeCapabilities();
-    QCOMPARE(capabilities.size(), 14);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 12);
+    QCOMPARE(capabilities.size(), 16);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 14);
+    const auto movePreview = capabilities.at(13).toObject();
+    QCOMPARE(movePreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_up.preview"));
+    QCOMPARE(movePreview.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    const auto moveApply = capabilities.at(14).toObject();
+    QCOMPARE(moveApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_up.apply"));
+    QVERIFY(!moveApply.value(QStringLiteral("read_only")).toBool());
     const auto stop = capabilities.at(11).toObject();
     QCOMPARE(stop.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.stop"));
     QCOMPARE(stop.value(QStringLiteral("required_scopes")).toInt(), int(Read | RunMapping));

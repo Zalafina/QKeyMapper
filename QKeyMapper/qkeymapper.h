@@ -2305,6 +2305,7 @@ private:
     };
     bool mappingAdditionAllowed(int tabIndex) const;
     bool removeMappingRows(int sourceTabIndex, QList<int> sourceRows, int topDisplayRow);
+    void moveMappingRowsUp(int topSourceRow, int bottomSourceRow, int topDisplayRow, int bottomDisplayRow);
     MappingAdditionPlan prepareMappingAddition(int tabIndex, int insertRow,
         const QString &originalKey, const QString &mappingKey, int sendMethod = 0) const;
     ValidationResult commitMappingAddition(const MappingAdditionPlan &plan, bool confirmCommonConflict,

@@ -80,13 +80,15 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
+    const bool moveUpPreview = preview && action == QLatin1String("mapping.move_up");
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
-        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !preferencesPreview))) return fail("Unsupported preview action.");
+        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !moveUpPreview && !preferencesPreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
     const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")}
         : preferencesPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("preferences_revision"),
             QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")}
+        : moveUpPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref")}
         : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled")}
         : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
@@ -121,7 +123,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.preferences = {revision.toString(), backend.toString(), policy.toString()};
         return result;
     }
-    if (updatePreview) {
+    if (updatePreview || moveUpPreview) {
         const auto reference = arguments.value(QStringLiteral("source_ref"));
         const auto original = arguments.value(QStringLiteral("original_key"));
         const auto mapping = arguments.value(QStringLiteral("mapping_key"));
@@ -134,7 +136,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             || (!keyUp.isUndefined() && !(keyUp.isString() && keyUp.toString().isEmpty()) && !basicKey(keyUp))
             || (arguments.contains(QStringLiteral("send_method")) && sendMethod() < 0))
             return fail("Updates accept uppercase single keys, an optional empty key-up key, and send method 0 to 3.");
-        if (original.isUndefined() && mapping.isUndefined() && keyUp.isUndefined() && sendMethod() < 0 && disabled.isUndefined())
+        if (updatePreview && original.isUndefined() && mapping.isUndefined() && keyUp.isUndefined() && sendMethod() < 0 && disabled.isUndefined())
             return fail("At least one mapping field must be specified.");
         const auto parts = reference.toString().split(QLatin1Char(':'));
         bool tabOk = false, rowOk = false;
@@ -145,7 +147,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3))
             return fail("A canonical current source row is required.");
         result.action = MappingChangeAction::UpdateMapping;
-        result.update = {reference.toString(), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, sendMethod()};
+        result.update = {reference.toString(), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, updatePreview ? sendMethod() : -1};
+        result.update.moveUp = moveUpPreview;
         if (!original.isUndefined()) result.update.originalKey = original.toString();
         if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
         if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
@@ -396,6 +399,22 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
             QStringLiteral("monitoring_acceptance_not_mapping_active")});
         capabilities.append(start);
     }
+    const auto moveSchema = schema(
+        {{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.move_up")}}},
+            {QStringLiteral("source_ref"), rowReference}},
+        {QStringLiteral("action"), QStringLiteral("source_ref")});
+    auto movePreview = capability("mapping.move_up.preview", "qkm_preview_changes", Read | Configure, true, moveSchema);
+    auto moveApply = capability("mapping.move_up.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&movePreview, &moveApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("memory_only_no_save_or_start"),
+            QStringLiteral("single_row_one_position_up"), QStringLiteral("current_unfiltered_normal_source_only"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("no_open_editor_or_popup")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    movePreview.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
+    moveApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));
+    capabilities.append(movePreview);
+    capabilities.append(moveApply);
     capabilities.append(operation);
     return capabilities;
 }
