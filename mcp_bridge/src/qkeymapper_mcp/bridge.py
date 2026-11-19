@@ -2,6 +2,7 @@
 
 import asyncio
 import hmac
+import math
 import os
 import re
 import secrets
@@ -172,6 +173,43 @@ class Bridge:
     async def get_state(self) -> dict:
         return await self._call("qkm_get_state")
 
+    async def wait_state(self, condition: str, timeout_ms: int = 1000) -> dict:
+        if (condition not in ("monitoring_enabled", "mapping_active", "stopped_and_quiescent")
+                or type(timeout_ms) is not int or not 100 <= timeout_ms <= 5000):
+            return {"ok": False, "error": "invalid_arguments"}
+        return await self._perform(lambda: self._wait_state(condition, timeout_ms))
+
+    def _wait_state(self, condition: str, timeout_ms: int) -> dict:
+        deadline = time.monotonic() + timeout_ms / 1000
+        while True:
+            response = self._request("qkm_get_state", {}, deadline=deadline)
+            if not response["ok"]:
+                return response
+            state = response["result"]
+            require(type(state.get("schema_version")) is int and state["schema_version"] == 1
+                    and state.get("instance") == self._pipe.discovery.instance)
+            run = state.get("run")
+            require(type(run) is dict)
+            monitoring, gui, worker, completion = (run.get(key) for key in
+                ("monitoring_enabled", "gui_state", "worker_state_sample", "stop_completion"))
+            require(type(monitoring) is bool and all(type(value) is str for value in (gui, worker, completion)))
+            if condition == "monitoring_enabled":
+                matches = monitoring
+            elif condition == "mapping_active":
+                matches = monitoring and gui in ("mapping_global", "mapping_matched") and worker == "started"
+            else:
+                matches = not monitoring and gui == "idle" and worker == "stopped" and completion == "observed"
+            remaining = deadline - time.monotonic()
+            reached = matches and remaining > 0
+            if not reached and remaining > 0:
+                wait = win32event.WaitForSingleObject(self._cancel, math.ceil(min(0.1, remaining) * 1000))
+                require(wait != win32event.WAIT_OBJECT_0, "cancelled")
+                require(wait == win32event.WAIT_TIMEOUT, "cancel_wait_failed")
+                if time.monotonic() < deadline:
+                    continue
+            return {"ok": True, "result": {"condition": condition,
+                    "outcome": "satisfied" if reached else "timed_out", "state": state}}
+
     async def get_help(self, topic: str, *, offset: int = 0, limit: int = 50) -> dict:
         return await self._call("qkm_get_help", {"topic": topic, "offset": offset, "limit": limit})
 
@@ -318,10 +356,11 @@ class Bridge:
                     win32event.SetEvent(self._cancel)
             raise
 
-    def _request(self, method: str, arguments: dict) -> dict:
+    def _request(self, method: str, arguments: dict, *, deadline: float | None = None) -> dict:
         require(self._pipe is not None and self._credential is not None, "not_connected")
         request_id = uuid.uuid4().hex
-        deadline = time.monotonic() + 10
+        if deadline is None:
+            deadline = time.monotonic() + 10
         self._pipe.send({"id": request_id, "method": method, "arguments": arguments}, deadline)
         response = self._pipe.receive(deadline)
         require(type(response.get("ok")) is bool and response.get("id") == request_id)

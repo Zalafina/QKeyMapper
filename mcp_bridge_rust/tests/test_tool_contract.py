@@ -20,7 +20,7 @@ DEMO_MAPPING = "qkm_demo_mapping"
 RECORD = ROOT / "out/rust_sidecar/catalog-only/creation.json"
 TOOLS = {
     "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect",
-    "qkm_get_capabilities", "qkm_get_state", "qkm_get_help", "qkm_query", "qkm_get_operation",
+    "qkm_get_capabilities", "qkm_get_state", "qkm_wait_state", "qkm_get_help", "qkm_query", "qkm_get_operation",
     "qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes",
     "qkm_open_mapping_editor", "qkm_close_mapping_editor", "qkm_open_mapping_settings",
     "qkm_close_mapping_settings", "qkm_capture_window",
@@ -79,6 +79,11 @@ async def compare(exe):
                     {"entity": "windows", "window_role": "item_setup"},
                     {"entity": "tabs", "catalog_revision": "A" * 64},
                     {"entity": "mappings", "source_tab_ref": "a" * 64 + ":source:01"})),
+                ("qkm_wait_state", {"condition": "stopped_and_quiescent"}, (
+                    {}, {"condition": "running"}, {"condition": True}, {"condition": None},
+                    *({"condition": "mapping_active", "timeout_ms": timeout}
+                      for timeout in (99, 5001, 1000.0, True, None)),
+                    {"condition": "monitoring_enabled", "extra": True})),
                 ("qkm_get_operation", {"operation_id": "a" * 32},
                  ({}, {"operation_id": "A" * 32}, {"operation_id": None}, {"operation_id": "bad"})),
                 ("qkm_preview_changes", {"action": "configuration.save", "setting_name": "\u8bbe" * 32767}, (

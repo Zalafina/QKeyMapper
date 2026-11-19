@@ -7,4 +7,6 @@ pub mod bridge;
 mod demo_scene;
 #[cfg(windows)]
 pub mod native;
+#[cfg(windows)]
+pub mod state_wait;
 pub mod wire;

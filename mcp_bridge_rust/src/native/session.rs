@@ -193,13 +193,17 @@ impl Connection {
         }))
     }
 
+    pub(crate) fn instance(&self) -> String {
+        lower_hex(&self.pipe.target().instance)
+    }
+
     pub fn info(&self) -> Value {
         let timestamp = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default();
         json!({
             "status": "connected",
-            "instance": lower_hex(&self.pipe.target().instance),
+            "instance": self.instance(),
             "scopes": self.credential.scopes,
             "last_verified_unix": timestamp.as_secs_f64(),
         })
@@ -215,11 +219,20 @@ impl Connection {
         arguments: Object,
         cancel: &Cancel,
     ) -> Result<Value> {
+        self.call_before(method, arguments, cancel, Instant::now() + CALL_WAIT)
+    }
+
+    pub(crate) fn call_before(
+        &mut self,
+        method: &'static str,
+        arguments: Object,
+        cancel: &Cancel,
+        deadline: Instant,
+    ) -> Result<Value> {
         let mut random_id = [0; 16];
         getrandom::fill(&mut random_id).map_err(|_| NativeError::new("random_unavailable"))?;
         let id = lower_hex(&random_id);
         let request = object(json!({"id": id, "method": method, "arguments": arguments}));
-        let deadline = Instant::now() + CALL_WAIT;
         self.pipe.send(&request, MAX_FRAME, cancel, deadline)?;
         let mut response = self.pipe.receive(MAX_FRAME, cancel, deadline)?;
         if response.len() != 3 || string(&response, "id")? != id {

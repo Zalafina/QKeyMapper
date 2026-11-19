@@ -114,6 +114,7 @@ async def exercise(args):
             assert cap["scopes"] == 1 and cap["business_capabilities"] == []
             await call(client, "qkm_get_state", error="unsupported_capability")
             for tool, arguments in (
+                ("qkm_wait_state", {"condition": "monitoring_enabled", "timeout_ms": 1000}),
                 ("qkm_get_help", {"topic": "basic_mapping"}),
                 ("qkm_query", {"entity": "tabs", "offset": 1, "limit": 5}),
                 ("qkm_get_operation", {"operation_id": "a" * 32}),

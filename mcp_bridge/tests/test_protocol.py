@@ -352,6 +352,80 @@ class NativeTests(unittest.TestCase):
                 finally:
                     bridge.close()
 
+    def test_bounded_state_wait_preserves_observation_and_deadline(self):
+        from qkeymapper_mcp.bridge import Bridge
+        bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+        pipe = Mock()
+        instance = pipe.discovery.instance = "a" * 32
+        bridge._pipe = pipe
+        bridge._credential = Credential("b" * 32, 1, 1, b"k" * 32)
+
+        def state(monitoring, gui, worker, completion):
+            return {"schema_version": 1, "instance": instance, "run": {
+                "monitoring_enabled": monitoring, "gui_state": gui,
+                "worker_state_sample": worker, "stop_completion": completion}}
+
+        def reply(snapshot):
+            return {"id": pipe.send.call_args.args[0]["id"], "ok": True, "result": snapshot}
+
+        try:
+            checking = state(True, "checking", "started", "unobserved")
+            active = state(True, "mapping_matched", "started", "unobserved")
+            samples = iter((checking, active))
+            pipe.receive.side_effect = lambda _deadline: reply(next(samples))
+            result = asyncio.run(bridge.wait_state("mapping_active", 800))["result"]
+            self.assertEqual(result, {"condition": "mapping_active", "outcome": "satisfied", "state": active})
+            self.assertEqual([sample.args[0]["method"] for sample in pipe.send.call_args_list],
+                             ["qkm_get_state", "qkm_get_state"])
+            self.assertEqual([sample.args[0]["arguments"] for sample in pipe.send.call_args_list], [{}, {}])
+            self.assertEqual(len({sample.args[1] for sample in pipe.send.call_args_list}), 1)
+
+            idle = state(False, "idle", "stopped", "unobserved")
+            pipe.receive.side_effect = lambda _deadline: reply(idle)
+            result = asyncio.run(bridge.wait_state("stopped_and_quiescent", 100))["result"]
+            self.assertEqual(result, {"condition": "stopped_and_quiescent", "outcome": "timed_out", "state": idle})
+            self.assertEqual(bridge.state()["status"], "connected")
+            completed = {**idle, "run": {**idle["run"], "stop_completion": "observed"}}
+            pipe.receive.side_effect = lambda _deadline: reply(completed)
+            result = asyncio.run(bridge.wait_state("stopped_and_quiescent"))["result"]
+            self.assertEqual(result, {"condition": "stopped_and_quiescent", "outcome": "satisfied", "state": completed})
+
+            pipe.receive.side_effect = lambda _deadline: reply({**completed, "instance": "b" * 32})
+            self.assertEqual(asyncio.run(bridge.wait_state("stopped_and_quiescent")),
+                             {"ok": False, "error": "invalid_message"})
+        finally:
+            bridge.close()
+
+    def test_wait_holds_single_job_until_disconnect(self):
+        from qkeymapper_mcp.bridge import Bridge
+        bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))
+        pipe = Mock()
+        pipe.discovery.instance = "a" * 32
+        bridge._pipe = pipe
+        bridge._credential = Credential("b" * 32, 1, 1, b"k" * 32)
+        sampled = threading.Event()
+
+        def reply(_deadline):
+            sampled.set()
+            return {"id": pipe.send.call_args.args[0]["id"], "ok": True,
+                    "result": {"schema_version": 1, "instance": pipe.discovery.instance, "run": {
+                        "monitoring_enabled": False, "gui_state": "idle",
+                        "worker_state_sample": "stopped", "stop_completion": "unobserved"}}}
+
+        async def exercise():
+            task = asyncio.create_task(bridge.wait_state("monitoring_enabled", 5000))
+            self.assertTrue(await asyncio.to_thread(sampled.wait, 2))
+            self.assertEqual(await bridge.get_state(), {"ok": False, "error": "busy_or_closed"})
+            bridge.disconnect()
+            self.assertEqual(await asyncio.wait_for(task, 2), {"ok": False, "error": "cancelled"})
+
+        pipe.receive.side_effect = reply
+        try:
+            asyncio.run(exercise())
+        finally:
+            bridge.close()
+        pipe.close.assert_called_once()
+
     def test_catalog_query_rpc_and_pagination_arguments(self):
         from qkeymapper_mcp.bridge import Bridge
         bridge = Bridge(Path("unused/instance.json"), Path("unused.exe"))

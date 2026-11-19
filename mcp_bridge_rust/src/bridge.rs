@@ -11,6 +11,7 @@ use crate::demo_scene::DemoSession;
 use crate::native::{
     Cancel, Connection, DemoOptions, NativeError, Result, Target, require_pristine_thread,
 };
+use crate::state_wait::StateWait;
 use crate::wire::Object;
 
 enum Operation {
@@ -128,6 +129,7 @@ impl Bridge {
         if !matches!(
             method,
             "qkm_get_state"
+                | "qkm_wait_state"
                 | "qkm_get_capabilities"
                 | "qkm_get_help"
                 | "qkm_query"
@@ -257,6 +259,22 @@ fn perform(
                 .as_mut()
                 .ok_or_else(|| NativeError::new("not_connected"))?;
             let value = match method {
+                "qkm_wait_state" => {
+                    let Ok(wait) = serde_json::from_value::<StateWait>(Value::Object(arguments))
+                    else {
+                        return Ok(json!({"ok": false, "error": "invalid_arguments"}));
+                    };
+                    if !wait.valid() {
+                        return Ok(json!({"ok": false, "error": "invalid_arguments"}));
+                    }
+                    wait.observe(
+                        &session.instance(),
+                        |deadline| {
+                            session.call_before("qkm_get_state", Object::new(), cancel, deadline)
+                        },
+                        |delay| cancel.wait(delay.as_nanos().div_ceil(1_000_000) as u32),
+                    )?
+                }
                 "qkm_get_demo_state" => {
                     let options = demo.ok_or_else(|| NativeError::new("demo_not_configured"))?;
                     let mut value =

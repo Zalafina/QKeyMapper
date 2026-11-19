@@ -23,6 +23,10 @@ async def compare_state(client, baseline):
     assert state["run"]["gui_state"] == "idle" and not state["run"]["monitoring_enabled"]
     assert state["run"]["actual_stop_shortcut"] == baseline["stop_shortcut_edit"]
     assert state["current_tab"]["name"] == baseline["mapping_tab_name"]
+    observed = (await call(client, "qkm_wait_state",
+        {"condition": "stopped_and_quiescent", "timeout_ms": 200}))["result"]
+    assert observed["outcome"] == "timed_out" and observed["condition"] == "stopped_and_quiescent"
+    assert business_state(observed["state"]) == business_state(state)
     return business_state(state)
 
 

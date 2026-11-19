@@ -48,12 +48,16 @@ impl Cancel {
         Ok(())
     }
 
-    fn remaining(&self, deadline: Instant) -> Result<u32> {
-        match unsafe { WaitForSingleObject(self.0.as_raw_handle(), 0) } {
-            WAIT_OBJECT_0 => return Err(NativeError::new("cancelled")),
-            WAIT_TIMEOUT => {}
-            _ => return Err(NativeError::last("cancel_wait_failed")),
+    pub(crate) fn wait(&self, milliseconds: u32) -> Result<()> {
+        match unsafe { WaitForSingleObject(self.0.as_raw_handle(), milliseconds) } {
+            WAIT_OBJECT_0 => Err(NativeError::new("cancelled")),
+            WAIT_TIMEOUT => Ok(()),
+            _ => Err(NativeError::last("cancel_wait_failed")),
         }
+    }
+
+    fn remaining(&self, deadline: Instant) -> Result<u32> {
+        self.wait(0)?;
         let time = deadline.saturating_duration_since(Instant::now());
         if time.is_zero() {
             return Err(NativeError::new("timeout"));

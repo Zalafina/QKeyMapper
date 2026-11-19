@@ -1,3 +1,4 @@
+use qkeymapper_mcp_rust::state_wait::StateWait;
 use qkeymapper_mcp_rust::wire::{InvalidMessage, Object, decimal, hex_bytes};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use serde_json::Value;
@@ -299,6 +300,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 && v.source_tab_ref.as_deref().is_none_or(tab_ref)
         }),
         "qkm_get_operation" => typed(arguments, |v: &Operation| id(&v.operation_id)),
+        "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
             let mut values = typed(arguments, Preview::valid)?;
             values.retain(|_, value| !value.is_null());

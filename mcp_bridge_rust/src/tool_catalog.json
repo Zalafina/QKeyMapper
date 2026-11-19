@@ -381,6 +381,46 @@
         "openWorldHint": false,
         "readOnlyHint": true
       },
+      "description": "在一次只读作业中通过 state.read 采样，timeout_ms 为 100–5000（默认 1000）。monitoring_enabled 等待监视开启。mapping_active 要求 GUI 实际匹配或全局映射且 Worker 已启动。stopped_and_quiescent 要求观察到完整停止清理，初始空闲时仍需等候该证明。返回 satisfied 或 timed_out 及最后状态快照。通信和授权错误照常返回。启停和修改须另行授权。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "condition": {
+            "enum": [
+              "monitoring_enabled",
+              "mapping_active",
+              "stopped_and_quiescent"
+            ],
+            "title": "Condition",
+            "type": "string"
+          },
+          "timeout_ms": {
+            "default": 1000,
+            "maximum": 5000,
+            "minimum": 100,
+            "title": "Timeout Ms",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "condition"
+        ],
+        "title": "qkm_wait_stateArguments",
+        "type": "object"
+      },
+      "name": "qkm_wait_state",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_wait_stateDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": true
+      },
       "description": "读取基础映射语法、毫秒单位／范围／默认值和 A→B 示例，或分页查询产品解析器的真实按键名称。repeat 指映射项的重复设置，宏的 xN 语法另行校验。名称区分大小写；列表不证明设备可用，帮助不代替完整校验或编辑授权，实际可用操作仍以能力查询为准。offset 从 0 开始，limit 为 1–100；使用 next_offset 续页。只读，不停止映射。",
       "inputSchema": {
         "additionalProperties": false,

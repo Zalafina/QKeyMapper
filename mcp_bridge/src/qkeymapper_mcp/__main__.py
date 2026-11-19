@@ -189,6 +189,12 @@ def main() -> None:
         return tool_result(await bridge.get_state())
 
     @tool(read)
+    async def qkm_wait_state(condition: Literal["monitoring_enabled", "mapping_active", "stopped_and_quiescent"],
+                             timeout_ms: Annotated[StrictInt, Field(ge=100, le=5000)] = 1000) -> ToolResult:
+        """在一次只读作业中通过 state.read 采样，timeout_ms 为 100–5000（默认 1000）。monitoring_enabled 等待监视开启。mapping_active 要求 GUI 实际匹配或全局映射且 Worker 已启动。stopped_and_quiescent 要求观察到完整停止清理，初始空闲时仍需等候该证明。返回 satisfied 或 timed_out 及最后状态快照。通信和授权错误照常返回。启停和修改须另行授权。"""
+        return tool_result(await bridge.wait_state(condition, timeout_ms))
+
+    @tool(read)
     async def qkm_get_help(topic: Literal["basic_mapping", "original_keys", "mapping_keys"],
             offset: Annotated[StrictInt, Field(ge=0, le=2147483647)] = 0,
             limit: Annotated[StrictInt, Field(ge=1, le=100)] = 50) -> ToolResult:

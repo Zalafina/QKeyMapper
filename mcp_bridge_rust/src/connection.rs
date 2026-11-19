@@ -123,6 +123,7 @@ impl ServerHandler for Handler {
                     .await
             }
             "qkm_get_state" => self.request("qkm_get_state", arguments, context).await,
+            "qkm_wait_state" => self.request("qkm_wait_state", arguments, context).await,
             "qkm_get_help" => self.request("qkm_get_help", arguments, context).await,
             "qkm_query" => self.request("qkm_query", arguments, context).await,
             "qkm_get_operation" => self.request("qkm_get_operation", arguments, context).await,
