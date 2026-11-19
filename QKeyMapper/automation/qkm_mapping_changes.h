@@ -42,6 +42,7 @@ struct MappingUpdateArguments {
     std::optional<QString> keyUpMappingKey;
     std::optional<bool> disabled;
     MappingRowMove move = MappingRowMove::None;
+    int rowCount = 1;
 };
 
 struct IbInputPreferencesArguments {

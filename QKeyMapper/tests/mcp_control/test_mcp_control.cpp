@@ -378,6 +378,24 @@ void McpControlTest::mappingChangeArguments()
         edge.insert(QStringLiteral("insert_row"), 0);
         QVERIFY(!validateMappingChangeRequest(previewMethod, edge).ok());
     }
+    const QString adjacent = revision + QStringLiteral(":row:0:2");
+    const QJsonObject batch{{QStringLiteral("action"), QStringLiteral("mapping.move_to_top")},
+        {QStringLiteral("source_refs"), QJsonArray{sourceRef, adjacent}}};
+    const auto batchRequest = validateMappingChangeRequest(previewMethod, batch);
+    QVERIFY(batchRequest.ok() && batchRequest.update.move == MappingRowMove::Top);
+    QCOMPARE(batchRequest.update.sourceRow, 1);
+    QCOMPARE(batchRequest.update.rowCount, 2);
+    changed = batch; changed.insert(QStringLiteral("source_ref"), sourceRef);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = batch; changed.insert(QStringLiteral("action"), QStringLiteral("mapping.move_down"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    for (const auto &invalid : {QJsonArray{sourceRef}, QJsonArray{sourceRef, sourceRef}, QJsonArray{adjacent, sourceRef},
+        QJsonArray{sourceRef, revision + QStringLiteral(":row:0:3")}, QJsonArray{sourceRef, revision + QStringLiteral(":row:1:2")},
+        QJsonArray{sourceRef, QString(64, QLatin1Char('b')) + QStringLiteral(":row:0:2")},
+        QJsonArray{revision + QStringLiteral(":row:0:2147483647"), revision + QStringLiteral(":row:0:2147483648")}}) {
+        changed = batch; changed.insert(QStringLiteral("source_refs"), invalid);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
     QCOMPARE(capabilities.size(), 22);
     QCOMPARE(mappingChangeCapabilities(false).size(), 20);
     QCOMPARE(capabilities.at(17).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_top.preview"));

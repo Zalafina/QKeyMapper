@@ -38724,12 +38724,16 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             target.insert(QStringLiteral("source_ref"), update.sourceReference);
         }
         if (movingRow) {
-            const int lastRow = int(KeyMappingDataList->size()) - 1;
+            const int lastStart = int(KeyMappingDataList->size()) - update.rowCount;
+            if (update.sourceRow > lastStart) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("The selected range extends past the current normal Tab."));
+                return;
+            }
             switch (update.move) {
             case MappingRowMove::Top: rowAfter = 0; break;
-            case MappingRowMove::Bottom: rowAfter = lastRow; break;
+            case MappingRowMove::Bottom: rowAfter = lastStart; break;
             case MappingRowMove::Up: rowAfter = qMax(0, update.sourceRow - 1); break;
-            case MappingRowMove::Down: rowAfter = update.sourceRow < lastRow ? update.sourceRow + 1 : lastRow; break;
+            case MappingRowMove::Down: rowAfter = update.sourceRow < lastStart ? update.sourceRow + 1 : lastStart; break;
             case MappingRowMove::None: break;
             }
             if (rowAfter == update.sourceRow) {
@@ -38750,16 +38754,20 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("mapping"), rows.at(from)}};
             };
             change = movement(update.sourceRow, rowAfter);
-            const int shift = rowAfter < update.sourceRow ? 1 : -1;
-            const int firstAffected = qMin(update.sourceRow, rowAfter);
-            const int lastAffected = qMax(update.sourceRow, rowAfter);
-            for (int from = firstAffected; from <= lastAffected; ++from) {
+            for (int i = 1; i < update.rowCount; ++i)
+                changes.append(movement(update.sourceRow + i, rowAfter + i));
+            const bool movingUp = rowAfter < update.sourceRow;
+            const int firstShifted = movingUp ? rowAfter : update.sourceRow + update.rowCount;
+            const int pastShifted = movingUp ? update.sourceRow : rowAfter + update.rowCount;
+            const int shift = movingUp ? update.rowCount : -update.rowCount;
+            for (int from = firstShifted; from < pastShifted; ++from) {
                 if (validationBudget.hasExpired(MappingChangeBudgetMs)) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The move could not be validated within the request budget."));
                     return;
                 }
-                if (from != update.sourceRow) changes.append(movement(from, from + shift));
+                changes.append(movement(from, from + shift));
             }
+            if (update.rowCount > 1) target.insert(QStringLiteral("moved_count"), update.rowCount);
             modified = true;
         } else if (updating) {
             const auto &before = KeyMappingDataList->at(update.sourceRow);
@@ -38909,7 +38917,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (modified) {
             if (movingRow) {
                 if (update.move == MappingRowMove::Top || update.move == MappingRowMove::Bottom)
-                    moveMappingRowsToEdge(update.sourceRow, update.sourceRow, update.move == MappingRowMove::Top);
+                    moveMappingRowsToEdge(update.sourceRow, update.sourceRow + update.rowCount - 1, update.move == MappingRowMove::Top);
                 else
                     moveMappingRowsByOne(update.sourceRow, update.sourceRow, displayRow, displayRow, rowAfter - update.sourceRow);
             } else if (updating) {

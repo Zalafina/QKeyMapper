@@ -59,6 +59,8 @@ async def check_contract(exe):
     down = {**move, "action": "mapping.move_down"}
     top = {**move, "action": "mapping.move_to_top"}
     bottom = {**move, "action": "mapping.move_to_bottom"}
+    refs = [row, revision + ":row:0:1"]
+    batch = {"action": "mapping.move_to_top", "source_refs": refs}
     moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
@@ -84,11 +86,17 @@ async def check_contract(exe):
             previews = next(tool.input_schema for tool in tools if tool.name == "qkm_preview_changes")
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
-            assert set(move_rule["required"]) == {"action", "source_ref"}
-            assert move_rule["properties"]["source_ref"] == {"type": "string"}
+            assert move_rule["required"] == ["action"]
+            single_rule, batch_rule = move_rule["oneOf"]
+            assert single_rule["required"] == ["source_ref"]
+            assert single_rule["properties"] == {"source_ref": {"type": "string"}, "source_refs": {"type": "null"}}
+            assert batch_rule["required"] == ["source_refs"]
+            assert batch_rule["properties"]["action"]["enum"] == ["mapping.move_to_top", "mapping.move_to_bottom"]
+            assert batch_rule["properties"]["source_refs"] == {"type": "array", "minItems": 2}
+            assert batch_rule["properties"]["source_ref"] == {"type": "null"}
             assert set(move_rule["properties"]) == set(previews["properties"])
             assert all(rule == {"type": "null"} for field, rule in move_rule["properties"].items()
-                       if field not in move_rule["required"])
+                       if field not in {"action", "source_ref", "source_refs"})
             for name in ("qkm_unknown", DEMO_STATE, DEMO_MAPPING):
                 unknown = await client.call_tool(name)
                 assert unknown.is_error is True and unknown.structured_content is None
@@ -136,6 +144,10 @@ async def check_contract(exe):
                 ("qkm_preview_changes", bottom, (
                     {"action": "mapping.move_to_bottom"}, {**bottom, "source_revision": revision},
                     {**bottom, "source_ref": row + ":0"})),
+                ("qkm_preview_changes", batch, (
+                    {**batch, "source_ref": row}, {**batch, "source_refs": [row]},
+                    {**batch, "source_refs": [row, tab]}, {"action": "mapping.move_up", "source_refs": refs},
+                    {**batch, "source_refs": [revision + f":row:0:{i}" for i in range(101)]})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),
