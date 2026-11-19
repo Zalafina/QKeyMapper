@@ -17831,58 +17831,38 @@ void QKeyMapper::finalizeCommonMappingTabAtIndex(int tabIndex, bool showNameConf
     }
 }
 
+QString QKeyMapper::availableMappingTabName(const QString &requestedName) const
+{
+    const int count = ui->keyMappingTabWidget->count();
+    QSet<QString> existingNames;
+    existingNames.reserve(count);
+    for (int i = 0; i < count; ++i)
+        existingNames.insert(ui->keyMappingTabWidget->tabText(i));
+
+    if (!requestedName.isEmpty() && !existingNames.contains(requestedName)) return requestedName;
+    const bool defaultName = requestedName.isEmpty();
+    for (int i = 1; i <= 999; ++i) {
+        const QString name = defaultName ? QStringLiteral("%1%2").arg(MAPPINGTABLE_TAB_TEXT).arg(i)
+            : QStringLiteral("%1(%2)").arg(requestedName).arg(i, 3, 10, QLatin1Char('0'));
+        if (!existingNames.contains(name)) return name;
+    }
+    return {};
+}
+
 bool QKeyMapper::addTabToKeyMappingTabWidget(const QString& customTabName, bool activateNewTab)
 {
     if (activateNewTab && m_KeyMapStatus != KEYMAP_IDLE) {
         return false;
     }
 
-    const int tab_count = ui->keyMappingTabWidget->count();
-    QSet<QString> existingTabNames;
-    existingTabNames.reserve(tab_count);
-    for (int i = 0; i < tab_count; ++i) {
-        existingTabNames.insert(ui->keyMappingTabWidget->tabText(i));
-    }
-
-    QString tabName = customTabName;
+    const QString tabName = availableMappingTabName(customTabName);
     if (tabName.isEmpty()) {
-        bool uniqueNameFound = false;
-        for (int i = 1; i <= 999; ++i) {
-            const QString tempName = QString("%1%2").arg(MAPPINGTABLE_TAB_TEXT).arg(i);
-            if (!existingTabNames.contains(tempName)) {
-                tabName = tempName;
-                uniqueNameFound = true;
-                break;
-            }
-        }
-
-        if (!uniqueNameFound) {
 #ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[addTabToKeyMappingTabWidget] Tab1~999 are all exists, return false";
+        qDebug().nospace() << "[addTabToKeyMappingTabWidget] No available name, requested: " << customTabName;
 #endif
+        if (customTabName.isEmpty())
             showFailurePopup(tr("All tab names (Tab1～Tab999) are already in use. No additional tabs can be added."));
-            return false;
-        }
-    }
-    else if (existingTabNames.contains(tabName)) {
-        bool uniqueNameFound = false;
-        for (int i = 1; i <= 999; ++i) {
-            QString tempName = QString("%1(%2)").arg(tabName).arg(i, 3, 10, QChar('0'));
-            if (!existingTabNames.contains(tempName)) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[addTabToKeyMappingTabWidget] TabName:" << tabName << " is already exists, set a unique tabname:" << tempName;
-#endif
-                tabName = tempName;
-                uniqueNameFound = true;
-                break;
-            }
-        }
-        if (!uniqueNameFound) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[addTabToKeyMappingTabWidget] Can not found unique name for TabName:" << tabName << ", return false";
-#endif
-            return false;
-        }
+        return false;
     }
 
     KeyMappingDataTableWidget *KeyMappingTableWidget = new KeyMappingDataTableWidget(this);
@@ -38672,6 +38652,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     if (updating || preferencesUpdate) {
         const auto update = applying && updating ? *applyingPreview->update : validation.update;
         const bool renamingTab = updating && update.tabName.has_value();
+        const bool creatingTab = updating && update.addBlankTab;
+        const bool editingTab = renamingTab || creatingTab;
         if ((validation.confirmConflicts && !update.originalKey.has_value())
             || validation.confirmScope || validation.confirmOverwrite || validation.confirmDelete) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
@@ -38684,8 +38666,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
-        if (renamingTab && isCommonMappingTabIndex(tab)) {
-            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Only the current normal Tab can be renamed."));
+        if (editingTab && isCommonMappingTabIndex(tab)) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
         const bool movingRow = update.move != MappingRowMove::None;
@@ -38719,9 +38701,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonArray changes;
         int displayRow = -1;
         int rowAfter = update.sourceRow;
+        int tabAfter = tab;
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
             || update.keyUpMappingKey.has_value());
-        if (updating && !renamingTab) {
+        if (updating && !editingTab) {
             const auto page = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
                 {{QStringLiteral("entity"), QStringLiteral("mappings")}, {QStringLiteral("source_revision"), update.sourceRevision},
                     {QStringLiteral("source_tab_ref"), update.sourceTabRef}, {QStringLiteral("offset"), update.sourceRow}, {QStringLiteral("limit"), 1}});
@@ -38739,7 +38722,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             }
             target.insert(QStringLiteral("source_ref"), update.sourceReference);
         }
-        if (renamingTab) {
+        if (editingTab) {
             const auto page = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
                 {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), update.sourceRevision},
                     {QStringLiteral("offset"), tab}, {QStringLiteral("limit"), 1}});
@@ -38751,16 +38734,31 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 reject(QStringLiteral("stale_source"), QStringLiteral("The Tab reference is no longer attached to the current source."));
                 return;
             }
-            const auto check = checkMappingTabName(tab, *update.tabName);
-            if (check != TabNameCheck::Accepted && check != TabNameCheck::Unchanged) {
-                reject(QStringLiteral("invalid_tab_name"), QStringLiteral("Use a nonempty, unique Tab name other than the reserved Common names."));
-                return;
-            }
-            modified = check == TabNameCheck::Accepted;
             target.insert(QStringLiteral("source_tab_ref"), update.sourceTabRef);
-            change = {{QStringLiteral("kind"), QStringLiteral("rename_tab")},
-                {QStringLiteral("before"), item.value(QStringLiteral("name"))},
-                {QStringLiteral("after"), *update.tabName}};
+            if (creatingTab) {
+                const QString name = availableMappingTabName(QString());
+                if (name.isEmpty()) {
+                    reject(QStringLiteral("tab_name_limit"), QStringLiteral("All default Tab names are already in use."));
+                    return;
+                }
+                tabAfter = normalMappingTabInsertIndex();
+                modified = true;
+                change = {{QStringLiteral("kind"), QStringLiteral("add_blank_tab")},
+                    {QStringLiteral("tab_name"), name}, {QStringLiteral("ui_index"), tabAfter},
+                    {QStringLiteral("local_row_count"), 0},
+                    {QStringLiteral("include_common"), MAPPINGTABLE_INCLUDE_COMMON_DEFAULT},
+                    {QStringLiteral("activate_new_tab"), true}};
+            } else {
+                const auto check = checkMappingTabName(tab, *update.tabName);
+                if (check != TabNameCheck::Accepted && check != TabNameCheck::Unchanged) {
+                    reject(QStringLiteral("invalid_tab_name"), QStringLiteral("Use a nonempty, unique Tab name other than the reserved Common names."));
+                    return;
+                }
+                modified = check == TabNameCheck::Accepted;
+                change = {{QStringLiteral("kind"), QStringLiteral("rename_tab")},
+                    {QStringLiteral("before"), item.value(QStringLiteral("name"))},
+                    {QStringLiteral("after"), *update.tabName}};
+            }
         } else if (movingRow) {
             const int lastStart = int(KeyMappingDataList->size()) - update.rowCount;
             if (update.sourceRow > lastStart) {
@@ -38915,7 +38913,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = renamingTab ? QStringLiteral("tab.rename")
+        const QString action = creatingTab ? QStringLiteral("tab.add_blank")
+            : renamingTab ? QStringLiteral("tab.rename")
             : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
         changes.prepend(change);
@@ -38953,7 +38952,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (renamingTab) {
+            if (creatingTab) {
+                if (!addTabToKeyMappingTabWidget(QString(), true)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current source no longer allows adding a blank Tab."));
+                    return;
+                }
+            } else if (renamingTab) {
                 updateKeyMappingTabWidgetTabName(tab, *update.tabName);
             } else if (movingRow) {
                 const int lastSourceRow = update.sourceRow + update.rowCount - 1;
@@ -38987,7 +38991,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (updating) {
             QString bindingError;
             const auto after = collectAutomationSourceSnapshotWithAccess(bindingError);
-            const auto binding = bindingError.isEmpty() ? automationPostChangeSourceBinding(after, owner, tab, rowAfter) : QJsonObject();
+            const auto binding = bindingError.isEmpty() ? automationPostChangeSourceBinding(after, owner, tabAfter, rowAfter) : QJsonObject();
             result.insert(QStringLiteral("source_binding_status"), binding.isEmpty() ? QStringLiteral("unavailable") : QStringLiteral("captured"));
             result.insert(QStringLiteral("source_binding_after"), binding.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(binding));
         }

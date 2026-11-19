@@ -1650,6 +1650,7 @@ public slots:
     bool syncKeyMappingTabWidgetPagesFromTabInfoList(QWidget *currentWidget = Q_NULLPTR, QWidget *lastWidget = Q_NULLPTR);
     bool recoverKeyMappingTabWidgetOrderAfterTabMoved(int from, int to);
     void finalizeCommonMappingTabAtIndex(int tabIndex, bool showNameConflictWarning = false);
+    QString availableMappingTabName(const QString &requestedName) const;
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString(), bool activateNewTab = false);
     bool addCommonMappingTabToKeyMappingTabWidget(void);
     void ensureCommonMappingTabExists(void);

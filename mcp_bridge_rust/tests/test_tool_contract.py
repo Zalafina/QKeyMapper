@@ -63,6 +63,7 @@ async def check_contract(exe):
     batch = {"action": "mapping.move_to_top", "source_refs": refs}
     moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
+    add_tab = {"action": "tab.add_blank", "source_tab_ref": tab}
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
     capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
@@ -105,6 +106,13 @@ async def check_contract(exe):
             assert set(rename_rule["properties"]) == set(previews["properties"])
             assert all(rule == {"type": "null"} for field, rule in rename_rule["properties"].items()
                        if field not in rename)
+            add_rule, = (rule for rule in previews["oneOf"]
+                         if rule["properties"]["action"].get("const") == "tab.add_blank")
+            assert set(add_rule["required"]) == set(add_tab)
+            assert add_rule["properties"]["source_tab_ref"] == {"type": "string"}
+            assert set(add_rule["properties"]) == set(previews["properties"])
+            assert all(rule == {"type": "null"} for field, rule in add_rule["properties"].items()
+                       if field not in add_tab)
             for name in ("qkm_unknown", DEMO_STATE, DEMO_MAPPING):
                 unknown = await client.call_tool(name)
                 assert unknown.is_error is True and unknown.structured_content is None
@@ -166,6 +174,9 @@ async def check_contract(exe):
                     {"action": "tab.rename", "source_tab_ref": tab}, {**rename, "source_tab_ref": row},
                     {**rename, "source_ref": row}, {**rename, "tab_name": "two\nlines"},
                     {**rename, "tab_name": "\u0000"}, {**rename, "tab_name": "A" * 32768})),
+                ("qkm_preview_changes", add_tab, (
+                    {"action": "tab.add_blank"}, {**add_tab, "source_tab_ref": row},
+                    {**add_tab, "tab_name": "Custom name"}, {**add_tab, "activate_new_tab": False})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),

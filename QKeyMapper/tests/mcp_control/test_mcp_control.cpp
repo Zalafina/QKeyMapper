@@ -419,8 +419,22 @@ void McpControlTest::mappingChangeArguments()
         changed = rename; changed.insert(QStringLiteral("tab_name"), badName);
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     }
-    QCOMPARE(capabilities.size(), 24);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 22);
+    const QJsonObject addTab{{QStringLiteral("action"), QStringLiteral("tab.add_blank")},
+        {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")}};
+    const auto addTabRequest = validateMappingChangeRequest(previewMethod, addTab);
+    QVERIFY(addTabRequest.ok() && addTabRequest.update.addBlankTab && !addTabRequest.update.tabName);
+    QCOMPARE(addTabRequest.update.sourceRevision, revision);
+    changed = addTab; changed.insert(QStringLiteral("tab_name"), QStringLiteral("Custom name"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = addTab; changed.insert(QStringLiteral("source_tab_ref"), sourceRef);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = addTab; changed.remove(QStringLiteral("source_tab_ref"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    QCOMPARE(capabilities.size(), 26);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 24);
+    QCOMPARE(capabilities.at(23).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.add_blank.preview"));
+    QCOMPARE(capabilities.at(23).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QCOMPARE(capabilities.at(24).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.add_blank.apply"));
     QCOMPARE(capabilities.at(21).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.rename.preview"));
     QCOMPARE(capabilities.at(21).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     QCOMPARE(capabilities.at(22).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.rename.apply"));

@@ -112,6 +112,14 @@ Submitting the current name leaves the source revision and draft intact.
 A successful change gives a new source reference, including after a
 rename back to the old name. Persist the draft with `configuration.save`.
 
+## Adding a blank mapping tab
+
+Pass `action: "tab.add_blank"` and the current normal tab's `source_tab_ref`
+to `qkm_preview_changes` with Read and Configure. The preview shows the
+default name, insertion index, empty local source and Common inheritance
+setting. Applying it selects the new tab and advances the source revision.
+Query the sources again. Use a separate `configuration.save` to persist it.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,
