@@ -135,6 +135,7 @@ impl Bridge {
                 | "qkm_query"
                 | "qkm_get_operation"
                 | "qkm_stop_mapping"
+                | "qkm_start_mapping"
                 | "qkm_preview_changes"
                 | "qkm_apply_changes"
                 | "qkm_cancel_changes"

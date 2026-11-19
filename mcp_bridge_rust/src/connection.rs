@@ -128,6 +128,7 @@ impl ServerHandler for Handler {
             "qkm_query" => self.request("qkm_query", arguments, context).await,
             "qkm_get_operation" => self.request("qkm_get_operation", arguments, context).await,
             "qkm_stop_mapping" => self.request("qkm_stop_mapping", arguments, context).await,
+            "qkm_start_mapping" => self.request("qkm_start_mapping", arguments, context).await,
             "qkm_preview_changes" => {
                 self.request("qkm_preview_changes", arguments, context)
                     .await

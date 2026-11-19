@@ -1523,6 +1523,67 @@
     },
     {
       "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": true,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "按用户明确意图使用当前已加载普通配置开启监视，需要Read+RunMapping。使用qkm_get_state的实例及qkm_query mapping_sources返回的当前源版本和Tab引用。save_policy必须为start_only，只使用当前内存配置。仅接纳普通单键映射及无自动配置切换、FilterKeys修改的配置。结果表示已开启监视；使用qkm_wait_state分别验证匹配和映射生效。request_id也是operation_id，同实例同配对权限代次重放同参数只返回已保留结果，断线先查询同一操作。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "properties": {
+          "instance": {
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[0-9a-f]{32}$",
+            "title": "Instance",
+            "type": "string"
+          },
+          "request_id": {
+            "maxLength": 32,
+            "minLength": 32,
+            "pattern": "^[0-9a-f]{32}$",
+            "title": "Request Id",
+            "type": "string"
+          },
+          "save_policy": {
+            "const": "start_only",
+            "title": "Save Policy",
+            "type": "string"
+          },
+          "source_revision": {
+            "maxLength": 64,
+            "minLength": 64,
+            "pattern": "^[0-9a-f]{64}$",
+            "title": "Source Revision",
+            "type": "string"
+          },
+          "source_tab_ref": {
+            "maxLength": 128,
+            "pattern": "^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$",
+            "title": "Source Tab Ref",
+            "type": "string"
+          }
+        },
+        "required": [
+          "instance",
+          "request_id",
+          "source_revision",
+          "source_tab_ref",
+          "save_policy"
+        ],
+        "title": "qkm_start_mappingArguments",
+        "type": "object"
+      },
+      "name": "qkm_start_mapping",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_start_mappingDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
         "destructiveHint": false,
         "openWorldHint": false,
         "readOnlyHint": true

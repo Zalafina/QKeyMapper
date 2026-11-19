@@ -18,7 +18,7 @@ RECORD = ROOT / "out/rust_sidecar/catalog-only/creation.json"
 TOOLS = {
     "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect",
     "qkm_get_capabilities", "qkm_get_state", "qkm_wait_state", "qkm_get_help", "qkm_query", "qkm_get_operation",
-    "qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes", "qkm_stop_mapping",
+    "qkm_preview_changes", "qkm_apply_changes", "qkm_cancel_changes", "qkm_stop_mapping", "qkm_start_mapping",
     "qkm_open_mapping_editor", "qkm_close_mapping_editor", "qkm_open_mapping_settings",
     "qkm_close_mapping_settings", "qkm_capture_window",
 }
@@ -58,6 +58,8 @@ async def check_contract(exe):
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
     capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
+    start = {"instance": "a" * 32, "request_id": "b" * 32, "source_revision": revision,
+             "source_tab_ref": tab, "save_policy": "start_only"}
     for mode in ("legacy", "2026-07-28"):
         async with Client(config(exe), mode=mode, cache=None) as client:
             tools = (await client.list_tools()).tools
@@ -71,6 +73,9 @@ async def check_contract(exe):
             for field in stop.input_schema["properties"].values():
                 assert field["type"] == "string" and field["pattern"] == "^[0-9a-f]{32}$"
                 assert field["minLength"] == field["maxLength"] == 32
+            start_tool = next(tool for tool in tools if tool.name == "qkm_start_mapping")
+            assert set(start_tool.input_schema["required"]) == set(start)
+            assert start_tool.input_schema["properties"]["save_policy"]["const"] == "start_only"
             for name in ("qkm_unknown", DEMO_STATE, DEMO_MAPPING):
                 unknown = await client.call_tool(name)
                 assert unknown.is_error is True and unknown.structured_content is None
@@ -95,6 +100,9 @@ async def check_contract(exe):
                     {"instance": "A" * 32, "request_id": "b" * 32},
                     {"instance": "a" * 32, "request_id": None},
                     {"instance": "a" * 32, "request_id": "b" * 32, "force": True})),
+                ("qkm_start_mapping", start, (
+                    {}, {**start, "save_policy": "save"}, {**start, "source_revision": "b" * 64},
+                    {**start, "source_tab_ref": row}, {**start, "instance": "A" * 32}, {**start, "force": True})),
                 ("qkm_get_operation", {"operation_id": "a" * 32},
                  ({}, {"operation_id": "A" * 32}, {"operation_id": None}, {"operation_id": "bad"})),
                 ("qkm_preview_changes", {"action": "configuration.save", "setting_name": "\u8bbe" * 32767}, (

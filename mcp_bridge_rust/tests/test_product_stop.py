@@ -1,4 +1,4 @@
-"""Selected real GUI/stdio stop acceptance, using an empty unmatched profile."""
+"""Selected real GUI/stdio start and stop acceptance, using an empty unmatched profile."""
 
 import argparse
 import asyncio
@@ -37,6 +37,13 @@ async def get_state(client, gui_state):
     assert result["mapping_load_context"]["outcome"] == "accepted", result["mapping_load_context"]
     assert result["configuration"]["group"] == "Monitoring157", result["configuration"]
     return result
+
+
+async def start_request(client, instance):
+    sources = (await call(client, "qkm_query", {"entity": "mapping_sources", "limit": 100}))["result"]
+    current = next(tab for tab in sources["items"] if tab["ui_index"] == 0)
+    return {"instance": instance, "request_id": uuid.uuid4().hex, "save_policy": "start_only",
+            "source_revision": sources["source_snapshot"]["revision"], "source_tab_ref": current["source_tab_ref"]}
 
 
 async def stopped(client, request):
@@ -85,6 +92,8 @@ async def run(args):
                 request = {"instance": state["instance"], "request_id": uuid.uuid4().hex}
                 if scopes == 1:
                     await call(client, "qkm_stop_mapping", request, error="permission_denied")
+                    await call(client, "qkm_start_mapping", await start_request(client, state["instance"]),
+                               error="permission_denied")
                     await product.action("Revoke")
                     await call(client, "qkm_get_state", error=("connection_closed", "identity_rejected"))
                     store.forget()
@@ -111,8 +120,15 @@ async def run(args):
             await call(client, "qkm_connect")
             assert (await connection(client, "connected"))["instance"] == first["instance"]
             evidence["first"] = await stopped(client, first)
-            await product.action("StartPrivateMonitoring")
+            start = await start_request(client, first["instance"])
+            result = (await call(client, "qkm_start_mapping", start))["result"]
+            assert result["operation_id"] == start["request_id"] and result["status"] == "completed", result
+            assert result["result"] == {"monitoring_enabled": True, "saved": False}
+            evidence["start"] = result
             await get_state(client, "checking")
+            wait = (await call(client, "qkm_wait_state", {"condition": "mapping_active", "timeout_ms": 200}))["result"]
+            assert wait["outcome"] == "timed_out" and wait["state"]["run"]["gui_state"] == "checking"
+            await call(client, "qkm_start_mapping", start | {"request_id": uuid.uuid4().hex}, error="context_busy")
             replay = (await call(client, "qkm_stop_mapping", first))["result"]
             assert replay.pop("replayed") is True, replay
             assert replay.pop("query_sampled_at_utc")
@@ -121,6 +137,13 @@ async def run(args):
             second = first | {"request_id": uuid.uuid4().hex}
             await call(client, "qkm_stop_mapping", second)
             evidence["second"] = await stopped(client, second)
+            retry = (await call(client, "qkm_start_mapping", start))["result"]
+            assert retry["replayed"] is True and retry["operation_id"] == start["request_id"]
+            await get_state(client, "idle")
+            await call(client, "qkm_start_mapping", start | {"request_id": uuid.uuid4().hex}, error="stale_source")
+            fresh = await start_request(client, first["instance"])
+            await call(client, "qkm_start_mapping", fresh | {"request_id": start["request_id"]},
+                       error="request_id_conflict")
             assert ini.read_bytes() == fixture_ini()
             await product.action("OpenAdvanced")
             await product.action("OpenMcp")
@@ -137,7 +160,7 @@ async def run(args):
             await product.close()
     evidence.update(desktop=product.desktop_name, executable=str(args.executable), bridge=str(args.rust_exe))
     (args.output / "result.json").write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
-    print("PASS private GUI start, scoped MCP stop, disconnect, reauthentication, replay, cleanup and unchanged INI")
+    print("PASS private GUI start, Rust monitoring start/stop, reauthentication, replay, cleanup and unchanged INI")
 
 
 if __name__ == "__main__":

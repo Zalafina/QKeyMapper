@@ -95,7 +95,15 @@ checks real product images and recovers both demonstration scenes.
 `mapping_active` or `stopped_and_quiescent`. The caller sets a timeout of
 100–5000 ms (default 1000). A condition timeout includes the last sample.
 
-With Read and RunMapping permission, `qkm_stop_mapping` accepts the current
+With Read and RunMapping permission, `qkm_start_mapping` accepts the
+current `instance`, `request_id`, `source_revision`, `source_tab_ref` and
+`save_policy="start_only"`. Select the loaded normal profile and query its
+current source before starting. The supported scope is simple keyboard rows
+with automatic profile switching and FilterKeys changes disabled. The
+operation starts monitoring using the current memory configuration.
+Use `qkm_wait_state` to observe actual mapping activation.
+
+With the same permissions, `qkm_stop_mapping` accepts the current
 `instance` from `qkm_get_state` and a new 32-character lowercase hex
 `request_id`. It can stop unmatched monitoring with stable sources and no
 configured stop actions. It can also observe a stop already started in the

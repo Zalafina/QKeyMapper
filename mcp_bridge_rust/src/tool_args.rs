@@ -100,6 +100,16 @@ struct Stop {
     request_id: String,
 }
 
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct Start {
+    instance: String,
+    request_id: String,
+    source_revision: String,
+    source_tab_ref: String,
+    save_policy: String,
+}
+
 #[derive(Default, Deserialize, Serialize)]
 enum Action {
     #[default]
@@ -308,6 +318,14 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }),
         "qkm_get_operation" => typed(arguments, |v: &Operation| id(&v.operation_id)),
         "qkm_stop_mapping" => typed(arguments, |v: &Stop| id(&v.instance) && id(&v.request_id)),
+        "qkm_start_mapping" => typed(arguments, |v: &Start| {
+            id(&v.instance)
+                && id(&v.request_id)
+                && revision(&v.source_revision)
+                && tab_ref(&v.source_tab_ref)
+                && v.source_tab_ref.starts_with(&v.source_revision)
+                && v.save_policy == "start_only"
+        }),
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
             let mut values = typed(arguments, Preview::valid)?;

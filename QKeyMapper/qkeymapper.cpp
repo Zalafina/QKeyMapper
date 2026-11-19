@@ -38411,24 +38411,145 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     const MappingChangeOwner owner{server.instanceId(), request.pairId, request.permissionEpoch};
     if (!m_AutomationMappingChanges) m_AutomationMappingChanges = std::make_unique<MappingChangeStore>();
     auto &store = *m_AutomationMappingChanges;
-    if (validation.method == MappingChangeMethod::Stop) {
+    const bool start = validation.method == MappingChangeMethod::Start;
+    if (start || validation.method == MappingChangeMethod::Stop) {
         if (validation.instance != owner.instance) {
             fail(QStringLiteral("wrong_instance"), QStringLiteral("Read the instance identity from the connected product."));
             return;
         }
         if (configurationOnlyDemo() || !server.isRequestCurrent(request)) {
-            fail(QStringLiteral("permission_denied"), QStringLiteral("Stopping requires current Read and RunMapping permission."));
+            fail(QStringLiteral("permission_denied"), QStringLiteral("Mapping control requires current Read and RunMapping permission."));
             return;
         }
+        QJsonObject startTarget;
+        if (start) {
+            startTarget = {{QStringLiteral("instance_id"), owner.instance},
+                {QStringLiteral("source_revision"), validation.startSourceRevision},
+                {QStringLiteral("source_tab_ref"), validation.startSourceTabRef},
+                {QStringLiteral("save_policy"), QStringLiteral("start_only")}};
+        }
         auto previous = store.operation(owner, validation.id);
-        if (previous.value(QStringLiteral("action")) == QLatin1String("mapping.stop")) {
-            previous.insert(QStringLiteral("replayed"), true);
-            server.reply(request.connectionId, request.requestId, previous);
+        const auto conflict = [&] {
+            fail(QStringLiteral("request_id_conflict"), QStringLiteral("Pick an unused request ID for a different operation."));
+        };
+        if (previous.value(QStringLiteral("result_known")).toBool()) {
+            const auto action = previous.value(QStringLiteral("action"));
+            if ((start && action == QLatin1String("mapping.start") && previous.value(QStringLiteral("target")) == startTarget)
+                || (!start && action == QLatin1String("mapping.stop"))) {
+                previous.insert(QStringLiteral("replayed"), true);
+                server.reply(request.connectionId, request.requestId, previous);
+            } else {
+                conflict();
+            }
+            return;
+        }
+        const auto reserved = [&](MappingChangeStore::RunReservation reservation) {
+            if (reservation == MappingChangeStore::RunReservation::Conflict) {
+                conflict();
+                return false;
+            }
+            if (reservation == MappingChangeStore::RunReservation::Full) {
+                fail(QStringLiteral("operation_limit"), QStringLiteral("All result slots belong to in-flight operations."));
+                return false;
+            }
+            return true;
+        };
+        if (start) {
+            const int tabIndex = s_KeyMappingTabWidgetCurrentIndex;
+            const auto ready = [&] {
+                return mappingAdditionAllowed(tabIndex) && !isCommonMappingTabIndex(tabIndex)
+                    && !m_KeyMappingDataTable->hasActiveEditor() && !hasOpenMappingEditor()
+                    && !QApplication::activePopupWidget()
+                    && (!m_GeneralAdvancedDialog || !m_GeneralAdvancedDialog->isVisible());
+            };
+            if (!ready()) {
+                fail(QStringLiteral("context_busy"), QStringLiteral("Start requires an idle normal tab and completed cleanup with editors closed."));
+                return;
+            }
+            const QString group = currentSettingSelectGroupName();
+            if (group.isEmpty() || group != m_LoadedMappingSettingGroup || group == QLatin1String(GROUPNAME_GLOBALSETTING)) {
+                fail(QStringLiteral("unsupported_capability"), QStringLiteral("Start requires the current loaded profile."));
+                return;
+            }
+            const auto unsupported = [&] {
+                fail(QStringLiteral("unsupported_capability"),
+                    QStringLiteral("Start supports ordinary keyboard rows, with automatic profile switching and FilterKeys changes disabled."));
+            };
+            QSettings saved(CONFIG_FILENAME, QSettings::IniFormat);
+            QKeyMapperQtCompat::setIniCodecUtf8(saved);
+            for (const auto &savedGroup : saved.childGroups()) {
+                if (saved.value(savedGroup + QLatin1Char('/') + QLatin1String(AUTOSTARTMAPPING_CHECKED)).toInt() == Qt::Checked) {
+                    unsupported();
+                    return;
+                }
+            }
+            if (saved.status() != QSettings::NoError || checkGlobalSettingAutoStart() || getEnableSystemFilterKeyChecked()) {
+                unsupported();
+                return;
+            }
+            const quint64 runtimeRevision = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
+            QString sourceError;
+            QJsonObject snapshot;
+            {
+                QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+                snapshot = collectAutomationSourceSnapshotWithAccess(sourceError);
+                if (!sourceError.isEmpty()) {
+                    access.unlock();
+                    fail(sourceError, QStringLiteral("A safe complete source snapshot is unavailable."));
+                    return;
+                }
+                // shortcut: Classify simple rows until profile switches can preserve the authorized runtime source.
+                const auto simpleRows = [](const QList<MAP_KEYDATA> &rows) {
+                    return std::all_of(rows.cbegin(), rows.cend(), [](const MAP_KEYDATA &row) {
+                        if (row.Original_Key == QLatin1String(SENDON_MAPPINGSTOP_STR)) return false;
+                        if (row.Disabled) return true;
+                        return isBasicMappingKey(row.Original_Key)
+                            && row.Mapping_Keys.size() == 1 && isBasicMappingKey(row.Mapping_Keys.constFirst())
+                            && (row.MappingKeys_KeyUp.isEmpty() || row.MappingKeys_KeyUp == row.Mapping_Keys)
+                            && row.SendMappingKeyMethod == SENDMAPPINGKEY_METHOD_SENDINPUT
+                            && row.SendTiming == SENDTIMING_NORMAL && row.RepeatMode == REPEAT_MODE_NONE
+                            && row.FixedVKeyCode == FIXED_VIRTUAL_KEY_CODE_NONE && !row.Burst && !row.Lock
+                            && !row.KeySeqHoldDown && !row.FloatingButton_Enable;
+                    });
+                };
+                if ((isCommonMappingFeatureEnabled() && !simpleRows(m_CommonMappingData))
+                    || std::any_of(s_KeyMappingTabInfoList.cbegin(), s_KeyMappingTabInfoList.cend(), [&](const auto &tab) {
+                        return !tab.KeyMappingData || !simpleRows(*tab.KeyMappingData);
+                    })) {
+                    access.unlock();
+                    unsupported();
+                    return;
+                }
+            }
+            const auto bound = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
+                {{QStringLiteral("entity"), QStringLiteral("mapping_sources")},
+                    {QStringLiteral("source_revision"), validation.startSourceRevision},
+                    {QStringLiteral("offset"), tabIndex}, {QStringLiteral("limit"), 1}});
+            if (!bound.ok()) { fail(bound.errorCode, bound.message); return; }
+            const auto tabs = bound.page.value(QStringLiteral("items")).toArray();
+            if (tabs.isEmpty() || tabs.first().toObject().value(QStringLiteral("source_tab_ref")) != validation.startSourceTabRef) {
+                fail(QStringLiteral("stale_source"), QStringLiteral("The current source tab is different. Query it before starting."));
+                return;
+            }
+            if (!ready() || QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() != runtimeRevision
+                || validationBudget.hasExpired(MappingChangeBudgetMs) || !server.isRequestCurrent(request)) {
+                fail(QStringLiteral("context_busy"), QStringLiteral("Start context or authorization changed during validation."));
+                return;
+            }
+            if (!reserved(store.reserveStart(owner, validation.id, startTarget))) return;
+            // Use the shared GUI monitoring path after checking idle, so it cannot take its stop branch.
+            MappingSwitch(MAPPINGSTART_BUTTONCLICK);
+            const bool monitoring = m_KeyMapStatus != KEYMAP_IDLE && m_KeyMapStatus != KEYMAP_STOPPING;
+            store.finish(owner, validation.id, monitoring ? QStringLiteral("completed") : QStringLiteral("rejected"),
+                {{QStringLiteral("monitoring_enabled"), monitoring}, {QStringLiteral("saved"), false}},
+                monitoring ? QString() : QStringLiteral("start_blocked"),
+                monitoring ? QString() : QStringLiteral("The product did not enter monitoring."));
+            server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
             return;
         }
         const bool idle = m_KeyMapStatus == KEYMAP_IDLE;
         const bool initiated = !idle && m_KeyMapStatus != KEYMAP_STOPPING;
-        MappingChangeStore::StopReservation reservation;
+        MappingChangeStore::RunReservation reservation;
         if (initiated) {
             // Match the runtime submission fence before inspecting GUI-owned source rows.
             // Once admitted, no newly queued start may consume those rows before the stop.
@@ -38461,20 +38582,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 return;
             }
             reservation = store.reserveStop(owner, validation.id, false, true, false);
-            if (reservation == MappingChangeStore::StopReservation::Reserved)
+            if (reservation == MappingChangeStore::RunReservation::Reserved)
                 QKeyMapper_Worker::s_MappingInputClosed.storeRelease(true);
         } else {
             reservation = store.reserveStop(owner, validation.id, idle, false,
                 idle && automationSourceReadBasis() == QLatin1String("completed_cleanup"));
         }
-        if (reservation == MappingChangeStore::StopReservation::Conflict) {
-            fail(QStringLiteral("request_id_conflict"), QStringLiteral("Pick an unused request ID for a different operation."));
-            return;
-        }
-        if (reservation == MappingChangeStore::StopReservation::Full) {
-            fail(QStringLiteral("operation_limit"), QStringLiteral("All result slots belong to in-flight operations."));
-            return;
-        }
+        if (!reserved(reservation)) return;
         if (initiated) beginMappingStop();
         if (!idle) store.bindStop(validation.id, m_mappingStopOperation, m_mappingStopTimedOut);
         server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));

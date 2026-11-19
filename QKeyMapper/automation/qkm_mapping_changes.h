@@ -46,7 +46,7 @@ struct IbInputPreferencesArguments {
     QString unavailablePolicy;
 };
 
-enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop };
+enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };
 enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
@@ -58,6 +58,8 @@ struct MappingChangeRequest {
     QString settingName;
     QString id;
     QString instance;
+    QString startSourceRevision;
+    QString startSourceTabRef;
     bool confirmConflicts = false;
     bool confirmScope = false;
     bool confirmOverwrite = false;
@@ -67,9 +69,10 @@ struct MappingChangeRequest {
     bool ok() const { return errorCode.isEmpty(); }
 };
 
+bool isBasicMappingKey(const QString &key);
 bool isMappingChangeMethod(const QString &method);
 MappingChangeRequest validateMappingChangeRequest(const QString &method, const QJsonObject &arguments);
-QJsonArray mappingChangeCapabilities(bool allowStop = true);
+QJsonArray mappingChangeCapabilities(bool allowRunControls = true);
 
 struct MappingChangeOwner {
     QString instance;
@@ -124,8 +127,9 @@ public:
     void finish(const MappingChangeOwner &owner, const QString &id, const QString &status,
         const QJsonObject &result, const QString &errorCode = {}, const QString &message = {});
     bool cancel(const MappingChangeOwner &owner, const QString &id);
-    enum class StopReservation { Reserved, Conflict, Full };
-    StopReservation reserveStop(const MappingChangeOwner &owner, const QString &id, bool idle, bool initiated,
+    enum class RunReservation { Reserved, Conflict, Full };
+    RunReservation reserveStart(const MappingChangeOwner &owner, const QString &id, const QJsonObject &target);
+    RunReservation reserveStop(const MappingChangeOwner &owner, const QString &id, bool idle, bool initiated,
         bool cleanupObserved);
     void bindStop(const QString &id, quint64 generation, bool timedOut);
     void observeStop(quint64 generation, bool completed, bool timedOut);
@@ -146,6 +150,7 @@ private:
     bool remember(const MappingChangePreview &preview, const QString &status,
         const QString &errorCode = {}, const QString &message = {});
     bool remember(const MappingChangeOwner &owner, const QString &id, QJsonObject value);
+    RunReservation reserveRun(const MappingChangeOwner &owner, const QString &id, QJsonObject value);
     void updateStop(Operation &operation, bool completed, bool timedOut);
     QElapsedTimer m_clock;
     QHash<QString, MappingChangePreview> m_previews;

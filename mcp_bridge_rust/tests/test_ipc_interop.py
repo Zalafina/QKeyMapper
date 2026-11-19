@@ -192,6 +192,8 @@ async def exercise(args):
             editor = {"source_ref": row, "presentation": "private_background"}
             settings = {"source_tab_ref": tab, "presentation": "private_background"}
             window = "b" * 64
+            await call(client, "qkm_start_mapping", {"instance": bound["instance"], "request_id": "c" * 32,
+                "source_revision": revision, "source_tab_ref": tab, "save_policy": "start_only"}, error="permission_denied")
             for tool, arguments in (
                 ("qkm_open_mapping_editor", editor),
                 ("qkm_close_mapping_editor", {**editor, "window_ref": window}),
