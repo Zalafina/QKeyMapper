@@ -52,6 +52,7 @@ struct MappingUpdateArguments {
     std::optional<Qt::CheckState> tabNotificationMode;
     std::optional<QJsonValue> tabCategoryFilter;
     std::optional<bool> showDisabledRows;
+    QJsonObject mappingDisplay;
     QString tabNotificationFontColor;
     QString tabNotificationBackgroundColor;
     bool addBlankTab = false;

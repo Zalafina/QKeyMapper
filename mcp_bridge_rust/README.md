@@ -136,6 +136,14 @@ Use `configuration.set_show_disabled_rows` with the current
 to all mapping tables. The category filter continues to affect visibility.
 Save the configuration separately to persist the preference.
 
+## Changing mapping table display options
+
+Use `configuration.set_mapping_display` with the current `source_tab_ref`
+and a `mapping_display` object containing one or more boolean options:
+`category_column`, `notes`, and `floating_column`. Hiding the category column
+clears the current tab's category filter. Save the configuration separately
+to persist these display preferences.
+
 ## Renaming a mapping tab
 
 Use `tab.rename` with the current normal tab's `source_tab_ref` and the

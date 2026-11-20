@@ -68,6 +68,8 @@ async def check_contract(exe):
     category_batch = {"action": "mapping.update", "source_refs": [other_row, row], "category": "批量分類"}
     category_filter = {"action": "tab.set_category_filter", "source_tab_ref": tab, "category_filter": ["", "批量分類"]}
     disabled_visibility = {"action": "configuration.set_show_disabled_rows", "source_tab_ref": tab, "show_disabled_rows": True}
+    display = {"action": "configuration.set_mapping_display", "source_tab_ref": tab,
+               "mapping_display": {"category_column": True, "notes": False}}
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     hotkey = {"action": "tab.set_hotkey", "source_tab_ref": tab, "tab_hotkey": " $ F9 "}
     notification = {"action": "tab.set_notification_mode", "source_tab_ref": tab, "notification_mode": 0}
@@ -182,6 +184,12 @@ async def check_contract(exe):
                                 if rule["properties"]["action"].get("const") == "configuration.set_show_disabled_rows")
             assert set(visibility_rule["required"]) == set(disabled_visibility)
             assert visibility_rule["properties"]["show_disabled_rows"] == {"type": "boolean"}
+            display_rule, = (rule for rule in previews["oneOf"]
+                             if rule["properties"]["action"].get("const") == "configuration.set_mapping_display")
+            assert set(display_rule["required"]) == set(display)
+            assert display_rule["properties"]["mapping_display"] == {
+                "type": "object", "additionalProperties": False, "minProperties": 1,
+                "properties": {field: {"type": "boolean"} for field in ("category_column", "notes", "floating_column")}}
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -307,6 +315,11 @@ async def check_contract(exe):
                     {**disabled_visibility, "show_disabled_rows": "false"},
                     {**disabled_visibility, "category_filter": []})),
                 ("qkm_preview_changes", {**disabled_visibility, "show_disabled_rows": False}, ()),
+                ("qkm_preview_changes", display, (
+                    {**display, "mapping_display": {}}, {**display, "mapping_display": {"notes": None}},
+                    {**display, "mapping_display": {"category_column": 0}}, {**display, "mapping_display": {"unknown": True}},
+                    {**display, "mapping_display": [True]}, {**display, "show_disabled_rows": True})),
+                ("qkm_preview_changes", {**display, "mapping_display": {"floating_column": True}}, ()),
                 ("qkm_preview_changes", category_batch, (
                     {**category_batch, "source_ref": row}, {**category_batch, "source_refs": [row]},
                     {**category_batch, "source_refs": [row, row]},

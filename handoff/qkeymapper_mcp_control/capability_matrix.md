@@ -423,9 +423,9 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-TABLE-IMPORT | 导入映射表 | `importMappingTableByTabIndex`／`importKeyMappingDataFromFile`；M2-A；插入位置、校验、互斥联动、宏及失败保护 |
 | ACT-VIEW-PROCESS | 显示／隐藏进程列表 | `m_ActionShowProcessList`；M2-B；真实布局、尺寸和保存范围 |
 | ACT-VIEW-POINT | 显示／隐藏坐标拾取 | `m_ActionShowPointPicker`；M2-B／M3-A；实际采集和真实输入权限 |
-| ACT-VIEW-CATEGORY | 显示／隐藏分类列 | `setCategoryColumnVisible`；M2-A；筛选、列宽及草稿 |
-| ACT-VIEW-NOTES | 显示／隐藏备注列 | `m_ActionShowNotes` 及表格右键；M2-A；列显示和保存 |
-| ACT-VIEW-FLOATING | 显示／隐藏浮动列 | `m_ActionShowFloating`；M2-B；实际浮动按钮与表格显示的区别 |
+| ACT-VIEW-CATEGORY | 显示／隐藏分类列 | `setCategoryColumnVisible`；M2-A；187 选验列、清除当前筛选、草稿与保存冷读 |
+| ACT-VIEW-NOTES | 显示／隐藏映射备注 | `m_ActionShowNotes` 及表格右键；M2-A；187 选验原键旁实际文字及保存冷读 |
+| ACT-VIEW-FLOATING | 显示／隐藏悬浮列 | `m_ActionShowFloating`；187 选验表格列和保存冷读，实际悬浮按钮开关另验 |
 | ACT-VIEW-DISABLED | 显示／隐藏禁用行 | `m_ActionHideDisabled`；M2-A；186 选验真实菜单、多表、分类筛选叠加和保存冷读，选区恢复另验 |
 | ACT-CATEGORY-FILTER | 分类多选／全部／无匹配／空白分类 | `initCategoryFilterControls`／`showCategoryFilterPopup`；M2-A；185 双 Qt 私有 GUI 和 Rust 选验视图、可见行守卫及源／INI 不变 |
 | ACT-CATEGORY-ASSIGN | 选定分类／输入新分类／批量分类 | 表格 `contextMenuEvent` 的内嵌文本和 QWidgetAction；M2-A；183～184 选验当前可见源行单条／同源批量赋值、清空、混源及隐藏拒绝、筛选选项和保存冷读 |

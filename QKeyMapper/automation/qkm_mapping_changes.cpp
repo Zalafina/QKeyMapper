@@ -112,6 +112,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool tabNotificationColorsPreview = preview && action == QLatin1String("tab.set_notification_colors");
     const bool categoryFilterPreview = preview && action == QLatin1String("tab.set_category_filter");
     const bool disabledVisibilityPreview = preview && action == QLatin1String("configuration.set_show_disabled_rows");
+    const bool mappingDisplayPreview = preview && action == QLatin1String("configuration.set_mapping_display");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
     const bool deleteTabPreview = preview && action == QLatin1String("tab.delete");
@@ -123,7 +124,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool commonFeaturePreview = preview && action == QLatin1String("configuration.set_common_enabled");
     const bool tabActionPreview = addBlankTabPreview || copyTabPreview || deleteTabPreview
         || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview
-        || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview || disabledVisibilityPreview;
+        || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
+        || disabledVisibilityPreview || mappingDisplayPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -134,6 +136,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : renamePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_name")}
         : tabHotkeyPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_hotkey")}
         : tabNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_mode")}
+        : mappingDisplayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("mapping_display")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
         : tabNotificationColorsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"),
@@ -207,6 +210,16 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             if (!value.isDouble() || value.toDouble() != mode || mode < Qt::Unchecked || mode > Qt::Checked)
                 return fail("notification_mode must be 0, 1, or 2.");
             result.update.tabNotificationMode = static_cast<Qt::CheckState>(mode);
+        }
+        if (mappingDisplayPreview) {
+            const auto change = arguments.value(QStringLiteral("mapping_display")).toObject();
+            if (change.isEmpty()) return fail("Provide at least one mapping display preference.");
+            for (auto it = change.constBegin(); it != change.constEnd(); ++it) {
+                if (!it.value().isBool() || (it.key() != QStringLiteral("category_column")
+                    && it.key() != QStringLiteral("notes") && it.key() != QStringLiteral("floating_column")))
+                    return fail("Only category_column, notes and floating_column booleans are allowed.");
+            }
+            result.update.mappingDisplay = change;
         }
         if (disabledVisibilityPreview) {
             const auto value = arguments.value(QStringLiteral("show_disabled_rows"));
@@ -662,7 +675,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     capabilities.append(renameApply);
     for (const char *action : {"tab.add_blank", "tab.copy", "tab.delete", "tab.clear", "tab.move",
         "tab.set_common_inheritance", "tab.set_common_collapsed", "configuration.set_common_enabled", "tab.select", "tab.set_hotkey", "tab.set_notification_mode", "tab.set_notification_colors",
-        "tab.set_category_filter", "configuration.set_show_disabled_rows"}) {
+        "tab.set_category_filter", "configuration.set_show_disabled_rows", "configuration.set_mapping_display"}) {
         const QByteArray actionId(action);
         const bool deleting = actionId == "tab.delete";
         const bool clearing = actionId == "tab.clear";
@@ -674,6 +687,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         const bool settingNotificationColors = actionId == "tab.set_notification_colors";
         const bool categoryFilter = actionId == "tab.set_category_filter";
         const bool disabledVisibility = actionId == "configuration.set_show_disabled_rows";
+        const bool mappingDisplay = actionId == "configuration.set_mapping_display";
         const bool includingCommon = actionId == "tab.set_common_inheritance";
         const bool collapsingCommon = actionId == "tab.set_common_collapsed";
         const bool commonFeature = actionId == "configuration.set_common_enabled";
@@ -699,6 +713,15 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
             tabProperties.insert(QStringLiteral("notification_mode"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
                 {QStringLiteral("enum"), QJsonArray{0, 1, 2}}});
             tabRequired.append(QStringLiteral("notification_mode"));
+        }
+        if (mappingDisplay) {
+            const auto field = QStringLiteral("mapping_display");
+            const QJsonObject toggle{{QStringLiteral("type"), QStringLiteral("boolean")}};
+            auto displaySchema = schema({{QStringLiteral("category_column"), toggle}, {QStringLiteral("notes"), toggle},
+                {QStringLiteral("floating_column"), toggle}}, {});
+            displaySchema.insert(QStringLiteral("minProperties"), 1);
+            tabProperties.insert(field, displaySchema);
+            tabRequired.append(field);
         }
         if (disabledVisibility) {
             const auto field = QStringLiteral("show_disabled_rows");
@@ -736,7 +759,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
             : selecting ? QStringLiteral("same_revision_attached_destination_selection_only")
             : settingHotkey ? QStringLiteral("gui_hotkey_validation_and_shared_targets")
             : settingNotification ? QStringLiteral("tab_start_and_switch_notifications")
-            : disabledVisibility ? QStringLiteral("all_mapping_tables_view_preference")
+            : mappingDisplay || disabledVisibility ? QStringLiteral("all_mapping_tables_view_preference")
             : categoryFilter ? QStringLiteral("visible_category_column_view_only")
             : settingNotificationColors ? QStringLiteral("notification_colors_with_inherited_defaults")
             : includingCommon ? QStringLiteral("common_feature_must_be_enabled")
@@ -744,7 +767,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
             : commonFeature ? QStringLiteral("explicit_conflict_confirmation_if_needed")
             : actionId == "tab.copy" ? QStringLiteral("gui_copy_preserves_current_tab") : QStringLiteral("gui_default_name_and_activation");
         for (auto *item : {&tabPreview, &tabApply}) {
-            QJsonArray limits{clearing || commonFeature || selecting || categoryFilter || disabledVisibility
+            QJsonArray limits{clearing || commonFeature || selecting || categoryFilter || disabledVisibility || mappingDisplay
                     ? QStringLiteral("current_attached_source_only") : QStringLiteral("current_attached_normal_source_only"),
                 QStringLiteral("memory_only_no_save_or_start"), behavior,
                 QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("no_open_editor_or_popup")};

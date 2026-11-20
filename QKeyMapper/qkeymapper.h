@@ -2117,6 +2117,7 @@ private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;
     QJsonObject collectAutomationState(void) const;
+    QJsonObject automationMappingDisplay() const;
     QString automationIbInputPreferencesRevision() const;
     QJsonObject collectAutomationCatalog(void) const;
     QJsonObject collectAutomationSourceSnapshot(QString &errorCode) const;

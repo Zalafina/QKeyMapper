@@ -137,6 +137,8 @@ enum Action {
     SetCategoryFilter,
     #[serde(rename = "configuration.set_show_disabled_rows")]
     SetShowDisabledRows,
+    #[serde(rename = "configuration.set_mapping_display")]
+    SetMappingDisplay,
     #[serde(rename = "tab.set_notification_colors")]
     SetTabNotificationColors,
     #[serde(rename = "tab.add_blank")]
@@ -202,6 +204,7 @@ struct Preview {
     category: Option<String>,
     category_filter: Option<Value>,
     show_disabled_rows: Option<bool>,
+    mapping_display: Option<Object>,
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
     notification_mode: Option<u8>,
@@ -258,6 +261,15 @@ impl Preview {
                                 value.as_str().is_some_and(single_line)
                                     && !names[..index].contains(value)
                             })
+                    })
+            })
+            && self.mapping_display.as_ref().is_none_or(|display| {
+                !display.is_empty()
+                    && display.iter().all(|(name, value)| {
+                        matches!(
+                            name.as_str(),
+                            "category_column" | "notes" | "floating_column"
+                        ) && value.is_boolean()
                     })
             })
             && self.notification_mode.is_none_or(|mode| mode <= 2)
@@ -474,6 +486,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             let set_notification = action == Some("tab.set_notification_mode");
             let category_filter = action == Some("tab.set_category_filter");
             let show_disabled = action == Some("configuration.set_show_disabled_rows");
+            let mapping_display = action == Some("configuration.set_mapping_display");
             let color_count = ["notification_font_color", "notification_background_color"]
                 .into_iter()
                 .filter(|field| values.contains_key(*field))
@@ -502,9 +515,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                     && source.split(':').next() == target.split(':').next()
                             })
                 }
-                Some("tab.set_category_filter" | "configuration.set_show_disabled_rows") => {
-                    values.len() == 3 && values.contains_key("source_tab_ref")
-                }
+                Some(
+                    "tab.set_category_filter"
+                    | "configuration.set_show_disabled_rows"
+                    | "configuration.set_mapping_display",
+                ) => values.len() == 3 && values.contains_key("source_tab_ref"),
                 Some("tab.set_notification_colors") => {
                     color_count > 0
                         && values.len() == 2 + color_count
@@ -522,6 +537,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 || set_notification != values.contains_key("notification_mode")
                 || category_filter != values.contains_key("category_filter")
                 || show_disabled != values.contains_key("show_disabled_rows")
+                || mapping_display != values.contains_key("mapping_display")
                 || (color_count > 0 && action != Some("tab.set_notification_colors"))
                 || common_inheritance != values.contains_key("include_common")
                 || common_collapsed != values.contains_key("common_collapsed")

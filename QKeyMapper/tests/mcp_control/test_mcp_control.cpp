@@ -620,8 +620,20 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(validateMappingChangeRequest(previewMethod, changed).update.showDisabledRows.value());
     changed = visibility; changed.insert(QStringLiteral("show_disabled_rows"), 0);
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    QCOMPARE(capabilities.size(), 52);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 50);
+    const QJsonObject displayChange{{QStringLiteral("action"), QStringLiteral("configuration.set_mapping_display")},
+        {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")}, {QStringLiteral("mapping_display"),
+            QJsonObject{{QStringLiteral("notes"), true}, {QStringLiteral("category_column"), false}}}};
+    const auto display = validateMappingChangeRequest(previewMethod, displayChange);
+    QVERIFY(display.ok());
+    QCOMPARE(display.update.mappingDisplay, displayChange.value(QStringLiteral("mapping_display")).toObject());
+    for (const auto &value : {QJsonObject{}, QJsonObject{{QStringLiteral("notes"), 1}}, QJsonObject{{QStringLiteral("arbitrary"), true}}}) {
+        changed = displayChange; changed.insert(QStringLiteral("mapping_display"), value);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    QCOMPARE(capabilities.size(), 54);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 52);
+    QCOMPARE(capabilities.at(51).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.preview"));
+    QCOMPARE(capabilities.at(52).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.apply"));
     QCOMPARE(capabilities.at(49).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.preview"));
     QCOMPARE(capabilities.at(50).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.apply"));
     QCOMPARE(capabilities.at(47).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_category_filter.preview"));
