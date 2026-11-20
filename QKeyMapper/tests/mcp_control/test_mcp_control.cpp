@@ -657,6 +657,20 @@ void McpControlTest::mappingChangeArguments()
     }
     changed = rowModes; changed.insert(QStringLiteral("send_method"), 0);
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    const QJsonObject sendTiming{{QStringLiteral("action"), QStringLiteral("mapping.update")},
+        {QStringLiteral("source_ref"), sourceRef}, {QStringLiteral("send_timing"), 0}};
+    for (int timing = 0; timing <= 4; ++timing) {
+        changed = sendTiming; changed.insert(QStringLiteral("send_timing"), timing);
+        const auto result = validateMappingChangeRequest(previewMethod, changed);
+        QVERIFY(result.ok());
+        QCOMPARE(result.update.sendTiming.value(), timing);
+    }
+    for (const auto &value : {QJsonValue(-1), QJsonValue(5), QJsonValue(2.5), QJsonValue(true), QJsonValue()}) {
+        changed = sendTiming; changed.insert(QStringLiteral("send_timing"), value);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    changed = sendTiming; changed.insert(QStringLiteral("key_up_mapping_key"), QStringLiteral("B"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     QCOMPARE(capabilities.size(), 54);
     QCOMPARE(mappingChangeCapabilities(false).size(), 52);
     QCOMPARE(capabilities.at(51).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.preview"));

@@ -69,6 +69,7 @@ async def check_contract(exe):
     category_filter = {"action": "tab.set_category_filter", "source_tab_ref": tab, "category_filter": ["", "批量分類"]}
     disabled_visibility = {"action": "configuration.set_show_disabled_rows", "source_tab_ref": tab, "show_disabled_rows": True}
     row_modes = {"action": "mapping.update", "source_ref": row, "row_modes": {"burst": True, "lock": False}}
+    send_timing = {"action": "mapping.update", "source_ref": row, "send_timing": 4}
     display = {"action": "configuration.set_mapping_display", "source_tab_ref": tab,
                "mapping_display": {"category_column": True, "notes": False}}
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
@@ -181,6 +182,9 @@ async def check_contract(exe):
                                "burst_release_ms": {"type": "integer", "minimum": 1, "maximum": 99999},
                                "mapping_key_unlock": {"type": "boolean"},
                                "disable_original_key_unlock": {"type": "boolean"}}}
+            assert note_rule["properties"]["send_timing"] == {"type": "integer", "minimum": 0, "maximum": 4}
+            assert {"required": ["send_timing"]} in note_rule["anyOf"]
+            assert {"required": ["key_up_mapping_key"]} in note_rule["dependentSchemas"]["send_timing"]["not"]["anyOf"]
             assert {"required": ["row_modes"]} in note_rule["anyOf"]
             assert {"required": ["category"]} in note_rule["dependentSchemas"]["row_modes"]["not"]["anyOf"]
             filter_rule, = (rule for rule in previews["oneOf"]
@@ -317,6 +321,12 @@ async def check_contract(exe):
                     {**row_modes, "send_method": 0}, {**row_modes, "note": ""},
                     {**row_modes, "source_ref": None, "source_refs": [row, other_row]})),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"lock": True}}, ()),
+                ("qkm_preview_changes", send_timing, (
+                    {**send_timing, "send_timing": -1}, {**send_timing, "send_timing": 5},
+                    {**send_timing, "send_timing": True}, {**send_timing, "send_timing": None},
+                    {**send_timing, "send_timing": 2.5}, {**send_timing, "key_up_mapping_key": "B"},
+                    {**send_timing, "row_modes": {"lock": True}})),
+                ("qkm_preview_changes", {**send_timing, "send_timing": 0}, ()),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"lock": True, "mapping_key_unlock": True,
                                                                     "disable_original_key_unlock": False}}, (
                     {**row_modes, "row_modes": {"mapping_key_unlock": 1}},

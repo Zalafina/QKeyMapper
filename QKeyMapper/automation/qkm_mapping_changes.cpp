@@ -149,7 +149,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : tabActionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref")}
         : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
         : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs"), QStringLiteral("send_method"),
-            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled"), QStringLiteral("note"), QStringLiteral("category"), QStringLiteral("row_modes")}
+            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled"), QStringLiteral("note"), QStringLiteral("category"), QStringLiteral("row_modes"), QStringLiteral("send_timing")}
         : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
             QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")} : preview
         ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
@@ -303,6 +303,13 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         const auto keyUp = arguments.value(QStringLiteral("key_up_mapping_key"));
         const auto disabled = arguments.value(QStringLiteral("disabled"));
         const auto note = arguments.value(QStringLiteral("note"));
+        const auto timing = arguments.value(QStringLiteral("send_timing"));
+        if (!timing.isUndefined()) {
+            const int mode = timing.toInt(-1);
+            if (arguments.size() != 3 || !singleReference.isString() || !timing.isDouble() || timing.toDouble() != mode
+                || mode < QKeyMapperConstants::SENDTIMING_NORMAL || mode > QKeyMapperConstants::SENDTIMING_NORMAL_AND_KEYUP)
+                return fail("Provide one source_ref and an integer send_timing from 0 to 4.");
+        }
         const auto rowModes = arguments.value(QStringLiteral("row_modes"));
         if (!rowModes.isUndefined()) {
             const auto modes = rowModes.toObject();
@@ -342,7 +349,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             || (arguments.contains(QStringLiteral("send_method")) && sendMethod() < 0))
             return fail("Updates accept uppercase single keys, an optional empty key-up key, and send method 0 to 3.");
         if (updatePreview && original.isUndefined() && mapping.isUndefined() && keyUp.isUndefined() && sendMethod() < 0
-            && disabled.isUndefined() && note.isUndefined() && category.isUndefined() && rowModes.isUndefined())
+            && disabled.isUndefined() && note.isUndefined() && category.isUndefined() && rowModes.isUndefined() && timing.isUndefined())
             return fail("At least one mapping field must be specified.");
         const auto parts = reference.toString().split(QLatin1Char(':'));
         bool tabOk = false, rowOk = false;
@@ -387,6 +394,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         if (!note.isUndefined()) result.update.note = note.toString();
         if (!category.isUndefined()) result.update.category = category.toString();
         result.update.rowModes = rowModes.toObject();
+        if (!timing.isUndefined()) result.update.sendTiming = timing.toInt();
         return result;
     }
     if (savePreview) {
@@ -562,6 +570,9 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     rowModesSchema.insert(QStringLiteral("minProperties"), 1);
     auto updateSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
         {QStringLiteral("row_modes"), rowModesSchema},
+        {QStringLiteral("send_timing"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+            {QStringLiteral("minimum"), QKeyMapperConstants::SENDTIMING_NORMAL},
+            {QStringLiteral("maximum"), QKeyMapperConstants::SENDTIMING_NORMAL_AND_KEYUP}}},
         {QStringLiteral("source_ref"), rowReference}, {QStringLiteral("send_method"), sendMethodSchema},
         {QStringLiteral("source_refs"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
             {QStringLiteral("minItems"), 2}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("uniqueItems"), true},
@@ -588,16 +599,22 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     QJsonArray rowModeConflicts = categoryConflicts;
     rowModeConflicts.append(categoryRequired);
     rowModeConflicts.append(QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_refs")}}});
+    const QJsonObject rowModesRequired{{QStringLiteral("required"), QJsonArray{QStringLiteral("row_modes")}}};
+    const QJsonObject timingRequired{{QStringLiteral("required"), QJsonArray{QStringLiteral("send_timing")}}};
+    QJsonArray timingConflicts = rowModeConflicts;
+    timingConflicts.append(rowModesRequired);
     updateSchema.insert(QStringLiteral("dependentSchemas"), QJsonObject{
         {QStringLiteral("disabled"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), updateFields}}}}},
         {QStringLiteral("note"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), noteConflicts}}}}},
         {QStringLiteral("category"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), categoryConflicts}}}}},
         {QStringLiteral("source_refs"), categoryRequired},
-        {QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), rowModeConflicts}}}}}});
+        {QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), rowModeConflicts}}}}},
+        {QStringLiteral("send_timing"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), timingConflicts}}}}}});
     updateFields.append(disabledRequired);
     updateFields.append(noteRequired);
     updateFields.append(categoryRequired);
-    updateFields.append(QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("row_modes")}}});
+    updateFields.append(rowModesRequired);
+    updateFields.append(timingRequired);
     updateSchema.insert(QStringLiteral("anyOf"), updateFields);
     auto updatePreview = capability("mapping.update.preview", "qkm_preview_changes", Read | Configure, true, updateSchema);
     updatePreview.insert(QStringLiteral("key_up_send_timings"), QJsonArray{2, 3, 4});

@@ -18312,6 +18312,22 @@ bool QKeyMapper::setMappingSourceRowLockOptions(int row, std::optional<bool> map
     return true;
 }
 
+static bool updateMappingRowSendTiming(MAP_KEYDATA &row, int timing)
+{
+    if (timing < SENDTIMING_NORMAL || timing > SENDTIMING_NORMAL_AND_KEYUP || row.SendTiming == timing) return false;
+    row.SendTiming = timing;
+    if (timing != SENDTIMING_NORMAL || !isKeySequence(row.Mapping_Keys)) row.KeySeqHoldDown = false;
+    return true;
+}
+
+bool QKeyMapper::setMappingSourceRowSendTiming(int row, int timing)
+{
+    if (!KeyMappingDataList || row < 0 || row >= KeyMappingDataList->size()
+        || !updateMappingRowSendTiming((*KeyMappingDataList)[row], timing)) return false;
+    ++m_AutomationSourceEpoch;
+    return true;
+}
+
 bool QKeyMapper::setMappingSourceRowNote(int tabIndex, int row, const QString &note)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || !KeyMappingDataList
@@ -38745,6 +38761,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool noteUpdate = updating && update.note.has_value();
         const bool categoryUpdate = updating && update.category.has_value();
         const bool rowModeUpdate = updating && !update.rowModes.isEmpty();
+        const bool sendTimingUpdate = updating && update.sendTiming.has_value();
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
             || update.keyUpMappingKey.has_value());
         if (updating && !editingTab) {
@@ -39111,6 +39128,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             const auto &before = KeyMappingDataList->at(update.sourceRow);
             auto after = before;
             if (update.sendMethod >= 0) after.SendMappingKeyMethod = update.sendMethod;
+            if (sendTimingUpdate) {
+                if (before.Mapping_Keys.isEmpty() || before.MappingKeys_KeyUp.isEmpty() || !validateSendTimingByKeyMapData(before)) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("The current row does not support the Send Timing control."));
+                    return;
+                }
+                updateMappingRowSendTiming(after, *update.sendTiming);
+            }
             if (rowModeUpdate) {
                 const auto burst = update.rowModes.value(QStringLiteral("burst"));
                 const auto lock = update.rowModes.value(QStringLiteral("lock"));
@@ -39215,6 +39239,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             modified = !(before == after);
             updatedRow = after;
             change = {{QStringLiteral("kind"), update.disabled.has_value() ? QStringLiteral("update_row_disabled")
+                    : sendTimingUpdate ? QStringLiteral("update_send_timing")
                     : rowModeUpdate ? QStringLiteral("update_row_modes")
                     : keyUpdate ? QStringLiteral("update_row_keys") : QStringLiteral("update_send_method")},
                 {QStringLiteral("before"), automationSourceRow(before)}, {QStringLiteral("after"), automationSourceRow(after)}};
@@ -39397,6 +39422,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (categoryUpdate) {
                 if (!applyBatchCategoryChange(m_KeyMappingDataTable, categoryDisplayRows, *update.category)) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts category changes."));
+                    return;
+                }
+            } else if (sendTimingUpdate) {
+                if (!setMappingSourceRowSendTiming(update.sourceRow, *update.sendTiming)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts a Send Timing change."));
                     return;
                 }
             } else if (rowModeUpdate) {

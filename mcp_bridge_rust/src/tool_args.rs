@@ -206,6 +206,7 @@ struct Preview {
     show_disabled_rows: Option<bool>,
     mapping_display: Option<Object>,
     row_modes: Option<Object>,
+    send_timing: Option<u8>,
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
     notification_mode: Option<u8>,
@@ -285,6 +286,7 @@ impl Preview {
                         _ => false,
                     })
             })
+            && self.send_timing.is_none_or(|timing| timing <= 4)
             && self.notification_mode.is_none_or(|mode| mode <= 2)
             && self
                 .notification_font_color
@@ -439,6 +441,14 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }),
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
+            if let Some(timing) = arguments.get("send_timing")
+                && (!timing.is_u64()
+                    || arguments.len() != 3
+                    || !arguments.contains_key("source_ref")
+                    || arguments.get("action").and_then(Value::as_str) != Some("mapping.update"))
+            {
+                return Err(InvalidMessage);
+            }
             if let Some(modes) = arguments.get("row_modes")
                 && (!modes.is_object()
                     || arguments.len() != 3

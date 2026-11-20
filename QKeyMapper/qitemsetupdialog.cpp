@@ -3821,22 +3821,16 @@ void QItemSetupDialog::on_disabledCheckBox_stateChanged(int state)
 
 void QItemSetupDialog::on_sendTimingComboBox_currentIndexChanged(int index)
 {
-    Q_UNUSED(index);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    int sendtiming_index = ui->sendTimingComboBox->currentIndex();
-    if (sendtiming_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).SendTiming) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].SendTiming = sendtiming_index;
+    if (auto *mapper = QKeyMapper::getInstance(); mapper && mapper->setMappingSourceRowSendTiming(m_ItemRow, index)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] SendTiming -> " << sendtiming_index;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "] SendTiming -> " << index;
 #endif
     }
-
-    refreshMappingKeyRelatedUI();
-    updateKeyUpMappingEnabledState();
+    if (QKeyMapper::KeyMappingDataList && m_ItemRow >= 0 && m_ItemRow < QKeyMapper::KeyMappingDataList->size()) {
+        refreshMappingKeyRelatedUI();
+        updateKeyUpMappingEnabledState();
+    }
 }
 
 void QItemSetupDialog::updateKeyUpMappingEnabledState()

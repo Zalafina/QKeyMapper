@@ -103,6 +103,14 @@ from the same source and revision in ascending order. To persist the
 draft, preview and confirm a separate `configuration.save`.
 Query the source again before using row references.
 
+## Choosing the send timing
+
+Use `mapping.update` with a current visible `source_ref` and standalone
+`send_timing`. The values 0–4 select normal, key down, key up, key down and up,
+and normal plus key up. The product retains existing key-up data. Leaving
+normal timing clears sequence hold-down as shown in the preview.
+Save the configuration separately to persist the change.
+
 ## Configuring burst and lock on a mapping
 
 Use `mapping.update` with the current visible `source_ref` and a standalone
