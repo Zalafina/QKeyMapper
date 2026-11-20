@@ -110,7 +110,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
     const bool deleteTabPreview = preview && action == QLatin1String("tab.delete");
     const bool clearTabPreview = preview && action == QLatin1String("tab.clear");
-    const bool tabActionPreview = addBlankTabPreview || copyTabPreview || deleteTabPreview || clearTabPreview;
+    const bool moveTabPreview = preview && action == QLatin1String("tab.move");
+    const bool tabActionPreview = addBlankTabPreview || copyTabPreview || deleteTabPreview || clearTabPreview || moveTabPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -119,6 +120,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : preferencesPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("preferences_revision"),
             QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")}
         : renamePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_name")}
+        : moveTabPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("target_tab_ref")}
         : tabActionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref")}
         : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
         : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method"),
@@ -174,6 +176,14 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.update.copyTab = copyTabPreview;
         result.update.deleteTab = deleteTabPreview;
         result.update.clearTab = clearTabPreview;
+        if (moveTabPreview) {
+            const auto target = arguments.value(QStringLiteral("target_tab_ref"));
+            const auto targetQuery = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
+                {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), target}});
+            if (!targetQuery.ok() || target == reference)
+                return fail("The destination must be a different canonical Tab reference from the same revision.");
+            result.update.targetTabRef = target.toString();
+        }
         return result;
     }
     if (updatePreview || movePreview) {
@@ -511,17 +521,25 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     renameApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));
     capabilities.append(renamePreview);
     capabilities.append(renameApply);
-    for (const char *action : {"tab.add_blank", "tab.copy", "tab.delete", "tab.clear"}) {
+    for (const char *action : {"tab.add_blank", "tab.copy", "tab.delete", "tab.clear", "tab.move"}) {
         const QByteArray actionId(action);
         const bool deleting = actionId == "tab.delete";
         const bool clearing = actionId == "tab.clear";
         const bool removesData = deleting || clearing;
-        const auto tabSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QString::fromLatin1(action)}}},
-            {QStringLiteral("source_tab_ref"), reference}}, {QStringLiteral("action"), QStringLiteral("source_tab_ref")});
+        const bool moving = actionId == "tab.move";
+        QJsonObject tabProperties{{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QString::fromLatin1(action)}}},
+            {QStringLiteral("source_tab_ref"), reference}};
+        QJsonArray tabRequired{QStringLiteral("action"), QStringLiteral("source_tab_ref")};
+        if (moving) {
+            tabProperties.insert(QStringLiteral("target_tab_ref"), reference);
+            tabRequired.append(QStringLiteral("target_tab_ref"));
+        }
+        const auto tabSchema = schema(tabProperties, tabRequired);
         auto tabPreview = capability((actionId + ".preview").constData(), "qkm_preview_changes", Read | Configure, true, tabSchema);
         auto tabApply = capability((actionId + ".apply").constData(), "qkm_apply_changes", Read | Configure, false,
             removesData ? deleteApplySchema : settingsApplySchema);
         const auto behavior = removesData ? QStringLiteral("explicit_delete_confirmation")
+            : moving ? QStringLiteral("same_revision_normal_destination")
             : actionId == "tab.copy" ? QStringLiteral("gui_copy_preserves_current_tab") : QStringLiteral("gui_default_name_and_activation");
         for (auto *item : {&tabPreview, &tabApply}) {
             QJsonArray limits{clearing ? QStringLiteral("current_attached_source_only") : QStringLiteral("current_attached_normal_source_only"),

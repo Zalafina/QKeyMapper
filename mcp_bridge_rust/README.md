@@ -137,6 +137,11 @@ keeps inherited Common rows. Selecting and clearing the Common source
 refreshes the tabs that inherit it. Apply with `confirm_delete: true`
 and save separately to persist the draft.
 
+Use `action: "tab.move"` with `source_tab_ref` for the selected normal tab
+and `target_tab_ref` for another normal tab from the same source snapshot.
+The source moves into the target's former position and stays selected.
+Review the affected order, apply the preview, then query fresh references.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

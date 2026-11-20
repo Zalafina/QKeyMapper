@@ -137,6 +137,8 @@ enum Action {
     DeleteTab,
     #[serde(rename = "tab.clear")]
     ClearTab,
+    #[serde(rename = "tab.move")]
+    MoveTab,
     #[serde(rename = "configuration.save")]
     Save,
     #[serde(rename = "ibinput.preferences.update")]
@@ -179,12 +181,14 @@ struct Preview {
     key_up_mapping_key: Option<String>,
     disabled: Option<bool>,
     tab_name: Option<String>,
+    target_tab_ref: Option<String>,
 }
 
 impl Preview {
     fn valid(&self) -> bool {
         self.source_revision.as_deref().is_none_or(revision)
             && self.source_tab_ref.as_deref().is_none_or(tab_ref)
+            && self.target_tab_ref.as_deref().is_none_or(tab_ref)
             && self.original_key.as_deref().is_none_or(basic_key)
             && self.mapping_key.as_deref().is_none_or(basic_key)
             && self.insert_row.is_none_or(|row| row <= i32::MAX as u32)
@@ -370,14 +374,30 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             };
             let action = values.get("action").and_then(Value::as_str);
             let rename = action == Some("tab.rename");
+            let destination = values.get("target_tab_ref").and_then(Value::as_str);
             let valid_tab_change = match action {
                 Some("tab.rename") => values.len() == 3 && values.contains_key("source_tab_ref"),
+                Some("tab.move") => {
+                    values.len() == 3
+                        && values
+                            .get("source_tab_ref")
+                            .and_then(Value::as_str)
+                            .zip(destination)
+                            .is_some_and(|(source, target)| {
+                                source != target
+                                    && source.split(':').next() == target.split(':').next()
+                            })
+                }
                 Some("tab.add_blank" | "tab.copy" | "tab.delete" | "tab.clear") => {
                     values.len() == 2 && values.contains_key("source_tab_ref")
                 }
                 _ => true,
             };
-            if !valid_move || !valid_tab_change || rename != values.contains_key("tab_name") {
+            if !valid_move
+                || !valid_tab_change
+                || rename != values.contains_key("tab_name")
+                || (destination.is_some() && action != Some("tab.move"))
+            {
                 return Err(InvalidMessage);
             }
             // Keep the IPC defaults. Qt validates each action's field set.

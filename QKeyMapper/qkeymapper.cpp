@@ -38665,7 +38665,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool deletingTab = updating && update.deleteTab;
         const bool clearingTab = updating && update.clearTab;
         const bool removingTabData = deletingTab || clearingTab;
-        const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData;
+        const bool movingTab = updating && !update.targetTabRef.isEmpty();
+        const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData || movingTab;
         if ((validation.confirmConflicts && !update.originalKey.has_value())
             || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
@@ -38756,7 +38757,49 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 update.tabSettingsDigest = settingsDigest;
             }
-            if (clearingTab) {
+            if (movingTab) {
+                tabAfter = update.targetTabRef.section(QLatin1Char(':'), 2, 2).toInt();
+                const auto destination = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
+                    {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), update.sourceRevision},
+                        {QStringLiteral("offset"), tabAfter}, {QStringLiteral("limit"), 1}});
+                if (!destination.ok()) { reject(destination.errorCode, destination.message); return; }
+                const auto destinations = destination.page.value(QStringLiteral("items")).toArray();
+                const auto targetTab = destinations.isEmpty() ? QJsonObject() : destinations.first().toObject();
+                if (targetTab.value(QStringLiteral("source_tab_ref")) != update.targetTabRef
+                    || !targetTab.value(QStringLiteral("attached_to_ui")).toBool()
+                    || targetTab.value(QStringLiteral("ui_index")).toInt(-1) != tabAfter) {
+                    reject(QStringLiteral("invalid_target"), QStringLiteral("The destination is not an attached Tab."));
+                    return;
+                }
+                const int first = qMin(tab, tabAfter);
+                const int last = qMax(tab, tabAfter);
+                const int common = findCommonMappingTabIndex();
+                if (common >= first && common <= last) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("A move cannot include the Common Tab."));
+                    return;
+                }
+                auto *tabs = ui->keyMappingTabWidget;
+                if (!tabs->isMovable() || tabs->signalsBlocked() || tabs->tabBar()->signalsBlocked()) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The Tab strip is not available for reordering."));
+                    return;
+                }
+                QJsonArray affected;
+                for (int i = first; i <= last; ++i) {
+                    const auto &entry = s_KeyMappingTabInfoList.at(i);
+                    if (!entry.KeyMappingDataTable || tabs->widget(i) != entry.KeyMappingDataTable) {
+                        reject(QStringLiteral("context_busy"), QStringLiteral("The Tab page order no longer matches the attached sources."));
+                        return;
+                    }
+                    const int movedTo = i == tab ? tabAfter : i + (tab < tabAfter ? -1 : 1);
+                    affected.append(QJsonObject{{QStringLiteral("tab_name"), entry.TabName},
+                        {QStringLiteral("from_ui_index"), i}, {QStringLiteral("to_ui_index"), movedTo}});
+                }
+                target.insert(QStringLiteral("target_tab_ref"), update.targetTabRef);
+                change = {{QStringLiteral("kind"), QStringLiteral("move_tab")},
+                    {QStringLiteral("from_ui_index"), tab}, {QStringLiteral("to_ui_index"), tabAfter},
+                    {QStringLiteral("affected_tabs"), affected}};
+                modified = true;
+            } else if (clearingTab) {
                 modified = true;
                 change = {{QStringLiteral("kind"), QStringLiteral("clear_tab")},
                     {QStringLiteral("tab_name"), tabInfo.TabName}, {QStringLiteral("ui_index"), tab},
@@ -38971,7 +39014,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = clearingTab ? QStringLiteral("tab.clear")
+        const QString action = movingTab ? QStringLiteral("tab.move")
+            : clearingTab ? QStringLiteral("tab.clear")
             : deletingTab ? QStringLiteral("tab.delete")
             : copyingTab ? QStringLiteral("tab.copy")
             : addingBlankTab ? QStringLiteral("tab.add_blank")
@@ -39017,7 +39061,16 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (clearingTab) {
+            if (movingTab) {
+                auto *tabs = ui->keyMappingTabWidget;
+                auto *page = tabs->widget(tab);
+                tabs->tabBar()->moveTab(tab, tabAfter);
+                if (s_KeyMappingTabInfoList.at(tabAfter).KeyMappingDataTable != page) {
+                    syncKeyMappingTabWidgetPagesFromTabInfoList(page);
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The GUI did not apply the Tab move."));
+                    return;
+                }
+            } else if (clearingTab) {
                 if (!clearCurrentMappingTableData()) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab can no longer be cleared."));
                     return;

@@ -67,6 +67,7 @@ async def check_contract(exe):
     copy_tab = {"action": "tab.copy", "source_tab_ref": tab}
     delete_tab = {"action": "tab.delete", "source_tab_ref": tab}
     clear_tab = {"action": "tab.clear", "source_tab_ref": tab}
+    move_tab = {"action": "tab.move", "source_tab_ref": tab, "target_tab_ref": revision + ":source:2"}
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
     capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
@@ -117,6 +118,11 @@ async def check_contract(exe):
             assert set(add_rule["properties"]) == set(previews["properties"])
             assert all(rule == {"type": "null"} for field, rule in add_rule["properties"].items()
                        if field not in add_tab)
+            move_tab_rule, = (rule for rule in previews["oneOf"]
+                              if rule["properties"]["action"].get("const") == "tab.move")
+            assert set(move_tab_rule["required"]) == set(move_tab)
+            assert move_tab_rule["properties"]["target_tab_ref"] == {"type": "string"}
+            assert set(move_tab_rule["properties"]) == set(previews["properties"])
             for name in ("qkm_unknown", DEMO_STATE, DEMO_MAPPING):
                 unknown = await client.call_tool(name)
                 assert unknown.is_error is True and unknown.structured_content is None
@@ -190,6 +196,9 @@ async def check_contract(exe):
                 ("qkm_preview_changes", clear_tab, (
                     {"action": "tab.clear"}, {**clear_tab, "source_tab_ref": row},
                     {**clear_tab, "source_refs": [row]}, {**clear_tab, "confirm_delete": True})),
+                ("qkm_preview_changes", move_tab, (
+                    {"action": "tab.move", "source_tab_ref": tab}, {**move_tab, "target_tab_ref": tab},
+                    {**move_tab, "target_tab_ref": row}, {**move_tab, "target_tab_ref": "b" * 64 + ":source:2"})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),
