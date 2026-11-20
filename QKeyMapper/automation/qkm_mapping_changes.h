@@ -51,6 +51,7 @@ struct MappingUpdateArguments {
     int rowCount = 1;
     QString copyPosition;
     QString copyAnchorRef;
+    QString copyTargetTabRef;
     std::optional<QString> tabName;
     std::optional<QString> tabHotkey;
     std::optional<Qt::CheckState> tabNotificationMode;

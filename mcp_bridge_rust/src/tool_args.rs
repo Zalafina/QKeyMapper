@@ -503,19 +503,37 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 let Some(destination) = arguments.get("copy_to").and_then(Value::as_object) else {
                     return Err(InvalidMessage);
                 };
+                let source_tab = source
+                    .and_then(|row| row.rsplit_once(':'))
+                    .and_then(|(prefix, _)| prefix.split_once(":row:"));
+                let explicit_target = destination.get("target_tab_ref");
+                let target_tab = match explicit_target {
+                    Some(value) => {
+                        let Some(target) = value.as_str().filter(|target| tab_ref(target)) else {
+                            return Err(InvalidMessage);
+                        };
+                        let target_tab = target.split_once(":source:");
+                        if target_tab.map(|(revision, _)| revision)
+                            != source_tab.map(|(revision, _)| revision)
+                        {
+                            return Err(InvalidMessage);
+                        }
+                        target_tab
+                    }
+                    None => source_tab,
+                };
+                let target_fields = usize::from(explicit_target.is_some());
                 let position = destination.get("position").and_then(Value::as_str);
                 let placement_valid = match position {
-                    Some("top" | "bottom") => destination.len() == 1,
+                    Some("top" | "bottom") => destination.len() == 1 + target_fields,
                     Some("above" | "below") => {
                         let anchor = destination.get("anchor_ref").and_then(Value::as_str);
-                        destination.len() == 2
+                        destination.len() == 2 + target_fields
                             && anchor.is_some_and(row_ref)
                             && anchor
-                                .and_then(|value| value.rsplit_once(':'))
-                                .map(|(prefix, _)| prefix)
-                                == source
-                                    .and_then(|value| value.rsplit_once(':'))
-                                    .map(|(prefix, _)| prefix)
+                                .and_then(|row| row.rsplit_once(':'))
+                                .and_then(|(prefix, _)| prefix.split_once(":row:"))
+                                == target_tab
                     }
                     _ => false,
                 };

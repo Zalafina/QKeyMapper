@@ -160,12 +160,13 @@ Save separately.
 
 ## Duplicating a row
 
-Preview `mapping.duplicate` with a visible `source_ref` in the current normal
-Tab and a `copy_to` object. To copy several rows, supply 2–100 distinct
+Preview `mapping.duplicate` with a visible `source_ref` in a normal source Tab
+and a `copy_to` object. For a different normal Tab, select the destination
+first and pass its fresh `target_tab_ref` in `copy_to`. To copy several rows, supply 2–100 distinct
 `source_refs` from the same source and revision instead. Include every visible
 row between the endpoints. The product skips hidden rows and uses source order. Set `position` to `top`, `bottom`, `above` or
-`below`. For above and below, include a visible `anchor_ref` from the same
-source and revision. The preview shows the new row, including any conflict
+`below`. For above and below, include a visible `anchor_ref` in the target
+Tab at the same revision. The preview shows the new row, including any conflict
 that disables the copy. Apply the preview and save separately.
 
 ## Editing a mapping note

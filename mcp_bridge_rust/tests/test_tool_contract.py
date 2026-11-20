@@ -218,6 +218,7 @@ async def check_contract(exe):
             copy_destination = duplicate_rule["properties"]["copy_to"]
             assert copy_destination["properties"]["position"]["enum"] == ["top", "bottom", "above", "below"]
             assert copy_destination["then"]["required"] == ["anchor_ref"]
+            assert copy_destination["properties"]["target_tab_ref"] == previews["properties"]["target_tab_ref"]["anyOf"][0]
             assert copy_destination["else"]["not"]["required"] == ["anchor_ref"]
             filter_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_category_filter")
@@ -383,6 +384,15 @@ async def check_contract(exe):
                     {"action": "mapping.duplicate", "source_ref": row, "copy_to": {"position": "bottom", "extra": True}})),
                 ("qkm_preview_changes", {"action": "mapping.duplicate", "source_ref": row,
                                          "copy_to": {"position": "bottom"}}, ()),
+                ("qkm_preview_changes", {"action": "mapping.duplicate", "source_ref": row,
+                    "copy_to": {"position": "below", "target_tab_ref": row.split(":")[0]+":source:8",
+                                "anchor_ref": row.rsplit(":", 2)[0]+":8:0"}}, (
+                    {"action": "mapping.duplicate", "source_ref": row,
+                     "copy_to": {"position": "below", "target_tab_ref": row.split(":")[0]+":source:8", "anchor_ref": row}},
+                    {"action": "mapping.duplicate", "source_ref": row,
+                     "copy_to": {"position": "bottom", "target_tab_ref": "f"*64+":source:8"}},
+                    {"action": "mapping.duplicate", "source_ref": row,
+                     "copy_to": {"position": "top", "target_tab_ref": None}})),
                 ("qkm_preview_changes", {"action": "mapping.duplicate", "source_refs": [row, row.rsplit(":", 1)[0]+":3"],
                                          "copy_to": {"position": "below", "anchor_ref": row}}, (
                     {"action": "mapping.duplicate", "source_refs": [row, row], "copy_to": {"position": "bottom"}},

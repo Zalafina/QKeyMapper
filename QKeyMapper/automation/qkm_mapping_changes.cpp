@@ -395,21 +395,31 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         const QString prefix = reference.toString().section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
         QString copyPosition;
         QString copyAnchorRef;
+        QString copyTargetTabRef;
         if (duplicatePreview) {
             const auto destination = arguments.value(QStringLiteral("copy_to")).toObject();
             const QString position = destination.value(QStringLiteral("position")).toString();
             const auto anchor = destination.value(QStringLiteral("anchor_ref"));
+            const auto target = destination.value(QStringLiteral("target_tab_ref"));
             const bool relative = position == QLatin1String("above") || position == QLatin1String("below");
-            if (destination.size() != (relative ? 2 : 1)
+            if (destination.size() != (relative ? 2 : 1) + (target.isUndefined() ? 0 : 1)
                 || (!relative && position != QLatin1String("top") && position != QLatin1String("bottom"))
                 || (!relative && !anchor.isUndefined()))
                 return fail("Provide copy_to position top, bottom, above or below. Only above and below require anchor_ref.");
+            QString anchorPrefix = prefix;
+            if (!target.isUndefined()) {
+                const auto targetQuery = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
+                    {QStringLiteral("source_revision"), parts.at(0)}, {QStringLiteral("source_tab_ref"), target}});
+                if (!targetQuery.ok()) return fail("The copy target must be a canonical Tab of the same revision.");
+                copyTargetTabRef = target.toString();
+                anchorPrefix = parts.at(0) + QStringLiteral(":row:") + copyTargetTabRef.section(QLatin1Char(':'), 2, 2) + QLatin1Char(':');
+            }
             if (relative) {
                 const QString anchorRef = anchor.toString();
                 bool indexOk = false;
-                const int index = anchorRef.mid(prefix.size()).toInt(&indexOk);
-                if (!anchor.isString() || !indexOk || index < 0 || anchorRef != prefix + QString::number(index))
-                    return fail("The insert anchor must be a canonical row of the same source and revision.");
+                const int index = anchorRef.mid(anchorPrefix.size()).toInt(&indexOk);
+                if (!anchor.isString() || !indexOk || index < 0 || anchorRef != anchorPrefix + QString::number(index))
+                    return fail("The insert anchor must be a canonical row of the target Tab and revision.");
             }
             copyPosition = position;
             copyAnchorRef = anchor.toString();
@@ -442,6 +452,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.update.batchRows = std::move(batchRows);
         result.update.copyPosition = copyPosition;
         result.update.copyAnchorRef = copyAnchorRef;
+        result.update.copyTargetTabRef = copyTargetTabRef;
         if (!original.isUndefined()) result.update.originalKey = original.toString();
         if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
         if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
@@ -747,8 +758,8 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         QStringLiteral("above"), QStringLiteral("below")}}};
     const QJsonObject relativePositions{{QStringLiteral("enum"), QJsonArray{QStringLiteral("above"), QStringLiteral("below")}}};
     const QJsonObject anchorRequired{{QStringLiteral("required"), QJsonArray{QStringLiteral("anchor_ref")}}};
-    auto copyDestination = schema({{QStringLiteral("position"), copyPositions}, {QStringLiteral("anchor_ref"), rowReference}},
-        {QStringLiteral("position")});
+    auto copyDestination = schema({{QStringLiteral("position"), copyPositions}, {QStringLiteral("anchor_ref"), rowReference},
+        {QStringLiteral("target_tab_ref"), reference}}, {QStringLiteral("position")});
     copyDestination.insert(QStringLiteral("if"), QJsonObject{{QStringLiteral("properties"),
         QJsonObject{{QStringLiteral("position"), relativePositions}}}});
     copyDestination.insert(QStringLiteral("then"), anchorRequired);
@@ -765,7 +776,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     auto duplicatePreview = capability("mapping.duplicate.preview", "qkm_preview_changes", Read | Configure, true, duplicateSchema);
     auto duplicateApply = capability("mapping.duplicate.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
     for (auto *item : {&duplicatePreview, &duplicateApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_normal_source"),
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("normal_source_and_current_normal_target"),
             QStringLiteral("one_visible_row_or_one_contiguous_visible_selection_and_same_revision_anchor"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
     }

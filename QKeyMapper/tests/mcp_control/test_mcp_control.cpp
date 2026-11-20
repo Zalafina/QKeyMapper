@@ -679,6 +679,17 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(duplicate.ok());
     QCOMPARE(duplicate.update.copyPosition, QStringLiteral("above"));
     QCOMPARE(duplicate.update.copyAnchorRef, revision + QStringLiteral(":row:0:3"));
+    auto crossCopy = copyRow;
+    crossCopy.insert(QStringLiteral("copy_to"), QJsonObject{{QStringLiteral("position"), QStringLiteral("below")},
+        {QStringLiteral("target_tab_ref"), revision + QStringLiteral(":source:1")},
+        {QStringLiteral("anchor_ref"), revision + QStringLiteral(":row:1:0")}});
+    const auto acrossTabs = validateMappingChangeRequest(previewMethod, crossCopy);
+    QVERIFY(acrossTabs.ok());
+    QCOMPARE(acrossTabs.update.copyTargetTabRef, revision + QStringLiteral(":source:1"));
+    QCOMPARE(acrossTabs.update.copyAnchorRef, revision + QStringLiteral(":row:1:0"));
+    crossCopy.insert(QStringLiteral("copy_to"), QJsonObject{{QStringLiteral("position"), QStringLiteral("below")},
+        {QStringLiteral("target_tab_ref"), revision + QStringLiteral(":source:1")}, {QStringLiteral("anchor_ref"), sourceRef}});
+    QVERIFY(!validateMappingChangeRequest(previewMethod, crossCopy).ok());
     auto copyBatch = copyRow;
     copyBatch.remove(QStringLiteral("source_ref"));
     copyBatch.insert(QStringLiteral("source_refs"), QJsonArray{revision + QStringLiteral(":row:0:3"), sourceRef});
