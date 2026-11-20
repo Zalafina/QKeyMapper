@@ -38800,8 +38800,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         const bool duplicatingRow = updating && !update.copyPosition.isEmpty();
-        if (duplicatingRow && (isCommonMappingTabIndex(sourceTab) || isCommonMappingTabIndex(tab))) {
-            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Copying requires a normal source and the current normal target Tab."));
+        if (duplicatingRow && isCommonMappingTabIndex(tab)) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Copying requires the current normal target Tab."));
             return;
         }
         const bool movingRow = update.move != MappingRowMove::None;

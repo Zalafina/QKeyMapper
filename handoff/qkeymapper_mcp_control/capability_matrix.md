@@ -432,7 +432,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-MAP-STATE | 单项／批量启用禁用、连发开关、锁定开关、浮动按钮开关 | 表格状态菜单与 `keyMappingTableItemCheckStateChanged`；188～194 选验连发／锁定、发送时机、序列、输入与高级选项的配置和冷读，实际输出及悬浮动作另验 |
 | ACT-MAP-TRIGGER | 普通／长按／双击及时间的单项／批量更改 | 195～196 真菜单与正式 Rust 单行／批量选验时长、整批冲突拒绝、明确确认、保存和冷读；运行触发另验 |
 | ACT-MAP-ORDER | 上移、下移、置顶、置底及拖拽 | `selectedItemsMove*`／`keyMappingTableDragDropMove`；M2-A；单行和连续行的相邻／两端移动共用 GUI；排除筛选、跨表和共通，拖拽待验 |
-| ACT-MAP-COPYPASTE | 复制／向顶部、尾部、上方、下方插入 | 197～199 普通表内四位置、连续可见行和跨普通表单行／连续行选验。MCP 绑定来源与当前目标，保存冷读通过。共通待验 |
+| ACT-MAP-COPYPASTE | 复制／向顶部、尾部、上方、下方插入 | 197～200 普通表内及跨表复制选验，包含显式共通源及目标继承优先。MCP 绑定来源与当前普通目标，保存冷读通过。共通目标待验 |
 | ACT-MAP-CODE | 复制映射码／应用剪贴板映射码 | 表格／映射项窗口；M2-A；字符串解析与业务提交不能混同 |
 | ACT-MAP-EDIT | 双击／右键编辑、打开单项／表格／浮动按钮设定 | 表格 `contextMenuEvent` 和事件处理；M1／M2；焦点、未提交编辑与明确源目标 |
 | ACT-COMMON-JUMP | 从显示的共通映射跳转其真实源表 | 表格 `jumpToCommonAction`；M2-A；不把显示位置作为来源身份 |

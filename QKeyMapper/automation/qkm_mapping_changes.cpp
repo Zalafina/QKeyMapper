@@ -776,7 +776,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     auto duplicatePreview = capability("mapping.duplicate.preview", "qkm_preview_changes", Read | Configure, true, duplicateSchema);
     auto duplicateApply = capability("mapping.duplicate.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
     for (auto *item : {&duplicatePreview, &duplicateApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("normal_source_and_current_normal_target"),
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("normal_or_explicit_common_source_and_current_normal_target"),
             QStringLiteral("one_visible_row_or_one_contiguous_visible_selection_and_same_revision_anchor"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
     }
