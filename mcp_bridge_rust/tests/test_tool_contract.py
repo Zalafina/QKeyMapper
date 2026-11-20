@@ -68,6 +68,7 @@ async def check_contract(exe):
     category_batch = {"action": "mapping.update", "source_refs": [other_row, row], "category": "批量分類"}
     category_filter = {"action": "tab.set_category_filter", "source_tab_ref": tab, "category_filter": ["", "批量分類"]}
     disabled_visibility = {"action": "configuration.set_show_disabled_rows", "source_tab_ref": tab, "show_disabled_rows": True}
+    row_modes = {"action": "mapping.update", "source_ref": row, "row_modes": {"burst": True, "lock": False}}
     display = {"action": "configuration.set_mapping_display", "source_tab_ref": tab,
                "mapping_display": {"category_column": True, "notes": False}}
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
@@ -173,6 +174,11 @@ async def check_contract(exe):
             assert note_rule["dependentSchemas"]["source_refs"] == {"required": ["category"]}
             assert note_rule["properties"]["source_refs"]["minItems"] == 2
             assert note_rule["properties"]["source_refs"]["uniqueItems"] is True
+            assert note_rule["properties"]["row_modes"] == {
+                "type": "object", "additionalProperties": False, "minProperties": 1,
+                "properties": {"burst": {"type": "boolean"}, "lock": {"type": "boolean"}}}
+            assert {"required": ["row_modes"]} in note_rule["anyOf"]
+            assert {"required": ["category"]} in note_rule["dependentSchemas"]["row_modes"]["not"]["anyOf"]
             filter_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_category_filter")
             assert set(filter_rule["required"]) == set(category_filter)
@@ -301,6 +307,12 @@ async def check_contract(exe):
                     {**category, "note": ""}, {**category, "send_method": 0},
                     {**category, "action": "mapping.move_up"})),
                 ("qkm_preview_changes", {**category, "category": ""}, ()),
+                ("qkm_preview_changes", row_modes, (
+                    {**row_modes, "row_modes": None}, {**row_modes, "row_modes": {}},
+                    {**row_modes, "row_modes": {"burst": 1}}, {**row_modes, "row_modes": {"float": True}},
+                    {**row_modes, "send_method": 0}, {**row_modes, "note": ""},
+                    {**row_modes, "source_ref": None, "source_refs": [row, other_row]})),
+                ("qkm_preview_changes", {**row_modes, "row_modes": {"lock": True}}, ()),
                 ("qkm_preview_changes", category_filter, (
                     {**category_filter, "category_filter": None}, {**category_filter, "category_filter": "none"},
                     {**category_filter, "category_filter": ["", ""]}, {**category_filter, "category_filter": [False]},

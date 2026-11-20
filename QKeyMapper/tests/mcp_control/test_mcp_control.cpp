@@ -630,6 +630,18 @@ void McpControlTest::mappingChangeArguments()
         changed = displayChange; changed.insert(QStringLiteral("mapping_display"), value);
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     }
+    const QJsonObject rowModes{{QStringLiteral("action"), QStringLiteral("mapping.update")},
+        {QStringLiteral("source_ref"), sourceRef}, {QStringLiteral("row_modes"),
+            QJsonObject{{QStringLiteral("burst"), true}, {QStringLiteral("lock"), false}}}};
+    const auto modeConfig = validateMappingChangeRequest(previewMethod, rowModes);
+    QVERIFY(modeConfig.ok());
+    QCOMPARE(modeConfig.update.rowModes, rowModes.value(QStringLiteral("row_modes")).toObject());
+    for (const auto &value : {QJsonObject{}, QJsonObject{{QStringLiteral("burst"), 0}}, QJsonObject{{QStringLiteral("floating"), true}}}) {
+        changed = rowModes; changed.insert(QStringLiteral("row_modes"), value);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    changed = rowModes; changed.insert(QStringLiteral("send_method"), 0);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     QCOMPARE(capabilities.size(), 54);
     QCOMPARE(mappingChangeCapabilities(false).size(), 52);
     QCOMPARE(capabilities.at(51).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.preview"));

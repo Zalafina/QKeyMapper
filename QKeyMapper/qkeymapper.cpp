@@ -2594,22 +2594,15 @@ static int applyBatchMappingStateChange(QKeyMapper *keymapper, KeyMappingDataTab
                 continue;
             }
 
-            bool *state = Q_NULLPTR;
-            if (column == BURST_MODE_COLUMN) {
-                state = &(*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Burst;
-            }
-            else if (column == LOCK_COLUMN) {
-                state = &(*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Lock;
-            }
-            else {
-                state = &(*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].FloatingButton_Enable;
-            }
-            if (*state == checked) {
+            auto &rows = *sourceInfo.SourceMappingDataList;
+            if (column == FLOATING_COLUMN) {
+                auto &state = rows[sourceInfo.SourceRow].FloatingButton_Enable;
+                if (state == checked) continue;
+                state = checked;
+                emit keymapper->keyMappingTableItemCheckStateChanged_Signal(sourceInfo.SourceRow, column, checked);
+            } else if (!keymapper->setMappingSourceRowMode(rows, sourceInfo.SourceRow, column, checked)) {
                 continue;
             }
-
-            *state = checked;
-            emit keymapper->keyMappingTableItemCheckStateChanged_Signal(sourceInfo.SourceRow, column, checked);
             if (currentDisplayAlreadyUpdated) {
                 keymapper->updateTableWidgetItem(sourceInfo.SourceTabIndex, sourceInfo.SourceRow, column);
                 if (column == FLOATING_COLUMN) {
@@ -18273,6 +18266,19 @@ int QKeyMapper::applyBatchCategoryChange(KeyMappingDataTableWidget *mappingDataT
 
     return changedCount;
 }
+bool QKeyMapper::setMappingSourceRowMode(QList<MAP_KEYDATA> &rows, int row, int column, bool enabled)
+{
+    if (row < 0 || row >= rows.size() || (column != BURST_MODE_COLUMN && column != LOCK_COLUMN)) return false;
+    auto &data = rows[row];
+    bool &state = column == BURST_MODE_COLUMN ? data.Burst : data.Lock;
+    if (state == enabled) return false;
+
+    state = enabled;
+    ++m_AutomationSourceEpoch;
+    emit keyMappingTableItemCheckStateChanged_Signal(row, column, enabled);
+    return true;
+}
+
 bool QKeyMapper::setMappingSourceRowNote(int tabIndex, int row, const QString &note)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || !KeyMappingDataList
@@ -19382,43 +19388,9 @@ void QKeyMapper::cellChanged_slot(int row, int col)
 
     QSignalBlocker blocker(m_KeyMappingDataTable);
 
-    if (col == BURST_MODE_COLUMN) {
-        bool burst = false;
-        if (m_KeyMappingDataTable->item(row, col)->checkState() == Qt::Checked) {
-            burst = true;
-        }
-        else {
-            burst = false;
-        }
-
-        if (burst != sourceMappingDataList->at(sourceRow).Burst) {
-            (*sourceMappingDataList)[sourceRow].Burst = burst;
-            emit keyMappingTableItemCheckStateChanged_Signal(sourceRow, col, burst);
-            settingChanged = true;
-
-#ifdef DEBUG_LOGOUT_ON
-            qDebug("[%s]: display row(%d), source row(%d) burst changed to (%s)", __func__, row, sourceRow, burst == true?"ON":"OFF");
-#endif
-        }
-    }
-    else if (col == LOCK_COLUMN) {
-        bool lock = false;
-        if (m_KeyMappingDataTable->item(row, col)->checkState() == Qt::Checked) {
-            lock = true;
-        }
-        else {
-            lock = false;
-        }
-
-        if (lock != sourceMappingDataList->at(sourceRow).Lock) {
-            (*sourceMappingDataList)[sourceRow].Lock = lock;
-            emit keyMappingTableItemCheckStateChanged_Signal(sourceRow, col, lock);
-            settingChanged = true;
-
-#ifdef DEBUG_LOGOUT_ON
-            qDebug("[%s]: display row(%d), source row(%d) lock changed to (%s)", __func__, row, sourceRow, lock == true?"ON":"OFF");
-#endif
-        }
+    if (col == BURST_MODE_COLUMN || col == LOCK_COLUMN) {
+        const bool checked = m_KeyMappingDataTable->item(row, col)->checkState() == Qt::Checked;
+        settingChanged = setMappingSourceRowMode(*sourceMappingDataList, sourceRow, col, checked);
     }
     else if (col == FLOATING_COLUMN) {
         bool floating = false;
@@ -38735,6 +38707,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
         const bool categoryUpdate = updating && update.category.has_value();
+        const bool rowModeUpdate = updating && !update.rowModes.isEmpty();
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
             || update.keyUpMappingKey.has_value());
         if (updating && !editingTab) {
@@ -39101,6 +39074,17 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             const auto &before = KeyMappingDataList->at(update.sourceRow);
             auto after = before;
             if (update.sendMethod >= 0) after.SendMappingKeyMethod = update.sendMethod;
+            if (rowModeUpdate) {
+                const auto burst = update.rowModes.value(QStringLiteral("burst"));
+                const auto lock = update.rowModes.value(QStringLiteral("lock"));
+                if ((!burst.isUndefined() && !getKeyMappingDataTableItemBurstStatus(displayRow))
+                    || (!lock.isUndefined() && !getKeyMappingDataTableItemLockStatus(displayRow))) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("The current row must support each requested control in the GUI."));
+                    return;
+                }
+                if (!burst.isUndefined()) after.Burst = burst.toBool();
+                if (!lock.isUndefined()) after.Lock = lock.toBool();
+            }
             if (update.disabled.has_value()) {
                 after.Disabled = *update.disabled;
                 if (before.Disabled && !after.Disabled) {
@@ -39177,6 +39161,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             modified = !(before == after);
             updatedRow = after;
             change = {{QStringLiteral("kind"), update.disabled.has_value() ? QStringLiteral("update_row_disabled")
+                    : rowModeUpdate ? QStringLiteral("update_row_modes")
                     : keyUpdate ? QStringLiteral("update_row_keys") : QStringLiteral("update_send_method")},
                 {QStringLiteral("before"), automationSourceRow(before)}, {QStringLiteral("after"), automationSourceRow(after)}};
         } else {
@@ -39359,6 +39344,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 if (!applyBatchCategoryChange(m_KeyMappingDataTable, categoryDisplayRows, *update.category)) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts category changes."));
                     return;
+                }
+            } else if (rowModeUpdate) {
+                if (update.rowModes.contains(QStringLiteral("burst"))) {
+                    applyBatchMappingStateChange(this, m_KeyMappingDataTable, {displayRow}, BURST_MODE_COLUMN, updatedRow->Burst);
+                }
+                if (update.rowModes.contains(QStringLiteral("lock"))) {
+                    applyBatchMappingStateChange(this, m_KeyMappingDataTable, {displayRow}, LOCK_COLUMN, updatedRow->Lock);
                 }
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;

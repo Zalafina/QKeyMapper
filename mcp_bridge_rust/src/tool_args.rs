@@ -205,6 +205,7 @@ struct Preview {
     category_filter: Option<Value>,
     show_disabled_rows: Option<bool>,
     mapping_display: Option<Object>,
+    row_modes: Option<Object>,
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
     notification_mode: Option<u8>,
@@ -270,6 +271,12 @@ impl Preview {
                             name.as_str(),
                             "category_column" | "notes" | "floating_column"
                         ) && value.is_boolean()
+                    })
+            })
+            && self.row_modes.as_ref().is_none_or(|modes| {
+                !modes.is_empty()
+                    && modes.iter().all(|(key, value)| {
+                        matches!(key.as_str(), "burst" | "lock") && value.is_boolean()
                     })
             })
             && self.notification_mode.is_none_or(|mode| mode <= 2)
@@ -426,6 +433,14 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }),
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
+            if let Some(modes) = arguments.get("row_modes")
+                && (!modes.is_object()
+                    || arguments.len() != 3
+                    || !arguments.contains_key("source_ref")
+                    || arguments.get("action").and_then(Value::as_str) != Some("mapping.update"))
+            {
+                return Err(InvalidMessage);
+            }
             if let Some(category) = arguments.get("category") {
                 let single = arguments.get("source_ref").is_some_and(Value::is_string);
                 let batch = arguments.get("source_refs").and_then(Value::as_array);

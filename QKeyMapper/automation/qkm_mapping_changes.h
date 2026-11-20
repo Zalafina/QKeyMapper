@@ -45,6 +45,7 @@ struct MappingUpdateArguments {
     std::optional<QString> note;
     std::optional<QString> category;
     QList<int> categoryRows;
+    QJsonObject rowModes;
     MappingRowMove move = MappingRowMove::None;
     int rowCount = 1;
     std::optional<QString> tabName;

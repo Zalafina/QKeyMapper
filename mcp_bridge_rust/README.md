@@ -103,6 +103,13 @@ from the same source and revision in ascending order. To persist the
 draft, preview and confirm a separate `configuration.save`.
 Query the source again before using row references.
 
+## Configuring burst and lock on a mapping
+
+Use `mapping.update` with the current visible `source_ref` and a standalone
+`row_modes` object. Specify a boolean `burst`, `lock`, or both as allowed by
+the current product controls. Save the configuration separately to persist
+the change.
+
 ## Editing a mapping note
 
 Use `mapping.update` with the current visible row's `source_ref` and
