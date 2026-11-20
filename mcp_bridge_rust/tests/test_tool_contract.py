@@ -68,6 +68,7 @@ async def check_contract(exe):
     delete_tab = {"action": "tab.delete", "source_tab_ref": tab}
     clear_tab = {"action": "tab.clear", "source_tab_ref": tab}
     move_tab = {"action": "tab.move", "source_tab_ref": tab, "target_tab_ref": revision + ":source:2"}
+    select_tab = {**move_tab, "action": "tab.select"}
     common_inheritance = {"action": "tab.set_common_inheritance", "source_tab_ref": tab, "include_common": False}
     common_collapsed = {"action": "tab.set_common_collapsed", "source_tab_ref": tab, "common_collapsed": True}
     common_feature = {"action": "configuration.set_common_enabled", "source_tab_ref": tab, "common_feature_enabled": False}
@@ -126,6 +127,10 @@ async def check_contract(exe):
             assert set(move_tab_rule["required"]) == set(move_tab)
             assert move_tab_rule["properties"]["target_tab_ref"] == {"type": "string"}
             assert set(move_tab_rule["properties"]) == set(previews["properties"])
+            selection_rule, = (rule for rule in previews["oneOf"]
+                                 if rule["properties"]["action"].get("const") == "tab.select")
+            assert set(selection_rule["required"]) == set(select_tab)
+            assert selection_rule["properties"]["target_tab_ref"] == {"type": "string"}
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -215,6 +220,10 @@ async def check_contract(exe):
                 ("qkm_preview_changes", move_tab, (
                     {"action": "tab.move", "source_tab_ref": tab}, {**move_tab, "target_tab_ref": tab},
                     {**move_tab, "target_tab_ref": row}, {**move_tab, "target_tab_ref": "b" * 64 + ":source:2"})),
+                ("qkm_preview_changes", select_tab, (
+                    {"action": "tab.select", "source_tab_ref": tab}, {**select_tab, "target_tab_ref": row},
+                    {**select_tab, "target_tab_ref": "b" * 64 + ":source:2"})),
+                ("qkm_preview_changes", {**select_tab, "target_tab_ref": tab}, ()),
                 ("qkm_preview_changes", common_inheritance, (
                     {"action": "tab.set_common_inheritance", "source_tab_ref": tab},
                     {**common_inheritance, "include_common": 1}, {**common_inheritance, "source_tab_ref": row})),

@@ -161,6 +161,12 @@ keeps its rows in the same configuration and preserves each row's disabled
 state. From the Common tab, turning it off selects the first normal tab.
 Save the configuration separately to persist the change.
 
+Use `tab.select` with the current `source_tab_ref` and a `target_tab_ref`
+from the same source revision. The destination may be a normal tab or an
+attached Common tab. Applying selects the tab and preserves the draft and
+source rows. When the current tab changes after preview, review a new
+preview. The result reports `selection_changed`.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

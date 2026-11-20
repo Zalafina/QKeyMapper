@@ -38662,12 +38662,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool deletingTab = updating && update.deleteTab;
         const bool clearingTab = updating && update.clearTab;
         const bool removingTabData = deletingTab || clearingTab;
-        const bool movingTab = updating && !update.targetTabRef.isEmpty();
+        const bool selectingTab = updating && update.selectTab;
+        const bool movingTab = updating && !selectingTab && !update.targetTabRef.isEmpty();
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
         const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData
-            || movingTab || changingCommon || collapsingCommon || changingCommonFeature;
+            || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab;
         if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature)
             || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
@@ -38680,7 +38681,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
-        if (editingTab && !clearingTab && !changingCommonFeature && isCommonMappingTabIndex(tab)) {
+        if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
@@ -38710,6 +38711,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonObject target{{QStringLiteral("instance_id"), owner.instance}};
         QJsonObject change;
         bool modified = false;
+        bool selectionChanged = false;
         std::optional<MAP_KEYDATA> updatedRow;
         QList<QPair<int, int>> conflictRows;
         QJsonArray changes;
@@ -38758,7 +38760,38 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 update.tabSettingsDigest = settingsDigest;
             }
-            if (changingCommonFeature) {
+            if (movingTab || selectingTab) {
+                tabAfter = update.targetTabRef.section(QLatin1Char(':'), 2, 2).toInt();
+                const auto destination = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
+                    {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), update.sourceRevision},
+                        {QStringLiteral("offset"), tabAfter}, {QStringLiteral("limit"), 1}});
+                if (!destination.ok()) { reject(destination.errorCode, destination.message); return; }
+                const auto destinations = destination.page.value(QStringLiteral("items")).toArray();
+                const auto targetTab = destinations.isEmpty() ? QJsonObject() : destinations.first().toObject();
+                if (targetTab.value(QStringLiteral("source_tab_ref")) != update.targetTabRef
+                    || !targetTab.value(QStringLiteral("attached_to_ui")).toBool()
+                    || targetTab.value(QStringLiteral("ui_index")).toInt(-1) != tabAfter) {
+                    reject(QStringLiteral("invalid_target"), QStringLiteral("The destination is not an attached Tab."));
+                    return;
+                }
+                target.insert(QStringLiteral("target_tab_ref"), update.targetTabRef);
+            }
+            if (selectingTab) {
+                if (ui->keyMappingTabWidget->signalsBlocked() || tabAfter >= s_KeyMappingTabInfoList.size()
+                    || !ui->keyMappingTabWidget->widget(tabAfter)
+                    || ui->keyMappingTabWidget->widget(tabAfter) != s_KeyMappingTabInfoList.at(tabAfter).KeyMappingDataTable) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The destination page is not available for selection."));
+                    return;
+                }
+                selectionChanged = tabAfter != tab;
+                const auto selection = [&](int index) {
+                    const auto &info = s_KeyMappingTabInfoList.at(index);
+                    return QJsonObject{{QStringLiteral("name"), info.TabName}, {QStringLiteral("index"), index},
+                        {QStringLiteral("is_common"), isCommonMappingTab(info)}};
+                };
+                change = {{QStringLiteral("kind"), QStringLiteral("select_tab")},
+                    {QStringLiteral("before"), selection(tab)}, {QStringLiteral("after"), selection(tabAfter)}};
+            } else if (changingCommonFeature) {
                 const bool enabled = isCommonMappingFeatureEnabled();
                 const bool desired = *update.commonFeatureEnabled;
                 const int commonIndex = findCommonMappingTabIndex();
@@ -38800,19 +38833,6 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), QStringLiteral("set_common_inheritance")},
                     {QStringLiteral("before"), tabInfo.IncludeCommonMappingTable}, {QStringLiteral("after"), *update.tabIncludeCommon}};
             } else if (movingTab) {
-                tabAfter = update.targetTabRef.section(QLatin1Char(':'), 2, 2).toInt();
-                const auto destination = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
-                    {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), update.sourceRevision},
-                        {QStringLiteral("offset"), tabAfter}, {QStringLiteral("limit"), 1}});
-                if (!destination.ok()) { reject(destination.errorCode, destination.message); return; }
-                const auto destinations = destination.page.value(QStringLiteral("items")).toArray();
-                const auto targetTab = destinations.isEmpty() ? QJsonObject() : destinations.first().toObject();
-                if (targetTab.value(QStringLiteral("source_tab_ref")) != update.targetTabRef
-                    || !targetTab.value(QStringLiteral("attached_to_ui")).toBool()
-                    || targetTab.value(QStringLiteral("ui_index")).toInt(-1) != tabAfter) {
-                    reject(QStringLiteral("invalid_target"), QStringLiteral("The destination is not an attached Tab."));
-                    return;
-                }
                 const int first = qMin(tab, tabAfter);
                 const int last = qMax(tab, tabAfter);
                 const int common = findCommonMappingTabIndex();
@@ -38836,7 +38856,6 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     affected.append(QJsonObject{{QStringLiteral("tab_name"), entry.TabName},
                         {QStringLiteral("from_ui_index"), i}, {QStringLiteral("to_ui_index"), movedTo}});
                 }
-                target.insert(QStringLiteral("target_tab_ref"), update.targetTabRef);
                 change = {{QStringLiteral("kind"), QStringLiteral("move_tab")},
                     {QStringLiteral("from_ui_index"), tab}, {QStringLiteral("to_ui_index"), tabAfter},
                     {QStringLiteral("affected_tabs"), affected}};
@@ -39059,7 +39078,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("mapping_keys"), QJsonArray::fromStringList(affected.Mapping_Keys)},
                 {QStringLiteral("disabled_before"), affected.Disabled}, {QStringLiteral("disabled_after"), true}});
         }
-        const QString action = changingCommonFeature ? QStringLiteral("configuration.set_common_enabled")
+        const QString action = selectingTab ? QStringLiteral("tab.select")
+            : changingCommonFeature ? QStringLiteral("configuration.set_common_enabled")
             : collapsingCommon ? QStringLiteral("tab.set_common_collapsed")
             : changingCommon ? QStringLiteral("tab.set_common_inheritance")
             : movingTab ? QStringLiteral("tab.move")
@@ -39108,8 +39128,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("This preview does not allow conflict confirmation."));
             return;
         }
-        if (modified) {
-            if (changingCommonFeature) {
+        if (modified || selectionChanged) {
+            if (selectingTab) {
+                switchToMappingTableTab(tabAfter);
+                if (s_KeyMappingTabWidgetCurrentIndex != tabAfter) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The requested Tab was not selected."));
+                    return;
+                }
+            } else if (changingCommonFeature) {
                 const bool desired = *update.commonFeatureEnabled;
                 m_MappingAdvancedDialog->setCommonMappingTableEnabled(desired);
                 if (isCommonMappingFeatureEnabled() != desired || (findCommonMappingTabIndex() >= 0) != desired
@@ -39177,13 +39203,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (!client.setPreferences(candidatePreferences)) {
                 reject(QStringLiteral("context_busy"), QStringLiteral("The IbInput client no longer admits preference changes.")); return;
             }
-            requestSaveSettingDirty();
+            if (modified) requestSaveSettingDirty();
             if (preferencesUpdate) refreshIbInputUi();
         }
         QJsonObject result{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
             {QStringLiteral("modified"), modified}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
             {QStringLiteral("preferences_revision_after"), automationIbInputPreferencesRevision()},
-            {QStringLiteral("query_source_again"), updating && modified}};
+            {QStringLiteral("query_source_again"), updating && (modified || selectionChanged)}};
+        if (selectingTab) result.insert(QStringLiteral("selection_changed"), selectionChanged);
         if (confirmationRequired) result.insert(QStringLiteral("disabled_other_rows"), int(conflictRows.size()));
         if (updating) {
             QString bindingError;

@@ -50,6 +50,7 @@ struct MappingUpdateArguments {
     bool deleteTab = false;
     bool clearTab = false;
     QString targetTabRef;
+    bool selectTab = false;
     std::optional<bool> tabIncludeCommon;
     std::optional<bool> tabCommonCollapsed;
     std::optional<bool> commonFeatureEnabled;

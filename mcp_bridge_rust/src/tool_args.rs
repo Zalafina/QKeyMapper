@@ -139,6 +139,8 @@ enum Action {
     ClearTab,
     #[serde(rename = "tab.move")]
     MoveTab,
+    #[serde(rename = "tab.select")]
+    SelectTab,
     #[serde(rename = "tab.set_common_inheritance")]
     SetCommonInheritance,
     #[serde(rename = "tab.set_common_collapsed")]
@@ -394,14 +396,14 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                     | "tab.set_common_collapsed"
                     | "configuration.set_common_enabled",
                 ) => values.len() == 3 && values.contains_key("source_tab_ref"),
-                Some("tab.move") => {
+                Some("tab.move" | "tab.select") => {
                     values.len() == 3
                         && values
                             .get("source_tab_ref")
                             .and_then(Value::as_str)
                             .zip(destination)
                             .is_some_and(|(source, target)| {
-                                source != target
+                                (action == Some("tab.select") || source != target)
                                     && source.split(':').next() == target.split(':').next()
                             })
                 }
@@ -416,7 +418,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 || common_inheritance != values.contains_key("include_common")
                 || common_collapsed != values.contains_key("common_collapsed")
                 || common_feature != values.contains_key("common_feature_enabled")
-                || (destination.is_some() && action != Some("tab.move"))
+                || (destination.is_some() && !matches!(action, Some("tab.move" | "tab.select")))
             {
                 return Err(InvalidMessage);
             }
