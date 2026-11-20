@@ -139,6 +139,8 @@ enum Action {
     ClearTab,
     #[serde(rename = "tab.move")]
     MoveTab,
+    #[serde(rename = "tab.set_common_inheritance")]
+    SetCommonInheritance,
     #[serde(rename = "configuration.save")]
     Save,
     #[serde(rename = "ibinput.preferences.update")]
@@ -182,6 +184,7 @@ struct Preview {
     disabled: Option<bool>,
     tab_name: Option<String>,
     target_tab_ref: Option<String>,
+    include_common: Option<bool>,
 }
 
 impl Preview {
@@ -374,9 +377,12 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             };
             let action = values.get("action").and_then(Value::as_str);
             let rename = action == Some("tab.rename");
+            let common_inheritance = action == Some("tab.set_common_inheritance");
             let destination = values.get("target_tab_ref").and_then(Value::as_str);
             let valid_tab_change = match action {
-                Some("tab.rename") => values.len() == 3 && values.contains_key("source_tab_ref"),
+                Some("tab.rename" | "tab.set_common_inheritance") => {
+                    values.len() == 3 && values.contains_key("source_tab_ref")
+                }
                 Some("tab.move") => {
                     values.len() == 3
                         && values
@@ -396,6 +402,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             if !valid_move
                 || !valid_tab_change
                 || rename != values.contains_key("tab_name")
+                || common_inheritance != values.contains_key("include_common")
                 || (destination.is_some() && action != Some("tab.move"))
             {
                 return Err(InvalidMessage);

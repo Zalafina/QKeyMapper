@@ -50,6 +50,7 @@ struct MappingUpdateArguments {
     bool deleteTab = false;
     bool clearTab = false;
     QString targetTabRef;
+    std::optional<bool> tabIncludeCommon;
     QByteArray tabSettingsDigest;
 };
 

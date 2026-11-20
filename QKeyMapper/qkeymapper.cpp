@@ -18252,6 +18252,20 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
 #endif
 }
 
+bool QKeyMapper::setMappingTabCommonInheritance(int tabIndex, bool includeCommon)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) return false;
+
+    auto &tab = s_KeyMappingTabInfoList[tabIndex];
+    if (tab.IncludeCommonMappingTable == includeCommon) return false;
+
+    tab.IncludeCommonMappingTable = includeCommon;
+    ++m_AutomationSourceEpoch;
+    refreshKeyMappingDataTableByTabIndex(tabIndex);
+    requestSaveSettingDirty();
+    return true;
+}
+
 void QKeyMapper::refreshTabsForSourceTabChange(int sourceTabIndex, bool structuralReorder)
 {
     if (sourceTabIndex < 0 || sourceTabIndex >= s_KeyMappingTabInfoList.size()) {
@@ -38666,7 +38680,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool clearingTab = updating && update.clearTab;
         const bool removingTabData = deletingTab || clearingTab;
         const bool movingTab = updating && !update.targetTabRef.isEmpty();
-        const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData || movingTab;
+        const bool changingCommon = updating && update.tabIncludeCommon.has_value();
+        const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData || movingTab || changingCommon;
         if ((validation.confirmConflicts && !update.originalKey.has_value())
             || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
@@ -38757,7 +38772,15 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 update.tabSettingsDigest = settingsDigest;
             }
-            if (movingTab) {
+            if (changingCommon) {
+                if (!isCommonMappingFeatureEnabled()) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("Enable the Common Mapping Table feature before changing Tab inheritance."));
+                    return;
+                }
+                modified = tabInfo.IncludeCommonMappingTable != *update.tabIncludeCommon;
+                change = {{QStringLiteral("kind"), QStringLiteral("set_common_inheritance")},
+                    {QStringLiteral("before"), tabInfo.IncludeCommonMappingTable}, {QStringLiteral("after"), *update.tabIncludeCommon}};
+            } else if (movingTab) {
                 tabAfter = update.targetTabRef.section(QLatin1Char(':'), 2, 2).toInt();
                 const auto destination = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
                     {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), update.sourceRevision},
@@ -39014,7 +39037,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = movingTab ? QStringLiteral("tab.move")
+        const QString action = changingCommon ? QStringLiteral("tab.set_common_inheritance")
+            : movingTab ? QStringLiteral("tab.move")
             : clearingTab ? QStringLiteral("tab.clear")
             : deletingTab ? QStringLiteral("tab.delete")
             : copyingTab ? QStringLiteral("tab.copy")
@@ -39061,7 +39085,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (movingTab) {
+            if (changingCommon) {
+                if (!setMappingTabCommonInheritance(tab, *update.tabIncludeCommon)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab no longer accepts inheritance changes."));
+                    return;
+                }
+            } else if (movingTab) {
                 auto *tabs = ui->keyMappingTabWidget;
                 auto *page = tabs->widget(tab);
                 tabs->tabBar()->moveTab(tab, tabAfter);

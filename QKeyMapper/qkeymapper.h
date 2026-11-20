@@ -2108,6 +2108,7 @@ public:
     void updateTableWidgetItem(int tabindex, int row, int column);
     void updateSaveSettingActionIcon(QAction *action) const;
     void requestSaveSettingDirty(void);
+    bool setMappingTabCommonInheritance(int tabIndex, bool includeCommon);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;

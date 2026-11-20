@@ -947,22 +947,7 @@ void QTableSetupDialog::on_hideNotificationCheckBox_stateChanged(int state)
 
 void QTableSetupDialog::on_appendCommonMappingTableCheckBox_stateChanged(int state)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return;
-    }
-
-    if (QKeyMapper::isCommonMappingTabIndex(m_TabIndex)) {
-        return;
-    }
-
-    const bool appendCommonMappingTable = (state == Qt::Checked);
-    if (QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).IncludeCommonMappingTable == appendCommonMappingTable) {
-        return;
-    }
-
-    QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].IncludeCommonMappingTable = appendCommonMappingTable;
-    QKeyMapper::getInstance()->refreshKeyMappingDataTableByTabIndex(m_TabIndex);
-    QKeyMapper::getInstance()->requestSaveSettingDirty();
+    QKeyMapper::getInstance()->setMappingTabCommonInheritance(m_TabIndex, state == Qt::Checked);
 }
 
 void QTableSetupDialog::applyCommonTabMode()
