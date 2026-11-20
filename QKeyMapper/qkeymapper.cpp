@@ -45,6 +45,12 @@
 using namespace QKeyMapperConstants;
 using namespace Gdiplus;
 
+enum class OriginalKeyTriggerType {
+    Normal = 0,
+    LongPress,
+    DoublePress,
+};
+
 namespace {
 
 QWidget *activeMainWindowModal(QWidget *mainWindow)
@@ -2755,12 +2761,6 @@ static void updateCategoryTableItemText(KeyMappingDataTableWidget *mappingDataTa
 }
 
 
-enum class OriginalKeyTriggerType {
-    Normal = 0,
-    LongPress,
-    DoublePress,
-};
-
 struct OriginalKeyTriggerInfo {
     QString baseKey;
     OriginalKeyTriggerType triggerType = OriginalKeyTriggerType::Normal;
@@ -2917,14 +2917,49 @@ static bool originalKeySupportsTimedTrigger(const MAP_KEYDATA &keymapdata, int r
     return false;
 }
 
-static int applyOriginalKeyTriggerChange(QKeyMapper *keymapper,
-                                         KeyMappingDataTableWidget *mappingDataTable,
-                                         const QList<int> &rows,
-                                         OriginalKeyTriggerType triggerType,
-                                         int pressTime,
-                                         QString *errorMessage = Q_NULLPTR)
+static bool resolveCommonOriginalKeyTriggerType(const QList<MAP_KEYDATA> *mappingDataList,
+                                                const QList<int> &rows,
+                                                OriginalKeyTriggerType *triggerTypeOut)
 {
-    if (!keymapper || !mappingDataTable || rows.isEmpty()) {
+    if (!mappingDataList || !triggerTypeOut || rows.isEmpty()) {
+        return false;
+    }
+
+    bool hasAnyType = false;
+    OriginalKeyTriggerType commonType = OriginalKeyTriggerType::Normal;
+
+    for (int row : rows) {
+        if (row < 0 || row >= mappingDataList->size()) {
+            continue;
+        }
+
+        const OriginalKeyTriggerInfo triggerInfo = parseOriginalKeyTriggerInfo(mappingDataList->at(row).Original_Key);
+        const OriginalKeyTriggerType currentType = triggerInfo.isValid ? triggerInfo.triggerType : OriginalKeyTriggerType::Normal;
+
+        if (!hasAnyType) {
+            commonType = currentType;
+            hasAnyType = true;
+        }
+        else if (commonType != currentType) {
+            return false;
+        }
+    }
+
+    if (!hasAnyType) {
+        return false;
+    }
+
+    *triggerTypeOut = commonType;
+    return true;
+}
+
+} // namespace
+
+int QKeyMapper::applyOriginalKeyTriggerChange(KeyMappingDataTableWidget *mappingDataTable,
+                                              const QList<int> &rows, OriginalKeyTriggerType triggerType,
+                                              int pressTime, QString *errorMessage)
+{
+    if (!mappingDataTable || rows.isEmpty()) {
         return 0;
     }
 
@@ -2972,50 +3007,17 @@ static int applyOriginalKeyTriggerChange(QKeyMapper *keymapper,
         }
 
         (*mappingDataList)[row].Original_Key = newOriginalKey;
-        keymapper->updateTableWidgetItem(tabIndex, row, ORIGINAL_KEY_COLUMN);
+        updateTableWidgetItem(tabIndex, row, ORIGINAL_KEY_COLUMN);
         changedCount += 1;
     }
 
+    if (changedCount > 0) {
+        if (isCommonMappingTabIndex(tabIndex)) refreshTabsForSourceTabChange(tabIndex);
+        else ++m_AutomationSourceEpoch;
+        requestSaveSettingDirty();
+    }
     return changedCount;
 }
-
-static bool resolveCommonOriginalKeyTriggerType(const QList<MAP_KEYDATA> *mappingDataList,
-                                                const QList<int> &rows,
-                                                OriginalKeyTriggerType *triggerTypeOut)
-{
-    if (!mappingDataList || !triggerTypeOut || rows.isEmpty()) {
-        return false;
-    }
-
-    bool hasAnyType = false;
-    OriginalKeyTriggerType commonType = OriginalKeyTriggerType::Normal;
-
-    for (int row : rows) {
-        if (row < 0 || row >= mappingDataList->size()) {
-            continue;
-        }
-
-        const OriginalKeyTriggerInfo triggerInfo = parseOriginalKeyTriggerInfo(mappingDataList->at(row).Original_Key);
-        const OriginalKeyTriggerType currentType = triggerInfo.isValid ? triggerInfo.triggerType : OriginalKeyTriggerType::Normal;
-
-        if (!hasAnyType) {
-            commonType = currentType;
-            hasAnyType = true;
-        }
-        else if (commonType != currentType) {
-            return false;
-        }
-    }
-
-    if (!hasAnyType) {
-        return false;
-    }
-
-    *triggerTypeOut = commonType;
-    return true;
-}
-
-} // namespace
 
 QKeyMapper *QKeyMapper::m_instance = Q_NULLPTR;
 QString QKeyMapper::DEFAULT_TITLE = QString("Forza: Horizon 4");
@@ -38844,11 +38846,15 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         std::optional<int> fixedVKeyCode;
         std::optional<int> pasteTextMode;
         std::optional<bool> disableFnKeySwitch;
+        OriginalKeyTriggerType triggerType = OriginalKeyTriggerType::Normal;
+        int triggerTime = 0;
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
         const bool categoryUpdate = updating && update.category.has_value();
-        const bool rowModeUpdate = updating && !update.rowModes.isEmpty();
+        const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
+        const bool triggerUpdate = updating && !trigger.isEmpty();
+        const bool rowModeUpdate = updating && !update.rowModes.isEmpty() && !triggerUpdate;
         const bool sendTimingUpdate = updating && update.sendTiming.has_value();
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
             || update.keyUpMappingKey.has_value());
@@ -39223,6 +39229,36 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 updateMappingRowSendTiming(after, *update.sendTiming);
             }
+            if (triggerUpdate) {
+                QString supportError;
+                if (!originalKeySupportsTimedTrigger(before, update.sourceRow, &supportError)) {
+                    reject(QStringLiteral("unsupported_capability"), supportError);
+                    return;
+                }
+                const QString type = trigger.value(QStringLiteral("type")).toString();
+                if (type == QStringLiteral("long_press")) triggerType = OriginalKeyTriggerType::LongPress;
+                else if (type == QStringLiteral("double_press")) triggerType = OriginalKeyTriggerType::DoublePress;
+                const auto previous = parseOriginalKeyTriggerInfo(before.Original_Key);
+                triggerTime = trigger.value(QStringLiteral("duration_ms")).toInt(previous.pressTime);
+                const auto validation = validateOriginalKeyTriggerChange(before, update.sourceRow, triggerType, triggerTime);
+                if (!validation.isValid) {
+                    reject(QStringLiteral("invalid_mapping"), validation.errorMessage);
+                    return;
+                }
+                after.Original_Key = buildOriginalKeyTriggerString(previous.baseKey, triggerType, triggerTime);
+                if (normalizeOriginalKeyForExclusiveGroup(after.Original_Key) != normalizeOriginalKeyForExclusiveGroup(before.Original_Key)) {
+                    const auto analysis = analyzeOriginalKeyConflict(tab, update.sourceRow, after.Original_Key, before.Disabled);
+                    if (!analysis.sourceAvailable) {
+                        reject(QStringLiteral("context_busy"), QStringLiteral("The source row is no longer available."));
+                        return;
+                    }
+                    if (analysis.disableCurrentRow || !analysis.disableOtherRows.isEmpty()) {
+                        reject(QStringLiteral("unsupported_capability"),
+                            QStringLiteral("The trigger conflicts with an enabled mapping group; resolve the group in the GUI."));
+                        return;
+                    }
+                }
+            }
             if (rowModeUpdate) {
                 const auto burst = update.rowModes.value(QStringLiteral("burst"));
                 const auto lock = update.rowModes.value(QStringLiteral("lock"));
@@ -39358,6 +39394,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             updatedRow = after;
             change = {{QStringLiteral("kind"), update.disabled.has_value() ? QStringLiteral("update_row_disabled")
                     : sendTimingUpdate ? QStringLiteral("update_send_timing")
+                    : triggerUpdate ? QStringLiteral("update_original_trigger")
                     : rowModeUpdate ? QStringLiteral("update_row_modes")
                     : keyUpdate ? QStringLiteral("update_row_keys") : QStringLiteral("update_send_method")},
                 {QStringLiteral("before"), automationSourceRow(before)}, {QStringLiteral("after"), automationSourceRow(after)}};
@@ -39547,6 +39584,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts a Send Timing change."));
                     return;
                 }
+            } else if (triggerUpdate) {
+                QString error;
+                if (!applyOriginalKeyTriggerChange(m_KeyMappingDataTable, {update.sourceRow}, triggerType, triggerTime, &error)) {
+                    reject(QStringLiteral("context_busy"), error.isEmpty() ? QStringLiteral("The current row no longer accepts a trigger change.") : error);
+                    return;
+                }
             } else if (rowModeUpdate) {
                 if (update.rowModes.contains(QStringLiteral("burst"))) {
                     applyBatchMappingStateChange(this, m_KeyMappingDataTable, {displayRow}, BURST_MODE_COLUMN, updatedRow->Burst);
@@ -39582,7 +39625,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (!client.setPreferences(candidatePreferences)) {
                 reject(QStringLiteral("context_busy"), QStringLiteral("The IbInput client no longer admits preference changes.")); return;
             }
-            if (modified && !categoryUpdate && !settingDisabledVisibility && !changingMappingDisplay) requestSaveSettingDirty();
+            if (modified && !triggerUpdate && !categoryUpdate && !settingDisabledVisibility && !changingMappingDisplay) requestSaveSettingDirty();
             if (preferencesUpdate) refreshIbInputUi();
         }
         QJsonObject result{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
@@ -51928,10 +51971,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
 
                         QString errorMessage;
                         const int pressTime = originalKeyTriggerTypeUsesDuration(triggerType) ? 500 : 0;
-                        applyOriginalKeyTriggerChange(keymapper,
-                                                      this,
-                                                      visibleSelectedRows,
-                                                      triggerType,
+                        keymapper->applyOriginalKeyTriggerChange(this, visibleSelectedRows, triggerType,
                                                       pressTime,
                                                       &errorMessage);
                         if (!errorMessage.isEmpty()) {
@@ -52025,10 +52065,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                         const auto applySingleTriggerChange = [keymapper, this, selectedRow, triggerTypeComboBox, pressTimeSpinBox]() {
                             const OriginalKeyTriggerType triggerType = static_cast<OriginalKeyTriggerType>(triggerTypeComboBox->currentData().toInt());
                             QString errorMessage;
-                            applyOriginalKeyTriggerChange(keymapper,
-                                                          this,
-                                                          QList<int>{selectedRow},
-                                                          triggerType,
+                            keymapper->applyOriginalKeyTriggerChange(this, QList<int>{selectedRow}, triggerType,
                                                           pressTimeSpinBox->value(),
                                                           &errorMessage);
                             if (!errorMessage.isEmpty()) {

@@ -145,6 +145,15 @@ Use `mapping.update` with a current visible source row and a standalone
 or Ctrl+V (1). The `disable_fn_key_switch` option is a boolean. Preview and
 apply update the setting in memory. Save separately.
 
+## Configuring a row's trigger
+
+Use `mapping.update` with a current visible `source_ref`. Set
+`row_modes` to an object containing only `original_trigger`. Its `type`
+is `normal`, `long_press` or `double_press`. Timed types can include
+`duration_ms` from 1 through 9999. Omitting it keeps the current duration
+or uses 500 ms for a previously untimed key. The product rejects unavailable
+controls and conflicts with an enabled mapping group. Save separately.
+
 ## Editing a mapping note
 
 Use `mapping.update` with the current visible row's `source_ref` and

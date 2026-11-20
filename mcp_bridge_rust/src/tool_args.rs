@@ -229,6 +229,23 @@ fn notification_color(value: &str, digits: usize) -> bool {
             .is_some_and(|hex| hex.len() == digits && hex.bytes().all(|c| c.is_ascii_hexdigit()))
 }
 
+fn original_trigger(value: &Value) -> bool {
+    let Some(trigger) = value.as_object() else {
+        return false;
+    };
+    let kind = trigger.get("type").and_then(Value::as_str);
+    let duration = trigger.get("duration_ms");
+    match kind {
+        Some("normal") => trigger.len() == 1,
+        Some("long_press" | "double_press") => {
+            trigger.len() == if duration.is_some() { 2 } else { 1 }
+                && duration
+                    .is_none_or(|time| time.as_u64().is_some_and(|ms| (1..=9999).contains(&ms)))
+        }
+        _ => false,
+    }
+}
+
 impl Preview {
     fn valid(&self) -> bool {
         self.source_revision.as_deref().is_none_or(revision)
@@ -293,6 +310,7 @@ impl Preview {
                         }
                         "repeat_mode" => value.as_u64().is_some_and(|mode| mode <= 2),
                         "repeat_times" => value.as_u64().is_some_and(|count| count <= 99_999_999),
+                        "original_trigger" => modes.len() == 1 && original_trigger(value),
                         _ => false,
                     })
             })

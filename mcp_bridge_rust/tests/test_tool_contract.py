@@ -177,6 +177,7 @@ async def check_contract(exe):
             assert note_rule["properties"]["source_refs"]["uniqueItems"] is True
             assert note_rule["properties"]["row_modes"] == {
                 "type": "object", "additionalProperties": False, "minProperties": 1,
+                "dependentSchemas": {"original_trigger": {"maxProperties": 1}},
                 "properties": {"burst": {"type": "boolean"}, "lock": {"type": "boolean"},
                                "burst_press_ms": {"type": "integer", "minimum": 1, "maximum": 99999},
                                "burst_release_ms": {"type": "integer", "minimum": 1, "maximum": 99999},
@@ -190,7 +191,12 @@ async def check_contract(exe):
                                "fixed_vkey_code": {"type": "integer", "minimum": 0, "maximum": 255},
                                "paste_text_mode": {"type": "integer", "minimum": 0, "maximum": 1},
                                "repeat_mode": {"type": "integer", "minimum": 0, "maximum": 2},
-                               "repeat_times": {"type": "integer", "minimum": 0, "maximum": 99999999}}}
+                               "repeat_times": {"type": "integer", "minimum": 0, "maximum": 99999999},
+                               "original_trigger": {"type": "object", "additionalProperties": False,
+                                   "properties": {"type": {"enum": ["normal", "long_press", "double_press"]},
+                                                  "duration_ms": {"type": "integer", "minimum": 1, "maximum": 9999}},
+                                   "required": ["type"], "if": {"properties": {"type": {"const": "normal"}}},
+                                   "then": {"not": {"required": ["duration_ms"]}}}}}
             assert note_rule["properties"]["send_timing"] == {"type": "integer", "minimum": 0, "maximum": 4}
             assert {"required": ["send_timing"]} in note_rule["anyOf"]
             assert {"required": ["key_up_mapping_key"]} in note_rule["dependentSchemas"]["send_timing"]["not"]["anyOf"]
@@ -341,6 +347,17 @@ async def check_contract(exe):
                     {**row_modes, "row_modes": {"mapping_key_unlock": 1}},
                     {**row_modes, "row_modes": {"disable_original_key_unlock": "false"}},
                     {**row_modes, "row_modes": {"disable_original_key_unlock": None}})),
+                ("qkm_preview_changes", {**row_modes, "row_modes": {"original_trigger": {"type": "double_press",
+                                                                                         "duration_ms": 9999}}}, (
+                    {**row_modes, "row_modes": {"original_trigger": {"type": "normal", "duration_ms": 5}}},
+                    {**row_modes, "row_modes": {"original_trigger": {"type": "long_press", "duration_ms": 0}}},
+                    {**row_modes, "row_modes": {"original_trigger": {"type": "long_press", "duration_ms": 10000}}},
+                    {**row_modes, "row_modes": {"original_trigger": {"type": "long_press", "duration_ms": None}}},
+                    {**row_modes, "row_modes": {"original_trigger": {"type": "other"}}},
+                    {**row_modes, "row_modes": {"original_trigger": {"type": "normal", "extra": 1}}},
+                    {**row_modes, "row_modes": {"original_trigger": {"type": "normal"}, "lock": True}})),
+                ("qkm_preview_changes", {**row_modes, "row_modes": {"original_trigger": {"type": "normal"}}}, ()),
+                ("qkm_preview_changes", {**row_modes, "row_modes": {"original_trigger": {"type": "long_press"}}}, ()),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"fixed_vkey_code": 255,
                                                                     "paste_text_mode": 0, "disable_fn_key_switch": True}}, (
                     {**row_modes, "row_modes": {"fixed_vkey_code": 256}},

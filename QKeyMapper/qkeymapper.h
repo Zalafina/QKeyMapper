@@ -113,6 +113,7 @@ class QKeyMapper;
 // class QFrame;
 // class QLabel;
 class QSplitterHandle;
+enum class OriginalKeyTriggerType;
 
 struct MAP_PROCESSINFO
 {
@@ -2120,6 +2121,8 @@ public:
                                         std::optional<bool> checkComboOrder, std::optional<bool> unbreakable);
     bool setMappingSourceRowAdvancedOptions(int row, std::optional<int> fixedVKeyCode, std::optional<int> pasteTextMode,
                                            std::optional<bool> disableFnKeySwitch);
+    int applyOriginalKeyTriggerChange(KeyMappingDataTableWidget *mappingDataTable, const QList<int> &rows,
+                                      OriginalKeyTriggerType triggerType, int pressTime, QString *errorMessage);
     bool setMappingSourceRowNote(int tabIndex, int row, const QString &note);
     bool setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode);
     bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);

@@ -672,6 +672,23 @@ void McpControlTest::mappingChangeArguments()
         changed.insert(QStringLiteral("row_modes"), invalid);
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     }
+    const auto triggerModes = [](const QJsonObject &trigger) {
+        return QJsonObject{{QStringLiteral("original_trigger"), trigger}};
+    };
+    changed = rowModes; changed.insert(QStringLiteral("row_modes"), triggerModes(
+        {{QStringLiteral("type"), QStringLiteral("long_press")}, {QStringLiteral("duration_ms"), 9999}}));
+    QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());
+    for (const auto &invalid : {QJsonObject{{QStringLiteral("type"), QStringLiteral("normal")}, {QStringLiteral("duration_ms"), 1}},
+            QJsonObject{{QStringLiteral("type"), QStringLiteral("double_press")}, {QStringLiteral("duration_ms"), 10000}},
+            QJsonObject{{QStringLiteral("type"), QStringLiteral("long_press")}, {QStringLiteral("extra"), true}},
+            QJsonObject{{QStringLiteral("type"), QStringLiteral("long_press")}, {QStringLiteral("duration_ms"), QJsonValue::Null}}}) {
+        changed.insert(QStringLiteral("row_modes"), triggerModes(invalid));
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    auto mixedTrigger = triggerModes({{QStringLiteral("type"), QStringLiteral("normal")}});
+    mixedTrigger.insert(QStringLiteral("lock"), true);
+    changed.insert(QStringLiteral("row_modes"), mixedTrigger);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     for (const int ms : {1, 99999}) {
         changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("burst_press_ms"), ms}});
         QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());

@@ -343,6 +343,17 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                     const int maximum = fixed ? QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MAX : QKeyMapperConstants::PASTETEXT_MODE_CTRLV;
                     if (!value.isDouble() || value.toDouble() != number || number < minimum || number > maximum)
                         return fail("Fixed virtual key code and paste mode must be integers within the supported range.");
+                } else if (key == QStringLiteral("original_trigger")) {
+                    const auto trigger = value.toObject();
+                    const QString type = trigger.value(QStringLiteral("type")).toString();
+                    const auto duration = trigger.value(QStringLiteral("duration_ms"));
+                    const bool normal = type == QStringLiteral("normal");
+                    const int time = duration.toInt(-1);
+                    if (modes.size() != 1 || trigger.size() != (duration.isUndefined() ? 1 : 2)
+                        || (!normal && type != QStringLiteral("long_press") && type != QStringLiteral("double_press"))
+                        || (!duration.isUndefined() && (normal || !duration.isDouble() || duration.toDouble() != time
+                            || time < QKeyMapperConstants::PRESSTIME_MIN || time > QKeyMapperConstants::PRESSTIME_MAX)))
+                        return fail("Provide only original_trigger with type normal, long_press or double_press and an optional timed duration from 1 to 9999 ms.");
                 } else {
                     return fail("Unsupported row mode field.");
                 }
@@ -581,12 +592,21 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     const QJsonObject toggle{{QStringLiteral("type"), QStringLiteral("boolean")}};
     const QJsonObject burstTiming{{QStringLiteral("type"), QStringLiteral("integer")},
         {QStringLiteral("minimum"), QKeyMapperConstants::BURST_TIME_MIN}, {QStringLiteral("maximum"), QKeyMapperConstants::BURST_TIME_MAX}};
+    auto triggerSchema = schema({{QStringLiteral("type"), QJsonObject{{QStringLiteral("enum"),
+            QJsonArray{QStringLiteral("normal"), QStringLiteral("long_press"), QStringLiteral("double_press")}}}},
+        {QStringLiteral("duration_ms"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+            {QStringLiteral("minimum"), QKeyMapperConstants::PRESSTIME_MIN}, {QStringLiteral("maximum"), QKeyMapperConstants::PRESSTIME_MAX}}}},
+        {QStringLiteral("type")});
+    triggerSchema.insert(QStringLiteral("if"), QJsonObject{{QStringLiteral("properties"),
+        QJsonObject{{QStringLiteral("type"), QJsonObject{{QStringLiteral("const"), QStringLiteral("normal")}}}}}});
+    triggerSchema.insert(QStringLiteral("then"), QJsonObject{{QStringLiteral("not"),
+        QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("duration_ms")}}}}});
     auto rowModesSchema = schema({{QStringLiteral("burst"), toggle}, {QStringLiteral("lock"), toggle},
         {QStringLiteral("burst_press_ms"), burstTiming}, {QStringLiteral("burst_release_ms"), burstTiming},
         {QStringLiteral("mapping_key_unlock"), toggle}, {QStringLiteral("disable_original_key_unlock"), toggle},
         {QStringLiteral("sequence_hold_down"), toggle}, {QStringLiteral("pass_through"), toggle},
         {QStringLiteral("check_combo_order"), toggle}, {QStringLiteral("unbreakable"), toggle},
-        {QStringLiteral("disable_fn_key_switch"), toggle},
+        {QStringLiteral("disable_fn_key_switch"), toggle}, {QStringLiteral("original_trigger"), triggerSchema},
         {QStringLiteral("fixed_vkey_code"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
             {QStringLiteral("minimum"), QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MIN}, {QStringLiteral("maximum"), QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MAX}}},
         {QStringLiteral("paste_text_mode"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
@@ -596,6 +616,8 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         {QStringLiteral("repeat_times"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
             {QStringLiteral("minimum"), QKeyMapperConstants::REPEAT_TIMES_MIN}, {QStringLiteral("maximum"), QKeyMapperConstants::REPEAT_TIMES_MAX}}}}, {});
     rowModesSchema.insert(QStringLiteral("minProperties"), 1);
+    rowModesSchema.insert(QStringLiteral("dependentSchemas"), QJsonObject{
+        {QStringLiteral("original_trigger"), QJsonObject{{QStringLiteral("maxProperties"), 1}}}});
     auto updateSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
         {QStringLiteral("row_modes"), rowModesSchema},
         {QStringLiteral("send_timing"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
