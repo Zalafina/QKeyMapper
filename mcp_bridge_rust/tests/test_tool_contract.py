@@ -113,6 +113,25 @@ async def check_contract(exe):
             expect_not_connected(await client.call_tool(
                 "qkm_query", {"entity": "macros", "offset": 1, "catalog_revision": "a" * 64}))
             previews = next(tool.input_schema for tool in tools if tool.name == "qkm_preview_changes")
+            macro_rule, = (rule for rule in previews["oneOf"]
+                           if rule["properties"]["action"].get("const") == "macro.upsert")
+            assert macro_rule["required"] == ["action", "macro"]
+            assert macro_rule["propertyNames"] == {"enum": ["action", "macro"]}
+            macro_fields = previews["properties"]["macro"]
+            assert not macro_fields["additionalProperties"]
+            assert macro_fields["required"] == ["catalog_revision", "scope", "name", "content"]
+            assert macro_fields["properties"]["scope"]["enum"] == ["configuration", "universal"]
+            macro = {"catalog_revision": "b" * 64, "scope": "configuration", "name": "New", "content": "A»B"}
+            upsert = {"action": "macro.upsert", "macro": macro}
+            expect_not_connected(await client.call_tool("qkm_preview_changes", upsert))
+            for invalid in ({"action": "macro.upsert"}, upsert | {"note": ""},
+                            upsert | {"macro": macro | {"scope": "other"}},
+                            upsert | {"macro": macro | {"content": ""}},
+                            upsert | {"macro": macro | {"note": 2}},
+                            upsert | {"macro": macro | {"extra": True}}):
+                denied = await client.call_tool("qkm_preview_changes", invalid)
+                assert denied.is_error is True and denied.structured_content is None
+            legacy_preview_fields = set(previews["properties"]) - {"copy_to", "macro"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
             assert move_rule["required"] == ["action"]
@@ -122,7 +141,7 @@ async def check_contract(exe):
             assert batch_rule["required"] == ["source_refs"]
             assert batch_rule["properties"] == {
                 "source_ref": {"type": "null"}, "source_refs": {"type": "array", "minItems": 2}}
-            assert set(move_rule["properties"]) == set(previews["properties"]) - {"copy_to"}
+            assert set(move_rule["properties"]) == legacy_preview_fields
             assert all(rule == {"type": "null"} for field, rule in move_rule["properties"].items()
                        if field not in {"action", "source_ref", "source_refs"})
             rename_rule, = (rule for rule in previews["oneOf"]
@@ -130,7 +149,7 @@ async def check_contract(exe):
             assert set(rename_rule["required"]) == set(rename)
             assert rename_rule["properties"]["source_tab_ref"] == {"type": "string"}
             assert rename_rule["properties"]["tab_name"] == {"type": "string"}
-            assert set(rename_rule["properties"]) == set(previews["properties"]) - {"copy_to"}
+            assert set(rename_rule["properties"]) == legacy_preview_fields
             assert all(rule == {"type": "null"} for field, rule in rename_rule["properties"].items()
                        if field not in rename)
             add_rule, = (rule for rule in previews["oneOf"]
@@ -138,14 +157,14 @@ async def check_contract(exe):
             assert set(add_rule["properties"]["action"]["enum"]) == {"tab.add_blank", "tab.copy", "tab.delete", "tab.clear"}
             assert set(add_rule["required"]) == set(add_tab) == set(copy_tab) == set(delete_tab) == set(clear_tab)
             assert add_rule["properties"]["source_tab_ref"] == {"type": "string"}
-            assert set(add_rule["properties"]) == set(previews["properties"]) - {"copy_to"}
+            assert set(add_rule["properties"]) == legacy_preview_fields
             assert all(rule == {"type": "null"} for field, rule in add_rule["properties"].items()
                        if field not in add_tab)
             move_tab_rule, = (rule for rule in previews["oneOf"]
                               if rule["properties"]["action"].get("const") == "tab.move")
             assert set(move_tab_rule["required"]) == set(move_tab)
             assert move_tab_rule["properties"]["target_tab_ref"] == {"type": "string"}
-            assert set(move_tab_rule["properties"]) == set(previews["properties"]) - {"copy_to"}
+            assert set(move_tab_rule["properties"]) == legacy_preview_fields
             selection_rule, = (rule for rule in previews["oneOf"]
                                  if rule["properties"]["action"].get("const") == "tab.select")
             assert set(selection_rule["required"]) == set(select_tab)

@@ -183,6 +183,17 @@ The same name can appear in both scopes. Each item includes `name`, `content`,
 as `catalog_revision` on later pages. After a configuration change, read page
 one again. The directory reflects the loaded lists.
 
+## Adding or replacing a macro
+
+Preview `macro.upsert` with a `macro` object containing the latest
+`catalog_revision` from the macro list, `scope` (`configuration` or
+`universal`), `name` and `content`. Optional `category` and `note` preserve
+their values when omitted. Use an empty string to clear either. New macros
+append to the selected list. Supported content uses A–Z or 0–9 keys joined
+by `»`. An existing name in that list keeps its position
+and requires `confirm_overwrite=true` after review. Replacing the content
+aligns existing segment comments with the new sequence. Save separately.
+
 ## Editing a mapping note
 
 Use `mapping.update` with the current visible row's `source_ref` and

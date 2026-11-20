@@ -38396,6 +38396,43 @@ QJsonObject QKeyMapper::collectAutomationCatalog(void) const
         {QStringLiteral("configurations"), configurations}, {QStringLiteral("tabs"), tabs}};
 }
 
+static QJsonObject automationMacroRow(const QString &scope, const QString &name, const MappingMacroData &macro)
+{
+    return {{QStringLiteral("scope"), scope}, {QStringLiteral("name"), name},
+        {QStringLiteral("content"), macro.MappingMacro}, {QStringLiteral("category"), macro.Category},
+        {QStringLiteral("note"), macro.Note},
+        {QStringLiteral("segment_comments"), QJsonArray::fromStringList(macro.MacroComments)}};
+}
+
+static bool addAutomationMacroCatalog(QJsonObject &catalog)
+{
+    QJsonArray macros;
+    qsizetype bytes = 0;
+    const auto append = [&](const OrderedMap<QString, MappingMacroData> &source, const QString &scope) {
+        for (auto it = source.begin(); it != source.end(); ++it) {
+            const auto row = automationMacroRow(scope, it.key(), it.value());
+            bytes += QJsonDocument(row).toJson(QJsonDocument::Compact).size() + 1;
+            if (bytes > QkmAutomation::MaxSourceSnapshotBytes) return false;
+            macros.append(row);
+        }
+        return true;
+    };
+    if (!append(QKeyMapper::s_MappingMacroList, QStringLiteral("configuration"))
+        || !append(QKeyMapper::s_UniversalMappingMacroList, QStringLiteral("universal"))) return false;
+    catalog.insert(QStringLiteral("macros"), macros);
+    return true;
+}
+
+static QString automationCatalogRevision(const QJsonObject &catalog, const QkmAutomation::MappingChangeOwner &owner)
+{
+    const QJsonObject context{{QStringLiteral("instance"), owner.instance},
+        {QStringLiteral("pair_id"), owner.pairId},
+        {QStringLiteral("permission_epoch"), QString::number(owner.permissionEpoch)},
+        {QStringLiteral("catalog"), catalog}};
+    return QString::fromLatin1(QCryptographicHash::hash(
+        QJsonDocument(context).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
+}
+
 void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -38448,34 +38485,12 @@ void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationReq
             fail(QStringLiteral("context_busy"), QStringLiteral("Macro reads require the current loaded, idle source."));
             return;
         }
-        QJsonArray macros;
-        qsizetype bytes = 0;
-        const auto appendMacros = [&](const OrderedMap<QString, MappingMacroData> &source, const QString &scope) {
-            for (auto it = source.begin(); it != source.end(); ++it) {
-                const auto &macro = it.value();
-                QJsonObject row{{QStringLiteral("scope"), scope}, {QStringLiteral("name"), it.key()},
-                    {QStringLiteral("content"), macro.MappingMacro}, {QStringLiteral("category"), macro.Category},
-                    {QStringLiteral("note"), macro.Note},
-                    {QStringLiteral("segment_comments"), QJsonArray::fromStringList(macro.MacroComments)}};
-                bytes += QJsonDocument(row).toJson(QJsonDocument::Compact).size() + 1;
-                if (bytes > QkmAutomation::MaxSourceSnapshotBytes) return false;
-                macros.append(row);
-            }
-            return true;
-        };
-        if (!appendMacros(s_MappingMacroList, QStringLiteral("configuration"))
-            || !appendMacros(s_UniversalMappingMacroList, QStringLiteral("universal"))) {
+        if (!addAutomationMacroCatalog(catalog)) {
             fail(QStringLiteral("result_too_large"), QStringLiteral("Macro catalog exceeds its bounded size."));
             return;
         }
-        catalog.insert(entity, macros);
     }
-    const QJsonObject revisionContext{{QStringLiteral("instance"), server.instanceId()},
-        {QStringLiteral("pair_id"), request.pairId},
-        {QStringLiteral("permission_epoch"), QString::number(request.permissionEpoch)},
-        {QStringLiteral("catalog"), catalog}};
-    const QString revision = QString::fromLatin1(QCryptographicHash::hash(
-        QJsonDocument(revisionContext).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
+    const QString revision = automationCatalogRevision(catalog, {server.instanceId(), request.pairId, request.permissionEpoch});
     if (!fresh && revisionValue.toString() != revision) {
         fail(QStringLiteral("stale_catalog"), QStringLiteral("Catalog or authorization context changed; query again."));
         return;
@@ -38777,6 +38792,110 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     };
     if (applyingPreview && applyingPreview->preferencesRevision != automationIbInputPreferencesRevision()) {
         reject(QStringLiteral("stale_preview"), QStringLiteral("IbInput preferences changed after preview; obtain a fresh preview."));
+        return;
+    }
+    if ((!applying && validation.action == MappingChangeAction::UpsertMacro)
+        || (applyingPreview && applyingPreview->macro.has_value())) {
+        const auto &macro = applying ? *applyingPreview->macro : validation.macro;
+        if (validation.confirmConflicts || validation.confirmScope || validation.confirmDelete) {
+            reject(QStringLiteral("invalid_arguments"), QStringLiteral("Only the macro overwrite confirmation is supported."));
+            return;
+        }
+        if (!mappingAdditionAllowed(s_KeyMappingTabWidgetCurrentIndex) || hasOpenMappingEditor()
+            || QApplication::activePopupWidget() || m_KeyMappingDataTable->hasActiveEditor()) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("Macro edits require the current idle source and closed editors."));
+            return;
+        }
+        QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+        auto catalog = collectAutomationCatalog();
+        if (automationSourceReadBasis().isEmpty() || catalog.isEmpty() || !server.isRequestCurrent(request)) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("The macro context is not available."));
+            return;
+        }
+        if (!addAutomationMacroCatalog(catalog)) {
+            reject(QStringLiteral("result_too_large"), QStringLiteral("Macro catalog exceeds its bounded size."));
+            return;
+        }
+        const auto revision = automationCatalogRevision(catalog, owner);
+        if (revision != macro.catalogRevision) {
+            reject(applying ? QStringLiteral("stale_preview") : QStringLiteral("stale_catalog"),
+                QStringLiteral("Macro catalog changed; query the current macro list again."));
+            return;
+        }
+        const auto name = QMacroListDialog::normalizedMacroText(macro.name);
+        auto content = QMacroListDialog::normalizedMacroText(macro.content);
+        if (content.isEmpty()) {
+            reject(QStringLiteral("invalid_mapping"), QStringLiteral("Macro content must not be empty."));
+            return;
+        }
+        const auto checked = QMacroListDialog::validateMacroInput(name, content);
+        if (!checked.isValid) {
+            reject(QStringLiteral("invalid_mapping"), checked.errorMessage);
+            return;
+        }
+        // Nested macro references can resolve to existing Run actions.
+        const auto steps = content.split(QString::fromUtf8(SEPARATOR_NEXTARROW));
+        if (!std::all_of(steps.cbegin(), steps.cend(), isBasicMappingKey)) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Macro edits support sequences of ordinary letter or digit keys."));
+            return;
+        }
+        auto &list = macro.scope == QLatin1String("universal") ? s_UniversalMappingMacroList : s_MappingMacroList;
+        const bool replacing = list.contains(name);
+        const auto before = list.value(name);
+        MappingMacroData after{content, macro.category ? QMacroListDialog::normalizedMacroText(*macro.category) : before.Category,
+            macro.note ? QMacroListDialog::normalizedMacroText(*macro.note) : before.Note, {}};
+        if (replacing) after.MacroComments = QMacroListDialog::reconcileMacroComments(before, content);
+        const auto beforeRow = replacing ? QJsonValue(automationMacroRow(macro.scope, name, before)) : QJsonValue(QJsonValue::Null);
+        const auto afterRow = automationMacroRow(macro.scope, name, after);
+        const QJsonObject target{{QStringLiteral("instance_id"), owner.instance}, {QStringLiteral("catalog_revision"), revision},
+            {QStringLiteral("scope"), macro.scope}, {QStringLiteral("name"), name}};
+        const QJsonObject change{{QStringLiteral("kind"), replacing ? QStringLiteral("replace_macro") : QStringLiteral("add_macro")},
+            {QStringLiteral("index"), replacing ? int(list.keys().indexOf(name)) : list.size()},
+            {QStringLiteral("before"), beforeRow}, {QStringLiteral("after"), afterRow}};
+        const QJsonObject description{{QStringLiteral("action"), QStringLiteral("macro.upsert")},
+            {QStringLiteral("target"), target}, {QStringLiteral("changes"), QJsonArray{change}},
+            {QStringLiteral("confirmation_required"), replacing}, {QStringLiteral("modified"), false},
+            {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+        if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
+            reject(QStringLiteral("result_too_large"), QStringLiteral("The complete macro change exceeds the response limit."));
+            return;
+        }
+        if (!server.isRequestCurrent(request) || automationSourceReadBasis().isEmpty()
+            || validationBudget.hasExpired(MappingChangeBudgetMs)) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("Macro context or authorization changed, or validation timed out."));
+            return;
+        }
+        if (!applying) {
+            const auto preview = store.createMacro(owner, macro, description, automationIbInputPreferencesRevision());
+            if (!preview) { reject(QStringLiteral("preview_limit"), QStringLiteral("The bounded preview store is full.")); return; }
+            server.reply(request.connectionId, request.requestId, {{QStringLiteral("preview_id"), preview->id},
+                {QStringLiteral("operation_id"), preview->id}, {QStringLiteral("expires_in_ms"), double(MappingChangeStore::PreviewTtlMs)},
+                {QStringLiteral("description"), description}});
+            return;
+        }
+        if (store.expired(*applyingPreview)) {
+            reject(QStringLiteral("preview_expired"), QStringLiteral("The macro preview expired before commit."));
+            return;
+        }
+        if (applyingPreview->description != description) {
+            reject(QStringLiteral("stale_preview"), QStringLiteral("The macro change no longer matches the preview."));
+            return;
+        }
+        if (replacing != validation.confirmOverwrite) {
+            reject(replacing ? QStringLiteral("confirmation_required") : QStringLiteral("invalid_arguments"),
+                replacing ? QStringLiteral("Review the existing macro and confirm the overwrite with a fresh preview.")
+                          : QStringLiteral("An appended macro does not accept overwrite confirmation."));
+            return;
+        }
+        const bool modified = beforeRow != QJsonValue(afterRow);
+        if (modified) {
+            list[name] = after;
+            requestSaveSettingDirty();
+        }
+        store.finish(owner, validation.id, QStringLiteral("applied"), {{QStringLiteral("action"), QStringLiteral("macro.upsert")},
+            {QStringLiteral("target"), target}, {QStringLiteral("modified"), modified}, {QStringLiteral("saved"), false},
+            {QStringLiteral("started_by_operation"), false}, {QStringLiteral("query_catalog_again"), modified}});
+        server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
         return;
     }
     const bool updating = (!applying && validation.action == MappingChangeAction::UpdateMapping)

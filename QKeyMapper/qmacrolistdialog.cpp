@@ -1173,6 +1173,29 @@ void QMacroListDialog::addMacroToList()
     addMacroToListInternal(allowInsertBySelection);
 }
 
+QString QMacroListDialog::normalizedMacroText(QString text)
+{
+    static const QRegularExpression lineBreaks(R"([\r\n]+)");
+    return text.replace(lineBreaks, QStringLiteral(" ")).trimmed();
+}
+
+ValidationResult QMacroListDialog::validateMacroInput(const QString &name, QString &content)
+{
+    if (name.isEmpty()) return {false, tr("Macro name cannot be empty.")};
+    if (name.contains(QLatin1Char(')'))) return {false, tr("Macro name cannot contain ')' character.")};
+    auto result = QKeyMapper::validateMappingKeyString(content);
+    if (!result.isValid) result.errorMessage = tr("Macro") + QStringLiteral(" -> ") + result.errorMessage;
+    return result;
+}
+
+QStringList QMacroListDialog::reconcileMacroComments(const MappingMacroData &previous, const QString &content)
+{
+    const auto before = splitMappingKeyString(QKeyMapper::getTrimmedMappingKeyString(previous.MappingMacro), SPLIT_WITH_NEXT);
+    const auto after = splitMappingKeyString(QKeyMapper::getTrimmedMappingKeyString(content), SPLIT_WITH_NEXT);
+    return before == after ? previous.MacroComments
+        : QKeyMapper::reconcileMappingKeyComments(before, previous.MacroComments, after);
+}
+
 void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
 {
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
@@ -1188,54 +1211,18 @@ void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
     qDebug() << "[QMacroListDialog::addMacroToList] Add macro to" << currentTabStr;
 #endif
 
-    static QRegularExpression simplified_regex(R"([\r\n]+)");
-
-    QString macroname_str = ui->macroNameLineEdit->text();
-    macroname_str.replace(simplified_regex, " ");
-    macroname_str = macroname_str.trimmed();
-
-    QString macro_str = ui->macroContentLineEdit->text();
-    macro_str.replace(simplified_regex, " ");
-    macro_str = macro_str.trimmed();
-
-    QString category_str = ui->categoryLineEdit->text();
-    category_str.replace(simplified_regex, " ");
-    category_str = category_str.trimmed();
-
-    QString macronote_str = ui->macroNoteLineEdit->text();
-    macronote_str.replace(simplified_regex, " ");
-    macronote_str = macronote_str.trimmed();
-
-    if (macro_str.isEmpty()) {
-        return;
-    }
+    const QString macroname_str = normalizedMacroText(ui->macroNameLineEdit->text());
+    QString macro_str = normalizedMacroText(ui->macroContentLineEdit->text());
+    const QString category_str = normalizedMacroText(ui->categoryLineEdit->text());
+    const QString macronote_str = normalizedMacroText(ui->macroNoteLineEdit->text());
+    if (macro_str.isEmpty()) return;
 
     QString popupMessage;
     QString popupMessageColor;
     int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
-
-    if (macroname_str.isEmpty()) {
-        popupMessageColor = FAILURE_COLOR;
-        popupMessage = tr("Macro name cannot be empty.");
-        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
-        return;
-    }
-
-    // Validate macro name does not contain ')' character
-    // This ensures the macro can be referenced correctly in Macro(name) syntax
-    if (macroname_str.contains(')')) {
-        popupMessageColor = FAILURE_COLOR;
-        popupMessage = tr("Macro name cannot contain ')' character.");
-        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
-        return;
-    }
-
-    ValidationResult result = QKeyMapper::validateMappingKeyString(macro_str);
-
+    const auto result = validateMacroInput(macroname_str, macro_str);
     if (!result.isValid) {
-        popupMessageColor = FAILURE_COLOR;
-        popupMessage = tr("Macro") + " -> " + result.errorMessage;
-        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(result.errorMessage, FAILURE_COLOR, popupMessageDisplayTime);
         return;
     }
 
@@ -1289,23 +1276,7 @@ void QMacroListDialog::addMacroToListInternal(bool allowInsertBySelection)
         m_PendingMacroComments.clear();
         m_PendingMacroSegments.clear();
     } else if (isUpdate) {
-        // Segments changed without SeqEdit session: reconcile stored comments
-        QStringList oldSegs = splitMappingKeyString(
-            QKeyMapper::getTrimmedMappingKeyString(previousMacroData.MappingMacro), SPLIT_WITH_NEXT);
-        QStringList newSegs = splitMappingKeyString(
-            QKeyMapper::getTrimmedMappingKeyString(macro_str), SPLIT_WITH_NEXT);
-        if (oldSegs != newSegs) {
-            newMacroData.MacroComments = QKeyMapper::reconcileMappingKeyComments(
-                oldSegs, previousMacroData.MacroComments, newSegs);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[addMacroToListInternal] (no pending) oldSegs:" << oldSegs
-                     << "storedComments:" << previousMacroData.MacroComments
-                     << "-> newSegs:" << newSegs
-                     << "-> MacroComments:" << newMacroData.MacroComments;
-#endif
-        } else {
-            newMacroData.MacroComments = previousMacroData.MacroComments;
-        }
+        newMacroData.MacroComments = reconcileMacroComments(previousMacroData, macro_str);
     }
 
     // Insert or update macro in the list

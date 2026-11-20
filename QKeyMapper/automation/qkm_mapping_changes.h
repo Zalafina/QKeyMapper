@@ -78,8 +78,17 @@ struct IbInputPreferencesArguments {
     QString unavailablePolicy;
 };
 
+struct MacroChangeArguments {
+    QString catalogRevision;
+    QString scope;
+    QString name;
+    QString content;
+    std::optional<QString> category;
+    std::optional<QString> note;
+};
+
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };
-enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences };
+enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences, UpsertMacro };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
     MappingChangeAction action = MappingChangeAction::AddMapping;
@@ -87,6 +96,7 @@ struct MappingChangeRequest {
     MappingRemovalArguments removal;
     MappingUpdateArguments update;
     IbInputPreferencesArguments preferences;
+    MacroChangeArguments macro;
     QString settingName;
     QString id;
     QString instance;
@@ -132,6 +142,7 @@ struct MappingChangePreview {
     std::optional<MappingRemovalArguments> removal;
     std::optional<MappingUpdateArguments> update;
     std::optional<IbInputPreferencesArguments> preferences;
+    std::optional<MacroChangeArguments> macro;
     QString preferencesRevision;
 };
 
@@ -152,6 +163,8 @@ public:
         const MappingUpdateArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
     std::optional<MappingChangePreview> createPreferences(const MappingChangeOwner &owner,
         const IbInputPreferencesArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
+    std::optional<MappingChangePreview> createMacro(const MappingChangeOwner &owner,
+        const MacroChangeArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
     // The caller must revalidate live source, permissions and expiry before committing.
     std::optional<MappingChangePreview> begin(const MappingChangeOwner &owner, const QString &id);
     bool expired(const MappingChangePreview &preview)

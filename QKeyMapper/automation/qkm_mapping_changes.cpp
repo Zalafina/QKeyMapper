@@ -94,6 +94,38 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     result.method = preview ? MappingChangeMethod::Preview : apply ? MappingChangeMethod::Apply
         : query ? MappingChangeMethod::Operation : MappingChangeMethod::Cancel;
     const auto action = arguments.value(QStringLiteral("action"));
+    if (preview && action == QLatin1String("macro.upsert")) {
+        const auto value = arguments.value(QStringLiteral("macro"));
+        if (arguments.size() != 2 || !value.isObject()) return fail("Macro upsert requires only action and macro.");
+        const auto fields = value.toObject();
+        const QSet<QString> allowed{QStringLiteral("catalog_revision"), QStringLiteral("scope"),
+            QStringLiteral("name"), QStringLiteral("content"), QStringLiteral("category"), QStringLiteral("note")};
+        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+            if (!allowed.contains(it.key())) return fail("Unknown macro argument.");
+        }
+        auto &macro = result.macro;
+        macro.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
+        macro.scope = fields.value(QStringLiteral("scope")).toString();
+        macro.name = fields.value(QStringLiteral("name")).toString();
+        macro.content = fields.value(QStringLiteral("content")).toString();
+        const auto optionalText = [&](const QString &key, std::optional<QString> &output) {
+            const auto text = fields.value(key);
+            if (text.isUndefined() || text.isNull()) return true;
+            if (!text.isString() || text.toString().size() > 32767 || text.toString().contains(QChar::Null)) return false;
+            output = text.toString();
+            return true;
+        };
+        if (!isLowerHex(macro.catalogRevision, 64)
+            || (macro.scope != QLatin1String("configuration") && macro.scope != QLatin1String("universal"))
+            || macro.name.isEmpty() || macro.name.size() > 32767 || macro.name.contains(QChar::Null)
+            || macro.content.isEmpty() || macro.content.size() > QKeyMapperConstants::MAPPINGKEY_LINE_EDIT_MAX_LENGTH
+            || macro.content.contains(QChar::Null)
+            || !optionalText(QStringLiteral("category"), macro.category) || !optionalText(QStringLiteral("note"), macro.note)) {
+            return fail("Provide the macro catalog revision, scope, name and content. Category and note are optional strings.");
+        }
+        result.action = MappingChangeAction::UpsertMacro;
+        return result;
+    }
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
@@ -963,6 +995,31 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     capabilities.append(duplicatePreview);
     capabilities.append(duplicateApply);
+    const QJsonObject macroText{{QStringLiteral("type"), QJsonArray{QStringLiteral("string"), QStringLiteral("null")}},
+        {QStringLiteral("maxLength"), 32767}};
+    const auto macroFields = schema({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("scope"), QJsonObject{{QStringLiteral("enum"), QJsonArray{QStringLiteral("configuration"), QStringLiteral("universal")}}}},
+        {QStringLiteral("name"), string(QStringLiteral("^[\\s\\S]+$"), 32767)},
+        {QStringLiteral("content"), string(QStringLiteral("^[\\s\\S]+$"), QKeyMapperConstants::MAPPINGKEY_LINE_EDIT_MAX_LENGTH)},
+        {QStringLiteral("category"), macroText}, {QStringLiteral("note"), macroText}},
+        {QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("name"), QStringLiteral("content")});
+    auto macroPreview = capability("macro.upsert.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("macro.upsert")}}},
+            {QStringLiteral("macro"), macroFields}}, {QStringLiteral("action"), QStringLiteral("macro")}));
+    auto macroApplySchema = settingsApplySchema;
+    auto macroConfirmation = macroApplySchema.value(QStringLiteral("properties")).toObject();
+    macroConfirmation.insert(QStringLiteral("confirm_overwrite"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}});
+    macroApplySchema.insert(QStringLiteral("properties"), macroConfirmation);
+    auto macroApply = capability("macro.upsert.apply", "qkm_apply_changes", Read | Configure, false, macroApplySchema);
+    for (auto *item : {&macroPreview, &macroApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_macro_catalog"),
+            QStringLiteral("append_or_replace_in_original_order"), QStringLiteral("confirm_overwrite_for_existing_name"),
+            QStringLiteral("basic_letter_or_digit_sequence_only"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    capabilities.append(macroPreview);
+    capabilities.append(macroApply);
     capabilities.append(operation);
     return capabilities;
 }
@@ -979,7 +1036,7 @@ bool MappingChangeStore::remember(const MappingChangePreview &preview, const QSt
     QJsonObject value{{QStringLiteral("status"), status}, {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
     if (preview.save) value.insert(QStringLiteral("target"), saveOperationTarget(preview));
     if (preview.removal) value.insert(QStringLiteral("target"), removalOperationTarget(preview));
-    if (preview.update || preview.preferences) value.insert(QStringLiteral("target"), preview.description.value(QStringLiteral("target")));
+    if (preview.update || preview.preferences || preview.macro) value.insert(QStringLiteral("target"), preview.description.value(QStringLiteral("target")));
     if (!errorCode.isEmpty()) value.insert(QStringLiteral("error"), QJsonObject{
         {QStringLiteral("code"), errorCode}, {QStringLiteral("message"), message}});
     return remember(preview.owner, preview.id, std::move(value));
@@ -1144,6 +1201,14 @@ std::optional<MappingChangePreview> MappingChangeStore::createPreferences(const 
     return preview;
 }
 
+std::optional<MappingChangePreview> MappingChangeStore::createMacro(const MappingChangeOwner &owner,
+    const MacroChangeArguments &arguments, const QJsonObject &description, const QString &preferencesRevision)
+{
+    auto preview = create(owner, MappingAdditionArguments(), description, preferencesRevision);
+    if (preview) { preview->macro = arguments; m_previews[preview->id] = *preview; }
+    return preview;
+}
+
 std::optional<MappingChangePreview> MappingChangeStore::begin(const MappingChangeOwner &owner, const QString &id)
 {
     prune();
@@ -1198,6 +1263,7 @@ QJsonObject MappingChangeStore::operation(const MappingChangeOwner &owner, const
             {QStringLiteral("remaining_ms"), double(qMax(qint64(0), remaining))}};
         if (preview->save) value.insert(QStringLiteral("target"), saveOperationTarget(*preview));
         if (preview->removal) value.insert(QStringLiteral("target"), removalOperationTarget(*preview));
+        if (preview->macro) value.insert(QStringLiteral("target"), preview->description.value(QStringLiteral("target")));
         return value;
     }
     return {{QStringLiteral("operation_id"), id}, {QStringLiteral("status"), QStringLiteral("unknown")},

@@ -757,8 +757,26 @@ void McpControlTest::mappingChangeArguments()
     }
     changed = sendTiming; changed.insert(QStringLiteral("key_up_mapping_key"), QStringLiteral("B"));
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    QCOMPARE(capabilities.size(), 56);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 54);
+    const QJsonObject macroFields{{QStringLiteral("catalog_revision"), revision}, {QStringLiteral("scope"), QStringLiteral("universal")},
+        {QStringLiteral("name"), QStringLiteral("Shared macro")}, {QStringLiteral("content"), QStringLiteral("A")},
+        {QStringLiteral("note"), QStringLiteral("")}};
+    const QJsonObject macroUpsert{{QStringLiteral("action"), QStringLiteral("macro.upsert")}, {QStringLiteral("macro"), macroFields}};
+    const auto macroRequest = validateMappingChangeRequest(previewMethod, macroUpsert);
+    QVERIFY(macroRequest.ok() && macroRequest.action == MappingChangeAction::UpsertMacro);
+    QCOMPARE(macroRequest.macro.scope, QStringLiteral("universal"));
+    QVERIFY(!macroRequest.macro.category && macroRequest.macro.note && macroRequest.macro.note->isEmpty());
+    changed = macroUpsert;
+    changed.insert(QStringLiteral("source_ref"), sourceRef);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    auto invalidMacro = macroFields;
+    invalidMacro.insert(QStringLiteral("scope"), QStringLiteral("other"));
+    changed = macroUpsert;
+    changed.insert(QStringLiteral("macro"), invalidMacro);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    QCOMPARE(capabilities.size(), 58);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 56);
+    QCOMPARE(capabilities.at(55).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.upsert.preview"));
+    QCOMPARE(capabilities.at(56).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.upsert.apply"));
     QCOMPARE(capabilities.at(53).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.duplicate.preview"));
     const auto duplicateApply = capabilities.at(54).toObject();
     QCOMPARE(duplicateApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.duplicate.apply"));

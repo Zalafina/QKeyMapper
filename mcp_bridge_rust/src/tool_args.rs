@@ -185,6 +185,34 @@ enum UnavailablePolicy {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum MacroScope {
+    Configuration,
+    Universal,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct MacroUpsert {
+    catalog_revision: String,
+    scope: MacroScope,
+    name: String,
+    content: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    category: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    note: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct MacroPreview {
+    action: String,
+    #[serde(rename = "macro")]
+    data: MacroUpsert,
+}
+
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct Preview {
     #[serde(default)]
@@ -492,6 +520,26 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }),
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
+            if arguments.get("action").and_then(Value::as_str) == Some("macro.upsert") {
+                return typed(arguments, |v: &MacroPreview| {
+                    let text = |value: &str, max| {
+                        !value.contains('\0') && value.encode_utf16().count() <= max
+                    };
+                    revision(&v.data.catalog_revision)
+                        && !v.data.name.is_empty()
+                        && text(&v.data.name, 32767)
+                        && !v.data.content.is_empty()
+                        && text(&v.data.content, 1_000_000)
+                        && v.data
+                            .category
+                            .as_deref()
+                            .is_none_or(|value| text(value, 32767))
+                        && v.data
+                            .note
+                            .as_deref()
+                            .is_none_or(|value| text(value, 32767))
+                });
+            }
             let duplicate =
                 arguments.get("action").and_then(Value::as_str) == Some("mapping.duplicate");
             if duplicate || arguments.contains_key("copy_to") {
