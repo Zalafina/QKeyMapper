@@ -48,6 +48,7 @@ struct MappingUpdateArguments {
     bool addBlankTab = false;
     bool copyTab = false;
     bool deleteTab = false;
+    bool clearTab = false;
     QByteArray tabSettingsDigest;
 };
 

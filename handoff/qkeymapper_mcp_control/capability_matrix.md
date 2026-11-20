@@ -324,7 +324,7 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 | TAB-COPY／M2-A | Ctrl+D／菜单 → `copyCurrentTabToKeyMappingTabWidget` | IDLE 限制；拒绝共通源；自动命名，新 QList 值拷贝映射及 Tab 属性，复制快捷键／共通包含与折叠／图片及浮窗设定，清空内部名，保持普通类型；刷新显示／索引及 dirty。不是只复制表格文字 | 提取明确源 Tab 的复制操作，保持 GUI 命名和所有复制字段；不得以改变当前表确定源。`EQ-TAB-COPY` 比较全部行／备注／同步组、属性、快捷键重复语义、新旧源隔离及冷启动；运行临时字段的预期另行验证 |
 | TAB-REMOVE／M2-A | 菜单／Tab 设置删除 → `deleteMappingTableByTabIndex` 确认 → `removeTabFromKeyMappingTabWidget` | 确认前验证索引，提交后刷新快捷键解析；保护共通及最后一普通表；关闭相关编辑窗，删除实际 QList／表格，调整当前索引、切表／重连事件及 dirty。菜单状态不能替代业务守卫 | 先解析并核实源引用，再由共用操作检查状态／保护项，提交不弹模态框；GUI 另收集确认。`EQ-TAB-REMOVE` 覆盖非当前表、取消、过期目标、共通／最后一表、打开编辑窗、热键缓存及保存恢复 |
 | TAB-ORDER／M2-A | `QTabBar::tabMoved` → `KeyMappingTabWidget::onTabMoved`／顺序恢复检查 → `onKeyMappingTabWidgetTabOrderChanged` → `moveTabInKeyMappingTabWidget(from,to)` | 回调时 Qt 页序已经移动；末端函数处理数据侧 IDLE／索引／共通检查、移动 TabInfo、当前／上一表跟踪、切表／重连、热键缓存及 dirty。直接调用末端函数并不包含 Qt 页序移动 | 共用完整的明确源／目标顺序操作及结构修订，避免回调重复提交；`EQ-TAB-ORDER` 比较实际页序与源信息、逻辑当前表保持、源引用失效、热键实际切表、共通固定位置及冷启动顺序 |
-| TAB-CLEAR／M2-A | 菜单清空 → `clearCurrentMappingTable` 确认 | 清空当前实际源表、刷新依赖显示、清除 Screen／WindowMousePointsList 并 dirty；存在编辑窗关闭分支。不能仅清空可见行或遗漏被筛选／禁用行 | 共用明确源表清空，GUI 另确认；`EQ-TAB-CLEAR` 覆盖筛选、共通表、空表、坐标缓存、未保存草稿、取消及冷启动；状态守卫随共享入口补齐 |
+| TAB-CLEAR／M2-A | 菜单清空 → `clearCurrentMappingTable` 确认 | 清空当前实际源表、刷新依赖显示、清除 Screen／WindowMousePointsList 并 dirty；存在编辑窗关闭分支。不能仅清空可见行或遗漏被筛选／禁用行 | TAB-CLEAR-173 共用 GUI 清空，正式 Rust 选验筛选与隐藏行、普通／空／共通源、确认和保存重载。独立 GUI 核实坐标缓存。非当前源和冷启动未覆盖 |
 | TAB-NAME／M2-A | Tab 设置文本编辑／更新 → `on_tabNameUpdateButton_clicked` → `updateKeyMappingTabWidgetTabName` | 校验非空、重复及保留共通显示名；写 TabInfo.TabName、更新真实 Tab 显示并 dirty；不以显示文字作为永久身份 | 复用校验／提交，输入框只采集参数；`EQ-TAB-NAME` 检查重复／保留名拒绝、非当前源、提示和图片组合显示、名称变化后源身份及保存恢复 |
 | TAB-HOTKEY／M2-A | Tab 快捷键更新 → 规范空白／提取包装内组合键 → `validateCombinationKey` → `updateKeyMappingTabInfoHotkey` | 保存原规范串、更新显示并调用 `collectMappingTableTabHotkeys`，Worker `detectMappingTableTabHotkeys` 消费该缓存和各 Tab 字段。多个 Tab 的同一快捷键对应有序索引列表，不能自行改成唯一限制 | 共用解析、清除、校验、赋值及重建缓存；`EQ-TAB-HOTKEY` 比较显示串与有效键、相同键多目标、清空／非法值、排序后实际切换及冷启动；不只核对 LineEdit |
 | TABLE-EXPORT／M2-A | 菜单／Tab 设置 → `exportMappingTableByTabIndex` 文件选择 → `exportKeyMappingDataToFile` | 从指定 Tab 的**内存源行**序列化映射、备注／分类／逐段备注和浮动字段；不导出整个配置／宏定义。现函数 setValue 后直接 true，未显式 sync/status；调用方据此提示成功，不能当写盘证据 | 共用序列化及写盘完成检查，导出明确草稿来源和宏引用依赖；`EQ-TABLE-EXPORT` 用新进程读取实际文件、测试无法写入／覆盖及 Qt5 Unicode。外部路径采用普通权限文件层，不把管理员保存函数变成任意路径写入口 |
@@ -418,7 +418,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-TAB-ADD | 菜单、快捷键、表格右键添加空白 Tab | 主窗口构造及表格 `contextMenuEvent`；M2-A；TAB-ADD-169 以真实表格菜单和正式 Rust 选验默认名、新表激活、零本地行、共通继承、旧引用和保存重载 |
 | ACT-TAB-COPY | 复制当前 Tab | TAB-COPY-170 私有真菜单及 Rust 选验，覆盖顺序、重名、当前表保留、禁用行、宏引用、共通与保存重载 |
 | ACT-TAB-DELETE | 删除当前／指定 Tab | TAB-DELETE-171 选验当前普通源、取消、共通／最后一表保护、接替与热键索引。非当前表待验 |
-| ACT-TABLE-CLEAR | 清空当前表 | `clearCurrentMappingTable`；M2-A；确认、来源范围及已有草稿 |
+| ACT-TABLE-CLEAR | 清空当前表 | `clearCurrentMappingTable`／`tab.clear`，TAB-CLEAR-173 选验整源、明确确认与保存重载 |
 | ACT-TABLE-EXPORT | 导出映射表 | `exportMappingTableByTabIndex`／`exportKeyMappingDataToFile`；M2-A；导出内存还是磁盘、覆盖与文件权限 |
 | ACT-TABLE-IMPORT | 导入映射表 | `importMappingTableByTabIndex`／`importKeyMappingDataFromFile`；M2-A；插入位置、校验、互斥联动、宏及失败保护 |
 | ACT-VIEW-PROCESS | 显示／隐藏进程列表 | `m_ActionShowProcessList`；M2-B；真实布局、尺寸和保存范围 |

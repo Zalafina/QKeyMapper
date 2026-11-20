@@ -447,8 +447,22 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     changed = deleteTab; changed.remove(QStringLiteral("source_tab_ref"));
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    QCOMPARE(capabilities.size(), 30);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 28);
+    QJsonObject clearTab = addTab;
+    clearTab.insert(QStringLiteral("action"), QStringLiteral("tab.clear"));
+    const auto clearTabRequest = validateMappingChangeRequest(previewMethod, clearTab);
+    QVERIFY(clearTabRequest.ok() && clearTabRequest.update.clearTab && !clearTabRequest.update.deleteTab);
+    changed = clearTab; changed.insert(QStringLiteral("confirm_delete"), true);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = clearTab; changed.insert(QStringLiteral("source_tab_ref"), sourceRef);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    QCOMPARE(capabilities.size(), 32);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 30);
+    QCOMPARE(capabilities.at(29).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.clear.preview"));
+    const auto clearTabApply = capabilities.at(30).toObject();
+    QCOMPARE(clearTabApply.value(QStringLiteral("id")).toString(), QStringLiteral("tab.clear.apply"));
+    QCOMPARE(clearTabApply.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(clearTabApply.value(QStringLiteral("arguments_schema")).toObject().value(QStringLiteral("required")).toArray()
+        .contains(QJsonValue(QStringLiteral("confirm_delete"))));
     QCOMPARE(capabilities.at(27).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.delete.preview"));
     const auto deleteTabApply = capabilities.at(28).toObject();
     QCOMPARE(deleteTabApply.value(QStringLiteral("id")).toString(), QStringLiteral("tab.delete.apply"));

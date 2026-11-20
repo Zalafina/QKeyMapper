@@ -1745,6 +1745,7 @@ public slots:
     // void on_deleteSelectedButton_clicked();
 
     void clearCurrentMappingTable(void);
+    bool clearCurrentMappingTableData();
     // void on_clearallButton_clicked();
 
     // Button toggle state members (survive button deletion, used by menu actions)

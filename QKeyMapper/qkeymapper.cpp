@@ -38663,9 +38663,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
-        const bool editingTab = renamingTab || addingBlankTab || copyingTab || deletingTab;
+        const bool clearingTab = updating && update.clearTab;
+        const bool removingTabData = deletingTab || clearingTab;
+        const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData;
         if ((validation.confirmConflicts && !update.originalKey.has_value())
-            || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !deletingTab)) {
+            || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
             return;
         }
@@ -38676,7 +38678,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
-        if (editingTab && isCommonMappingTabIndex(tab)) {
+        if (editingTab && !clearingTab && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
@@ -38754,7 +38756,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 update.tabSettingsDigest = settingsDigest;
             }
-            if (deletingTab) {
+            if (clearingTab) {
+                modified = true;
+                change = {{QStringLiteral("kind"), QStringLiteral("clear_tab")},
+                    {QStringLiteral("tab_name"), tabInfo.TabName}, {QStringLiteral("ui_index"), tab},
+                    {QStringLiteral("local_row_count"), item.value(QStringLiteral("row_count"))},
+                    {QStringLiteral("is_common"), isCommonMappingTab(tabInfo)},
+                    {QStringLiteral("clears_mouse_point_caches"), true}};
+            } else if (deletingTab) {
                 if (countNormalMappingTabs() <= 1) {
                     reject(QStringLiteral("protected_tab"), QStringLiteral("The last normal Tab cannot be removed."));
                     return;
@@ -38962,7 +38971,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = deletingTab ? QStringLiteral("tab.delete")
+        const QString action = clearingTab ? QStringLiteral("tab.clear")
+            : deletingTab ? QStringLiteral("tab.delete")
             : copyingTab ? QStringLiteral("tab.copy")
             : addingBlankTab ? QStringLiteral("tab.add_blank")
             : renamingTab ? QStringLiteral("tab.rename")
@@ -38973,7 +38983,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             {QStringLiteral("changes"), changes}, {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
         const bool confirmationRequired = !conflictRows.isEmpty();
-        if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired || deletingTab);
+        if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired || removingTabData);
         if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
             reject(QStringLiteral("result_too_large"), QStringLiteral("The complete settings update exceeds the response limit.")); return;
         }
@@ -38994,8 +39004,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("stale_preview"), QStringLiteral("The mapping change no longer matches the preview; query the source and review a fresh preview."));
             return;
         }
-        if (deletingTab && !validation.confirmDelete) {
-            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the complete Tab deletion and explicitly confirm it with a fresh preview."));
+        if (removingTabData && !validation.confirmDelete) {
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the affected Tab and explicitly confirm the removal with a fresh preview."));
             return;
         }
         if (confirmationRequired && !validation.confirmConflicts) {
@@ -39007,7 +39017,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (deletingTab) {
+            if (clearingTab) {
+                if (!clearCurrentMappingTableData()) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab can no longer be cleared."));
+                    return;
+                }
+            } else if (deletingTab) {
                 if (removeTabFromKeyMappingTabWidget(tab) != REMOVE_MAPPINGTAB_SUCCESS) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The Tab could not be removed from this source."));
                     return;
@@ -43656,12 +43671,20 @@ void QKeyMapper::clearCurrentMappingTable()
 #ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
         closeSetupDialog_OnDataChanged();
 #endif
-        KeyMappingDataList->clear();
-        refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
-        ScreenMousePointsList.clear();
-        WindowMousePointsList.clear();
-        markSaveSettingDirty();
+        clearCurrentMappingTableData();
     }
+}
+
+bool QKeyMapper::clearCurrentMappingTableData()
+{
+    if (m_KeyMapStatus != KEYMAP_IDLE || !KeyMappingDataList) return false;
+
+    KeyMappingDataList->clear();
+    refreshTabsForSourceTabChange(s_KeyMappingTabWidgetCurrentIndex);
+    ScreenMousePointsList.clear();
+    WindowMousePointsList.clear();
+    markSaveSettingDirty();
+    return true;
 }
 
 // void QKeyMapper::on_clearallButton_clicked()

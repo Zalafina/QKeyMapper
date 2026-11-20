@@ -131,6 +131,12 @@ Review the whole-tab scope and the tab that will become selected. Apply
 with `confirm_delete: true`. Common and the last normal tab are protected.
 Persistence still requires the separate `configuration.save` action.
 
+Use `action: "tab.clear"` and the selected tab's `source_tab_ref` to clear
+all of its local rows, including hidden rows. A clear on a normal tab
+keeps inherited Common rows. Selecting and clearing the Common source
+refreshes the tabs that inherit it. Apply with `confirm_delete: true`
+and save separately to persist the draft.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,
