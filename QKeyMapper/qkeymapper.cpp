@@ -18297,6 +18297,21 @@ bool QKeyMapper::setMappingSourceRowBurstTiming(int row, std::optional<int> pres
     return true;
 }
 
+bool QKeyMapper::setMappingSourceRowLockOptions(int row, std::optional<bool> mappingKeyUnlock,
+                                               std::optional<bool> disableOriginalKeyUnlock)
+{
+    if (!KeyMappingDataList || row < 0 || row >= KeyMappingDataList->size()) return false;
+    auto &data = (*KeyMappingDataList)[row];
+    const bool mapping = mappingKeyUnlock.value_or(data.MappingKeyUnlock);
+    const bool disableOriginal = disableOriginalKeyUnlock.value_or(data.DisableOriginalKeyUnlock);
+    if (data.MappingKeyUnlock == mapping && data.DisableOriginalKeyUnlock == disableOriginal) return false;
+
+    data.MappingKeyUnlock = mapping;
+    data.DisableOriginalKeyUnlock = disableOriginal;
+    ++m_AutomationSourceEpoch;
+    return true;
+}
+
 bool QKeyMapper::setMappingSourceRowNote(int tabIndex, int row, const QString &note)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || !KeyMappingDataList
@@ -38723,6 +38738,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QList<int> categoryDisplayRows;
         std::optional<int> burstPressMs;
         std::optional<int> burstReleaseMs;
+        std::optional<bool> mappingKeyUnlock;
+        std::optional<bool> disableOriginalKeyUnlock;
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
@@ -39099,15 +39116,26 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 const auto lock = update.rowModes.value(QStringLiteral("lock"));
                 const auto press = update.rowModes.value(QStringLiteral("burst_press_ms"));
                 const auto release = update.rowModes.value(QStringLiteral("burst_release_ms"));
+                const auto mappingUnlock = update.rowModes.value(QStringLiteral("mapping_key_unlock"));
+                const auto disableOriginal = update.rowModes.value(QStringLiteral("disable_original_key_unlock"));
+                if (mappingUnlock.isBool()) mappingKeyUnlock = mappingUnlock.toBool();
+                if (disableOriginal.isBool()) disableOriginalKeyUnlock = disableOriginal.toBool();
+                const bool editingUnlock = mappingKeyUnlock.has_value() || disableOriginalKeyUnlock.has_value();
                 if (!press.isUndefined()) burstPressMs = press.toInt();
                 if (!release.isUndefined()) burstReleaseMs = release.toInt();
                 if (((!burst.isUndefined() || burstPressMs || burstReleaseMs) && !getKeyMappingDataTableItemBurstStatus(displayRow))
-                    || (!lock.isUndefined() && !getKeyMappingDataTableItemLockStatus(displayRow))) {
+                    || ((!lock.isUndefined() || editingUnlock) && !getKeyMappingDataTableItemLockStatus(displayRow))) {
                     reject(QStringLiteral("unsupported_capability"), QStringLiteral("The current row must support each requested control in the GUI."));
                     return;
                 }
                 if (!burst.isUndefined()) after.Burst = burst.toBool();
                 if (!lock.isUndefined()) after.Lock = lock.toBool();
+                if (editingUnlock && !after.Lock) {
+                    reject(QStringLiteral("invalid_mapping"), QStringLiteral("The row must have Lock enabled to configure unlock options."));
+                    return;
+                }
+                after.MappingKeyUnlock = mappingKeyUnlock.value_or(after.MappingKeyUnlock);
+                after.DisableOriginalKeyUnlock = disableOriginalKeyUnlock.value_or(after.DisableOriginalKeyUnlock);
                 after.BurstPressTime = burstPressMs.value_or(after.BurstPressTime);
                 after.BurstReleaseTime = burstReleaseMs.value_or(after.BurstReleaseTime);
             }
@@ -39380,6 +39408,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 if (burstPressMs || burstReleaseMs) {
                     setMappingSourceRowBurstTiming(update.sourceRow, burstPressMs, burstReleaseMs);
+                }
+                if (mappingKeyUnlock || disableOriginalKeyUnlock) {
+                    setMappingSourceRowLockOptions(update.sourceRow, mappingKeyUnlock, disableOriginalKeyUnlock);
                 }
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;

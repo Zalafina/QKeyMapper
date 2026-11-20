@@ -2112,6 +2112,7 @@ public:
     int applyBatchCategoryChange(KeyMappingDataTableWidget *mappingDataTable, const QList<int> &rows, const QString &category);
     bool setMappingSourceRowMode(QList<MAP_KEYDATA> &rows, int row, int column, bool enabled);
     bool setMappingSourceRowBurstTiming(int row, std::optional<int> pressMs, std::optional<int> releaseMs);
+    bool setMappingSourceRowLockOptions(int row, std::optional<bool> mappingKeyUnlock, std::optional<bool> disableOriginalKeyUnlock);
     bool setMappingSourceRowNote(int tabIndex, int row, const QString &note);
     bool setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode);
     bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);

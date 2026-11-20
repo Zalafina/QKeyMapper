@@ -109,7 +109,9 @@ Use `mapping.update` with the current visible `source_ref` and a standalone
 `row_modes` object. Set the boolean `burst` or `lock`, or the integer timings
 `burst_press_ms` and `burst_release_ms` from 1 to 99999. Supply at least one
 supported field. Timings can be set while burst is off on an eligible row.
-Save the configuration separately to persist the selected values.
+The boolean `mapping_key_unlock` and `disable_original_key_unlock` require
+Lock enabled. You can enable Lock in the same request. Turning Lock off
+retains the existing unlock values. Save separately to persist the change.
 
 ## Editing a mapping note
 

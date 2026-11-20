@@ -636,6 +636,13 @@ void McpControlTest::mappingChangeArguments()
     const auto modeConfig = validateMappingChangeRequest(previewMethod, rowModes);
     QVERIFY(modeConfig.ok());
     QCOMPARE(modeConfig.update.rowModes, rowModes.value(QStringLiteral("row_modes")).toObject());
+    changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{
+        {QStringLiteral("mapping_key_unlock"), true}, {QStringLiteral("disable_original_key_unlock"), false}});
+    const auto unlock = validateMappingChangeRequest(previewMethod, changed);
+    QVERIFY(unlock.ok());
+    QCOMPARE(unlock.update.rowModes, changed.value(QStringLiteral("row_modes")).toObject());
+    changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("mapping_key_unlock"), 1}});
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     for (const int ms : {1, 99999}) {
         changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("burst_press_ms"), ms}});
         QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());

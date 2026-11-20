@@ -311,8 +311,9 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             for (auto it = modes.constBegin(); it != modes.constEnd(); ++it) {
                 const QString key = it.key();
                 const auto value = it.value();
-                if (key == QStringLiteral("burst") || key == QStringLiteral("lock")) {
-                    if (!value.isBool()) return fail("Burst and lock must be booleans.");
+                if (key == QStringLiteral("burst") || key == QStringLiteral("lock")
+                    || key == QStringLiteral("mapping_key_unlock") || key == QStringLiteral("disable_original_key_unlock")) {
+                    if (!value.isBool()) return fail("Burst, lock and unlock options must be booleans.");
                 } else if (key == QStringLiteral("burst_press_ms") || key == QStringLiteral("burst_release_ms")) {
                     const int ms = value.toInt(-1);
                     if (!value.isDouble() || value.toDouble() != ms || ms < QKeyMapperConstants::BURST_TIME_MIN
@@ -556,7 +557,8 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     const QJsonObject burstTiming{{QStringLiteral("type"), QStringLiteral("integer")},
         {QStringLiteral("minimum"), QKeyMapperConstants::BURST_TIME_MIN}, {QStringLiteral("maximum"), QKeyMapperConstants::BURST_TIME_MAX}};
     auto rowModesSchema = schema({{QStringLiteral("burst"), toggle}, {QStringLiteral("lock"), toggle},
-        {QStringLiteral("burst_press_ms"), burstTiming}, {QStringLiteral("burst_release_ms"), burstTiming}}, {});
+        {QStringLiteral("burst_press_ms"), burstTiming}, {QStringLiteral("burst_release_ms"), burstTiming},
+        {QStringLiteral("mapping_key_unlock"), toggle}, {QStringLiteral("disable_original_key_unlock"), toggle}}, {});
     rowModesSchema.insert(QStringLiteral("minProperties"), 1);
     auto updateSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
         {QStringLiteral("row_modes"), rowModesSchema},

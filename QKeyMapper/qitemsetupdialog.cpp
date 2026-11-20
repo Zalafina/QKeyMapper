@@ -4124,16 +4124,11 @@ void QItemSetupDialog::on_itemNoteUpdateButton_clicked()
 void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    bool mappingkeyunlock = ui->mappingKeyUnlockCheckBox->isChecked();
-    if (mappingkeyunlock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).MappingKeyUnlock) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].MappingKeyUnlock = mappingkeyunlock;
+    const bool enabled = ui->mappingKeyUnlockCheckBox->isChecked();
+    if (auto *mapper = QKeyMapper::getInstance(); mapper && mapper->setMappingSourceRowLockOptions(m_ItemRow, enabled, std::nullopt)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] MappingKeyUnlock -> " << mappingkeyunlock;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "] MappingKeyUnlock -> " << enabled;
 #endif
     }
 }
@@ -4141,16 +4136,11 @@ void QItemSetupDialog::on_mappingKeyUnlockCheckBox_stateChanged(int state)
 void QItemSetupDialog::on_disableOriginalKeyUnlockCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    bool disableoriginalkeyunlock = ui->disableOriginalKeyUnlockCheckBox->isChecked();
-    if (disableoriginalkeyunlock != QKeyMapper::KeyMappingDataList->at(m_ItemRow).DisableOriginalKeyUnlock) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].DisableOriginalKeyUnlock = disableoriginalkeyunlock;
+    const bool disabled = ui->disableOriginalKeyUnlockCheckBox->isChecked();
+    if (auto *mapper = QKeyMapper::getInstance(); mapper && mapper->setMappingSourceRowLockOptions(m_ItemRow, std::nullopt, disabled)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] DisableOriginalKeyUnlock -> " << disableoriginalkeyunlock;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "] DisableOriginalKeyUnlock -> " << disabled;
 #endif
     }
 }
