@@ -67,6 +67,7 @@ async def check_contract(exe):
     other_row = row.rsplit(":", 1)[0] + ":3"
     category_batch = {"action": "mapping.update", "source_refs": [other_row, row], "category": "批量分類"}
     category_filter = {"action": "tab.set_category_filter", "source_tab_ref": tab, "category_filter": ["", "批量分類"]}
+    disabled_visibility = {"action": "configuration.set_show_disabled_rows", "source_tab_ref": tab, "show_disabled_rows": True}
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     hotkey = {"action": "tab.set_hotkey", "source_tab_ref": tab, "tab_hotkey": " $ F9 "}
     notification = {"action": "tab.set_notification_mode", "source_tab_ref": tab, "notification_mode": 0}
@@ -177,6 +178,10 @@ async def check_contract(exe):
                 {"const": "all"}, {"type": "array", "maxItems": 100, "uniqueItems": True,
                                    "items": {"type": "string", "maxLength": 32767}}]
             assert note_rule["properties"]["category_filter"] == {"type": "null"}
+            visibility_rule, = (rule for rule in previews["oneOf"]
+                                if rule["properties"]["action"].get("const") == "configuration.set_show_disabled_rows")
+            assert set(visibility_rule["required"]) == set(disabled_visibility)
+            assert visibility_rule["properties"]["show_disabled_rows"] == {"type": "boolean"}
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -296,6 +301,12 @@ async def check_contract(exe):
                     {**category_filter, "source_tab_ref": row}, {**category_filter, "category": ""})),
                 ("qkm_preview_changes", {**category_filter, "category_filter": "all"}, ()),
                 ("qkm_preview_changes", {**category_filter, "category_filter": []}, ()),
+                ("qkm_preview_changes", disabled_visibility, (
+                    {**disabled_visibility, "show_disabled_rows": None},
+                    {**disabled_visibility, "show_disabled_rows": 1},
+                    {**disabled_visibility, "show_disabled_rows": "false"},
+                    {**disabled_visibility, "category_filter": []})),
+                ("qkm_preview_changes", {**disabled_visibility, "show_disabled_rows": False}, ()),
                 ("qkm_preview_changes", category_batch, (
                     {**category_batch, "source_ref": row}, {**category_batch, "source_refs": [row]},
                     {**category_batch, "source_refs": [row, row]},

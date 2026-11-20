@@ -611,8 +611,19 @@ void McpControlTest::mappingChangeArguments()
         changed = categoryFilter; changed.insert(QStringLiteral("category_filter"), value);
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     }
-    QCOMPARE(capabilities.size(), 50);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 48);
+    const QJsonObject visibility{{QStringLiteral("action"), QStringLiteral("configuration.set_show_disabled_rows")},
+        {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")}, {QStringLiteral("show_disabled_rows"), false}};
+    const auto hidden = validateMappingChangeRequest(previewMethod, visibility);
+    QVERIFY(hidden.ok() && hidden.update.showDisabledRows.has_value());
+    QVERIFY(!hidden.update.showDisabledRows.value());
+    changed = visibility; changed.insert(QStringLiteral("show_disabled_rows"), true);
+    QVERIFY(validateMappingChangeRequest(previewMethod, changed).update.showDisabledRows.value());
+    changed = visibility; changed.insert(QStringLiteral("show_disabled_rows"), 0);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    QCOMPARE(capabilities.size(), 52);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 50);
+    QCOMPARE(capabilities.at(49).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.preview"));
+    QCOMPARE(capabilities.at(50).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.apply"));
     QCOMPARE(capabilities.at(47).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_category_filter.preview"));
     QCOMPARE(capabilities.at(48).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_category_filter.apply"));
     QCOMPARE(capabilities.at(45).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.preview"));

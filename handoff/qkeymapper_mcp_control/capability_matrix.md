@@ -426,7 +426,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-VIEW-CATEGORY | 显示／隐藏分类列 | `setCategoryColumnVisible`；M2-A；筛选、列宽及草稿 |
 | ACT-VIEW-NOTES | 显示／隐藏备注列 | `m_ActionShowNotes` 及表格右键；M2-A；列显示和保存 |
 | ACT-VIEW-FLOATING | 显示／隐藏浮动列 | `m_ActionShowFloating`；M2-B；实际浮动按钮与表格显示的区别 |
-| ACT-VIEW-DISABLED | 显示／隐藏禁用行 | `m_ActionHideDisabled`；M2-A；动作名称与实际布尔语义、选区恢复 |
+| ACT-VIEW-DISABLED | 显示／隐藏禁用行 | `m_ActionHideDisabled`；M2-A；186 选验真实菜单、多表、分类筛选叠加和保存冷读，选区恢复另验 |
 | ACT-CATEGORY-FILTER | 分类多选／全部／无匹配／空白分类 | `initCategoryFilterControls`／`showCategoryFilterPopup`；M2-A；185 双 Qt 私有 GUI 和 Rust 选验视图、可见行守卫及源／INI 不变 |
 | ACT-CATEGORY-ASSIGN | 选定分类／输入新分类／批量分类 | 表格 `contextMenuEvent` 的内嵌文本和 QWidgetAction；M2-A；183～184 选验当前可见源行单条／同源批量赋值、清空、混源及隐藏拒绝、筛选选项和保存冷读 |
 | ACT-MAP-STATE | 单项／批量启用禁用、连发开关、锁定开关、浮动按钮开关 | 表格状态菜单与 `keyMappingTableItemCheckStateChanged`；M2-A／M2-B；与映射项窗口逐项等价 |

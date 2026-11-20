@@ -129,6 +129,13 @@ none, or a list of category names. An empty string in that list selects
 the Blank option when it is available. The filter affects the current view.
 Source references and the saved configuration stay stable.
 
+## Showing disabled mapping rows
+
+Use `configuration.set_show_disabled_rows` with the current
+`source_tab_ref` and the boolean `show_disabled_rows`. The setting applies
+to all mapping tables. The category filter continues to affect visibility.
+Save the configuration separately to persist the preference.
+
 ## Renaming a mapping tab
 
 Use `tab.rename` with the current normal tab's `source_tab_ref` and the

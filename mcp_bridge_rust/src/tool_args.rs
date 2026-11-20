@@ -135,6 +135,8 @@ enum Action {
     SetTabNotificationMode,
     #[serde(rename = "tab.set_category_filter")]
     SetCategoryFilter,
+    #[serde(rename = "configuration.set_show_disabled_rows")]
+    SetShowDisabledRows,
     #[serde(rename = "tab.set_notification_colors")]
     SetTabNotificationColors,
     #[serde(rename = "tab.add_blank")]
@@ -199,6 +201,7 @@ struct Preview {
     note: Option<String>,
     category: Option<String>,
     category_filter: Option<Value>,
+    show_disabled_rows: Option<bool>,
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
     notification_mode: Option<u8>,
@@ -470,6 +473,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             let set_hotkey = action == Some("tab.set_hotkey");
             let set_notification = action == Some("tab.set_notification_mode");
             let category_filter = action == Some("tab.set_category_filter");
+            let show_disabled = action == Some("configuration.set_show_disabled_rows");
             let color_count = ["notification_font_color", "notification_background_color"]
                 .into_iter()
                 .filter(|field| values.contains_key(*field))
@@ -498,7 +502,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                     && source.split(':').next() == target.split(':').next()
                             })
                 }
-                Some("tab.set_category_filter") => {
+                Some("tab.set_category_filter" | "configuration.set_show_disabled_rows") => {
                     values.len() == 3 && values.contains_key("source_tab_ref")
                 }
                 Some("tab.set_notification_colors") => {
@@ -517,6 +521,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 || set_hotkey != values.contains_key("tab_hotkey")
                 || set_notification != values.contains_key("notification_mode")
                 || category_filter != values.contains_key("category_filter")
+                || show_disabled != values.contains_key("show_disabled_rows")
                 || (color_count > 0 && action != Some("tab.set_notification_colors"))
                 || common_inheritance != values.contains_key("include_common")
                 || common_collapsed != values.contains_key("common_collapsed")

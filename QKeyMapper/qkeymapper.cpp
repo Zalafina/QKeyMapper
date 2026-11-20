@@ -37977,6 +37977,7 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             {QStringLiteral("stop_completion"), automationSourceReadBasis() == QStringLiteral("completed_cleanup")
                 ? QStringLiteral("observed") : QStringLiteral("unobserved")},
             {QStringLiteral("actual_stop_shortcut"), s_MappingStopKeyString}}}};
+    result.insert(QStringLiteral("show_disabled_rows"), !m_HideDisabled);
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
         {QStringLiteral("available"), m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()},
@@ -38651,6 +38652,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingTabHotkey = updating && update.tabHotkey.has_value();
         const bool changingTabNotification = updating && update.tabNotificationMode.has_value();
         const bool filteringCategories = updating && update.tabCategoryFilter.has_value();
+        const bool settingDisabledVisibility = updating && update.showDisabledRows.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -38664,7 +38666,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
-            || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab || filteringCategories;
+            || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
+            || filteringCategories || settingDisabledVisibility;
         if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature)
             || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
@@ -38677,7 +38680,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
-        if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories && isCommonMappingTabIndex(tab)) {
+        if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
+            && !settingDisabledVisibility && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
@@ -38936,6 +38940,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("local_row_count"), 0},
                     {QStringLiteral("include_common"), MAPPINGTABLE_INCLUDE_COMMON_DEFAULT},
                     {QStringLiteral("activate_new_tab"), true}};
+            } else if (settingDisabledVisibility) {
+                const bool before = !m_HideDisabled;
+                const bool after = *update.showDisabledRows;
+                modified = before != after;
+                target.insert(QStringLiteral("scope"), QStringLiteral("mapping_table_view_preferences"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_show_disabled_rows")},
+                    {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
             } else if (filteringCategories) {
                 if (!m_KeyMappingDataTable->isCategoryColumnVisible()) {
                     reject(QStringLiteral("unsupported_capability"), QStringLiteral("The current Tab must show the category column."));
@@ -39185,6 +39196,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : deletingTab ? QStringLiteral("tab.delete")
             : copyingTab ? QStringLiteral("tab.copy")
             : addingBlankTab ? QStringLiteral("tab.add_blank")
+            : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
             : changingTabNotificationColors ? QStringLiteral("tab.set_notification_colors")
             : changingTabNotification ? QStringLiteral("tab.set_notification_mode")
@@ -39234,6 +39246,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             if (filteringCategories) {
                 m_KeyMappingDataTable->setCategoryFilters(pendingCategoryFilter);
                 updateCategoryFilterHeaderAppearance();
+            } else if (settingDisabledVisibility) {
+                setHideDisabledRows(!*update.showDisabledRows);
             } else if (selectingTab) {
                 switchToMappingTableTab(tabAfter);
                 if (s_KeyMappingTabWidgetCurrentIndex != tabAfter) {
@@ -39330,7 +39344,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (!client.setPreferences(candidatePreferences)) {
                 reject(QStringLiteral("context_busy"), QStringLiteral("The IbInput client no longer admits preference changes.")); return;
             }
-            if (modified && !categoryUpdate) requestSaveSettingDirty();
+            if (modified && !categoryUpdate && !settingDisabledVisibility) requestSaveSettingDirty();
             if (preferencesUpdate) refreshIbInputUi();
         }
         QJsonObject result{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
