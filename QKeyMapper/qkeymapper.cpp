@@ -18436,6 +18436,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
     qDebug().nospace() << "[copyCurrentTabToKeyMappingTabWidget] Copy tab from TabIndex[" << current_tabindex << "] new TabName: " << tabName;
 #endif
     applyResizeLayout(qMax(0, this->width() - WINDOW_BASE_WIDTH), this->height() - WINDOW_BASE_HEIGHT);
+    collectMappingTableTabHotkeys();
     markSaveSettingDirty();
     return true;
 }
