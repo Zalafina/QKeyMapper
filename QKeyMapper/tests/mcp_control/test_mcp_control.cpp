@@ -672,6 +672,18 @@ void McpControlTest::mappingChangeArguments()
         changed.insert(QStringLiteral("row_modes"), invalid);
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     }
+    QJsonObject copyRow{{QStringLiteral("action"), QStringLiteral("mapping.duplicate")}, {QStringLiteral("source_ref"), sourceRef},
+        {QStringLiteral("copy_to"), QJsonObject{{QStringLiteral("position"), QStringLiteral("above")},
+            {QStringLiteral("anchor_ref"), revision + QStringLiteral(":row:0:3")}}}};
+    const auto duplicate = validateMappingChangeRequest(previewMethod, copyRow);
+    QVERIFY(duplicate.ok());
+    QCOMPARE(duplicate.update.copyPosition, QStringLiteral("above"));
+    QCOMPARE(duplicate.update.copyAnchorRef, revision + QStringLiteral(":row:0:3"));
+    copyRow.insert(QStringLiteral("copy_to"), QJsonObject{{QStringLiteral("position"), QStringLiteral("below")}});
+    QVERIFY(!validateMappingChangeRequest(previewMethod, copyRow).ok());
+    copyRow.insert(QStringLiteral("copy_to"), QJsonObject{{QStringLiteral("position"), QStringLiteral("above")},
+        {QStringLiteral("anchor_ref"), revision + QStringLiteral(":row:1:3")}});
+    QVERIFY(!validateMappingChangeRequest(previewMethod, copyRow).ok());
     const auto triggerModes = [](const QJsonObject &trigger) {
         return QJsonObject{{QStringLiteral("original_trigger"), trigger}};
     };
@@ -726,8 +738,12 @@ void McpControlTest::mappingChangeArguments()
     }
     changed = sendTiming; changed.insert(QStringLiteral("key_up_mapping_key"), QStringLiteral("B"));
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    QCOMPARE(capabilities.size(), 54);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 52);
+    QCOMPARE(capabilities.size(), 56);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 54);
+    QCOMPARE(capabilities.at(53).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.duplicate.preview"));
+    const auto duplicateApply = capabilities.at(54).toObject();
+    QCOMPARE(duplicateApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.duplicate.apply"));
+    QCOMPARE(duplicateApply.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     QCOMPARE(capabilities.at(51).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.preview"));
     QCOMPARE(capabilities.at(52).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.apply"));
     QCOMPARE(capabilities.at(49).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.preview"));

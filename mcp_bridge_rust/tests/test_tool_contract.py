@@ -117,7 +117,7 @@ async def check_contract(exe):
             assert batch_rule["required"] == ["source_refs"]
             assert batch_rule["properties"] == {
                 "source_ref": {"type": "null"}, "source_refs": {"type": "array", "minItems": 2}}
-            assert set(move_rule["properties"]) == set(previews["properties"])
+            assert set(move_rule["properties"]) == set(previews["properties"]) - {"copy_to"}
             assert all(rule == {"type": "null"} for field, rule in move_rule["properties"].items()
                        if field not in {"action", "source_ref", "source_refs"})
             rename_rule, = (rule for rule in previews["oneOf"]
@@ -125,7 +125,7 @@ async def check_contract(exe):
             assert set(rename_rule["required"]) == set(rename)
             assert rename_rule["properties"]["source_tab_ref"] == {"type": "string"}
             assert rename_rule["properties"]["tab_name"] == {"type": "string"}
-            assert set(rename_rule["properties"]) == set(previews["properties"])
+            assert set(rename_rule["properties"]) == set(previews["properties"]) - {"copy_to"}
             assert all(rule == {"type": "null"} for field, rule in rename_rule["properties"].items()
                        if field not in rename)
             add_rule, = (rule for rule in previews["oneOf"]
@@ -133,14 +133,14 @@ async def check_contract(exe):
             assert set(add_rule["properties"]["action"]["enum"]) == {"tab.add_blank", "tab.copy", "tab.delete", "tab.clear"}
             assert set(add_rule["required"]) == set(add_tab) == set(copy_tab) == set(delete_tab) == set(clear_tab)
             assert add_rule["properties"]["source_tab_ref"] == {"type": "string"}
-            assert set(add_rule["properties"]) == set(previews["properties"])
+            assert set(add_rule["properties"]) == set(previews["properties"]) - {"copy_to"}
             assert all(rule == {"type": "null"} for field, rule in add_rule["properties"].items()
                        if field not in add_tab)
             move_tab_rule, = (rule for rule in previews["oneOf"]
                               if rule["properties"]["action"].get("const") == "tab.move")
             assert set(move_tab_rule["required"]) == set(move_tab)
             assert move_tab_rule["properties"]["target_tab_ref"] == {"type": "string"}
-            assert set(move_tab_rule["properties"]) == set(previews["properties"])
+            assert set(move_tab_rule["properties"]) == set(previews["properties"]) - {"copy_to"}
             selection_rule, = (rule for rule in previews["oneOf"]
                                  if rule["properties"]["action"].get("const") == "tab.select")
             assert set(selection_rule["required"]) == set(select_tab)
@@ -206,6 +206,16 @@ async def check_contract(exe):
             assert {"required": ["key_up_mapping_key"]} in note_rule["dependentSchemas"]["send_timing"]["not"]["anyOf"]
             assert {"required": ["row_modes"]} in note_rule["anyOf"]
             assert {"required": ["category"]} in note_rule["dependentSchemas"]["row_modes"]["not"]["anyOf"]
+            duplicate_rule, = (rule for rule in previews["oneOf"]
+                               if rule["properties"]["action"].get("const") == "mapping.duplicate")
+            assert duplicate_rule["required"] == ["action", "source_ref", "copy_to"]
+            assert previews["properties"]["copy_to"] == duplicate_rule["properties"]["copy_to"]
+            assert previews["dependentSchemas"]["copy_to"] == {
+                "required": ["action"], "properties": {"action": {"const": "mapping.duplicate"}}}
+            copy_destination = duplicate_rule["properties"]["copy_to"]
+            assert copy_destination["properties"]["position"]["enum"] == ["top", "bottom", "above", "below"]
+            assert copy_destination["then"]["required"] == ["anchor_ref"]
+            assert copy_destination["else"]["not"]["required"] == ["anchor_ref"]
             filter_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_category_filter")
             assert set(filter_rule["required"]) == set(category_filter)
@@ -360,6 +370,16 @@ async def check_contract(exe):
                     {**row_modes, "row_modes": {"original_trigger": {"type": "other"}}},
                     {**row_modes, "row_modes": {"original_trigger": {"type": "normal", "extra": 1}}},
                     {**row_modes, "row_modes": {"original_trigger": {"type": "normal"}, "lock": True}})),
+                ("qkm_preview_changes", {"action": "mapping.duplicate", "source_ref": row,
+                                         "copy_to": {"position": "above", "anchor_ref": row}}, (
+                    {"action": "mapping.duplicate", "source_ref": row, "copy_to": {"position": "below"}},
+                    {"action": "mapping.duplicate", "source_ref": row, "copy_to": {"position": "top", "anchor_ref": row}},
+                    {"action": "mapping.duplicate", "source_ref": row, "copy_to": {"position": "above",
+                                                                                 "anchor_ref": row.rsplit(":", 2)[0]+":8:0"}},
+                    {"action": "mapping.add", "source_ref": row, "copy_to": {"position": "top"}},
+                    {"action": "mapping.duplicate", "source_ref": row, "copy_to": {"position": "bottom", "extra": True}})),
+                ("qkm_preview_changes", {"action": "mapping.duplicate", "source_ref": row,
+                                         "copy_to": {"position": "bottom"}}, ()),
                 ("qkm_preview_changes", {"action": "mapping.update", "source_refs": [row, row.rsplit(":", 1)[0]+":3"],
                                          "row_modes": {"original_trigger": {"type": "double_press"}}}, (
                     {"action": "mapping.update", "source_refs": [row, row],

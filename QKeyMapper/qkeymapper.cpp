@@ -18924,29 +18924,30 @@ int QKeyMapper::insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int in
         *insertSummary = preparedSummary;
     }
 
-    if (preparedSummary.Cancelled) {
+    if (preparedSummary.Cancelled || insertMappingDataList.isEmpty()) {
         return 0;
     }
+    return insertPreparedKeyMappingDataAtTargetRow(targetTabIndex, insertRow, *targetMappingDataList, insertMappingDataList);
+}
 
-    inserted_count = insertMappingDataList.size();
-    if (insertMappingDataList.isEmpty()) {
-        return inserted_count;
-    }
-
-    const int boundedInsertRow = qBound(0, insertRow, targetMappingDataList->size());
+int QKeyMapper::insertPreparedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, QList<MAP_KEYDATA> &targetRows,
+                                                       const QList<MAP_KEYDATA> &rowsToInsert)
+{
+    const int insertedCount = rowsToInsert.size();
+    const int boundedInsertRow = qBound(0, insertRow, targetRows.size());
 
     // Insert rows at explicit target position in reverse order to preserve sequence.
-    for (int i = insertMappingDataList.size() - 1; i >= 0; --i) {
-        targetMappingDataList->insert(boundedInsertRow, insertMappingDataList.at(i));
+    for (int i = rowsToInsert.size() - 1; i >= 0; --i) {
+        targetRows.insert(boundedInsertRow, rowsToInsert.at(i));
     }
 
     // Refresh affected displays.
     refreshTabsForSourceTabChange(targetTabIndex);
     updateMousePointsList();
 
-    if (inserted_count > 0) {
+    if (insertedCount > 0) {
         const int startDisplayRow = displayRowFromSource(s_KeyMappingTabWidgetCurrentIndex, targetTabIndex, boundedInsertRow);
-        const int endDisplayRow = displayRowFromSource(s_KeyMappingTabWidgetCurrentIndex, targetTabIndex, boundedInsertRow + inserted_count - 1);
+        const int endDisplayRow = displayRowFromSource(s_KeyMappingTabWidgetCurrentIndex, targetTabIndex, boundedInsertRow + insertedCount - 1);
         if (startDisplayRow >= 0 && endDisplayRow >= startDisplayRow && endDisplayRow < m_KeyMappingDataTable->rowCount()) {
             QTableWidgetSelectionRange newSelection(startDisplayRow, 0, endDisplayRow, KEYMAPPINGDATA_TABLE_COLUMN_COUNT - 1);
             m_KeyMappingDataTable->clearSelection();
@@ -18959,14 +18960,12 @@ int QKeyMapper::insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int in
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote()
-        << "[insertCopiedKeyMappingDataAtTargetRow] Insert (" << inserted_count
-        << ") copied items at tab(" << targetTabIndex << ") row(" << boundedInsertRow << ") -> " << insertMappingDataList;
+        << "[insertPreparedKeyMappingDataAtTargetRow] Insert (" << insertedCount
+        << ") copied items at tab(" << targetTabIndex << ") row(" << boundedInsertRow << ") -> " << rowsToInsert;
 #endif
 
-    if (inserted_count > 0 || preparedSummary.CommonPriorityRepair.hasChanges()) {
-        markSaveSettingDirty();
-    }
-    return inserted_count;
+    markSaveSettingDirty();
+    return insertedCount;
 }
 
 int QKeyMapper::insertCopiedKeyMappingDataAtAbsoluteRow(int insertRow, MappingDataInsertSummary *insertSummary)
@@ -38799,6 +38798,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
+        const bool duplicatingRow = updating && !update.copyPosition.isEmpty();
+        if (duplicatingRow && isCommonMappingTabIndex(tab)) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Duplicating a source row requires the current normal Tab."));
+            return;
+        }
         const bool movingRow = update.move != MappingRowMove::None;
         if (movingRow && (isCommonMappingTabIndex(tab) || isMappingDataTableFiltered())) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("Moving rows requires the current unfiltered normal Tab."));
@@ -38833,6 +38837,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QColor notificationFont;
         QColor notificationBackground;
         std::optional<MAP_KEYDATA> updatedRow;
+        QList<MAP_KEYDATA> duplicateRows;
+        int duplicateAnchorDisplay = -1;
         QList<QPair<int, int>> conflictRows;
         QJsonArray changes;
         int displayRow = -1;
@@ -38880,6 +38886,16 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 || displayRow < 0) {
                 reject(QStringLiteral("invalid_target"), QStringLiteral("Only a current visible row attached to this source can be updated."));
                 return;
+            }
+            if (duplicatingRow) {
+                duplicateAnchorDisplay = update.copyAnchorRef.isEmpty() ? displayRow
+                    : currentVisibleRow(update.copyAnchorRef.section(QLatin1Char(':'), 3, 3).toInt());
+                if (duplicateAnchorDisplay < 0) {
+                    reject(QStringLiteral("invalid_target"), QStringLiteral("The insert anchor must be a visible row in the current source."));
+                    return;
+                }
+                target.insert(QStringLiteral("position"), update.copyPosition);
+                if (!update.copyAnchorRef.isEmpty()) target.insert(QStringLiteral("anchor_ref"), update.copyAnchorRef);
             }
             if (update.batchRows.isEmpty()) {
                 target.insert(QStringLiteral("source_ref"), update.sourceReference);
@@ -39153,6 +39169,35 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("before"), item.value(QStringLiteral("name"))},
                     {QStringLiteral("after"), *update.tabName}};
             }
+        } else if (duplicatingRow) {
+            const DisplayInsertPlacement placement = update.copyPosition == QLatin1String("top") ? DisplayInsertPlacement::SegmentTop
+                : update.copyPosition == QLatin1String("bottom") ? DisplayInsertPlacement::SegmentBottom
+                : update.copyPosition == QLatin1String("above") ? DisplayInsertPlacement::AboveAnchor : DisplayInsertPlacement::BelowAnchor;
+            DisplayInsertTargetInfo insertTarget;
+            if (!resolveDisplayInsertTargetForSegment(tab, duplicateAnchorDisplay, placement, &insertTarget)
+                || insertTarget.TargetTabIndex != tab) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("The insert placement must resolve to the same normal source."));
+                return;
+            }
+            const auto &before = KeyMappingDataList->at(update.sourceRow);
+            const auto summary = prepareMappingDataForInsertion(tab, {before}, &duplicateRows, false);
+            if (summary.Cancelled || duplicateRows.size() != 1) {
+                reject(QStringLiteral("invalid_mapping"), QStringLiteral("The selected row could not be prepared for insertion."));
+                return;
+            }
+            rowAfter = insertTarget.TargetInsertRow;
+            auto candidate = *KeyMappingDataList;
+            candidate.insert(rowAfter, duplicateRows.first());
+            const auto conflict = ibInputSaveConflict({{tab, std::move(candidate)}});
+            if (!conflict.isEmpty()) {
+                reject(QStringLiteral("invalid_mapping"), conflict);
+                return;
+            }
+            modified = true;
+            change = {{QStringLiteral("kind"), QStringLiteral("duplicate_row")},
+                {QStringLiteral("insert_row"), rowAfter}, {QStringLiteral("before"), automationSourceRow(before)},
+                {QStringLiteral("after"), automationSourceRow(duplicateRows.first())},
+                {QStringLiteral("disabled_due_to_conflict"), summary.totalDisabledNewRowCount() > 0}};
         } else if (movingRow) {
             const int lastStart = int(KeyMappingDataList->size()) - update.rowCount;
             if (update.sourceRow > lastStart) {
@@ -39466,6 +39511,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingTabNotification ? QStringLiteral("tab.set_notification_mode")
             : changingTabHotkey ? QStringLiteral("tab.set_hotkey")
             : renamingTab ? QStringLiteral("tab.rename")
+            : duplicatingRow ? QStringLiteral("mapping.duplicate")
             : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
         if (!change.isEmpty()) changes.prepend(change);
@@ -39588,6 +39634,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 updateKeyMappingTabInfoHotkey(tab, normalizedTabHotkey);
             } else if (renamingTab) {
                 updateKeyMappingTabWidgetTabName(tab, *update.tabName);
+            } else if (duplicatingRow) {
+                insertPreparedKeyMappingDataAtTargetRow(tab, rowAfter, *KeyMappingDataList, duplicateRows);
             } else if (movingRow) {
                 const int lastSourceRow = update.sourceRow + update.rowCount - 1;
                 if (update.move == MappingRowMove::Top || update.move == MappingRowMove::Bottom) {
@@ -39653,7 +39701,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (!client.setPreferences(candidatePreferences)) {
                 reject(QStringLiteral("context_busy"), QStringLiteral("The IbInput client no longer admits preference changes.")); return;
             }
-            if (modified && !triggerUpdate && !categoryUpdate && !settingDisabledVisibility && !changingMappingDisplay) requestSaveSettingDirty();
+            if (modified && !triggerUpdate && !duplicatingRow && !categoryUpdate && !settingDisabledVisibility && !changingMappingDisplay) requestSaveSettingDirty();
             if (preferencesUpdate) refreshIbInputUi();
         }
         QJsonObject result{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},

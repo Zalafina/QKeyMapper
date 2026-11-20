@@ -158,6 +158,14 @@ In a batch, omit `duration_ms`. Timed types use 500 ms for all selected rows.
 Inspect every previewed row, then submit with `confirm_scope: true`.
 Save separately.
 
+## Duplicating a row
+
+Preview `mapping.duplicate` with a visible `source_ref` in the current normal
+Tab and a `copy_to` object. Set `position` to `top`, `bottom`, `above` or
+`below`. For above and below, include a visible `anchor_ref` from the same
+source and revision. The preview shows the new row, including any conflict
+that disables the copy. Apply the preview and save separately.
+
 ## Editing a mapping note
 
 Use `mapping.update` with the current visible row's `source_ref` and

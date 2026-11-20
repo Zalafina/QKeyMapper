@@ -49,6 +49,8 @@ struct MappingUpdateArguments {
     std::optional<int> sendTiming;
     MappingRowMove move = MappingRowMove::None;
     int rowCount = 1;
+    QString copyPosition;
+    QString copyAnchorRef;
     std::optional<QString> tabName;
     std::optional<QString> tabHotkey;
     std::optional<Qt::CheckState> tabNotificationMode;

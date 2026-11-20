@@ -2617,6 +2617,8 @@ private:
     OriginalKeyConflictAnalysis analyzeOriginalKeyConflict(int tabindex, int row, const QString &originalKey, bool disabled,
                                                           const QList<MAP_KEYDATA> *candidateRows = nullptr) const;
 
+    int insertPreparedKeyMappingDataAtTargetRow(int targetTabIndex, int insertRow, QList<MAP_KEYDATA> &targetRows,
+                                                const QList<MAP_KEYDATA> &rowsToInsert);
     MappingDataInsertSummary prepareMappingDataForInsertion(int targetTabIndex,
                                                             const QList<MAP_KEYDATA> &sourceMappingData,
                                                             QList<MAP_KEYDATA> *insertMappingDataList,

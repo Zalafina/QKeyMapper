@@ -127,6 +127,8 @@ enum Action {
     MoveToTop,
     #[serde(rename = "mapping.move_to_bottom")]
     MoveToBottom,
+    #[serde(rename = "mapping.duplicate")]
+    DuplicateMapping,
     #[serde(rename = "tab.rename")]
     RenameTab,
     #[serde(rename = "tab.set_hotkey")]
@@ -207,6 +209,7 @@ struct Preview {
     mapping_display: Option<Object>,
     row_modes: Option<Object>,
     send_timing: Option<u8>,
+    copy_to: Option<Object>,
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
     notification_mode: Option<u8>,
@@ -469,6 +472,37 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }),
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
+            let duplicate =
+                arguments.get("action").and_then(Value::as_str) == Some("mapping.duplicate");
+            if duplicate || arguments.contains_key("copy_to") {
+                let source = arguments.get("source_ref").and_then(Value::as_str);
+                let Some(destination) = arguments.get("copy_to").and_then(Value::as_object) else {
+                    return Err(InvalidMessage);
+                };
+                let position = destination.get("position").and_then(Value::as_str);
+                let placement_valid = match position {
+                    Some("top" | "bottom") => destination.len() == 1,
+                    Some("above" | "below") => {
+                        let anchor = destination.get("anchor_ref").and_then(Value::as_str);
+                        destination.len() == 2
+                            && anchor.is_some_and(row_ref)
+                            && anchor
+                                .and_then(|value| value.rsplit_once(':'))
+                                .map(|(prefix, _)| prefix)
+                                == source
+                                    .and_then(|value| value.rsplit_once(':'))
+                                    .map(|(prefix, _)| prefix)
+                    }
+                    _ => false,
+                };
+                if !duplicate
+                    || arguments.len() != 3
+                    || !source.is_some_and(row_ref)
+                    || !placement_valid
+                {
+                    return Err(InvalidMessage);
+                }
+            }
             if let Some(timing) = arguments.get("send_timing")
                 && (!timing.is_u64()
                     || arguments.len() != 3

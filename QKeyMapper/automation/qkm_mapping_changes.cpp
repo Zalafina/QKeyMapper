@@ -97,6 +97,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
+    const bool duplicatePreview = preview && action == QLatin1String("mapping.duplicate");
     MappingRowMove rowMove = MappingRowMove::None;
     if (preview) {
         for (const auto move : RowMoves) {
@@ -129,7 +130,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
-        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
+        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
     const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")}
         : preferencesPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("preferences_revision"),
@@ -148,6 +149,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : commonFeaturePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("common_feature_enabled")}
         : tabActionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref")}
         : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
+        : duplicatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("copy_to")}
         : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs"), QStringLiteral("send_method"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled"), QStringLiteral("note"), QStringLiteral("category"), QStringLiteral("row_modes"), QStringLiteral("send_timing")}
         : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
@@ -289,7 +291,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         }
         return result;
     }
-    if (updatePreview || movePreview) {
+    if (updatePreview || movePreview || duplicatePreview) {
         const auto singleReference = arguments.value(QStringLiteral("source_ref"));
         const auto batch = arguments.value(QStringLiteral("source_refs"));
         const auto references = batch.toArray();
@@ -391,6 +393,28 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             return fail("A canonical current source row is required.");
         const int rowCount = qMax(1, int(references.size()));
         const QString prefix = reference.toString().section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
+        if (duplicatePreview) {
+            const auto destination = arguments.value(QStringLiteral("copy_to")).toObject();
+            const QString position = destination.value(QStringLiteral("position")).toString();
+            const auto anchor = destination.value(QStringLiteral("anchor_ref"));
+            const bool relative = position == QLatin1String("above") || position == QLatin1String("below");
+            if (destination.size() != (relative ? 2 : 1)
+                || (!relative && position != QLatin1String("top") && position != QLatin1String("bottom"))
+                || (!relative && !anchor.isUndefined()))
+                return fail("Provide copy_to position top, bottom, above or below. Only above and below require anchor_ref.");
+            if (relative) {
+                const QString anchorRef = anchor.toString();
+                bool indexOk = false;
+                const int index = anchorRef.mid(prefix.size()).toInt(&indexOk);
+                if (!anchor.isString() || !indexOk || index < 0 || anchorRef != prefix + QString::number(index))
+                    return fail("The insert anchor must be a canonical row of the same source and revision.");
+            }
+            result.action = MappingChangeAction::UpdateMapping;
+            result.update = {reference.toString(), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, -1};
+            result.update.copyPosition = position;
+            result.update.copyAnchorRef = anchor.toString();
+            return result;
+        }
         QList<int> batchRows;
         if (movePreview) {
             if (row > std::numeric_limits<int>::max() - (rowCount - 1))
@@ -718,6 +742,28 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         limits.append(QStringLiteral("hidden_rows_require_explicit_gui_reveal"));
         item->insert(QStringLiteral("limitations"), limits);
     }
+    const QJsonObject copyPositions{{QStringLiteral("enum"), QJsonArray{QStringLiteral("top"), QStringLiteral("bottom"),
+        QStringLiteral("above"), QStringLiteral("below")}}};
+    const QJsonObject relativePositions{{QStringLiteral("enum"), QJsonArray{QStringLiteral("above"), QStringLiteral("below")}}};
+    const QJsonObject anchorRequired{{QStringLiteral("required"), QJsonArray{QStringLiteral("anchor_ref")}}};
+    auto copyDestination = schema({{QStringLiteral("position"), copyPositions}, {QStringLiteral("anchor_ref"), rowReference}},
+        {QStringLiteral("position")});
+    copyDestination.insert(QStringLiteral("if"), QJsonObject{{QStringLiteral("properties"),
+        QJsonObject{{QStringLiteral("position"), relativePositions}}}});
+    copyDestination.insert(QStringLiteral("then"), anchorRequired);
+    copyDestination.insert(QStringLiteral("else"), QJsonObject{{QStringLiteral("not"), anchorRequired}});
+    const auto duplicateSchema = schema({
+        {QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.duplicate")}}},
+        {QStringLiteral("source_ref"), rowReference}, {QStringLiteral("copy_to"), copyDestination}},
+        {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("copy_to")});
+    auto duplicatePreview = capability("mapping.duplicate.preview", "qkm_preview_changes", Read | Configure, true, duplicateSchema);
+    auto duplicateApply = capability("mapping.duplicate.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&duplicatePreview, &duplicateApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_normal_source"),
+            QStringLiteral("one_visible_source_row_and_same_revision_anchor"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+    }
+    duplicateApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));
     QJsonArray capabilities{previewCapability, saveCapability, addApply,
         saveApplyCapability, deleteCapability, deleteApply, updatePreview, updateApply, preferencesPreview, preferencesApply,
         capability("mapping.preview.cancel", "qkm_cancel_changes", Read | Configure, false,
@@ -893,6 +939,8 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         capabilities.append(tabPreview);
         capabilities.append(tabApply);
     }
+    capabilities.append(duplicatePreview);
+    capabilities.append(duplicateApply);
     capabilities.append(operation);
     return capabilities;
 }
