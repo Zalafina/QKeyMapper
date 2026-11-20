@@ -208,7 +208,10 @@ async def check_contract(exe):
             assert {"required": ["category"]} in note_rule["dependentSchemas"]["row_modes"]["not"]["anyOf"]
             duplicate_rule, = (rule for rule in previews["oneOf"]
                                if rule["properties"]["action"].get("const") == "mapping.duplicate")
-            assert duplicate_rule["required"] == ["action", "source_ref", "copy_to"]
+            assert duplicate_rule["required"] == ["action", "copy_to"]
+            assert duplicate_rule["oneOf"] == [{"required": ["source_ref"]}, {"required": ["source_refs"]}]
+            assert duplicate_rule["properties"]["source_refs"]["minItems"] == 2
+            assert duplicate_rule["properties"]["source_refs"]["uniqueItems"] is True
             assert previews["properties"]["copy_to"] == duplicate_rule["properties"]["copy_to"]
             assert previews["dependentSchemas"]["copy_to"] == {
                 "required": ["action"], "properties": {"action": {"const": "mapping.duplicate"}}}
@@ -380,6 +383,14 @@ async def check_contract(exe):
                     {"action": "mapping.duplicate", "source_ref": row, "copy_to": {"position": "bottom", "extra": True}})),
                 ("qkm_preview_changes", {"action": "mapping.duplicate", "source_ref": row,
                                          "copy_to": {"position": "bottom"}}, ()),
+                ("qkm_preview_changes", {"action": "mapping.duplicate", "source_refs": [row, row.rsplit(":", 1)[0]+":3"],
+                                         "copy_to": {"position": "below", "anchor_ref": row}}, (
+                    {"action": "mapping.duplicate", "source_refs": [row, row], "copy_to": {"position": "bottom"}},
+                    {"action": "mapping.duplicate", "source_refs": [row], "copy_to": {"position": "top"}},
+                    {"action": "mapping.duplicate", "source_refs": [row, row.rsplit(":", 2)[0]+":8:0"],
+                     "copy_to": {"position": "bottom"}},
+                    {"action": "mapping.duplicate", "source_ref": row, "source_refs": [row, row.rsplit(":", 1)[0]+":3"],
+                     "copy_to": {"position": "bottom"}})),
                 ("qkm_preview_changes", {"action": "mapping.update", "source_refs": [row, row.rsplit(":", 1)[0]+":3"],
                                          "row_modes": {"original_trigger": {"type": "double_press"}}}, (
                     {"action": "mapping.update", "source_refs": [row, row],

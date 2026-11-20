@@ -38903,12 +38903,23 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else {
                 const QString prefix = update.sourceReference.section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
                 QJsonArray refs;
+                int previousDisplayRow = -1;
                 for (int sourceRow : std::as_const(update.batchRows)) {
                     const int shown = currentVisibleRow(sourceRow);
                     if (shown < 0) {
                         reject(QStringLiteral("invalid_target"), QStringLiteral("All rows must be visible in the current source."));
                         return;
                     }
+                    if (duplicatingRow && previousDisplayRow >= 0) {
+                        bool contiguous = shown > previousDisplayRow;
+                        for (int skipped = previousDisplayRow + 1; contiguous && skipped < shown; ++skipped)
+                            contiguous = m_KeyMappingDataTable->isRowHidden(skipped);
+                        if (!contiguous) {
+                            reject(QStringLiteral("invalid_target"), QStringLiteral("Copying several rows requires one contiguous visible selection."));
+                            return;
+                        }
+                    }
+                    previousDisplayRow = shown;
                     if (categoryUpdate) categoryDisplayRows.append(shown);
                     refs.append(prefix + QString::number(sourceRow));
                 }
@@ -39179,25 +39190,35 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 reject(QStringLiteral("invalid_target"), QStringLiteral("The insert placement must resolve to the same normal source."));
                 return;
             }
-            const auto &before = KeyMappingDataList->at(update.sourceRow);
-            const auto summary = prepareMappingDataForInsertion(tab, {before}, &duplicateRows, false);
-            if (summary.Cancelled || duplicateRows.size() != 1) {
-                reject(QStringLiteral("invalid_mapping"), QStringLiteral("The selected row could not be prepared for insertion."));
+            const auto selectedRows = update.batchRows.isEmpty() ? QList<int>{update.sourceRow} : update.batchRows;
+            QList<MAP_KEYDATA> copiedRows;
+            copiedRows.reserve(selectedRows.size());
+            for (int row : selectedRows) copiedRows.append(KeyMappingDataList->at(row));
+            const auto summary = prepareMappingDataForInsertion(tab, copiedRows, &duplicateRows, false);
+            if (summary.Cancelled || duplicateRows.size() != copiedRows.size()) {
+                reject(QStringLiteral("invalid_mapping"), QStringLiteral("The selected rows could not be prepared for insertion."));
                 return;
             }
             rowAfter = insertTarget.TargetInsertRow;
             auto candidate = *KeyMappingDataList;
-            candidate.insert(rowAfter, duplicateRows.first());
+            for (int i = 0; i < duplicateRows.size(); ++i) candidate.insert(rowAfter + i, duplicateRows.at(i));
             const auto conflict = ibInputSaveConflict({{tab, std::move(candidate)}});
             if (!conflict.isEmpty()) {
                 reject(QStringLiteral("invalid_mapping"), conflict);
                 return;
             }
             modified = true;
-            change = {{QStringLiteral("kind"), QStringLiteral("duplicate_row")},
-                {QStringLiteral("insert_row"), rowAfter}, {QStringLiteral("before"), automationSourceRow(before)},
-                {QStringLiteral("after"), automationSourceRow(duplicateRows.first())},
-                {QStringLiteral("disabled_due_to_conflict"), summary.totalDisabledNewRowCount() > 0}};
+            const auto refs = target.value(QStringLiteral("source_refs")).toArray();
+            for (int i = 0; i < duplicateRows.size(); ++i) {
+                const auto &before = copiedRows.at(i);
+                const auto &after = duplicateRows.at(i);
+                QJsonObject duplicate{{QStringLiteral("kind"), QStringLiteral("duplicate_row")},
+                    {QStringLiteral("insert_row"), rowAfter + i}, {QStringLiteral("before"), automationSourceRow(before)},
+                    {QStringLiteral("after"), automationSourceRow(after)},
+                    {QStringLiteral("disabled_due_to_conflict"), !before.Disabled && after.Disabled}};
+                if (!refs.isEmpty()) duplicate.insert(QStringLiteral("source_ref"), refs.at(i));
+                changes.append(duplicate);
+            }
         } else if (movingRow) {
             const int lastStart = int(KeyMappingDataList->size()) - update.rowCount;
             if (update.sourceRow > lastStart) {
@@ -39708,6 +39729,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             {QStringLiteral("modified"), modified}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
             {QStringLiteral("preferences_revision_after"), automationIbInputPreferencesRevision()},
             {QStringLiteral("query_source_again"), updating && (modified || selectionChanged)}};
+        if (duplicatingRow) result.insert(QStringLiteral("inserted_count"), int(duplicateRows.size()));
         if (selectingTab) result.insert(QStringLiteral("selection_changed"), selectionChanged);
         if (filteringCategories) {
             result.insert(QStringLiteral("view_changed"), filterChanged);

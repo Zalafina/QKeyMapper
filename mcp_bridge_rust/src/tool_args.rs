@@ -232,6 +232,25 @@ fn notification_color(value: &str, digits: usize) -> bool {
             .is_some_and(|hex| hex.len() == digits && hex.bytes().all(|c| c.is_ascii_hexdigit()))
 }
 
+fn same_source_batch(rows: &[Value]) -> bool {
+    let Some(first) = rows
+        .first()
+        .and_then(Value::as_str)
+        .and_then(|row| row.rsplit_once(':'))
+    else {
+        return false;
+    };
+    (2..=100).contains(&rows.len())
+        && rows.iter().enumerate().all(|(index, value)| {
+            value.as_str().is_some_and(|row| {
+                row_ref(row)
+                    && row
+                        .rsplit_once(':')
+                        .is_some_and(|(prefix, _)| prefix == first.0)
+            }) && !rows[..index].contains(value)
+        })
+}
+
 fn original_trigger(value: &Value) -> bool {
     let Some(trigger) = value.as_object() else {
         return false;
@@ -475,7 +494,12 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             let duplicate =
                 arguments.get("action").and_then(Value::as_str) == Some("mapping.duplicate");
             if duplicate || arguments.contains_key("copy_to") {
-                let source = arguments.get("source_ref").and_then(Value::as_str);
+                let single = arguments.get("source_ref").and_then(Value::as_str);
+                let batch = arguments.get("source_refs").and_then(Value::as_array);
+                let single_valid = single.is_some_and(row_ref);
+                let batch_valid = batch.is_some_and(|rows| same_source_batch(rows));
+                let source =
+                    single.or_else(|| batch.and_then(|rows| rows.first()).and_then(Value::as_str));
                 let Some(destination) = arguments.get("copy_to").and_then(Value::as_object) else {
                     return Err(InvalidMessage);
                 };
@@ -497,7 +521,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 };
                 if !duplicate
                     || arguments.len() != 3
-                    || !source.is_some_and(row_ref)
+                    || single_valid == batch_valid
                     || !placement_valid
                 {
                     return Err(InvalidMessage);
@@ -516,7 +540,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             if modes.is_some() || category.is_some() {
                 let single = arguments.get("source_ref").is_some_and(Value::is_string);
                 let batch = arguments.get("source_refs").and_then(Value::as_array);
-                let valid_batch = batch.is_some_and(|rows| (2..=100).contains(&rows.len()));
+                let valid_batch = batch.is_some_and(|rows| same_source_batch(rows));
                 if modes.is_some_and(|value| !value.is_object())
                     || category.is_some_and(|value| !value.is_string())
                     || arguments.get("action").and_then(Value::as_str) != Some("mapping.update")
@@ -529,20 +553,6 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             .is_some_and(|trigger| trigger.get("duration_ms").is_none()))
                 {
                     return Err(InvalidMessage);
-                }
-                if let Some(rows) = batch {
-                    let first = rows[0].as_str().and_then(|r| r.rsplit_once(':'));
-                    if first.is_none()
-                        || rows.iter().enumerate().any(|(index, row)| {
-                            row.as_str()
-                                .and_then(|r| r.rsplit_once(':'))
-                                .map(|(prefix, _)| prefix)
-                                != first.map(|(prefix, _)| prefix)
-                                || rows[..index].contains(row)
-                        })
-                    {
-                        return Err(InvalidMessage);
-                    }
                 }
             }
             let mut values = typed(arguments, Preview::valid)?;

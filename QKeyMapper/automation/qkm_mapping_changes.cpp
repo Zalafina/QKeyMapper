@@ -149,7 +149,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : commonFeaturePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("common_feature_enabled")}
         : tabActionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref")}
         : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
-        : duplicatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("copy_to")}
+        : duplicatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs"), QStringLiteral("copy_to")}
         : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs"), QStringLiteral("send_method"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled"), QStringLiteral("note"), QStringLiteral("category"), QStringLiteral("row_modes"), QStringLiteral("send_timing")}
         : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
@@ -298,9 +298,9 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         const auto category = arguments.value(QStringLiteral("category"));
         const auto rowModes = arguments.value(QStringLiteral("row_modes"));
         const bool triggerBatch = !batch.isUndefined() && rowModes.toObject().contains(QStringLiteral("original_trigger"));
-        if (!batch.isUndefined() && ((!movePreview && category.isUndefined() && !triggerBatch)
+        if (!batch.isUndefined() && ((!movePreview && !duplicatePreview && category.isUndefined() && !triggerBatch)
             || !singleReference.isUndefined() || references.size() < 2 || references.size() > 100))
-            return fail("Only moves, category and trigger updates accept 2 to 100 source_refs instead of source_ref.");
+            return fail("Only moves, duplication, category and trigger updates accept 2 to 100 source_refs instead of source_ref.");
         const auto reference = references.isEmpty() ? singleReference : references.first();
         const auto original = arguments.value(QStringLiteral("original_key"));
         const auto mapping = arguments.value(QStringLiteral("mapping_key"));
@@ -393,6 +393,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             return fail("A canonical current source row is required.");
         const int rowCount = qMax(1, int(references.size()));
         const QString prefix = reference.toString().section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
+        QString copyPosition;
+        QString copyAnchorRef;
         if (duplicatePreview) {
             const auto destination = arguments.value(QStringLiteral("copy_to")).toObject();
             const QString position = destination.value(QStringLiteral("position")).toString();
@@ -409,11 +411,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 if (!anchor.isString() || !indexOk || index < 0 || anchorRef != prefix + QString::number(index))
                     return fail("The insert anchor must be a canonical row of the same source and revision.");
             }
-            result.action = MappingChangeAction::UpdateMapping;
-            result.update = {reference.toString(), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, -1};
-            result.update.copyPosition = position;
-            result.update.copyAnchorRef = anchor.toString();
-            return result;
+            copyPosition = position;
+            copyAnchorRef = anchor.toString();
         }
         QList<int> batchRows;
         if (movePreview) {
@@ -441,6 +440,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.update.move = rowMove;
         if (movePreview) result.update.rowCount = rowCount;
         result.update.batchRows = std::move(batchRows);
+        result.update.copyPosition = copyPosition;
+        result.update.copyAnchorRef = copyAnchorRef;
         if (!original.isUndefined()) result.update.originalKey = original.toString();
         if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
         if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
@@ -752,15 +753,20 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         QJsonObject{{QStringLiteral("position"), relativePositions}}}});
     copyDestination.insert(QStringLiteral("then"), anchorRequired);
     copyDestination.insert(QStringLiteral("else"), QJsonObject{{QStringLiteral("not"), anchorRequired}});
-    const auto duplicateSchema = schema({
+    auto duplicateSchema = schema({
         {QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.duplicate")}}},
-        {QStringLiteral("source_ref"), rowReference}, {QStringLiteral("copy_to"), copyDestination}},
-        {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("copy_to")});
+        {QStringLiteral("source_ref"), rowReference}, {QStringLiteral("copy_to"), copyDestination},
+        {QStringLiteral("source_refs"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
+            {QStringLiteral("minItems"), 2}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("uniqueItems"), true},
+            {QStringLiteral("items"), rowReference}}}}, {QStringLiteral("action"), QStringLiteral("copy_to")});
+    duplicateSchema.insert(QStringLiteral("oneOf"), QJsonArray{
+        QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_ref")}}},
+        QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_refs")}}}});
     auto duplicatePreview = capability("mapping.duplicate.preview", "qkm_preview_changes", Read | Configure, true, duplicateSchema);
     auto duplicateApply = capability("mapping.duplicate.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
     for (auto *item : {&duplicatePreview, &duplicateApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_normal_source"),
-            QStringLiteral("one_visible_source_row_and_same_revision_anchor"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("one_visible_row_or_one_contiguous_visible_selection_and_same_revision_anchor"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
     }
     duplicateApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));

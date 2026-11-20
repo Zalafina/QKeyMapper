@@ -679,6 +679,14 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(duplicate.ok());
     QCOMPARE(duplicate.update.copyPosition, QStringLiteral("above"));
     QCOMPARE(duplicate.update.copyAnchorRef, revision + QStringLiteral(":row:0:3"));
+    auto copyBatch = copyRow;
+    copyBatch.remove(QStringLiteral("source_ref"));
+    copyBatch.insert(QStringLiteral("source_refs"), QJsonArray{revision + QStringLiteral(":row:0:3"), sourceRef});
+    const auto duplicates = validateMappingChangeRequest(previewMethod, copyBatch);
+    QVERIFY(duplicates.ok());
+    QCOMPARE(duplicates.update.batchRows, QList<int>({1, 3}));
+    copyBatch.insert(QStringLiteral("source_refs"), QJsonArray{sourceRef, sourceRef});
+    QVERIFY(!validateMappingChangeRequest(previewMethod, copyBatch).ok());
     copyRow.insert(QStringLiteral("copy_to"), QJsonObject{{QStringLiteral("position"), QStringLiteral("below")}});
     QVERIFY(!validateMappingChangeRequest(previewMethod, copyRow).ok());
     copyRow.insert(QStringLiteral("copy_to"), QJsonObject{{QStringLiteral("position"), QStringLiteral("above")},
