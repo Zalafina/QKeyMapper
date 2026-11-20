@@ -20,6 +20,7 @@ enum Entity {
     Mappings,
     Windows,
     DemoContext,
+    Macros,
 }
 
 #[derive(Default, Deserialize, Serialize)]

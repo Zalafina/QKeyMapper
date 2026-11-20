@@ -107,6 +107,11 @@ async def check_contract(exe):
             start_tool = next(tool for tool in tools if tool.name == "qkm_start_mapping")
             assert set(start_tool.input_schema["required"]) == set(start)
             assert start_tool.input_schema["properties"]["save_policy"]["const"] == "start_only"
+            query = next(tool.input_schema for tool in tools if tool.name == "qkm_query")
+            assert set(query["properties"]["entity"]["enum"]) == {
+                "configurations", "tabs", "mapping_sources", "mappings", "windows", "demo_context", "macros"}
+            expect_not_connected(await client.call_tool(
+                "qkm_query", {"entity": "macros", "offset": 1, "catalog_revision": "a" * 64}))
             previews = next(tool.input_schema for tool in tools if tool.name == "qkm_preview_changes")
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)

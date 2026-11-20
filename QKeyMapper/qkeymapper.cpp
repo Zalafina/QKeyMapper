@@ -38432,14 +38432,43 @@ void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationReq
         fail(QStringLiteral("invalid_arguments"), QStringLiteral("Query arguments have invalid types, ranges or pagination context."));
         return;
     }
-    if (entity != QStringLiteral("configurations") && entity != QStringLiteral("tabs")) {
-        fail(QStringLiteral("unsupported_query"), QStringLiteral("Only configuration and Tab catalogs are connected."));
+    const bool readingMacros = entity == QStringLiteral("macros");
+    if (entity != QStringLiteral("configurations") && entity != QStringLiteral("tabs") && !readingMacros) {
+        fail(QStringLiteral("unsupported_query"), QStringLiteral("Only configuration, Tab and macro catalogs are connected."));
         return;
     }
-    const QJsonObject catalog = collectAutomationCatalog();
+    QJsonObject catalog = collectAutomationCatalog();
     if (catalog.isEmpty()) {
         fail(QStringLiteral("context_busy"), QStringLiteral("Configuration is loading or not available."));
         return;
+    }
+    if (readingMacros) {
+        QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+        if (automationSourceReadBasis().isEmpty() || !server.isRequestCurrent(request)) {
+            fail(QStringLiteral("context_busy"), QStringLiteral("Macro reads require the current loaded, idle source."));
+            return;
+        }
+        QJsonArray macros;
+        qsizetype bytes = 0;
+        const auto appendMacros = [&](const OrderedMap<QString, MappingMacroData> &source, const QString &scope) {
+            for (auto it = source.begin(); it != source.end(); ++it) {
+                const auto &macro = it.value();
+                QJsonObject row{{QStringLiteral("scope"), scope}, {QStringLiteral("name"), it.key()},
+                    {QStringLiteral("content"), macro.MappingMacro}, {QStringLiteral("category"), macro.Category},
+                    {QStringLiteral("note"), macro.Note},
+                    {QStringLiteral("segment_comments"), QJsonArray::fromStringList(macro.MacroComments)}};
+                bytes += QJsonDocument(row).toJson(QJsonDocument::Compact).size() + 1;
+                if (bytes > QkmAutomation::MaxSourceSnapshotBytes) return false;
+                macros.append(row);
+            }
+            return true;
+        };
+        if (!appendMacros(s_MappingMacroList, QStringLiteral("configuration"))
+            || !appendMacros(s_UniversalMappingMacroList, QStringLiteral("universal"))) {
+            fail(QStringLiteral("result_too_large"), QStringLiteral("Macro catalog exceeds its bounded size."));
+            return;
+        }
+        catalog.insert(entity, macros);
     }
     const QJsonObject revisionContext{{QStringLiteral("instance"), server.instanceId()},
         {QStringLiteral("pair_id"), request.pairId},
@@ -40540,7 +40569,8 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                 {QStringLiteral("additionalProperties"), false}, {QStringLiteral("required"), QJsonArray{QStringLiteral("entity")}},
                 {QStringLiteral("properties"), QJsonObject{
                     {QStringLiteral("entity"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
-                        {QStringLiteral("enum"), QJsonArray{QStringLiteral("configurations"), QStringLiteral("tabs")}}}},
+                        {QStringLiteral("enum"), QJsonArray{QStringLiteral("configurations"), QStringLiteral("tabs"),
+                            QStringLiteral("macros")}}}},
                     {QStringLiteral("catalog_revision"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
                         {QStringLiteral("pattern"), QStringLiteral("^[0-9a-f]{64}$")}}},
                     {QStringLiteral("offset"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
@@ -40550,7 +40580,7 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
             {QStringLiteral("limitations"), QJsonArray{QStringLiteral("catalog_references_are_not_edit_targets"),
                 QStringLiteral("mapping_rows_use_source_snapshot_query"), QStringLiteral("saved_profile_contents_not_loaded"),
                 QStringLiteral("catalog_revision_is_not_a_business_revision"),
-                QStringLiteral("pagination_requires_catalog_revision")}}},
+                QStringLiteral("pagination_requires_catalog_revision"), QStringLiteral("macros_require_current_idle_source")}}},
             QJsonObject{{QStringLiteral("id"), QStringLiteral("source.read")},
                 {QStringLiteral("method"), QStringLiteral("qkm_query")},
                 {QStringLiteral("required_scopes"), int(QkmAutomation::Read)}, {QStringLiteral("read_only"), true},

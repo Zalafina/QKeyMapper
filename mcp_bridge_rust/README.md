@@ -173,6 +173,16 @@ listed for collateral disabling, including source rows. Apply with
 Duplicates that conflict within the target are disabled as shown in the
 preview. Save separately.
 
+## Reading the macro lists
+
+Call `qkm_query` with `{"entity":"macros"}` and Read permission after the
+current configuration is loaded and idle. Results include the regular macros
+(`scope: "configuration"`) followed by universal macros, each in list order.
+The same name can appear in both scopes. Each item includes `name`, `content`,
+`category`, `note` and `segment_comments`. Pass the returned `catalog.revision`
+as `catalog_revision` on later pages. After a configuration change, read page
+one again. The directory reflects the loaded lists.
+
 ## Editing a mapping note
 
 Use `mapping.update` with the current visible row's `source_ref` and
