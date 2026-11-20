@@ -928,10 +928,9 @@ void QTableSetupDialog::on_hideNotificationCheckBox_stateChanged(int state)
     qDebug() << "[HideNotification] Hide Notification state changed ->" << static_cast<Qt::CheckState>(state);
 #endif
 
-    const Qt::CheckState hideNotificationState = static_cast<Qt::CheckState>(state);
-    if (hideNotificationState != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHideNotification) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabHideNotification = hideNotificationState;
-        QKeyMapper::getInstance()->requestSaveSettingDirty();
+    auto *mapper = QKeyMapper::getInstance();
+    if (mapper->setMappingTabNotificationMode(m_TabIndex, static_cast<Qt::CheckState>(state))) {
+        mapper->requestSaveSettingDirty();
     }
 }
 

@@ -521,8 +521,23 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     changed = hotkey; changed.insert(QStringLiteral("tab_hotkey"), QStringLiteral("A\nB"));
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    QCOMPARE(capabilities.size(), 44);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 42);
+    QJsonObject notification = addTab;
+    notification.insert(QStringLiteral("action"), QStringLiteral("tab.set_notification_mode"));
+    for (const auto state : {Qt::Unchecked, Qt::PartiallyChecked, Qt::Checked}) {
+        notification.insert(QStringLiteral("notification_mode"), int(state));
+        const auto modeRequest = validateMappingChangeRequest(previewMethod, notification);
+        QVERIFY(modeRequest.ok() && modeRequest.update.tabNotificationMode == state);
+    }
+    for (const auto &invalid : {QJsonValue(-1), QJsonValue(3), QJsonValue(true), QJsonValue(1.5), QJsonValue(QStringLiteral("1"))}) {
+        changed = notification; changed.insert(QStringLiteral("notification_mode"), invalid);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    changed = notification; changed.remove(QStringLiteral("notification_mode"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    QCOMPARE(capabilities.size(), 46);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 44);
+    QCOMPARE(capabilities.at(43).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_mode.preview"));
+    QCOMPARE(capabilities.at(44).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_mode.apply"));
     QCOMPARE(capabilities.at(41).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_hotkey.preview"));
     QCOMPARE(capabilities.at(42).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_hotkey.apply"));
     QCOMPARE(capabilities.at(39).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.select.preview"));

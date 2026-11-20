@@ -2110,6 +2110,7 @@ public:
     void updateSaveSettingActionIcon(QAction *action) const;
     void requestSaveSettingDirty(void);
     bool setMappingTabCommonInheritance(int tabIndex, bool includeCommon);
+    bool setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;

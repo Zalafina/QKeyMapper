@@ -107,6 +107,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool movePreview = rowMove != MappingRowMove::None;
     const bool renamePreview = preview && action == QLatin1String("tab.rename");
     const bool tabHotkeyPreview = preview && action == QLatin1String("tab.set_hotkey");
+    const bool tabNotificationPreview = preview && action == QLatin1String("tab.set_notification_mode");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
     const bool deleteTabPreview = preview && action == QLatin1String("tab.delete");
@@ -117,7 +118,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool tabCollapsePreview = preview && action == QLatin1String("tab.set_common_collapsed");
     const bool commonFeaturePreview = preview && action == QLatin1String("configuration.set_common_enabled");
     const bool tabActionPreview = addBlankTabPreview || copyTabPreview || deleteTabPreview
-        || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview || tabHotkeyPreview;
+        || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview
+        || tabHotkeyPreview || tabNotificationPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -127,6 +129,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")}
         : renamePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_name")}
         : tabHotkeyPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_hotkey")}
+        : tabNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_mode")}
         : (moveTabPreview || selectTabPreview) ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("target_tab_ref")}
         : tabCommonPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("include_common")}
         : tabCollapsePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("common_collapsed")}
@@ -189,6 +192,13 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 || value.contains(QLatin1Char('\r')) || value.contains(QLatin1Char('\n')))
                 return fail("A single-line tab_hotkey of at most 32767 UTF-16 code units is required.");
             result.update.tabHotkey = value;
+        }
+        if (tabNotificationPreview) {
+            const auto value = arguments.value(QStringLiteral("notification_mode"));
+            const int mode = value.toInt(-1);
+            if (!value.isDouble() || value.toDouble() != mode || mode < Qt::Unchecked || mode > Qt::Checked)
+                return fail("notification_mode must be 0, 1, or 2.");
+            result.update.tabNotificationMode = static_cast<Qt::CheckState>(mode);
         }
         result.update.addBlankTab = addBlankTabPreview;
         result.update.copyTab = copyTabPreview;
@@ -556,7 +566,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     capabilities.append(renamePreview);
     capabilities.append(renameApply);
     for (const char *action : {"tab.add_blank", "tab.copy", "tab.delete", "tab.clear", "tab.move",
-        "tab.set_common_inheritance", "tab.set_common_collapsed", "configuration.set_common_enabled", "tab.select", "tab.set_hotkey"}) {
+        "tab.set_common_inheritance", "tab.set_common_collapsed", "configuration.set_common_enabled", "tab.select", "tab.set_hotkey", "tab.set_notification_mode"}) {
         const QByteArray actionId(action);
         const bool deleting = actionId == "tab.delete";
         const bool clearing = actionId == "tab.clear";
@@ -564,6 +574,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         const bool moving = actionId == "tab.move";
         const bool selecting = actionId == "tab.select";
         const bool settingHotkey = actionId == "tab.set_hotkey";
+        const bool settingNotification = actionId == "tab.set_notification_mode";
         const bool includingCommon = actionId == "tab.set_common_inheritance";
         const bool collapsingCommon = actionId == "tab.set_common_collapsed";
         const bool commonFeature = actionId == "configuration.set_common_enabled";
@@ -585,6 +596,11 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
                 {QStringLiteral("maxLength"), 32767}});
             tabRequired.append(QStringLiteral("tab_hotkey"));
         }
+        if (settingNotification) {
+            tabProperties.insert(QStringLiteral("notification_mode"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("enum"), QJsonArray{0, 1, 2}}});
+            tabRequired.append(QStringLiteral("notification_mode"));
+        }
         const auto tabSchema = schema(tabProperties, tabRequired);
         auto tabPreview = capability((actionId + ".preview").constData(), "qkm_preview_changes", Read | Configure, true, tabSchema);
         auto tabApply = capability((actionId + ".apply").constData(), "qkm_apply_changes", Read | Configure, false,
@@ -593,6 +609,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
             : moving ? QStringLiteral("same_revision_normal_destination")
             : selecting ? QStringLiteral("same_revision_attached_destination_selection_only")
             : settingHotkey ? QStringLiteral("gui_hotkey_validation_and_shared_targets")
+            : settingNotification ? QStringLiteral("tab_start_and_switch_notifications")
             : includingCommon ? QStringLiteral("common_feature_must_be_enabled")
             : collapsingCommon ? QStringLiteral("inherited_common_separator_required")
             : commonFeature ? QStringLiteral("explicit_conflict_confirmation_if_needed")

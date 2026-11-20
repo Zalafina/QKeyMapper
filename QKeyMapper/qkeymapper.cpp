@@ -18264,6 +18264,18 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
 #endif
 }
 
+bool QKeyMapper::setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)
+        || mode < Qt::Unchecked || mode > Qt::Checked) return false;
+    auto &tab = s_KeyMappingTabInfoList[tabIndex];
+    if (tab.TabHideNotification == mode) return false;
+
+    tab.TabHideNotification = mode;
+    ++m_AutomationSourceEpoch;
+    return true;
+}
+
 bool QKeyMapper::setMappingTabCommonInheritance(int tabIndex, bool includeCommon)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) return false;
@@ -38670,6 +38682,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         auto update = applying && updating ? *applyingPreview->update : validation.update;
         const bool renamingTab = updating && update.tabName.has_value();
         const bool changingTabHotkey = updating && update.tabHotkey.has_value();
+        const bool changingTabNotification = updating && update.tabNotificationMode.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
@@ -38680,7 +38693,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
-        const bool editingTab = renamingTab || changingTabHotkey || addingBlankTab || copyingTab || removingTabData
+        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab;
         if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature)
             || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
@@ -38924,6 +38937,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("local_row_count"), 0},
                     {QStringLiteral("include_common"), MAPPINGTABLE_INCLUDE_COMMON_DEFAULT},
                     {QStringLiteral("activate_new_tab"), true}};
+            } else if (changingTabNotification) {
+                modified = tabInfo.TabHideNotification != *update.tabNotificationMode;
+                change = {{QStringLiteral("kind"), QStringLiteral("set_tab_notification_mode")},
+                    {QStringLiteral("before"), int(tabInfo.TabHideNotification)}, {QStringLiteral("after"), int(*update.tabNotificationMode)}};
             } else if (changingTabHotkey) {
                 normalizedTabHotkey = *update.tabHotkey;
                 const auto hotkeyValidation = normalizeAndValidateTabHotkey(normalizedTabHotkey);
@@ -39111,6 +39128,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : deletingTab ? QStringLiteral("tab.delete")
             : copyingTab ? QStringLiteral("tab.copy")
             : addingBlankTab ? QStringLiteral("tab.add_blank")
+            : changingTabNotification ? QStringLiteral("tab.set_notification_mode")
             : changingTabHotkey ? QStringLiteral("tab.set_hotkey")
             : renamingTab ? QStringLiteral("tab.rename")
             : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
@@ -39203,6 +39221,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 const bool created = copyingTab ? copyCurrentTabToKeyMappingTabWidget() : addTabToKeyMappingTabWidget(QString(), true);
                 if (!created) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current source no longer allows creating the Tab."));
+                    return;
+                }
+            } else if (changingTabNotification) {
+                if (!setMappingTabNotificationMode(tab, *update.tabNotificationMode)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab no longer accepts notification changes."));
                     return;
                 }
             } else if (changingTabHotkey) {

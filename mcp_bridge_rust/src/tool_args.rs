@@ -131,6 +131,8 @@ enum Action {
     RenameTab,
     #[serde(rename = "tab.set_hotkey")]
     SetTabHotkey,
+    #[serde(rename = "tab.set_notification_mode")]
+    SetTabNotificationMode,
     #[serde(rename = "tab.add_blank")]
     AddBlankTab,
     #[serde(rename = "tab.copy")]
@@ -192,6 +194,7 @@ struct Preview {
     disabled: Option<bool>,
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
+    notification_mode: Option<u8>,
     target_tab_ref: Option<String>,
     include_common: Option<bool>,
     common_collapsed: Option<bool>,
@@ -226,6 +229,7 @@ impl Preview {
                 .is_none_or(|key| key.chars().count() <= 1)
             && self.tab_name.as_deref().is_none_or(single_line)
             && self.tab_hotkey.as_deref().is_none_or(single_line)
+            && self.notification_mode.is_none_or(|mode| mode <= 2)
     }
 }
 
@@ -392,6 +396,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             let action = values.get("action").and_then(Value::as_str);
             let rename = action == Some("tab.rename");
             let set_hotkey = action == Some("tab.set_hotkey");
+            let set_notification = action == Some("tab.set_notification_mode");
             let common_inheritance = action == Some("tab.set_common_inheritance");
             let common_collapsed = action == Some("tab.set_common_collapsed");
             let common_feature = action == Some("configuration.set_common_enabled");
@@ -400,6 +405,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 Some(
                     "tab.rename"
                     | "tab.set_hotkey"
+                    | "tab.set_notification_mode"
                     | "tab.set_common_inheritance"
                     | "tab.set_common_collapsed"
                     | "configuration.set_common_enabled",
@@ -424,6 +430,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 || !valid_tab_change
                 || rename != values.contains_key("tab_name")
                 || set_hotkey != values.contains_key("tab_hotkey")
+                || set_notification != values.contains_key("notification_mode")
                 || common_inheritance != values.contains_key("include_common")
                 || common_collapsed != values.contains_key("common_collapsed")
                 || common_feature != values.contains_key("common_feature_enabled")

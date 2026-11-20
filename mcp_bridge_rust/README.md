@@ -172,6 +172,12 @@ single-line `tab_hotkey`. Preview shows the key after the same normalization
 used by Tab settings. An empty string clears it. Tabs can share a shortcut
 and retain their order as destinations. Use a separate save to persist it.
 
+Use `tab.set_notification_mode` with the current normal tab's
+`source_tab_ref` and integer `notification_mode`. Mode 0 lets the configured
+notification policy handle mapping starts and tab switches. Mode 1
+suppresses start notifications. Mode 2 suppresses both. Stop notifications
+follow the existing stop policy. Save separately to persist the mode.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

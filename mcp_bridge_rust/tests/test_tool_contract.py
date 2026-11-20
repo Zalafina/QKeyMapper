@@ -64,6 +64,7 @@ async def check_contract(exe):
     moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     hotkey = {"action": "tab.set_hotkey", "source_tab_ref": tab, "tab_hotkey": " $ F9 "}
+    notification = {"action": "tab.set_notification_mode", "source_tab_ref": tab, "notification_mode": 0}
     add_tab = {"action": "tab.add_blank", "source_tab_ref": tab}
     copy_tab = {"action": "tab.copy", "source_tab_ref": tab}
     delete_tab = {"action": "tab.delete", "source_tab_ref": tab}
@@ -137,6 +138,11 @@ async def check_contract(exe):
             assert set(hotkey_rule["required"]) == set(hotkey)
             assert hotkey_rule["properties"]["tab_hotkey"] == {"type": "string", "maxLength": 32767}
             assert selection_rule["properties"]["tab_hotkey"] == {"type": "null"}
+            notify_rule, = (rule for rule in previews["oneOf"]
+                             if rule["properties"]["action"].get("const") == "tab.set_notification_mode")
+            assert set(notify_rule["required"]) == set(notification)
+            assert notify_rule["properties"]["notification_mode"] == {"type": "integer", "enum": [0, 1, 2]}
+            assert hotkey_rule["properties"]["notification_mode"] == {"type": "null"}
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -230,6 +236,13 @@ async def check_contract(exe):
                     {"action": "tab.set_hotkey", "source_tab_ref": tab},
                     {**hotkey, "tab_hotkey": 9}, {**hotkey, "tab_hotkey": "A\nB"}, {**hotkey, "tab_name": "Tab3"})),
                 ("qkm_preview_changes", {**hotkey, "tab_hotkey": ""}, ()),
+                ("qkm_preview_changes", notification, (
+                    {"action": "tab.set_notification_mode", "source_tab_ref": tab},
+                    {**notification, "notification_mode": -1}, {**notification, "notification_mode": 3},
+                    {**notification, "notification_mode": 1.5}, {**notification, "notification_mode": False},
+                    {**notification, "notification_mode": "1"}, {**notification, "tab_hotkey": "F8"})),
+                ("qkm_preview_changes", {**notification, "notification_mode": 1}, ()),
+                ("qkm_preview_changes", {**notification, "notification_mode": 2}, ()),
                 ("qkm_preview_changes", select_tab, (
                     {"action": "tab.select", "source_tab_ref": tab}, {**select_tab, "target_tab_ref": row},
                     {**select_tab, "target_tab_ref": "b" * 64 + ":source:2"})),
