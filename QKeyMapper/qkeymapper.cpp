@@ -3905,9 +3905,10 @@ QKeyMapper::QKeyMapper(QWidget *parent) :
                      this, [this](bool checked) {
                          CommonPriorityRepairSummary repairSummary;
                          if (checked) {
-                             repairSummary = reconcileCommonPriorityConflicts();
+                             repairSummary = reconcileCommonPriorityConflicts(true);
                          }
 
+                         ++m_AutomationSourceEpoch;
                          updateCommonMappingTabVisibility();
 
                          if (checked && repairSummary.hasChanges()) {
@@ -9817,7 +9818,7 @@ bool parseMappingCodeColorValue(const QString &value, const QColor &defaultColor
     return true;
 }
 
-void refreshMappingCodeDerivedFields(MAP_KEYDATA &keymapdata)
+void refreshMappingDerivedKeys(MAP_KEYDATA &keymapdata)
 {
     keymapdata.Pure_OriginalKeys = splitOriginalKeyString(keymapdata.Original_Key, true);
     keymapdata.Pure_OriginalKeys.removeDuplicates();
@@ -10017,7 +10018,7 @@ QKeyMapper::MappingCodeApplyResult parseAndApplyMappingCode(const QString &mappi
     }
 
     updatedData.Disabled = currentData.Disabled;
-    refreshMappingCodeDerivedFields(updatedData);
+    refreshMappingDerivedKeys(updatedData);
 
     keymapdata = updatedData;
     result.success = true;
@@ -19825,62 +19826,42 @@ QKeyMapper::ExclusiveGroupConflictResolutionResult QKeyMapper::autoDisableRowIfE
     return ExclusiveGroupConflictResolutionResult::NoConflict;
 }
 
-QKeyMapper::CommonPriorityRepairSummary QKeyMapper::reconcileCommonPriorityConflicts(void)
+QList<QPair<int, int>> QKeyMapper::collectCommonPriorityConflicts(const QList<MAP_KEYDATA> &commonRows) const
 {
-    CommonPriorityRepairSummary summary;
-
-    if (!isCommonMappingFeatureEnabled()) {
-        return summary;
-    }
-
-    const int commonTabIndex = findCommonMappingTabIndex();
-    if (commonTabIndex < 0 || commonTabIndex >= s_KeyMappingTabInfoList.size()) {
-        return summary;
-    }
-
-    QList<MAP_KEYDATA> *commonMappingData = s_KeyMappingTabInfoList.at(commonTabIndex).KeyMappingData;
-    if (commonMappingData == Q_NULLPTR || commonMappingData->isEmpty()) {
-        return summary;
-    }
-
-    QSet<QString> commonEnabledGroups = collectEnabledExclusiveGroups(*commonMappingData);
-    commonEnabledGroups.remove(QString());
-    if (commonEnabledGroups.isEmpty()) {
-        return summary;
-    }
+    QList<QPair<int, int>> conflicts;
+    const auto commonGroups = collectEnabledExclusiveGroups(commonRows);
+    if (commonGroups.isEmpty()) return conflicts;
 
     for (int tabIndex = 0; tabIndex < s_KeyMappingTabInfoList.size(); ++tabIndex) {
-        if (!shouldAppendCommonMappingRows(tabIndex)) {
-            continue;
-        }
-
-        QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
-        if (mappingDataList == Q_NULLPTR) {
-            continue;
-        }
-
-        bool tabAffected = false;
-        for (int row = 0; row < mappingDataList->size(); ++row) {
-            if (mappingDataList->at(row).Disabled) {
-                continue;
-            }
-
-            const QString groupKey = normalizeOriginalKeyForExclusiveGroup(mappingDataList->at(row).Original_Key);
-            if (groupKey.isEmpty() || !commonEnabledGroups.contains(groupKey)) {
-                continue;
-            }
-
-            (*mappingDataList)[row].Disabled = true;
-            emit keyMappingTableItemCheckStateChanged_Signal(row, DISABLED_COLUMN, true);
-            summary.DisabledRowCount += 1;
-            tabAffected = true;
-        }
-
-        if (tabAffected) {
-            summary.AffectedTabIndexes.insert(tabIndex);
+        const auto &tab = s_KeyMappingTabInfoList.at(tabIndex);
+        const auto *rows = tab.KeyMappingData;
+        if (isCommonMappingTab(tab) || !tab.IncludeCommonMappingTable || !rows) continue;
+        for (int row = 0; row < rows->size(); ++row) {
+            const auto &mapping = rows->at(row);
+            if (mapping.Disabled) continue;
+            const QString group = normalizeOriginalKeyForExclusiveGroup(mapping.Original_Key);
+            if (!group.isEmpty() && commonGroups.contains(group))
+                conflicts.append(qMakePair(tabIndex, row));
         }
     }
+    return conflicts;
+}
 
+QKeyMapper::CommonPriorityRepairSummary QKeyMapper::reconcileCommonPriorityConflicts(bool includeDetached)
+{
+    CommonPriorityRepairSummary summary;
+    if (!isCommonMappingFeatureEnabled()) return summary;
+
+    const int commonIndex = findCommonMappingTabIndex();
+    const auto *commonRows = commonIndex >= 0 ? s_KeyMappingTabInfoList.at(commonIndex).KeyMappingData
+        : includeDetached ? &m_CommonMappingData : nullptr;
+    if (!commonRows) return summary;
+    for (const auto &conflict : collectCommonPriorityConflicts(*commonRows)) {
+        (*s_KeyMappingTabInfoList.at(conflict.first).KeyMappingData)[conflict.second].Disabled = true;
+        emit keyMappingTableItemCheckStateChanged_Signal(conflict.second, DISABLED_COLUMN, true);
+        ++summary.DisabledRowCount;
+        summary.AffectedTabIndexes.insert(conflict.first);
+    }
     return summary;
 }
 
@@ -28315,9 +28296,9 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
     // Load standalone common mapping data backup (survives tab detach)
     {
+        m_CommonMappingData.clear();
         QVariantList commonList = settingFile.value(settingSelectStr + COMMONMAPPINGDATA).toList();
         if (!commonList.isEmpty()) {
-            m_CommonMappingData.clear();
             m_CommonMappingData.reserve(commonList.size());
             for (const QVariant &v : std::as_const(commonList)) {
                 QVariantMap m = v.toMap();
@@ -28396,6 +28377,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
                 d.FloatingButton_Y_Offset = m.value(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET).toInt();
                 d.FloatingButton_DragToMove = m.value(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE).toBool();
                 d.FloatingButton_SyncGroupId = m.value(KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID, FLOATINGBUTTON_SYNCGROUPID_DEFAULT).toInt();
+                refreshMappingDerivedKeys(d);
                 m_CommonMappingData.append(d);
             }
         }
@@ -28636,6 +28618,7 @@ void QKeyMapper::loadEmptyMapSetting()
     m_LoadedMappingSettingGroup.clear();
     clearKeyMappingTabWidget();
     KeyMappingDataList->clear();
+    m_CommonMappingData.clear();
     loadMacroListFromINI(QString());
     loadSyncGroupNotesFromINI(QString());
 
@@ -38682,9 +38665,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool movingTab = updating && !update.targetTabRef.isEmpty();
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
+        const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
         const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData
-            || movingTab || changingCommon || collapsingCommon;
-        if ((validation.confirmConflicts && !update.originalKey.has_value())
+            || movingTab || changingCommon || collapsingCommon || changingCommonFeature;
+        if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature)
             || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
             return;
@@ -38696,7 +38680,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
-        if (editingTab && !clearingTab && isCommonMappingTabIndex(tab)) {
+        if (editingTab && !clearingTab && !changingCommonFeature && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
@@ -38774,7 +38758,28 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 update.tabSettingsDigest = settingsDigest;
             }
-            if (collapsingCommon) {
+            if (changingCommonFeature) {
+                const bool enabled = isCommonMappingFeatureEnabled();
+                const bool desired = *update.commonFeatureEnabled;
+                const int commonIndex = findCommonMappingTabIndex();
+                if (!m_MappingAdvancedDialog || m_MappingAdvancedDialog->signalsBlocked()
+                    || enabled != (commonIndex >= 0)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The Common feature visibility is not settled."));
+                    return;
+                }
+                if (!desired && tab == commonIndex) tabAfter = firstNormalMappingTabIndex();
+                if (tabAfter < 0) {
+                    reject(QStringLiteral("invalid_target"), QStringLiteral("A normal Tab is needed when closing the Common source."));
+                    return;
+                }
+                modified = enabled != desired;
+                if (modified && desired) conflictRows = collectCommonPriorityConflicts(m_CommonMappingData);
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_common_enabled")},
+                    {QStringLiteral("before"), enabled}, {QStringLiteral("after"), desired},
+                    {QStringLiteral("common_attached_after"), desired},
+                    {QStringLiteral("current_tab_after"), s_KeyMappingTabInfoList.at(tabAfter).TabName}};
+            } else if (collapsingCommon) {
                 if (!shouldAppendCommonMappingRows(tab) || !m_KeyMappingDataTable->hasCommonSeparator()) {
                     reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab must have an inherited Common separator."));
                     return;
@@ -39016,16 +39021,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             for (const auto &row : std::as_const(conflictRows)) {
                 const auto &affectedTab = s_KeyMappingTabInfoList.at(row.first);
                 if (!overrides.contains(row.first)) overrides.insert(row.first, *affectedTab.KeyMappingData);
-                auto &affected = overrides[row.first][row.second];
-                const QString sourceIndex = QString::number(row.first);
-                changes.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("disable_mapping")},
-                    {QStringLiteral("source_tab_ref"), update.sourceRevision + QStringLiteral(":source:") + sourceIndex},
-                    {QStringLiteral("source_ref"), update.sourceRevision + QStringLiteral(":row:") + sourceIndex + QLatin1Char(':') + QString::number(row.second)},
-                    {QStringLiteral("source_name"), affectedTab.TabName}, {QStringLiteral("source_row"), row.second},
-                    {QStringLiteral("original_key"), affected.Original_Key},
-                    {QStringLiteral("mapping_keys"), QJsonArray::fromStringList(affected.Mapping_Keys)},
-                    {QStringLiteral("disabled_before"), affected.Disabled}, {QStringLiteral("disabled_after"), true}});
-                affected.Disabled = true;
+                overrides[row.first][row.second].Disabled = true;
             }
             const auto conflict = ibInputSaveConflict(overrides);
             if (!conflict.isEmpty()) { reject(QStringLiteral("invalid_mapping"), conflict); return; }
@@ -39051,7 +39047,20 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = collapsingCommon ? QStringLiteral("tab.set_common_collapsed")
+        for (const auto &row : std::as_const(conflictRows)) {
+            const auto &affectedTab = s_KeyMappingTabInfoList.at(row.first);
+            const auto &affected = affectedTab.KeyMappingData->at(row.second);
+            const QString sourceIndex = QString::number(row.first);
+            changes.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("disable_mapping")},
+                {QStringLiteral("source_tab_ref"), update.sourceRevision + QStringLiteral(":source:") + sourceIndex},
+                {QStringLiteral("source_ref"), update.sourceRevision + QStringLiteral(":row:") + sourceIndex + QLatin1Char(':') + QString::number(row.second)},
+                {QStringLiteral("source_name"), affectedTab.TabName}, {QStringLiteral("source_row"), row.second},
+                {QStringLiteral("original_key"), affected.Original_Key},
+                {QStringLiteral("mapping_keys"), QJsonArray::fromStringList(affected.Mapping_Keys)},
+                {QStringLiteral("disabled_before"), affected.Disabled}, {QStringLiteral("disabled_after"), true}});
+        }
+        const QString action = changingCommonFeature ? QStringLiteral("configuration.set_common_enabled")
+            : collapsingCommon ? QStringLiteral("tab.set_common_collapsed")
             : changingCommon ? QStringLiteral("tab.set_common_inheritance")
             : movingTab ? QStringLiteral("tab.move")
             : clearingTab ? QStringLiteral("tab.clear")
@@ -39092,7 +39101,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (confirmationRequired && !validation.confirmConflicts) {
-            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review every listed row before confirming the Common original-key update in a fresh preview."));
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review every listed row before confirming the Common conflict changes in a fresh preview."));
             return;
         }
         if (validation.confirmConflicts && !confirmationRequired) {
@@ -39100,7 +39109,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (collapsingCommon) {
+            if (changingCommonFeature) {
+                const bool desired = *update.commonFeatureEnabled;
+                m_MappingAdvancedDialog->setCommonMappingTableEnabled(desired);
+                if (isCommonMappingFeatureEnabled() != desired || (findCommonMappingTabIndex() >= 0) != desired
+                    || s_KeyMappingTabWidgetCurrentIndex != tabAfter) {
+                    store.finish(owner, validation.id, QStringLiteral("failed"),
+                        {{QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
+                            {QStringLiteral("query_source_again"), true}},
+                        QStringLiteral("context_busy"), QStringLiteral("The Common feature transition was incomplete. Query the current source."));
+                    server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
+                    return;
+                }
+            } else if (collapsingCommon) {
                 onCommonMappingSeparatorHeaderClicked(m_KeyMappingDataTable->commonSeparatorDisplayRow());
             } else if (changingCommon) {
                 if (!setMappingTabCommonInheritance(tab, *update.tabIncludeCommon)) {

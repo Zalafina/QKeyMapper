@@ -143,6 +143,8 @@ enum Action {
     SetCommonInheritance,
     #[serde(rename = "tab.set_common_collapsed")]
     SetCommonCollapsed,
+    #[serde(rename = "configuration.set_common_enabled")]
+    SetCommonFeature,
     #[serde(rename = "configuration.save")]
     Save,
     #[serde(rename = "ibinput.preferences.update")]
@@ -188,6 +190,7 @@ struct Preview {
     target_tab_ref: Option<String>,
     include_common: Option<bool>,
     common_collapsed: Option<bool>,
+    common_feature_enabled: Option<bool>,
 }
 
 impl Preview {
@@ -382,11 +385,15 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             let rename = action == Some("tab.rename");
             let common_inheritance = action == Some("tab.set_common_inheritance");
             let common_collapsed = action == Some("tab.set_common_collapsed");
+            let common_feature = action == Some("configuration.set_common_enabled");
             let destination = values.get("target_tab_ref").and_then(Value::as_str);
             let valid_tab_change = match action {
-                Some("tab.rename" | "tab.set_common_inheritance" | "tab.set_common_collapsed") => {
-                    values.len() == 3 && values.contains_key("source_tab_ref")
-                }
+                Some(
+                    "tab.rename"
+                    | "tab.set_common_inheritance"
+                    | "tab.set_common_collapsed"
+                    | "configuration.set_common_enabled",
+                ) => values.len() == 3 && values.contains_key("source_tab_ref"),
                 Some("tab.move") => {
                     values.len() == 3
                         && values
@@ -408,6 +415,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 || rename != values.contains_key("tab_name")
                 || common_inheritance != values.contains_key("include_common")
                 || common_collapsed != values.contains_key("common_collapsed")
+                || common_feature != values.contains_key("common_feature_enabled")
                 || (destination.is_some() && action != Some("tab.move"))
             {
                 return Err(InvalidMessage);

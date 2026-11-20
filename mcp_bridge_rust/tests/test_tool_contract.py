@@ -70,6 +70,7 @@ async def check_contract(exe):
     move_tab = {"action": "tab.move", "source_tab_ref": tab, "target_tab_ref": revision + ":source:2"}
     common_inheritance = {"action": "tab.set_common_inheritance", "source_tab_ref": tab, "include_common": False}
     common_collapsed = {"action": "tab.set_common_collapsed", "source_tab_ref": tab, "common_collapsed": True}
+    common_feature = {"action": "configuration.set_common_enabled", "source_tab_ref": tab, "common_feature_enabled": False}
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
     capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
@@ -133,6 +134,11 @@ async def check_contract(exe):
                               if rule["properties"]["action"].get("const") == "tab.set_common_collapsed")
             assert set(collapse_rule["required"]) == set(common_collapsed)
             assert collapse_rule["properties"]["common_collapsed"] == {"type": "boolean"}
+            feature_rule, = (rule for rule in previews["oneOf"]
+                              if rule["properties"]["action"].get("const") == "configuration.set_common_enabled")
+            assert set(feature_rule["required"]) == set(common_feature)
+            assert feature_rule["properties"]["common_feature_enabled"] == {"type": "boolean"}
+            assert collapse_rule["properties"]["common_feature_enabled"] == {"type": "null"}
             for name in ("qkm_unknown", DEMO_STATE, DEMO_MAPPING):
                 unknown = await client.call_tool(name)
                 assert unknown.is_error is True and unknown.structured_content is None
@@ -215,6 +221,10 @@ async def check_contract(exe):
                 ("qkm_preview_changes", common_collapsed, (
                     {"action": "tab.set_common_collapsed", "source_tab_ref": tab},
                     {**common_collapsed, "common_collapsed": "true"}, {**common_collapsed, "include_common": True})),
+                ("qkm_preview_changes", common_feature, (
+                    {"action": "configuration.set_common_enabled", "source_tab_ref": tab},
+                    {**common_feature, "common_feature_enabled": 0}, {**common_feature, "source_tab_ref": row},
+                    {**common_feature, "confirm_conflicts": True})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),

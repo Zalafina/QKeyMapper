@@ -153,6 +153,14 @@ rows have a separator. Review and apply the preview. Local and Common
 source rows stay intact, and expanding reapplies the existing filters.
 Persist the display choice with a separate save.
 
+Use `configuration.set_common_enabled` with the current `source_tab_ref`
+and boolean `common_feature_enabled`. The preview lists any local mappings
+that Common priority will disable. Review the list and pass
+`confirm_conflicts=true` when applying such a preview. Turning Common off
+keeps its rows in the same configuration and preserves each row's disabled
+state. From the Common tab, turning it off selects the first normal tab.
+Save the configuration separately to persist the change.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

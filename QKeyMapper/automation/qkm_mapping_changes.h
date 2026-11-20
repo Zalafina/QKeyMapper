@@ -52,6 +52,7 @@ struct MappingUpdateArguments {
     QString targetTabRef;
     std::optional<bool> tabIncludeCommon;
     std::optional<bool> tabCommonCollapsed;
+    std::optional<bool> commonFeatureEnabled;
     QByteArray tabSettingsDigest;
 };
 
