@@ -2116,6 +2116,8 @@ public:
     bool setMappingSourceRowSendTiming(int row, int timing);
     bool setMappingSourceRowSequenceOptions(int row, std::optional<bool> holdDown, std::optional<int> repeatMode,
                                            std::optional<int> repeatTimes);
+    bool setMappingSourceRowInputOptions(int tabIndex, int row, std::optional<bool> passThrough,
+                                        std::optional<bool> checkComboOrder, std::optional<bool> unbreakable);
     bool setMappingSourceRowNote(int tabIndex, int row, const QString &note);
     bool setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode);
     bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);

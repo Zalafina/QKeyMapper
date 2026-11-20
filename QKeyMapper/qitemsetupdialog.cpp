@@ -3881,13 +3881,9 @@ void QItemSetupDialog::on_sendMappingKeyMethodComboBox_currentIndexChanged(int i
 void QItemSetupDialog::on_checkCombKeyOrderCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    bool checkcombkeyorder = ui->checkCombKeyOrderCheckBox->isChecked();
-    if (checkcombkeyorder != QKeyMapper::KeyMappingDataList->at(m_ItemRow).CheckCombKeyOrder) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].CheckCombKeyOrder = checkcombkeyorder;
+    const bool checkcombkeyorder = ui->checkCombKeyOrderCheckBox->isChecked();
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowInputOptions(m_TabIndex, m_ItemRow, std::nullopt, checkcombkeyorder, std::nullopt)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] CheckCombKeyOrder -> " << checkcombkeyorder;
@@ -3898,17 +3894,9 @@ void QItemSetupDialog::on_checkCombKeyOrderCheckBox_stateChanged(int state)
 void QItemSetupDialog::on_passThroughCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return;
-    }
-
-    bool passthrough = ui->passThroughCheckBox->isChecked();
-    if (passthrough != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PassThrough) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PassThrough = passthrough;
-        refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
+    const bool passthrough = ui->passThroughCheckBox->isChecked();
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowInputOptions(m_TabIndex, m_ItemRow, passthrough, std::nullopt, std::nullopt)) {
         notifySaveSettingDirty();
 
 #ifdef DEBUG_LOGOUT_ON
@@ -4176,13 +4164,9 @@ void QItemSetupDialog::on_postMappingKeyCheckBox_stateChanged(int state)
 void QItemSetupDialog::on_unbreakableCheckBox_stateChanged(int state)
 {
     Q_UNUSED(state);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    bool unbreakable = ui->unbreakableCheckBox->isChecked();
-    if (unbreakable != QKeyMapper::KeyMappingDataList->at(m_ItemRow).Unbreakable) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Unbreakable = unbreakable;
+    const bool unbreakable = ui->unbreakableCheckBox->isChecked();
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowInputOptions(m_TabIndex, m_ItemRow, std::nullopt, std::nullopt, unbreakable)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Unbreakable -> " << unbreakable;

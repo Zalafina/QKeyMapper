@@ -320,7 +320,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 const auto value = it.value();
                 if (key == QStringLiteral("burst") || key == QStringLiteral("lock")
                     || key == QStringLiteral("mapping_key_unlock") || key == QStringLiteral("disable_original_key_unlock")
-                    || key == QStringLiteral("sequence_hold_down")) {
+                    || key == QStringLiteral("sequence_hold_down") || key == QStringLiteral("pass_through")
+                    || key == QStringLiteral("check_combo_order") || key == QStringLiteral("unbreakable")) {
                     if (!value.isBool()) return fail("Row toggles must be booleans.");
                 } else if (key == QStringLiteral("burst_press_ms") || key == QStringLiteral("burst_release_ms")) {
                     const int ms = value.toInt(-1);
@@ -575,7 +576,8 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     auto rowModesSchema = schema({{QStringLiteral("burst"), toggle}, {QStringLiteral("lock"), toggle},
         {QStringLiteral("burst_press_ms"), burstTiming}, {QStringLiteral("burst_release_ms"), burstTiming},
         {QStringLiteral("mapping_key_unlock"), toggle}, {QStringLiteral("disable_original_key_unlock"), toggle},
-        {QStringLiteral("sequence_hold_down"), toggle},
+        {QStringLiteral("sequence_hold_down"), toggle}, {QStringLiteral("pass_through"), toggle},
+        {QStringLiteral("check_combo_order"), toggle}, {QStringLiteral("unbreakable"), toggle},
         {QStringLiteral("repeat_mode"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
             {QStringLiteral("minimum"), QKeyMapperConstants::REPEAT_MODE_NONE}, {QStringLiteral("maximum"), QKeyMapperConstants::REPEAT_MODE_BYTIMES}}},
         {QStringLiteral("repeat_times"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},

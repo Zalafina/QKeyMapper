@@ -130,6 +130,13 @@ With hold off, use `repeat_mode` 0, 1 or 2 for off, by key or by count, and
 `repeat_times` from 0 through 99999999. A request may turn hold off and
 configure repeat together. Preview shows the resulting fields. Save separately.
 
+## Configuring pass-through, key order and interruption
+
+Use the standalone `row_modes` object of `mapping.update` with a current
+visible source row. `pass_through` and `unbreakable` are independent booleans.
+`check_combo_order` requires an original key combination. Omitted fields stay
+as configured. Save separately.
+
 ## Editing a mapping note
 
 Use `mapping.update` with the current visible row's `source_ref` and

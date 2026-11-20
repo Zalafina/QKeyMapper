@@ -281,7 +281,10 @@ impl Preview {
                         | "lock"
                         | "mapping_key_unlock"
                         | "disable_original_key_unlock"
-                        | "sequence_hold_down" => value.is_boolean(),
+                        | "sequence_hold_down"
+                        | "pass_through"
+                        | "check_combo_order"
+                        | "unbreakable" => value.is_boolean(),
                         "burst_press_ms" | "burst_release_ms" => {
                             value.as_u64().is_some_and(|ms| (1..=99_999).contains(&ms))
                         }

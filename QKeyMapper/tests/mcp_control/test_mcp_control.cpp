@@ -654,6 +654,13 @@ void McpControlTest::mappingChangeArguments()
         changed = rowModes; changed.insert(QStringLiteral("row_modes"), invalid);
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     }
+    changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{
+        {QStringLiteral("pass_through"), true}, {QStringLiteral("check_combo_order"), false}, {QStringLiteral("unbreakable"), true}});
+    const auto inputOptions = validateMappingChangeRequest(previewMethod, changed);
+    QVERIFY(inputOptions.ok());
+    QCOMPARE(inputOptions.update.rowModes, changed.value(QStringLiteral("row_modes")).toObject());
+    changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("check_combo_order"), 0}});
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     for (const int ms : {1, 99999}) {
         changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("burst_press_ms"), ms}});
         QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());

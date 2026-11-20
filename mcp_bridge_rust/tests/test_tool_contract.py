@@ -183,6 +183,9 @@ async def check_contract(exe):
                                "mapping_key_unlock": {"type": "boolean"},
                                "disable_original_key_unlock": {"type": "boolean"},
                                "sequence_hold_down": {"type": "boolean"},
+                               "pass_through": {"type": "boolean"},
+                               "check_combo_order": {"type": "boolean"},
+                               "unbreakable": {"type": "boolean"},
                                "repeat_mode": {"type": "integer", "minimum": 0, "maximum": 2},
                                "repeat_times": {"type": "integer", "minimum": 0, "maximum": 99999999}}}
             assert note_rule["properties"]["send_timing"] == {"type": "integer", "minimum": 0, "maximum": 4}
@@ -335,6 +338,11 @@ async def check_contract(exe):
                     {**row_modes, "row_modes": {"mapping_key_unlock": 1}},
                     {**row_modes, "row_modes": {"disable_original_key_unlock": "false"}},
                     {**row_modes, "row_modes": {"disable_original_key_unlock": None}})),
+                ("qkm_preview_changes", {**row_modes, "row_modes": {"pass_through": True,
+                                                                    "check_combo_order": False, "unbreakable": True}}, (
+                    {**row_modes, "row_modes": {"pass_through": 1}},
+                    {**row_modes, "row_modes": {"check_combo_order": "false"}},
+                    {**row_modes, "row_modes": {"unbreakable": None}})),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"sequence_hold_down": False,
                                                                     "repeat_mode": 2, "repeat_times": 0}}, (
                     {**row_modes, "row_modes": {"sequence_hold_down": 0}},

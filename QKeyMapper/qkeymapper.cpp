@@ -18353,6 +18353,36 @@ bool QKeyMapper::setMappingSourceRowSequenceOptions(int row, std::optional<bool>
     return true;
 }
 
+static bool updateMappingRowInputOptions(MAP_KEYDATA &row, std::optional<bool> passThrough,
+                                         std::optional<bool> checkComboOrder, std::optional<bool> unbreakable)
+{
+    if (checkComboOrder && !row.Original_Key.contains(SEPARATOR_PLUS)) return false;
+    row.PassThrough = passThrough.value_or(row.PassThrough);
+    row.CheckCombKeyOrder = checkComboOrder.value_or(row.CheckCombKeyOrder);
+    row.Unbreakable = unbreakable.value_or(row.Unbreakable);
+    return true;
+}
+
+bool QKeyMapper::setMappingSourceRowInputOptions(int tabIndex, int row, std::optional<bool> passThrough,
+                                                std::optional<bool> checkComboOrder, std::optional<bool> unbreakable)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) return false;
+    auto *rows = s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+    if (!rows || row < 0 || row >= rows->size()) return false;
+    auto &data = (*rows)[row];
+    auto candidate = data;
+    if (!updateMappingRowInputOptions(candidate, passThrough, checkComboOrder, unbreakable) || candidate == data) return false;
+
+    const bool passChanged = candidate.PassThrough != data.PassThrough;
+    data = candidate;
+    ++m_AutomationSourceEpoch;
+    if (passChanged) {
+        if (isCommonMappingTabIndex(tabIndex)) refreshTabsForSourceTabChange(tabIndex);
+        else updateTableWidgetItem(tabIndex, row, ORIGINAL_KEY_COLUMN);
+    }
+    return true;
+}
+
 bool QKeyMapper::setMappingSourceRowNote(int tabIndex, int row, const QString &note)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || !KeyMappingDataList
@@ -38784,6 +38814,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         std::optional<bool> sequenceHoldDown;
         std::optional<int> repeatMode;
         std::optional<int> repeatTimes;
+        std::optional<bool> passThrough;
+        std::optional<bool> checkComboOrder;
+        std::optional<bool> unbreakable;
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
@@ -39202,6 +39235,17 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                         QStringLiteral("Sequence options require an eligible sequence. Hold requires normal timing, and repeat requires hold to be off."));
                     return;
                 }
+                const auto pass = update.rowModes.value(QStringLiteral("pass_through"));
+                const auto order = update.rowModes.value(QStringLiteral("check_combo_order"));
+                const auto unbreak = update.rowModes.value(QStringLiteral("unbreakable"));
+                if (pass.isBool()) passThrough = pass.toBool();
+                if (order.isBool()) checkComboOrder = order.toBool();
+                if (unbreak.isBool()) unbreakable = unbreak.toBool();
+                if ((passThrough || checkComboOrder || unbreakable)
+                    && !updateMappingRowInputOptions(after, passThrough, checkComboOrder, unbreakable)) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("Key order checking requires an original key combination."));
+                    return;
+                }
             }
             if (update.disabled.has_value()) {
                 after.Disabled = *update.disabled;
@@ -39484,6 +39528,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 if (sequenceHoldDown || repeatMode || repeatTimes) {
                     setMappingSourceRowSequenceOptions(update.sourceRow, sequenceHoldDown, repeatMode, repeatTimes);
+                }
+                if (passThrough || checkComboOrder || unbreakable) {
+                    setMappingSourceRowInputOptions(tab, update.sourceRow, passThrough, checkComboOrder, unbreakable);
                 }
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;
