@@ -14887,8 +14887,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<MAP_KEYDATA> insertMappingDataList;
     MappingDataInsertSummary preparedSummary = keymapper->prepareMappingDataForInsertion(tabindex,
                                                                                          loadkeymapdata,
-                                                                                         &insertMappingDataList,
-                                                                                         true);
+                                                                                         &insertMappingDataList);
     if (insertSummary) {
         *insertSummary = preparedSummary;
     }
@@ -18918,8 +18917,7 @@ int QKeyMapper::insertCopiedKeyMappingDataAtTargetRow(int targetTabIndex, int in
     QList<MAP_KEYDATA> insertMappingDataList;
     MappingDataInsertSummary preparedSummary = prepareMappingDataForInsertion(targetTabIndex,
                                                                               s_CopiedMappingData,
-                                                                              &insertMappingDataList,
-                                                                              true);
+                                                                              &insertMappingDataList);
     if (insertSummary) {
         *insertSummary = preparedSummary;
     }
@@ -20049,9 +20047,10 @@ void QKeyMapper::flushPendingCommonPriorityRepairAfterLoad(void)
 QKeyMapper::MappingDataInsertSummary QKeyMapper::prepareMappingDataForInsertion(int targetTabIndex,
                                                                                 const QList<MAP_KEYDATA> &sourceMappingData,
                                                                                 QList<MAP_KEYDATA> *insertMappingDataList,
-                                                                                bool allowCommonConflictPrompt)
+                                                                                QList<QPair<int, int>> *pendingCommonConflicts)
 {
     MappingDataInsertSummary summary;
+    if (pendingCommonConflicts) pendingCommonConflicts->clear();
 
     if (insertMappingDataList == Q_NULLPTR) {
         return summary;
@@ -20126,20 +20125,20 @@ QKeyMapper::MappingDataInsertSummary QKeyMapper::prepareMappingDataForInsertion(
             conflictingNormalRowCount += it.value().size();
         }
 
-        if (conflictingNormalRowCount > 0) {
-            if (allowCommonConflictPrompt) {
-                const QString message = batchCommonConflictConfirmationMessage(conflictingOriginalKeys,
-                                                                              conflictingNormalRowCount,
-                                                                              affectedTabIndexes.size());
-                QMessageBox::StandardButton reply = QkmMessageBox::warning(this,
-                                                                         PROGRAM_NAME,
-                                                                         message,
-                                                                         QMessageBox::Yes | QMessageBox::No,
-                                                                         QMessageBox::No);
-                if (reply != QMessageBox::Yes) {
-                    summary.Cancelled = true;
-                    return summary;
-                }
+        if (pendingCommonConflicts) {
+            for (auto it = conflictingRowsByTab.constBegin(); it != conflictingRowsByTab.constEnd(); ++it) {
+                for (int row : it.value()) pendingCommonConflicts->append(qMakePair(it.key(), row));
+            }
+            std::sort(pendingCommonConflicts->begin(), pendingCommonConflicts->end());
+        } else if (conflictingNormalRowCount > 0) {
+            const QString message = batchCommonConflictConfirmationMessage(conflictingOriginalKeys,
+                                                                          conflictingNormalRowCount,
+                                                                          affectedTabIndexes.size());
+            const auto reply = QkmMessageBox::warning(this, PROGRAM_NAME, message,
+                                                      QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+            if (reply != QMessageBox::Yes) {
+                summary.Cancelled = true;
+                return summary;
             }
 
             for (auto it = conflictingRowsByTab.constBegin(); it != conflictingRowsByTab.constEnd(); ++it) {
@@ -38781,7 +38780,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
-        if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature)
+        const bool duplicatingRow = updating && !update.copyPosition.isEmpty();
+        if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature && !duplicatingRow)
             || (validation.confirmScope && !batchTrigger) || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
             return;
@@ -38797,11 +38797,6 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
-            return;
-        }
-        const bool duplicatingRow = updating && !update.copyPosition.isEmpty();
-        if (duplicatingRow && isCommonMappingTabIndex(tab)) {
-            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Copying requires the current normal target Tab."));
             return;
         }
         const bool movingRow = update.move != MappingRowMove::None;
@@ -39195,7 +39190,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 DisplayInsertTargetInfo insertTarget;
                 if (!resolveDisplayInsertTargetForSegment(tab, duplicateAnchorDisplay, placement, &insertTarget)
                     || insertTarget.TargetTabIndex != tab) {
-                    reject(QStringLiteral("invalid_target"), QStringLiteral("The insert placement must resolve to the current normal target."));
+                    reject(QStringLiteral("invalid_target"), QStringLiteral("The insert placement must resolve to the current target Tab."));
                     return;
                 }
                 rowAfter = insertTarget.TargetInsertRow;
@@ -39205,14 +39200,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             QList<MAP_KEYDATA> copiedRows;
             copiedRows.reserve(selectedRows.size());
             for (int row : selectedRows) copiedRows.append(originalRows.at(row));
-            const auto summary = prepareMappingDataForInsertion(tab, copiedRows, &duplicateRows, false);
+            const auto summary = prepareMappingDataForInsertion(tab, copiedRows, &duplicateRows, &conflictRows);
             if (summary.Cancelled || duplicateRows.size() != copiedRows.size()) {
                 reject(QStringLiteral("invalid_mapping"), QStringLiteral("The selected rows could not be prepared for insertion."));
                 return;
             }
             auto candidate = *KeyMappingDataList;
             for (int i = 0; i < duplicateRows.size(); ++i) candidate.insert(rowAfter + i, duplicateRows.at(i));
-            const auto conflict = ibInputSaveConflict({{tab, std::move(candidate)}});
+            QHash<int, QList<MAP_KEYDATA>> overrides{{tab, std::move(candidate)}};
+            for (const auto &row : std::as_const(conflictRows)) {
+                if (!overrides.contains(row.first)) overrides.insert(row.first, *s_KeyMappingTabInfoList.at(row.first).KeyMappingData);
+                overrides[row.first][row.second].Disabled = true;
+            }
+            const auto conflict = ibInputSaveConflict(overrides);
             if (!conflict.isEmpty()) {
                 reject(QStringLiteral("invalid_mapping"), conflict);
                 return;
@@ -39666,6 +39666,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (renamingTab) {
                 updateKeyMappingTabWidgetTabName(tab, *update.tabName);
             } else if (duplicatingRow) {
+                for (const auto &row : std::as_const(conflictRows)) {
+                    (*s_KeyMappingTabInfoList.at(row.first).KeyMappingData)[row.second].Disabled = true;
+                }
                 insertPreparedKeyMappingDataAtTargetRow(tab, rowAfter, *KeyMappingDataList, duplicateRows);
             } else if (movingRow) {
                 const int lastSourceRow = update.sourceRow + update.rowCount - 1;

@@ -2622,7 +2622,7 @@ private:
     MappingDataInsertSummary prepareMappingDataForInsertion(int targetTabIndex,
                                                             const QList<MAP_KEYDATA> &sourceMappingData,
                                                             QList<MAP_KEYDATA> *insertMappingDataList,
-                                                            bool allowCommonConflictPrompt = true);
+                                                            QList<QPair<int, int>> *pendingCommonConflicts = nullptr);
     QList<QPair<int, int>> collectCommonPriorityConflicts(const QList<MAP_KEYDATA> &commonRows) const;
     CommonPriorityRepairSummary reconcileCommonPriorityConflicts(bool includeDetached = false);
     void queuePendingCommonPriorityRepairSummary(const CommonPriorityRepairSummary &summary);

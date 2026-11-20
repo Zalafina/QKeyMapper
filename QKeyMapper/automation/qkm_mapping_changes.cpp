@@ -774,9 +774,14 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_ref")}}},
         QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_refs")}}}});
     auto duplicatePreview = capability("mapping.duplicate.preview", "qkm_preview_changes", Read | Configure, true, duplicateSchema);
-    auto duplicateApply = capability("mapping.duplicate.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    auto duplicateApplySchema = settingsApplySchema;
+    auto duplicateConfirmations = duplicateApplySchema.value(QStringLiteral("properties")).toObject();
+    duplicateConfirmations.insert(QStringLiteral("confirm_conflicts"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}});
+    duplicateApplySchema.insert(QStringLiteral("properties"), duplicateConfirmations);
+    auto duplicateApply = capability("mapping.duplicate.apply", "qkm_apply_changes", Read | Configure, false, duplicateApplySchema);
     for (auto *item : {&duplicatePreview, &duplicateApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("normal_or_explicit_common_source_and_current_normal_target"),
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_attached_target_tab"),
+            QStringLiteral("common_target_requires_confirmation_to_disable_normal_rows"),
             QStringLiteral("one_visible_row_or_one_contiguous_visible_selection_and_same_revision_anchor"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
     }

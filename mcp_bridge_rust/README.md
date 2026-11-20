@@ -161,14 +161,17 @@ Save separately.
 ## Duplicating a row
 
 Preview `mapping.duplicate` with a visible `source_ref` and a `copy_to` object.
-For an explicit Common source or a different normal Tab, select the normal
-destination first and pass its fresh `target_tab_ref` in `copy_to`. A normal
-destination that inherits the Common row receives a disabled copy. To copy several rows, supply 2–100 distinct
+Select the destination first. When copying across Tabs, pass the destination's
+fresh `target_tab_ref` in `copy_to`. An inheriting normal destination receives a
+disabled copy when the Common row has priority. To copy several rows, supply 2–100 distinct
 `source_refs` from the same source and revision instead. Include every visible
 row between the endpoints. The product skips hidden rows and uses source order. Set `position` to `top`, `bottom`, `above` or
 `below`. For above and below, include a visible `anchor_ref` in the target
-Tab at the same revision. The preview shows the new row, including any conflict
-that disables the copy. Apply the preview and save separately.
+Tab at the same revision. For a Common destination, review every ordinary row
+listed for collateral disabling, including source rows. Apply with
+`confirm_conflicts=true` only when the preview requires this confirmation.
+Duplicates that conflict within the target are disabled as shown in the
+preview. Save separately.
 
 ## Editing a mapping note
 

@@ -763,6 +763,12 @@ void McpControlTest::mappingChangeArguments()
     const auto duplicateApply = capabilities.at(54).toObject();
     QCOMPARE(duplicateApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.duplicate.apply"));
     QCOMPARE(duplicateApply.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    const auto duplicateConfirmations = duplicateApply.value(QStringLiteral("arguments_schema")).toObject()
+        .value(QStringLiteral("properties")).toObject();
+    QCOMPARE(duplicateConfirmations.value(QStringLiteral("confirm_conflicts")).toObject()
+        .value(QStringLiteral("type")).toString(), QStringLiteral("boolean"));
+    QCOMPARE(duplicateConfirmations.value(QStringLiteral("confirm_scope")).toObject()
+        .value(QStringLiteral("const")).toBool(true), false);
     QCOMPARE(capabilities.at(51).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.preview"));
     QCOMPARE(capabilities.at(52).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.apply"));
     QCOMPARE(capabilities.at(49).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.preview"));
