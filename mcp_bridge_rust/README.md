@@ -110,6 +110,13 @@ single-line `note`. Submit the note on its own. An empty string clears it.
 Spaces and Unicode characters are preserved. Save the configuration
 separately to persist the change.
 
+## Editing a mapping category
+
+Use `mapping.update` with the current visible row's `source_ref` and
+standalone single-line `category`. The product trims surrounding whitespace
+and updates the category filter options, as in its context menu. An empty
+value clears the category. Save the configuration separately to persist it.
+
 ## Renaming a mapping tab
 
 Use `tab.rename` with the current normal tab's `source_tab_ref` and the

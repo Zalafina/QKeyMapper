@@ -43,6 +43,7 @@ struct MappingUpdateArguments {
     std::optional<QString> keyUpMappingKey;
     std::optional<bool> disabled;
     std::optional<QString> note;
+    std::optional<QString> category;
     MappingRowMove move = MappingRowMove::None;
     int rowCount = 1;
     std::optional<QString> tabName;

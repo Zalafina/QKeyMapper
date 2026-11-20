@@ -2110,6 +2110,7 @@ public:
     void updateSaveSettingActionIcon(QAction *action) const;
     void requestSaveSettingDirty(void);
     bool setMappingTabCommonInheritance(int tabIndex, bool includeCommon);
+    int applyBatchCategoryChange(KeyMappingDataTableWidget *mappingDataTable, const QList<int> &rows, const QString &category);
     bool setMappingSourceRowNote(int tabIndex, int row, const QString &note);
     bool setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode);
     bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);

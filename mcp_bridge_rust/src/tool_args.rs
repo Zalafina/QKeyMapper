@@ -195,6 +195,7 @@ struct Preview {
     key_up_mapping_key: Option<String>,
     disabled: Option<bool>,
     note: Option<String>,
+    category: Option<String>,
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
     notification_mode: Option<u8>,
@@ -242,6 +243,7 @@ impl Preview {
             && self.tab_name.as_deref().is_none_or(single_line)
             && self.tab_hotkey.as_deref().is_none_or(single_line)
             && self.note.as_deref().is_none_or(single_line)
+            && self.category.as_deref().is_none_or(single_line)
             && self.notification_mode.is_none_or(|mode| mode <= 2)
             && self
                 .notification_font_color
@@ -396,6 +398,9 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }),
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
+            if arguments.get("category").is_some_and(Value::is_null) {
+                return Err(InvalidMessage);
+            }
             let mut values = typed(arguments, Preview::valid)?;
             values.retain(|_, value| !value.is_null());
             let valid_move = match values.get("action").and_then(Value::as_str) {
@@ -415,7 +420,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 _ => true,
             };
             let action = values.get("action").and_then(Value::as_str);
-            if values.contains_key("note")
+            if (values.contains_key("note") || values.contains_key("category"))
                 && (action != Some("mapping.update")
                     || values.len() != 3
                     || !values.contains_key("source_ref"))

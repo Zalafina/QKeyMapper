@@ -2753,60 +2753,6 @@ static void updateCategoryTableItemText(KeyMappingDataTableWidget *mappingDataTa
     }
 }
 
-static int applyBatchCategoryChange(QKeyMapper *keymapper, KeyMappingDataTableWidget *mappingDataTable, const QList<int> &rows, const QString &category)
-{
-    if (!keymapper || !mappingDataTable || rows.isEmpty()) {
-        return 0;
-    }
-
-    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
-    const QString normalizedCategory = category.trimmed();
-    const QList<DisplayRowSourceInfo> sourceInfos = collectSelectedDisplayRowSourceInfo(currentTabIndex, rows);
-    if (sourceInfos.isEmpty()) {
-        return 0;
-    }
-
-    if (selectionIncludesMultipleSourceTabs(sourceInfos)) {
-        showMixedNormalAndCommonBatchWarning(keymapper);
-        return 0;
-    }
-
-    const int sourceTabIndex = sourceInfos.constFirst().SourceTabIndex;
-    const bool currentDisplayAlreadyUpdated = (sourceTabIndex == currentTabIndex);
-    QSignalBlocker blocker(mappingDataTable);
-    int changedCount = 0;
-
-    for (const DisplayRowSourceInfo &sourceInfo : sourceInfos) {
-        if (sourceInfo.SourceRow < 0
-            || sourceInfo.SourceRow >= sourceInfo.SourceMappingDataList->size()) {
-            continue;
-        }
-
-        if (sourceInfo.SourceMappingDataList->at(sourceInfo.SourceRow).Category == normalizedCategory) {
-            continue;
-        }
-
-        (*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Category = normalizedCategory;
-        if (currentDisplayAlreadyUpdated) {
-            updateCategoryTableItemText(mappingDataTable, sourceInfo.DisplayRow, normalizedCategory);
-        }
-        changedCount += 1;
-    }
-
-    if (changedCount > 0) {
-        if (QKeyMapper::isCommonMappingTabIndex(sourceTabIndex) || !currentDisplayAlreadyUpdated) {
-            refreshDisplaysForSourceChange(keymapper,
-                                           currentTabIndex,
-                                           sourceTabIndex,
-                                           currentDisplayAlreadyUpdated);
-        }
-        keymapper->resizeKeyMappingDataTableColumnWidth(mappingDataTable);
-        keymapper->updateCategoryFilterComboBox();
-        keymapper->requestSaveSettingDirty();
-    }
-
-    return changedCount;
-}
 
 enum class OriginalKeyTriggerType {
     Normal = 0,
@@ -18264,6 +18210,61 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
 #endif
 }
 
+int QKeyMapper::applyBatchCategoryChange(KeyMappingDataTableWidget *mappingDataTable, const QList<int> &rows, const QString &category)
+{
+    if (!mappingDataTable || rows.isEmpty()) {
+        return 0;
+    }
+
+    const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
+    const QString normalizedCategory = category.trimmed();
+    const QList<DisplayRowSourceInfo> sourceInfos = collectSelectedDisplayRowSourceInfo(currentTabIndex, rows);
+    if (sourceInfos.isEmpty()) {
+        return 0;
+    }
+
+    if (selectionIncludesMultipleSourceTabs(sourceInfos)) {
+        showMixedNormalAndCommonBatchWarning(this);
+        return 0;
+    }
+
+    const int sourceTabIndex = sourceInfos.constFirst().SourceTabIndex;
+    const bool currentDisplayAlreadyUpdated = (sourceTabIndex == currentTabIndex);
+    QSignalBlocker blocker(mappingDataTable);
+    int changedCount = 0;
+
+    for (const DisplayRowSourceInfo &sourceInfo : sourceInfos) {
+        if (sourceInfo.SourceRow < 0
+            || sourceInfo.SourceRow >= sourceInfo.SourceMappingDataList->size()) {
+            continue;
+        }
+
+        if (sourceInfo.SourceMappingDataList->at(sourceInfo.SourceRow).Category == normalizedCategory) {
+            continue;
+        }
+
+        (*sourceInfo.SourceMappingDataList)[sourceInfo.SourceRow].Category = normalizedCategory;
+        if (currentDisplayAlreadyUpdated) {
+            updateCategoryTableItemText(mappingDataTable, sourceInfo.DisplayRow, normalizedCategory);
+        }
+        changedCount += 1;
+    }
+
+    if (changedCount > 0) {
+        ++m_AutomationSourceEpoch;
+        if (QKeyMapper::isCommonMappingTabIndex(sourceTabIndex) || !currentDisplayAlreadyUpdated) {
+            refreshDisplaysForSourceChange(this,
+                                           currentTabIndex,
+                                           sourceTabIndex,
+                                           currentDisplayAlreadyUpdated);
+        }
+        resizeKeyMappingDataTableColumnWidth(mappingDataTable);
+        updateCategoryFilterComboBox();
+        requestSaveSettingDirty();
+    }
+
+    return changedCount;
+}
 bool QKeyMapper::setMappingSourceRowNote(int tabIndex, int row, const QString &note)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || !KeyMappingDataList
@@ -19473,6 +19474,7 @@ void QKeyMapper::cellChanged_slot(int row, int col)
         QString category = m_KeyMappingDataTable->item(row, col)->text();
         if (category != sourceMappingDataList->at(sourceRow).Category) {
             (*sourceMappingDataList)[sourceRow].Category = category;
+            ++m_AutomationSourceEpoch;
             settingChanged = true;
 
             const bool currentDisplayAlreadyUpdated = (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex);
@@ -38774,6 +38776,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
+        const bool categoryUpdate = updating && update.category.has_value();
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
             || update.keyUpMappingKey.has_value());
         if (updating && !editingTab) {
@@ -39057,6 +39060,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             modified = before != *update.note;
             change = {{QStringLiteral("kind"), QStringLiteral("update_row_note")},
                 {QStringLiteral("before"), before}, {QStringLiteral("after"), *update.note}};
+        } else if (categoryUpdate) {
+            const auto &before = KeyMappingDataList->at(update.sourceRow).Category;
+            const QString after = update.category->trimmed();
+            modified = before != after;
+            change = {{QStringLiteral("kind"), QStringLiteral("update_row_category")},
+                {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
         } else if (updating) {
             const auto &before = KeyMappingDataList->at(update.sourceRow);
             auto after = before;
@@ -39300,6 +39309,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts note changes."));
                     return;
                 }
+            } else if (categoryUpdate) {
+                if (!applyBatchCategoryChange(m_KeyMappingDataTable, {displayRow}, *update.category)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts category changes."));
+                    return;
+                }
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;
                 for (const auto &row : std::as_const(conflictRows)) {
@@ -39313,7 +39327,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (!client.setPreferences(candidatePreferences)) {
                 reject(QStringLiteral("context_busy"), QStringLiteral("The IbInput client no longer admits preference changes.")); return;
             }
-            if (modified) requestSaveSettingDirty();
+            if (modified && !categoryUpdate) requestSaveSettingDirty();
             if (preferencesUpdate) refreshIbInputUi();
         }
         QJsonObject result{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
@@ -51414,7 +51428,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                 categoryAction->setCheckable(true);
                 categoryAction->setChecked(selectedCategoryValues.contains(categoryValue));
                 connect(categoryAction, &QAction::triggered, this, [keymapper, this, visibleSelectedRows, categoryValue]() {
-                    applyBatchCategoryChange(keymapper, this, visibleSelectedRows, categoryValue);
+                    keymapper->applyBatchCategoryChange(this, visibleSelectedRows, categoryValue);
                 });
             }
 
@@ -51536,7 +51550,7 @@ void KeyMappingDataTableWidget::contextMenuEvent(QContextMenuEvent *event)
                     return;
                 }
 
-                applyBatchCategoryChange(keymapper, this, visibleSelectedRows, inputCategory);
+                keymapper->applyBatchCategoryChange(this, visibleSelectedRows, inputCategory);
 
                 inputCategoryMenu->close();
                 stateContextMenu.close();

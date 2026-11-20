@@ -564,6 +564,22 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     changed = noteUpdate; changed.insert(QStringLiteral("send_method"), 0);
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    auto categoryUpdate = noteUpdate;
+    categoryUpdate.remove(QStringLiteral("note"));
+    categoryUpdate.insert(QStringLiteral("category"), QStringLiteral("  组 #A|分類  "));
+    const auto categoryRequest = validateMappingChangeRequest(previewMethod, categoryUpdate);
+    QVERIFY(categoryRequest.ok());
+    QCOMPARE(categoryRequest.update.category.value(), QStringLiteral("  组 #A|分類  "));
+    for (const auto &invalid : {QJsonValue(1), QJsonValue(), QJsonValue(QStringLiteral("two\nlines"))}) {
+        changed = categoryUpdate; changed.insert(QStringLiteral("category"), invalid);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    changed = categoryUpdate; changed.insert(QStringLiteral("note"), QString());
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = categoryUpdate; changed.insert(QStringLiteral("disabled"), false);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = categoryUpdate; changed.insert(QStringLiteral("category"), QString());
+    QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());
     QCOMPARE(capabilities.size(), 48);
     QCOMPARE(mappingChangeCapabilities(false).size(), 46);
     QCOMPARE(capabilities.at(45).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.preview"));

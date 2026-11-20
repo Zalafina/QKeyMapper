@@ -63,6 +63,7 @@ async def check_contract(exe):
     batch = {"action": "mapping.move_to_top", "source_refs": refs}
     moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
     note = {"action": "mapping.update", "source_ref": row, "note": "  测试#分组|備考😀  "}
+    category = {"action": "mapping.update", "source_ref": row, "category": "  组 #A|分類  "}
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     hotkey = {"action": "tab.set_hotkey", "source_tab_ref": tab, "tab_hotkey": " $ F9 "}
     notification = {"action": "tab.set_notification_mode", "source_tab_ref": tab, "notification_mode": 0}
@@ -158,6 +159,10 @@ async def check_contract(exe):
             assert {"required": ["note"]} in note_rule["anyOf"]
             assert {"required": ["disabled"]} in note_rule["dependentSchemas"]["note"]["not"]["anyOf"]
             assert rename_rule["properties"]["note"] == {"type": "null"}
+            assert note_rule["properties"]["category"] == {"type": "string", "maxLength": 32767}
+            assert {"required": ["category"]} in note_rule["anyOf"]
+            assert {"required": ["note"]} in note_rule["dependentSchemas"]["category"]["not"]["anyOf"]
+            assert rename_rule["properties"]["category"] == {"type": "null"}
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -263,6 +268,12 @@ async def check_contract(exe):
                     {**note, "note": "bad\0value"}, {**note, "disabled": True}, {**note, "send_method": 0},
                     {**note, "action": "mapping.move_up"})),
                 ("qkm_preview_changes", {**note, "note": ""}, ()),
+                ("qkm_preview_changes", category, (
+                    {**category, "category": None}, {**category, "category": 1},
+                    {**category, "category": "bad\rtext"}, {**category, "category": "😀" * 16384},
+                    {**category, "note": ""}, {**category, "send_method": 0},
+                    {**category, "action": "mapping.move_up"})),
+                ("qkm_preview_changes", {**category, "category": ""}, ()),
                 ("qkm_preview_changes", colors, (
                     {"action": "tab.set_notification_colors", "source_tab_ref": tab},
                     {**colors, "notification_background_color": "#405060"},
