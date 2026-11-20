@@ -3725,37 +3725,20 @@ void QItemSetupDialog::applyClipboardMappingCode()
 
 void QItemSetupDialog::on_burstpressSpinBox_valueChanged(int value)
 {
-    Q_UNUSED(value);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    int current_value = ui->burstpressSpinBox->value();
-
-    if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).BurstPressTime) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].BurstPressTime = current_value;
+    if (auto *mapper = QKeyMapper::getInstance(); mapper && mapper->setMappingSourceRowBurstTiming(m_ItemRow, value, std::nullopt)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[on_burstpressSpinBox_valueChanged]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Press Time -> " << current_value;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "] Burst Press Time -> " << value;
 #endif
     }
 }
 
-
 void QItemSetupDialog::on_burstreleaseSpinBox_valueChanged(int value)
 {
-    Q_UNUSED(value);
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    int current_value = ui->burstreleaseSpinBox->value();
-
-    if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).BurstReleaseTime) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].BurstReleaseTime = current_value;
+    if (auto *mapper = QKeyMapper::getInstance(); mapper && mapper->setMappingSourceRowBurstTiming(m_ItemRow, std::nullopt, value)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[on_burstreleaseSpinBox_valueChanged]" << " Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] Burst Release Time -> " << current_value;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "] Burst Release Time -> " << value;
 #endif
     }
 }

@@ -429,7 +429,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-VIEW-DISABLED | 显示／隐藏禁用行 | `m_ActionHideDisabled`；M2-A；186 选验真实菜单、多表、分类筛选叠加和保存冷读，选区恢复另验 |
 | ACT-CATEGORY-FILTER | 分类多选／全部／无匹配／空白分类 | `initCategoryFilterControls`／`showCategoryFilterPopup`；M2-A；185 双 Qt 私有 GUI 和 Rust 选验视图、可见行守卫及源／INI 不变 |
 | ACT-CATEGORY-ASSIGN | 选定分类／输入新分类／批量分类 | 表格 `contextMenuEvent` 的内嵌文本和 QWidgetAction；M2-A；183～184 选验当前可见源行单条／同源批量赋值、清空、混源及隐藏拒绝、筛选选项和保存冷读 |
-| ACT-MAP-STATE | 单项／批量启用禁用、连发开关、锁定开关、浮动按钮开关 | 表格状态菜单与 `keyMappingTableItemCheckStateChanged`；188 选验连发／锁定开关及宏行限制，参数、实际输出和悬浮动作另验 |
+| ACT-MAP-STATE | 单项／批量启用禁用、连发开关、锁定开关、浮动按钮开关 | 表格状态菜单与 `keyMappingTableItemCheckStateChanged`；188～189 选验连发／锁定开关、连发时长与宏行限制，解锁参数、实际输出和悬浮动作另验 |
 | ACT-MAP-TRIGGER | 普通／长按／双击及时间的单项／批量更改 | 表格触发类型菜单、内嵌 combo／spin；M2-A；完整原始键解析与互斥组变化 |
 | ACT-MAP-ORDER | 上移、下移、置顶、置底及拖拽 | `selectedItemsMove*`／`keyMappingTableDragDropMove`；M2-A；单行和连续行的相邻／两端移动共用 GUI；排除筛选、跨表和共通，拖拽待验 |
 | ACT-MAP-COPYPASTE | 复制／向顶部、尾部、上方、下方插入 | 表格 `contextMenuEvent`；M2-A；剪贴板、内部拷贝缓冲、位置与批量校验 |

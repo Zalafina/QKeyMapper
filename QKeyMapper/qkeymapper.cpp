@@ -18279,6 +18279,24 @@ bool QKeyMapper::setMappingSourceRowMode(QList<MAP_KEYDATA> &rows, int row, int 
     return true;
 }
 
+bool QKeyMapper::setMappingSourceRowBurstTiming(int row, std::optional<int> pressMs, std::optional<int> releaseMs)
+{
+    if (!KeyMappingDataList || row < 0 || row >= KeyMappingDataList->size()) return false;
+    const auto valid = [](std::optional<int> value) {
+        return !value || (BURST_TIME_MIN <= *value && *value <= BURST_TIME_MAX);
+    };
+    if (!valid(pressMs) || !valid(releaseMs)) return false;
+
+    auto &data = (*KeyMappingDataList)[row];
+    const int press = pressMs.value_or(data.BurstPressTime);
+    const int release = releaseMs.value_or(data.BurstReleaseTime);
+    if (data.BurstPressTime == press && data.BurstReleaseTime == release) return false;
+    data.BurstPressTime = press;
+    data.BurstReleaseTime = release;
+    ++m_AutomationSourceEpoch;
+    return true;
+}
+
 bool QKeyMapper::setMappingSourceRowNote(int tabIndex, int row, const QString &note)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || !KeyMappingDataList
@@ -38703,6 +38721,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonArray changes;
         int displayRow = -1;
         QList<int> categoryDisplayRows;
+        std::optional<int> burstPressMs;
+        std::optional<int> burstReleaseMs;
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
@@ -39077,13 +39097,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             if (rowModeUpdate) {
                 const auto burst = update.rowModes.value(QStringLiteral("burst"));
                 const auto lock = update.rowModes.value(QStringLiteral("lock"));
-                if ((!burst.isUndefined() && !getKeyMappingDataTableItemBurstStatus(displayRow))
+                const auto press = update.rowModes.value(QStringLiteral("burst_press_ms"));
+                const auto release = update.rowModes.value(QStringLiteral("burst_release_ms"));
+                if (!press.isUndefined()) burstPressMs = press.toInt();
+                if (!release.isUndefined()) burstReleaseMs = release.toInt();
+                if (((!burst.isUndefined() || burstPressMs || burstReleaseMs) && !getKeyMappingDataTableItemBurstStatus(displayRow))
                     || (!lock.isUndefined() && !getKeyMappingDataTableItemLockStatus(displayRow))) {
                     reject(QStringLiteral("unsupported_capability"), QStringLiteral("The current row must support each requested control in the GUI."));
                     return;
                 }
                 if (!burst.isUndefined()) after.Burst = burst.toBool();
                 if (!lock.isUndefined()) after.Lock = lock.toBool();
+                after.BurstPressTime = burstPressMs.value_or(after.BurstPressTime);
+                after.BurstReleaseTime = burstReleaseMs.value_or(after.BurstReleaseTime);
             }
             if (update.disabled.has_value()) {
                 after.Disabled = *update.disabled;
@@ -39351,6 +39377,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 if (update.rowModes.contains(QStringLiteral("lock"))) {
                     applyBatchMappingStateChange(this, m_KeyMappingDataTable, {displayRow}, LOCK_COLUMN, updatedRow->Lock);
+                }
+                if (burstPressMs || burstReleaseMs) {
+                    setMappingSourceRowBurstTiming(update.sourceRow, burstPressMs, burstReleaseMs);
                 }
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;

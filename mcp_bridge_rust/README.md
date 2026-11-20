@@ -106,9 +106,10 @@ Query the source again before using row references.
 ## Configuring burst and lock on a mapping
 
 Use `mapping.update` with the current visible `source_ref` and a standalone
-`row_modes` object. Specify a boolean `burst`, `lock`, or both as allowed by
-the current product controls. Save the configuration separately to persist
-the change.
+`row_modes` object. Set the boolean `burst` or `lock`, or the integer timings
+`burst_press_ms` and `burst_release_ms` from 1 to 99999. Supply at least one
+supported field. Timings can be set while burst is off on an eligible row.
+Save the configuration separately to persist the selected values.
 
 ## Editing a mapping note
 

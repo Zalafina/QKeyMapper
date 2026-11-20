@@ -636,6 +636,14 @@ void McpControlTest::mappingChangeArguments()
     const auto modeConfig = validateMappingChangeRequest(previewMethod, rowModes);
     QVERIFY(modeConfig.ok());
     QCOMPARE(modeConfig.update.rowModes, rowModes.value(QStringLiteral("row_modes")).toObject());
+    for (const int ms : {1, 99999}) {
+        changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("burst_press_ms"), ms}});
+        QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    for (const auto &value : {QJsonValue(0), QJsonValue(100000), QJsonValue(12.5), QJsonValue(QStringLiteral("40"))}) {
+        changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("burst_release_ms"), value}});
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
     for (const auto &value : {QJsonObject{}, QJsonObject{{QStringLiteral("burst"), 0}}, QJsonObject{{QStringLiteral("floating"), true}}}) {
         changed = rowModes; changed.insert(QStringLiteral("row_modes"), value);
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());

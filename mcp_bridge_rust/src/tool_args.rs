@@ -275,8 +275,12 @@ impl Preview {
             })
             && self.row_modes.as_ref().is_none_or(|modes| {
                 !modes.is_empty()
-                    && modes.iter().all(|(key, value)| {
-                        matches!(key.as_str(), "burst" | "lock") && value.is_boolean()
+                    && modes.iter().all(|(key, value)| match key.as_str() {
+                        "burst" | "lock" => value.is_boolean(),
+                        "burst_press_ms" | "burst_release_ms" => {
+                            value.as_u64().is_some_and(|ms| (1..=99_999).contains(&ms))
+                        }
+                        _ => false,
                     })
             })
             && self.notification_mode.is_none_or(|mode| mode <= 2)

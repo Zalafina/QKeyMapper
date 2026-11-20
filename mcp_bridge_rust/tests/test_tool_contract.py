@@ -176,7 +176,9 @@ async def check_contract(exe):
             assert note_rule["properties"]["source_refs"]["uniqueItems"] is True
             assert note_rule["properties"]["row_modes"] == {
                 "type": "object", "additionalProperties": False, "minProperties": 1,
-                "properties": {"burst": {"type": "boolean"}, "lock": {"type": "boolean"}}}
+                "properties": {"burst": {"type": "boolean"}, "lock": {"type": "boolean"},
+                               "burst_press_ms": {"type": "integer", "minimum": 1, "maximum": 99999},
+                               "burst_release_ms": {"type": "integer", "minimum": 1, "maximum": 99999}}}
             assert {"required": ["row_modes"]} in note_rule["anyOf"]
             assert {"required": ["category"]} in note_rule["dependentSchemas"]["row_modes"]["not"]["anyOf"]
             filter_rule, = (rule for rule in previews["oneOf"]
@@ -313,6 +315,12 @@ async def check_contract(exe):
                     {**row_modes, "send_method": 0}, {**row_modes, "note": ""},
                     {**row_modes, "source_ref": None, "source_refs": [row, other_row]})),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"lock": True}}, ()),
+                ("qkm_preview_changes", {**row_modes, "row_modes": {"burst_press_ms": 1, "burst_release_ms": 99999}}, (
+                    {**row_modes, "row_modes": {"burst_press_ms": 0}},
+                    {**row_modes, "row_modes": {"burst_release_ms": 100000}},
+                    {**row_modes, "row_modes": {"burst_press_ms": 30.5}},
+                    {**row_modes, "row_modes": {"burst_release_ms": "20"}},
+                    {**row_modes, "row_modes": {"burst_press_ms": True}})),
                 ("qkm_preview_changes", category_filter, (
                     {**category_filter, "category_filter": None}, {**category_filter, "category_filter": "none"},
                     {**category_filter, "category_filter": ["", ""]}, {**category_filter, "category_filter": [False]},

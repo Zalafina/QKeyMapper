@@ -2,6 +2,7 @@
 #include "qkm_auth_proof.h"
 #include "qkm_pair_store.h"
 #include "qkm_source_snapshot.h"
+#include "../qkeymapper_constants.h"
 
 #include <QDateTime>
 #include <QJsonArray>
@@ -308,8 +309,18 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             if (modes.isEmpty() || arguments.size() != 3 || !singleReference.isString())
                 return fail("Provide row_modes and one source_ref, without other changed fields.");
             for (auto it = modes.constBegin(); it != modes.constEnd(); ++it) {
-                if (!it.value().isBool() || (it.key() != QStringLiteral("burst") && it.key() != QStringLiteral("lock")))
-                    return fail("Only burst and lock booleans are allowed in row_modes.");
+                const QString key = it.key();
+                const auto value = it.value();
+                if (key == QStringLiteral("burst") || key == QStringLiteral("lock")) {
+                    if (!value.isBool()) return fail("Burst and lock must be booleans.");
+                } else if (key == QStringLiteral("burst_press_ms") || key == QStringLiteral("burst_release_ms")) {
+                    const int ms = value.toInt(-1);
+                    if (!value.isDouble() || value.toDouble() != ms || ms < QKeyMapperConstants::BURST_TIME_MIN
+                        || ms > QKeyMapperConstants::BURST_TIME_MAX)
+                        return fail("Burst timings must be integer milliseconds within the supported range.");
+                } else {
+                    return fail("Unsupported row mode field.");
+                }
             }
         }
         if (!note.isUndefined() || !category.isUndefined()) {
@@ -542,7 +553,10 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     operation.insert(QStringLiteral("result_ttl_ms"), double(MappingChangeStore::ResultTtlMs));
     operation.insert(QStringLiteral("max_results"), MappingChangeStore::MaxResults);
     const QJsonObject toggle{{QStringLiteral("type"), QStringLiteral("boolean")}};
-    auto rowModesSchema = schema({{QStringLiteral("burst"), toggle}, {QStringLiteral("lock"), toggle}}, {});
+    const QJsonObject burstTiming{{QStringLiteral("type"), QStringLiteral("integer")},
+        {QStringLiteral("minimum"), QKeyMapperConstants::BURST_TIME_MIN}, {QStringLiteral("maximum"), QKeyMapperConstants::BURST_TIME_MAX}};
+    auto rowModesSchema = schema({{QStringLiteral("burst"), toggle}, {QStringLiteral("lock"), toggle},
+        {QStringLiteral("burst_press_ms"), burstTiming}, {QStringLiteral("burst_release_ms"), burstTiming}}, {});
     rowModesSchema.insert(QStringLiteral("minProperties"), 1);
     auto updateSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
         {QStringLiteral("row_modes"), rowModesSchema},
