@@ -18264,6 +18264,18 @@ void QKeyMapper::updateCommonMappingTabVisibility(void)
 #endif
 }
 
+bool QKeyMapper::setMappingSourceRowNote(int tabIndex, int row, const QString &note)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || !KeyMappingDataList
+        || row < 0 || row >= KeyMappingDataList->size() || KeyMappingDataList->at(row).Note == note) return false;
+
+    (*KeyMappingDataList)[row].Note = note;
+    ++m_AutomationSourceEpoch;
+    if (isCommonMappingTabIndex(tabIndex)) refreshTabsForSourceTabChange(tabIndex);
+    else updateTableWidgetItem(tabIndex, row, ORIGINAL_KEY_COLUMN);
+    return true;
+}
+
 bool QKeyMapper::setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) return false;
@@ -38761,6 +38773,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         int displayRow = -1;
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
+        const bool noteUpdate = updating && update.note.has_value();
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
             || update.keyUpMappingKey.has_value());
         if (updating && !editingTab) {
@@ -39039,6 +39052,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             }
             if (update.rowCount > 1) target.insert(QStringLiteral("moved_count"), update.rowCount);
             modified = true;
+        } else if (noteUpdate) {
+            const auto &before = KeyMappingDataList->at(update.sourceRow).Note;
+            modified = before != *update.note;
+            change = {{QStringLiteral("kind"), QStringLiteral("update_row_note")},
+                {QStringLiteral("before"), before}, {QStringLiteral("after"), *update.note}};
         } else if (updating) {
             const auto &before = KeyMappingDataList->at(update.sourceRow);
             auto after = before;
@@ -39276,6 +39294,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 } else {
                     const int lastDisplayRow = displayRow + update.rowCount - 1;
                     moveMappingRowsByOne(update.sourceRow, lastSourceRow, displayRow, lastDisplayRow, rowAfter - update.sourceRow);
+                }
+            } else if (noteUpdate) {
+                if (!setMappingSourceRowNote(tab, update.sourceRow, *update.note)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts note changes."));
+                    return;
                 }
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;

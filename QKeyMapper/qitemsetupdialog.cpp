@@ -4366,22 +4366,13 @@ void QItemSetupDialog::on_keyRecordLineEdit_textChanged(const QString &text)
 void QItemSetupDialog::on_itemNoteLineEdit_textChanged(const QString &text)
 {
     Q_UNUSED(text);
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
-        return;
-    }
-
-    if (m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) {
-        return;
-    }
-
-    QString note_str = ui->itemNoteLineEdit->text();
-
-    if ((*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note != note_str) {
+    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()
+        || !QKeyMapper::KeyMappingDataList || m_ItemRow < 0 || m_ItemRow >= QKeyMapper::KeyMappingDataList->size()) return;
+    const QString note = ui->itemNoteLineEdit->text();
+    if (auto *mapper = QKeyMapper::getInstance(); mapper && mapper->setMappingSourceRowNote(m_TabIndex, m_ItemRow, note)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace().noquote() << "[" << __func__ << "] Item note -> " << note_str;
+        qDebug().nospace().noquote() << "[" << __func__ << "] Item note -> " << note;
 #endif
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Note = note_str;
-        refreshItemSourceCellOrAffectedTabs(m_TabIndex, m_ItemRow, ORIGINAL_KEY_COLUMN);
         notifySaveSettingDirty();
     }
 }

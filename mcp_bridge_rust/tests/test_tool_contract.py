@@ -62,6 +62,7 @@ async def check_contract(exe):
     refs = [row, revision + ":row:0:1"]
     batch = {"action": "mapping.move_to_top", "source_refs": refs}
     moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
+    note = {"action": "mapping.update", "source_ref": row, "note": "  测试#分组|備考😀  "}
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     hotkey = {"action": "tab.set_hotkey", "source_tab_ref": tab, "tab_hotkey": " $ F9 "}
     notification = {"action": "tab.set_notification_mode", "source_tab_ref": tab, "notification_mode": 0}
@@ -151,6 +152,12 @@ async def check_contract(exe):
             assert [rule["required"] for rule in color_rule["anyOf"]] == [
                 ["notification_font_color"], ["notification_background_color"]]
             assert notify_rule["properties"]["notification_font_color"] == {"type": "null"}
+            note_rule, = (rule for rule in previews["oneOf"]
+                          if rule["properties"]["action"].get("const") == "mapping.update")
+            assert note_rule["properties"]["note"] == {"type": "string", "maxLength": 32767}
+            assert {"required": ["note"]} in note_rule["anyOf"]
+            assert {"required": ["disabled"]} in note_rule["dependentSchemas"]["note"]["not"]["anyOf"]
+            assert rename_rule["properties"]["note"] == {"type": "null"}
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -251,6 +258,11 @@ async def check_contract(exe):
                     {**notification, "notification_mode": "1"}, {**notification, "tab_hotkey": "F8"})),
                 ("qkm_preview_changes", {**notification, "notification_mode": 1}, ()),
                 ("qkm_preview_changes", {**notification, "notification_mode": 2}, ()),
+                ("qkm_preview_changes", note, (
+                    {**note, "note": 1}, {**note, "note": "first\nsecond"}, {**note, "note": "x" * 32768},
+                    {**note, "note": "bad\0value"}, {**note, "disabled": True}, {**note, "send_method": 0},
+                    {**note, "action": "mapping.move_up"})),
+                ("qkm_preview_changes", {**note, "note": ""}, ()),
                 ("qkm_preview_changes", colors, (
                     {"action": "tab.set_notification_colors", "source_tab_ref": tab},
                     {**colors, "notification_background_color": "#405060"},

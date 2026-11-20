@@ -194,6 +194,7 @@ struct Preview {
     unavailable_policy: Option<UnavailablePolicy>,
     key_up_mapping_key: Option<String>,
     disabled: Option<bool>,
+    note: Option<String>,
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
     notification_mode: Option<u8>,
@@ -240,6 +241,7 @@ impl Preview {
                 .is_none_or(|key| key.chars().count() <= 1)
             && self.tab_name.as_deref().is_none_or(single_line)
             && self.tab_hotkey.as_deref().is_none_or(single_line)
+            && self.note.as_deref().is_none_or(single_line)
             && self.notification_mode.is_none_or(|mode| mode <= 2)
             && self
                 .notification_font_color
@@ -413,6 +415,13 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 _ => true,
             };
             let action = values.get("action").and_then(Value::as_str);
+            if values.contains_key("note")
+                && (action != Some("mapping.update")
+                    || values.len() != 3
+                    || !values.contains_key("source_ref"))
+            {
+                return Err(InvalidMessage);
+            }
             let rename = action == Some("tab.rename");
             let set_hotkey = action == Some("tab.set_hotkey");
             let set_notification = action == Some("tab.set_notification_mode");

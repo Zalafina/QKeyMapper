@@ -140,7 +140,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : tabActionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref")}
         : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
         : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method"),
-            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled")}
+            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled"), QStringLiteral("note")}
         : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
             QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")} : preview
         ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
@@ -259,6 +259,15 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         const auto mapping = arguments.value(QStringLiteral("mapping_key"));
         const auto keyUp = arguments.value(QStringLiteral("key_up_mapping_key"));
         const auto disabled = arguments.value(QStringLiteral("disabled"));
+        const auto note = arguments.value(QStringLiteral("note"));
+        if (!note.isUndefined()) {
+            const QString text = note.toString();
+            if (!note.isString() || text.size() > 32767 || text.contains(QLatin1Char('\0'))
+                || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n'))
+                || !original.isUndefined() || !mapping.isUndefined() || !keyUp.isUndefined() || !disabled.isUndefined()
+                || arguments.contains(QStringLiteral("send_method")))
+                return fail("Provide a single-line note of at most 32767 UTF-16 code units without other changed mapping fields.");
+        }
         if (!disabled.isUndefined() && (!disabled.isBool() || !original.isUndefined() || !mapping.isUndefined()
             || !keyUp.isUndefined() || arguments.contains(QStringLiteral("send_method"))))
             return fail("Disabled must be a boolean updated separately from key and send method fields.");
@@ -266,7 +275,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             || (!keyUp.isUndefined() && !(keyUp.isString() && keyUp.toString().isEmpty()) && !basicKey(keyUp))
             || (arguments.contains(QStringLiteral("send_method")) && sendMethod() < 0))
             return fail("Updates accept uppercase single keys, an optional empty key-up key, and send method 0 to 3.");
-        if (updatePreview && original.isUndefined() && mapping.isUndefined() && keyUp.isUndefined() && sendMethod() < 0 && disabled.isUndefined())
+        if (updatePreview && original.isUndefined() && mapping.isUndefined() && keyUp.isUndefined() && sendMethod() < 0
+            && disabled.isUndefined() && note.isUndefined())
             return fail("At least one mapping field must be specified.");
         const auto parts = reference.toString().split(QLatin1Char(':'));
         bool tabOk = false, rowOk = false;
@@ -294,6 +304,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
         if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
         if (!disabled.isUndefined()) result.update.disabled = disabled.toBool();
+        if (!note.isUndefined()) result.update.note = note.toString();
         return result;
     }
     if (savePreview) {
@@ -463,15 +474,21 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     auto updateSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
         {QStringLiteral("source_ref"), rowReference}, {QStringLiteral("send_method"), sendMethodSchema},
         {QStringLiteral("disabled"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+        {QStringLiteral("note"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")}, {QStringLiteral("maxLength"), 32767}}},
         {QStringLiteral("original_key"), key}, {QStringLiteral("mapping_key"), key},
         {QStringLiteral("key_up_mapping_key"), QJsonObject{{QStringLiteral("anyOf"), QJsonArray{key,
             QJsonObject{{QStringLiteral("const"), QString()}}}}}}}, {QStringLiteral("action"), QStringLiteral("source_ref")});
     QJsonArray updateFields;
     for (const auto *name : {"send_method", "original_key", "mapping_key", "key_up_mapping_key"})
         updateFields.append(QJsonObject{{QStringLiteral("required"), QJsonArray{QString::fromLatin1(name)}}});
-    updateSchema.insert(QStringLiteral("dependentSchemas"), QJsonObject{{QStringLiteral("disabled"),
-        QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), updateFields}}}}}});
-    updateFields.append(QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("disabled")}}});
+    const QJsonObject disabledRequired{{QStringLiteral("required"), QJsonArray{QStringLiteral("disabled")}}};
+    QJsonArray noteConflicts = updateFields;
+    noteConflicts.append(disabledRequired);
+    updateSchema.insert(QStringLiteral("dependentSchemas"), QJsonObject{
+        {QStringLiteral("disabled"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), updateFields}}}}},
+        {QStringLiteral("note"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), noteConflicts}}}}}});
+    updateFields.append(disabledRequired);
+    updateFields.append(QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("note")}}});
     updateSchema.insert(QStringLiteral("anyOf"), updateFields);
     auto updatePreview = capability("mapping.update.preview", "qkm_preview_changes", Read | Configure, true, updateSchema);
     updatePreview.insert(QStringLiteral("key_up_send_timings"), QJsonArray{2, 3, 4});

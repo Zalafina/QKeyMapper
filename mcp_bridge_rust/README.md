@@ -103,6 +103,13 @@ from the same source and revision in ascending order. To persist the
 draft, preview and confirm a separate `configuration.save`.
 Query the source again before using row references.
 
+## Editing a mapping note
+
+Use `mapping.update` with the current visible row's `source_ref` and
+single-line `note`. Submit the note on its own. An empty string clears it.
+Spaces and Unicode characters are preserved. Save the configuration
+separately to persist the change.
+
 ## Renaming a mapping tab
 
 Use `tab.rename` with the current normal tab's `source_tab_ref` and the

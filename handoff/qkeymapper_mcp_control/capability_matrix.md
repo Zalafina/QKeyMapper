@@ -242,7 +242,7 @@ ENV-38 保留为 PC-W10 的版本／漂移检查历史。ENV-39 已在 PC-W11 �
 | ID | 能力范围 | GUI／源码导航 | 共用链路与有效状态重点 | 阶段／拟定用例 |
 |---|---|---|---|---|
 | CAP-001 | 能力、实例、运行状态、目录／源快照及帮助 | [主窗口头文件](../../QKeyMapper/qkeymapper.h)、[主程序入口](../../QKeyMapper/main.cpp) | 摘要／目录／加载见 STATE-34／CAT-36／LOAD-37／41；初始静止源表／行见 SOURCE-42。其他配置／运行态／产品大结果待验，帮助及稳定编辑授权未接 | M1／API-STATUS-001 |
-| MAP-001 | 普通映射新增／修改／删除 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`on_addmapdataButton_clicked()`；[映射项窗口](../../QKeyMapper/qitemsetupdialog.cpp) | 校验、数据来源、派生字段、冲突、刷新和 dirty；按操作拆行 | M1／EQ-MAP-001 |
+| MAP-001 | 普通映射新增／修改／删除 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`on_addmapdataButton_clicked()`；[映射项窗口](../../QKeyMapper/qitemsetupdialog.cpp) | 校验、数据来源、派生字段、冲突、刷新和 dirty。ROW-NOTE-182 选验当前可见源行单行备注、原字符保存及独立冷读 | M1／EQ-MAP-001 |
 | MAP-002 | 连发、锁定、长按／双击、时机、发送方式、抬起键 | [映射项窗口](../../QKeyMapper/qitemsetupdialog.cpp)、[映射引擎](../../QKeyMapper/qkeymapper_worker.cpp) | 所有参数与相互限制、实际有效数据、Worker 消费值、释放与保存 | M2-A／EQ-ITEM-001 |
 | MAP-003 | 映射码、浮动按钮样式码 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`applyMappingCodeToSourceRow()` | 解析不等于完整业务提交；运行状态、禁用保留、冲突及忽略字段 | M2-A／EQ-CODE-001 |
 | MAP-004 | 表格选择、分类／筛选、复制／移动／排序 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | ROW-ORDER-162～167 接未筛选普通表单行与连续行的菜单排序及保存；拖拽、分类和复制待分片 | M2-A／EQ-TABLE-001 |

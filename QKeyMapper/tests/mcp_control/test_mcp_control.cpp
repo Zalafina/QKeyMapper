@@ -550,6 +550,20 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     changed = colors; changed.insert(QStringLiteral("notification_background_color"), QJsonValue(QJsonValue::Null));
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    const QJsonObject noteUpdate{{QStringLiteral("action"), QStringLiteral("mapping.update")},
+        {QStringLiteral("source_ref"), sourceRef}, {QStringLiteral("note"), QStringLiteral("  测试#分组|備考😀  ")}};
+    const auto noteRequest = validateMappingChangeRequest(previewMethod, noteUpdate);
+    QVERIFY(noteRequest.ok() && noteRequest.update.note == std::optional<QString>(QStringLiteral("  测试#分组|備考😀  ")));
+    changed = noteUpdate; changed.insert(QStringLiteral("note"), QString());
+    QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = noteUpdate; changed.insert(QStringLiteral("note"), QStringLiteral("first\nsecond"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = noteUpdate; changed.insert(QStringLiteral("note"), true);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = noteUpdate; changed.insert(QStringLiteral("disabled"), false);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = noteUpdate; changed.insert(QStringLiteral("send_method"), 0);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     QCOMPARE(capabilities.size(), 48);
     QCOMPARE(mappingChangeCapabilities(false).size(), 46);
     QCOMPARE(capabilities.at(45).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.preview"));
