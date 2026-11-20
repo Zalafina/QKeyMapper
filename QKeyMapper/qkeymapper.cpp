@@ -38681,7 +38681,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool removingTabData = deletingTab || clearingTab;
         const bool movingTab = updating && !update.targetTabRef.isEmpty();
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
-        const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData || movingTab || changingCommon;
+        const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
+        const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData
+            || movingTab || changingCommon || collapsingCommon;
         if ((validation.confirmConflicts && !update.originalKey.has_value())
             || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
@@ -38772,7 +38774,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 update.tabSettingsDigest = settingsDigest;
             }
-            if (changingCommon) {
+            if (collapsingCommon) {
+                if (!shouldAppendCommonMappingRows(tab) || !m_KeyMappingDataTable->hasCommonSeparator()) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab must have an inherited Common separator."));
+                    return;
+                }
+                if (tabInfo.CommonMappingCollapsed != m_KeyMappingDataTable->isCommonRowsCollapsed()) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The Common row display is not settled."));
+                    return;
+                }
+                modified = tabInfo.CommonMappingCollapsed != *update.tabCommonCollapsed;
+                change = {{QStringLiteral("kind"), QStringLiteral("set_common_collapsed")},
+                    {QStringLiteral("before"), tabInfo.CommonMappingCollapsed}, {QStringLiteral("after"), *update.tabCommonCollapsed}};
+            } else if (changingCommon) {
                 if (!isCommonMappingFeatureEnabled()) {
                     reject(QStringLiteral("unsupported_capability"), QStringLiteral("Enable the Common Mapping Table feature before changing Tab inheritance."));
                     return;
@@ -39037,7 +39051,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = changingCommon ? QStringLiteral("tab.set_common_inheritance")
+        const QString action = collapsingCommon ? QStringLiteral("tab.set_common_collapsed")
+            : changingCommon ? QStringLiteral("tab.set_common_inheritance")
             : movingTab ? QStringLiteral("tab.move")
             : clearingTab ? QStringLiteral("tab.clear")
             : deletingTab ? QStringLiteral("tab.delete")
@@ -39085,7 +39100,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (changingCommon) {
+            if (collapsingCommon) {
+                onCommonMappingSeparatorHeaderClicked(m_KeyMappingDataTable->commonSeparatorDisplayRow());
+            } else if (changingCommon) {
                 if (!setMappingTabCommonInheritance(tab, *update.tabIncludeCommon)) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab no longer accepts inheritance changes."));
                     return;
@@ -44034,8 +44051,10 @@ void QKeyMapper::onCommonMappingSeparatorHeaderClicked(int logicalIndex)
 
     // Persist per-tab collapsed state
     const int tabIndex = findMappingTabIndexByDataTable(m_KeyMappingDataTable);
-    if (tabIndex >= 0 && tabIndex < s_KeyMappingTabInfoList.size()) {
+    if (tabIndex >= 0 && tabIndex < s_KeyMappingTabInfoList.size()
+        && s_KeyMappingTabInfoList.at(tabIndex).CommonMappingCollapsed != newCollapsed) {
         s_KeyMappingTabInfoList[tabIndex].CommonMappingCollapsed = newCollapsed;
+        ++m_AutomationSourceEpoch;
     }
 
     // Update separator row — header toggle symbol

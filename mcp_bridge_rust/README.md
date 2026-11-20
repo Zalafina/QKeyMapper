@@ -147,6 +147,12 @@ Use `tab.set_common_inheritance` with the current normal tab's
 enabled. Applying the preview updates the inherited display and keeps
 the source rows. Persist the draft with a separate save.
 
+Use `tab.set_common_collapsed` with the current normal tab's
+`source_tab_ref` and boolean `common_collapsed` when the inherited Common
+rows have a separator. Review and apply the preview. Local and Common
+source rows stay intact, and expanding reapplies the existing filters.
+Persist the display choice with a separate save.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,
