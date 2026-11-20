@@ -556,13 +556,13 @@ void QTableSetupDialog::onTabFontColorChanged(QColor &color)
         return;
     }
 
-    if (color != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabFontColor) {
+    auto *mapper = QKeyMapper::getInstance();
+    const auto &tab = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex);
+    if (mapper->setMappingTabNotificationColors(m_TabIndex, color, tab.TabBackgroundColor)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[QTableSetupDialog::onTabFontColorChanged]" << " TabIndex[" << m_TabIndex << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName << "] Tab Font Color -> " << color.name();
 #endif
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabFontColor = color;
-        QKeyMapper::getInstance()->requestSaveSettingDirty();
-        // QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(m_TabIndex);
+        mapper->requestSaveSettingDirty();
     }
 }
 
@@ -572,14 +572,15 @@ void QTableSetupDialog::onTabBackgroundColorChanged(QColor &color)
         return;
     }
 
-    if (color != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabBackgroundColor) {
+    auto *mapper = QKeyMapper::getInstance();
+    const auto &tab = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex);
+    if (mapper->setMappingTabNotificationColors(m_TabIndex, tab.TabFontColor, color)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote()
             << "[QTableSetupDialog::onTabBackgroundColorChanged]" << " TabIndex[" << m_TabIndex << "]["<< QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabName << "] Tab Background Color -> " << color.name(QColor::HexArgb)
             << ", Alpha: " << color.alpha();
 #endif
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].TabBackgroundColor = color;
-        QKeyMapper::getInstance()->requestSaveSettingDirty();
+        mapper->requestSaveSettingDirty();
     }
 }
 

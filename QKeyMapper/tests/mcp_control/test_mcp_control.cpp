@@ -534,8 +534,26 @@ void McpControlTest::mappingChangeArguments()
     }
     changed = notification; changed.remove(QStringLiteral("notification_mode"));
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    QCOMPARE(capabilities.size(), 46);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 44);
+    QJsonObject colors = addTab;
+    colors.insert(QStringLiteral("action"), QStringLiteral("tab.set_notification_colors"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, colors).ok());
+    colors.insert(QStringLiteral("notification_font_color"), QStringLiteral("#123ABC"));
+    auto colorRequest = validateMappingChangeRequest(previewMethod, colors);
+    QVERIFY(colorRequest.ok() && colorRequest.update.tabNotificationFontColor == QStringLiteral("#123ABC"));
+    colors.insert(QStringLiteral("notification_background_color"), QStringLiteral("#80405060"));
+    QVERIFY(validateMappingChangeRequest(previewMethod, colors).ok());
+    changed = colors; changed.insert(QStringLiteral("notification_font_color"), QStringLiteral("default"));
+    QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = colors; changed.insert(QStringLiteral("notification_font_color"), QStringLiteral("#ff123456"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = colors; changed.insert(QStringLiteral("notification_background_color"), QStringLiteral("#405060"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = colors; changed.insert(QStringLiteral("notification_background_color"), QJsonValue(QJsonValue::Null));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    QCOMPARE(capabilities.size(), 48);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 46);
+    QCOMPARE(capabilities.at(45).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.preview"));
+    QCOMPARE(capabilities.at(46).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.apply"));
     QCOMPARE(capabilities.at(43).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_mode.preview"));
     QCOMPARE(capabilities.at(44).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_mode.apply"));
     QCOMPARE(capabilities.at(41).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_hotkey.preview"));

@@ -2111,6 +2111,7 @@ public:
     void requestSaveSettingDirty(void);
     bool setMappingTabCommonInheritance(int tabIndex, bool includeCommon);
     bool setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode);
+    bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;

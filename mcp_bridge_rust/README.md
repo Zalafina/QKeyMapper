@@ -178,6 +178,11 @@ notification policy handle mapping starts and tab switches. Mode 1
 suppresses start notifications. Mode 2 suppresses both. Stop notifications
 follow the existing stop policy. Save separately to persist the mode.
 
+Use `tab.set_notification_colors` with the current normal `source_tab_ref`
+and either or both fields. `notification_font_color` accepts `#RRGGBB` and
+`notification_background_color` accepts `#AARRGGBB`. Use `default` for either
+field to inherit the usual color for its configuration. Save separately.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

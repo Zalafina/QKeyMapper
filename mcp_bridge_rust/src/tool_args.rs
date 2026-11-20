@@ -133,6 +133,8 @@ enum Action {
     SetTabHotkey,
     #[serde(rename = "tab.set_notification_mode")]
     SetTabNotificationMode,
+    #[serde(rename = "tab.set_notification_colors")]
+    SetTabNotificationColors,
     #[serde(rename = "tab.add_blank")]
     AddBlankTab,
     #[serde(rename = "tab.copy")]
@@ -195,6 +197,8 @@ struct Preview {
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
     notification_mode: Option<u8>,
+    notification_font_color: Option<String>,
+    notification_background_color: Option<String>,
     target_tab_ref: Option<String>,
     include_common: Option<bool>,
     common_collapsed: Option<bool>,
@@ -203,6 +207,13 @@ struct Preview {
 
 fn single_line(value: &str) -> bool {
     value.encode_utf16().count() <= 32767 && !value.contains(['\0', '\r', '\n'])
+}
+
+fn notification_color(value: &str, digits: usize) -> bool {
+    value == "default"
+        || value
+            .strip_prefix('#')
+            .is_some_and(|hex| hex.len() == digits && hex.bytes().all(|c| c.is_ascii_hexdigit()))
 }
 
 impl Preview {
@@ -230,6 +241,14 @@ impl Preview {
             && self.tab_name.as_deref().is_none_or(single_line)
             && self.tab_hotkey.as_deref().is_none_or(single_line)
             && self.notification_mode.is_none_or(|mode| mode <= 2)
+            && self
+                .notification_font_color
+                .as_deref()
+                .is_none_or(|value| notification_color(value, 6))
+            && self
+                .notification_background_color
+                .as_deref()
+                .is_none_or(|value| notification_color(value, 8))
     }
 }
 
@@ -397,6 +416,10 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             let rename = action == Some("tab.rename");
             let set_hotkey = action == Some("tab.set_hotkey");
             let set_notification = action == Some("tab.set_notification_mode");
+            let color_count = ["notification_font_color", "notification_background_color"]
+                .into_iter()
+                .filter(|field| values.contains_key(*field))
+                .count();
             let common_inheritance = action == Some("tab.set_common_inheritance");
             let common_collapsed = action == Some("tab.set_common_collapsed");
             let common_feature = action == Some("configuration.set_common_enabled");
@@ -421,6 +444,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                     && source.split(':').next() == target.split(':').next()
                             })
                 }
+                Some("tab.set_notification_colors") => {
+                    color_count > 0
+                        && values.len() == 2 + color_count
+                        && values.contains_key("source_tab_ref")
+                }
                 Some("tab.add_blank" | "tab.copy" | "tab.delete" | "tab.clear") => {
                     values.len() == 2 && values.contains_key("source_tab_ref")
                 }
@@ -431,6 +459,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 || rename != values.contains_key("tab_name")
                 || set_hotkey != values.contains_key("tab_hotkey")
                 || set_notification != values.contains_key("notification_mode")
+                || (color_count > 0 && action != Some("tab.set_notification_colors"))
                 || common_inheritance != values.contains_key("include_common")
                 || common_collapsed != values.contains_key("common_collapsed")
                 || common_feature != values.contains_key("common_feature_enabled")

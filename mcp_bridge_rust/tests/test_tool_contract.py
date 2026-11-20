@@ -65,6 +65,8 @@ async def check_contract(exe):
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     hotkey = {"action": "tab.set_hotkey", "source_tab_ref": tab, "tab_hotkey": " $ F9 "}
     notification = {"action": "tab.set_notification_mode", "source_tab_ref": tab, "notification_mode": 0}
+    colors = {"action": "tab.set_notification_colors", "source_tab_ref": tab,
+              "notification_font_color": "#123456", "notification_background_color": "#80405060"}
     add_tab = {"action": "tab.add_blank", "source_tab_ref": tab}
     copy_tab = {"action": "tab.copy", "source_tab_ref": tab}
     delete_tab = {"action": "tab.delete", "source_tab_ref": tab}
@@ -143,6 +145,12 @@ async def check_contract(exe):
             assert set(notify_rule["required"]) == set(notification)
             assert notify_rule["properties"]["notification_mode"] == {"type": "integer", "enum": [0, 1, 2]}
             assert hotkey_rule["properties"]["notification_mode"] == {"type": "null"}
+            color_rule, = (rule for rule in previews["oneOf"]
+                           if rule["properties"]["action"].get("const") == "tab.set_notification_colors")
+            assert set(color_rule["required"]) == {"action", "source_tab_ref"}
+            assert [rule["required"] for rule in color_rule["anyOf"]] == [
+                ["notification_font_color"], ["notification_background_color"]]
+            assert notify_rule["properties"]["notification_font_color"] == {"type": "null"}
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -243,6 +251,13 @@ async def check_contract(exe):
                     {**notification, "notification_mode": "1"}, {**notification, "tab_hotkey": "F8"})),
                 ("qkm_preview_changes", {**notification, "notification_mode": 1}, ()),
                 ("qkm_preview_changes", {**notification, "notification_mode": 2}, ()),
+                ("qkm_preview_changes", colors, (
+                    {"action": "tab.set_notification_colors", "source_tab_ref": tab},
+                    {**colors, "notification_background_color": "#405060"},
+                    {**colors, "notification_font_color": "#ff123456"},
+                    {**colors, "notification_font_color": 123}, {**colors, "notification_mode": 0})),
+                ("qkm_preview_changes", {"action": colors["action"], "source_tab_ref": tab,
+                                         "notification_font_color": "default"}, ()),
                 ("qkm_preview_changes", select_tab, (
                     {"action": "tab.select", "source_tab_ref": tab}, {**select_tab, "target_tab_ref": row},
                     {**select_tab, "target_tab_ref": "b" * 64 + ":source:2"})),
