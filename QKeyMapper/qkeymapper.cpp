@@ -18383,6 +18383,30 @@ bool QKeyMapper::setMappingSourceRowInputOptions(int tabIndex, int row, std::opt
     return true;
 }
 
+static void updateMappingRowAdvancedOptions(MAP_KEYDATA &row, std::optional<int> fixedVKeyCode,
+                                            std::optional<int> pasteTextMode, std::optional<bool> disableFnKeySwitch)
+{
+    row.FixedVKeyCode = fixedVKeyCode.value_or(row.FixedVKeyCode);
+    row.PasteTextMode = pasteTextMode.value_or(row.PasteTextMode);
+    row.DisableFnKeySwitch = disableFnKeySwitch.value_or(row.DisableFnKeySwitch);
+}
+
+bool QKeyMapper::setMappingSourceRowAdvancedOptions(int row, std::optional<int> fixedVKeyCode,
+                                                   std::optional<int> pasteTextMode, std::optional<bool> disableFnKeySwitch)
+{
+    if (!KeyMappingDataList || row < 0 || row >= KeyMappingDataList->size()
+        || (fixedVKeyCode && (*fixedVKeyCode < FIXED_VIRTUAL_KEY_CODE_MIN || *fixedVKeyCode > FIXED_VIRTUAL_KEY_CODE_MAX))
+        || (pasteTextMode && *pasteTextMode != PASTETEXT_MODE_SHIFTINSERT && *pasteTextMode != PASTETEXT_MODE_CTRLV)) return false;
+
+    auto &data = (*KeyMappingDataList)[row];
+    auto candidate = data;
+    updateMappingRowAdvancedOptions(candidate, fixedVKeyCode, pasteTextMode, disableFnKeySwitch);
+    if (candidate == data) return false;
+    data = candidate;
+    ++m_AutomationSourceEpoch;
+    return true;
+}
+
 bool QKeyMapper::setMappingSourceRowNote(int tabIndex, int row, const QString &note)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || !KeyMappingDataList
@@ -38817,6 +38841,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         std::optional<bool> passThrough;
         std::optional<bool> checkComboOrder;
         std::optional<bool> unbreakable;
+        std::optional<int> fixedVKeyCode;
+        std::optional<int> pasteTextMode;
+        std::optional<bool> disableFnKeySwitch;
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
@@ -39246,6 +39273,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     reject(QStringLiteral("unsupported_capability"), QStringLiteral("Key order checking requires an original key combination."));
                     return;
                 }
+                const auto fixed = update.rowModes.value(QStringLiteral("fixed_vkey_code"));
+                const auto paste = update.rowModes.value(QStringLiteral("paste_text_mode"));
+                const auto fn = update.rowModes.value(QStringLiteral("disable_fn_key_switch"));
+                if (!fixed.isUndefined()) fixedVKeyCode = fixed.toInt();
+                if (!paste.isUndefined()) pasteTextMode = paste.toInt();
+                if (fn.isBool()) disableFnKeySwitch = fn.toBool();
+                updateMappingRowAdvancedOptions(after, fixedVKeyCode, pasteTextMode, disableFnKeySwitch);
             }
             if (update.disabled.has_value()) {
                 after.Disabled = *update.disabled;
@@ -39531,6 +39565,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 if (passThrough || checkComboOrder || unbreakable) {
                     setMappingSourceRowInputOptions(tab, update.sourceRow, passThrough, checkComboOrder, unbreakable);
+                }
+                if (fixedVKeyCode || pasteTextMode || disableFnKeySwitch) {
+                    setMappingSourceRowAdvancedOptions(update.sourceRow, fixedVKeyCode, pasteTextMode, disableFnKeySwitch);
                 }
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;

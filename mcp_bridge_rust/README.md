@@ -137,6 +137,14 @@ visible source row. `pass_through` and `unbreakable` are independent booleans.
 `check_combo_order` requires an original key combination. Omitted fields stay
 as configured. Save separately.
 
+## Configuring advanced item options
+
+Use `mapping.update` with a current visible source row and a standalone
+`row_modes` object. `fixed_vkey_code` accepts integers 0 through 255. Use
+0 to leave the code unspecified. `paste_text_mode` selects Shift+Insert (0)
+or Ctrl+V (1). The `disable_fn_key_switch` option is a boolean. Preview and
+apply update the setting in memory. Save separately.
+
 ## Editing a mapping note
 
 Use `mapping.update` with the current visible row's `source_ref` and

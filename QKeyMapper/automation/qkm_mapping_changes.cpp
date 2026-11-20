@@ -321,7 +321,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 if (key == QStringLiteral("burst") || key == QStringLiteral("lock")
                     || key == QStringLiteral("mapping_key_unlock") || key == QStringLiteral("disable_original_key_unlock")
                     || key == QStringLiteral("sequence_hold_down") || key == QStringLiteral("pass_through")
-                    || key == QStringLiteral("check_combo_order") || key == QStringLiteral("unbreakable")) {
+                    || key == QStringLiteral("check_combo_order") || key == QStringLiteral("unbreakable")
+                    || key == QStringLiteral("disable_fn_key_switch")) {
                     if (!value.isBool()) return fail("Row toggles must be booleans.");
                 } else if (key == QStringLiteral("burst_press_ms") || key == QStringLiteral("burst_release_ms")) {
                     const int ms = value.toInt(-1);
@@ -335,6 +336,13 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                     const int maximum = mode ? QKeyMapperConstants::REPEAT_MODE_BYTIMES : QKeyMapperConstants::REPEAT_TIMES_MAX;
                     if (!value.isDouble() || value.toDouble() != number || number < minimum || number > maximum)
                         return fail("Repeat mode and count must be integers within the supported range.");
+                } else if (key == QStringLiteral("fixed_vkey_code") || key == QStringLiteral("paste_text_mode")) {
+                    const int number = value.toInt(-1);
+                    const bool fixed = key == QStringLiteral("fixed_vkey_code");
+                    const int minimum = fixed ? QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MIN : QKeyMapperConstants::PASTETEXT_MODE_SHIFTINSERT;
+                    const int maximum = fixed ? QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MAX : QKeyMapperConstants::PASTETEXT_MODE_CTRLV;
+                    if (!value.isDouble() || value.toDouble() != number || number < minimum || number > maximum)
+                        return fail("Fixed virtual key code and paste mode must be integers within the supported range.");
                 } else {
                     return fail("Unsupported row mode field.");
                 }
@@ -578,6 +586,11 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         {QStringLiteral("mapping_key_unlock"), toggle}, {QStringLiteral("disable_original_key_unlock"), toggle},
         {QStringLiteral("sequence_hold_down"), toggle}, {QStringLiteral("pass_through"), toggle},
         {QStringLiteral("check_combo_order"), toggle}, {QStringLiteral("unbreakable"), toggle},
+        {QStringLiteral("disable_fn_key_switch"), toggle},
+        {QStringLiteral("fixed_vkey_code"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+            {QStringLiteral("minimum"), QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MIN}, {QStringLiteral("maximum"), QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MAX}}},
+        {QStringLiteral("paste_text_mode"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+            {QStringLiteral("minimum"), QKeyMapperConstants::PASTETEXT_MODE_SHIFTINSERT}, {QStringLiteral("maximum"), QKeyMapperConstants::PASTETEXT_MODE_CTRLV}}},
         {QStringLiteral("repeat_mode"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
             {QStringLiteral("minimum"), QKeyMapperConstants::REPEAT_MODE_NONE}, {QStringLiteral("maximum"), QKeyMapperConstants::REPEAT_MODE_BYTIMES}}},
         {QStringLiteral("repeat_times"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},

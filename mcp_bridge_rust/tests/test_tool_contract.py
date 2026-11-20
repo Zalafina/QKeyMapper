@@ -186,6 +186,9 @@ async def check_contract(exe):
                                "pass_through": {"type": "boolean"},
                                "check_combo_order": {"type": "boolean"},
                                "unbreakable": {"type": "boolean"},
+                               "disable_fn_key_switch": {"type": "boolean"},
+                               "fixed_vkey_code": {"type": "integer", "minimum": 0, "maximum": 255},
+                               "paste_text_mode": {"type": "integer", "minimum": 0, "maximum": 1},
                                "repeat_mode": {"type": "integer", "minimum": 0, "maximum": 2},
                                "repeat_times": {"type": "integer", "minimum": 0, "maximum": 99999999}}}
             assert note_rule["properties"]["send_timing"] == {"type": "integer", "minimum": 0, "maximum": 4}
@@ -338,6 +341,13 @@ async def check_contract(exe):
                     {**row_modes, "row_modes": {"mapping_key_unlock": 1}},
                     {**row_modes, "row_modes": {"disable_original_key_unlock": "false"}},
                     {**row_modes, "row_modes": {"disable_original_key_unlock": None}})),
+                ("qkm_preview_changes", {**row_modes, "row_modes": {"fixed_vkey_code": 255,
+                                                                    "paste_text_mode": 0, "disable_fn_key_switch": True}}, (
+                    {**row_modes, "row_modes": {"fixed_vkey_code": 256}},
+                    {**row_modes, "row_modes": {"fixed_vkey_code": -1}},
+                    {**row_modes, "row_modes": {"paste_text_mode": 2}},
+                    {**row_modes, "row_modes": {"paste_text_mode": 0.5}},
+                    {**row_modes, "row_modes": {"disable_fn_key_switch": 1}})),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"pass_through": True,
                                                                     "check_combo_order": False, "unbreakable": True}}, (
                     {**row_modes, "row_modes": {"pass_through": 1}},

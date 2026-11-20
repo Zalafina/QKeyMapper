@@ -3851,9 +3851,9 @@ void QItemSetupDialog::on_pasteTextModeComboBox_currentIndexChanged(int index)
         return;
     }
 
-    int pastetextmode_index = ui->pasteTextModeComboBox->currentIndex();
-    if (pastetextmode_index != QKeyMapper::KeyMappingDataList->at(m_ItemRow).PasteTextMode) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].PasteTextMode = pastetextmode_index;
+    const int pastetextmode_index = ui->pasteTextModeComboBox->currentIndex();
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowAdvancedOptions(m_ItemRow, std::nullopt, pastetextmode_index, std::nullopt)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] PasteTextMode -> " << pastetextmode_index;
@@ -4133,9 +4133,9 @@ void QItemSetupDialog::on_disableFnKeySwitchCheckBox_stateChanged(int state)
         return;
     }
 
-    bool disablefnkeyswitch = ui->disableFnKeySwitchCheckBox->isChecked();
-    if (disablefnkeyswitch != QKeyMapper::KeyMappingDataList->at(m_ItemRow).DisableFnKeySwitch) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].DisableFnKeySwitch = disablefnkeyswitch;
+    const bool disablefnkeyswitch = ui->disableFnKeySwitchCheckBox->isChecked();
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowAdvancedOptions(m_ItemRow, std::nullopt, std::nullopt, disablefnkeyswitch)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] DisableFnKeySwitch -> " << disablefnkeyswitch;
@@ -4233,8 +4233,8 @@ void QItemSetupDialog::on_fixedVKeyCodeSpinBox_valueChanged(int value)
         ui->fixedVKeyCodeSpinBox->setValue(fixedvkeycode);
         return;
     }
-    if (fixedvkeycode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).FixedVKeyCode) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].FixedVKeyCode = fixedvkeycode;
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowAdvancedOptions(m_ItemRow, fixedvkeycode, std::nullopt, std::nullopt)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         QString fixedvkeycodeStr = QString("0x%1").arg(QString::number(fixedvkeycode, 16).toUpper(), 2, '0');

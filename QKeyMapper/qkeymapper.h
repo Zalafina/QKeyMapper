@@ -2118,6 +2118,8 @@ public:
                                            std::optional<int> repeatTimes);
     bool setMappingSourceRowInputOptions(int tabIndex, int row, std::optional<bool> passThrough,
                                         std::optional<bool> checkComboOrder, std::optional<bool> unbreakable);
+    bool setMappingSourceRowAdvancedOptions(int row, std::optional<int> fixedVKeyCode, std::optional<int> pasteTextMode,
+                                           std::optional<bool> disableFnKeySwitch);
     bool setMappingSourceRowNote(int tabIndex, int row, const QString &note);
     bool setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode);
     bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);

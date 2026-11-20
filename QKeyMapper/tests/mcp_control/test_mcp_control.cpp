@@ -661,6 +661,17 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(inputOptions.update.rowModes, changed.value(QStringLiteral("row_modes")).toObject());
     changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("check_combo_order"), 0}});
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{
+        {QStringLiteral("fixed_vkey_code"), 255}, {QStringLiteral("paste_text_mode"), 0}, {QStringLiteral("disable_fn_key_switch"), true}});
+    const auto advanced = validateMappingChangeRequest(previewMethod, changed);
+    QVERIFY(advanced.ok());
+    QCOMPARE(advanced.update.rowModes, changed.value(QStringLiteral("row_modes")).toObject());
+    for (const auto &invalid : {QJsonObject{{QStringLiteral("fixed_vkey_code"), 256}},
+            QJsonObject{{QStringLiteral("fixed_vkey_code"), -1}}, QJsonObject{{QStringLiteral("paste_text_mode"), 2}},
+            QJsonObject{{QStringLiteral("paste_text_mode"), 0.5}}, QJsonObject{{QStringLiteral("disable_fn_key_switch"), 1}}}) {
+        changed.insert(QStringLiteral("row_modes"), invalid);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
     for (const int ms : {1, 99999}) {
         changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("burst_press_ms"), ms}});
         QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());

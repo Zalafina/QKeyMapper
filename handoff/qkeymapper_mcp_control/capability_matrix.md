@@ -429,7 +429,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-VIEW-DISABLED | 显示／隐藏禁用行 | `m_ActionHideDisabled`；M2-A；186 选验真实菜单、多表、分类筛选叠加和保存冷读，选区恢复另验 |
 | ACT-CATEGORY-FILTER | 分类多选／全部／无匹配／空白分类 | `initCategoryFilterControls`／`showCategoryFilterPopup`；M2-A；185 双 Qt 私有 GUI 和 Rust 选验视图、可见行守卫及源／INI 不变 |
 | ACT-CATEGORY-ASSIGN | 选定分类／输入新分类／批量分类 | 表格 `contextMenuEvent` 的内嵌文本和 QWidgetAction；M2-A；183～184 选验当前可见源行单条／同源批量赋值、清空、混源及隐藏拒绝、筛选选项和保存冷读 |
-| ACT-MAP-STATE | 单项／批量启用禁用、连发开关、锁定开关、浮动按钮开关 | 表格状态菜单与 `keyMappingTableItemCheckStateChanged`；188～193 选验连发／锁定、发送时机、序列按住／重复及三项输入选项的配置与冷读，实际输出及悬浮动作另验 |
+| ACT-MAP-STATE | 单项／批量启用禁用、连发开关、锁定开关、浮动按钮开关 | 表格状态菜单与 `keyMappingTableItemCheckStateChanged`；188～194 选验连发／锁定、发送时机、序列、输入与高级选项的配置和冷读，实际输出及悬浮动作另验 |
 | ACT-MAP-TRIGGER | 普通／长按／双击及时间的单项／批量更改 | 表格触发类型菜单、内嵌 combo／spin；M2-A；完整原始键解析与互斥组变化 |
 | ACT-MAP-ORDER | 上移、下移、置顶、置底及拖拽 | `selectedItemsMove*`／`keyMappingTableDragDropMove`；M2-A；单行和连续行的相邻／两端移动共用 GUI；排除筛选、跨表和共通，拖拽待验 |
 | ACT-MAP-COPYPASTE | 复制／向顶部、尾部、上方、下方插入 | 表格 `contextMenuEvent`；M2-A；剪贴板、内部拷贝缓冲、位置与批量校验 |
@@ -598,15 +598,15 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-item/lockCheckBox` | QCheckBox；Lock | `on_lockCheckBox_stateChanged @3744` | 运行约束待核 |
 | `U-item/mappingKeyUnlockCheckBox` | QCheckBox；MappingKeyUnlock | `on_mappingKeyUnlockCheckBox_stateChanged @4099` | 运行约束待核 |
 | `U-item/disableOriginalKeyUnlockCheckBox` | QCheckBox；DisableOriKeyUnlock | `on_disableOriginalKeyUnlockCheckBox_stateChanged @4116` | 运行约束待核 |
-| `U-item/disableFnKeySwitchCheckBox` | QCheckBox；DisableFnKeySwitch | `on_disableFnKeySwitchCheckBox_stateChanged @4133` | 运行约束待核 |
+| `U-item/disableFnKeySwitchCheckBox` | QCheckBox；DisableFnKeySwitch | `on_disableFnKeySwitchCheckBox_stateChanged` | 194 选验配置、保存及冷读，运行切换另验 |
 | `U-item/sendTimingComboBox` | QComboBox | `on_sendTimingComboBox_currentIndexChanged @3797` | 运行约束待核 |
 | `U-item/sendMappingKeyMethodComboBox` | QComboBox | `on_sendMappingKeyMethodComboBox_currentIndexChanged @3845` | UI选项=SendInput, SendMessage, FakerInput |
-| `U-item/fixedVKeyCodeSpinBox` | QSpinBox | `on_fixedVKeyCodeSpinBox_valueChanged @4231` | 运行约束待核 |
+| `U-item/fixedVKeyCodeSpinBox` | QSpinBox | `on_fixedVKeyCodeSpinBox_valueChanged` | 194 选验 0–255、保存及冷读，实际输出另验 |
 | `U-item/checkCombKeyOrderCheckBox` | QCheckBox；CheckCombKeyOrder | `on_checkCombKeyOrderCheckBox_stateChanged @3862` | 运行约束待核 |
 | `U-item/unbreakableCheckBox` | QCheckBox；Unbreakable | `on_unbreakableCheckBox_stateChanged @4168` | 运行约束待核 |
 | `U-item/passThroughCheckBox` | QCheckBox；PassThrough | `on_passThroughCheckBox_stateChanged @3879` | 运行约束待核 |
 | `U-item/keySeqHoldDownCheckBox` | QCheckBox；KeySeqHoldDown | `on_keySeqHoldDownCheckBox_stateChanged @3902` | 运行约束待核 |
-| `U-item/pasteTextModeComboBox` | QComboBox | `on_pasteTextModeComboBox_currentIndexChanged @3828` | UI选项=Shift+Insert, Ctrl+V |
+| `U-item/pasteTextModeComboBox` | QComboBox | `on_pasteTextModeComboBox_currentIndexChanged` | 194 选验两项配置和冷读，实际粘贴另验 |
 | `U-item/repeatByKeyCheckBox` | QCheckBox；RepeatByKey | `on_repeatByKeyCheckBox_stateChanged @3990` | 运行约束待核 |
 | `U-item/repeatByTimesCheckBox` | QCheckBox；RepeatTimes | `on_repeatByTimesCheckBox_stateChanged @4019` | 运行约束待核 |
 | `U-item/repeatTimesSpinBox` | QSpinBox | `on_repeatTimesSpinBox_valueChanged @4047` | 运行约束待核 |
