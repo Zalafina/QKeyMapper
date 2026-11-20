@@ -66,6 +66,7 @@ async def check_contract(exe):
     category = {"action": "mapping.update", "source_ref": row, "category": "  组 #A|分類  "}
     other_row = row.rsplit(":", 1)[0] + ":3"
     category_batch = {"action": "mapping.update", "source_refs": [other_row, row], "category": "批量分類"}
+    category_filter = {"action": "tab.set_category_filter", "source_tab_ref": tab, "category_filter": ["", "批量分類"]}
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     hotkey = {"action": "tab.set_hotkey", "source_tab_ref": tab, "tab_hotkey": " $ F9 "}
     notification = {"action": "tab.set_notification_mode", "source_tab_ref": tab, "notification_mode": 0}
@@ -169,6 +170,13 @@ async def check_contract(exe):
             assert note_rule["dependentSchemas"]["source_refs"] == {"required": ["category"]}
             assert note_rule["properties"]["source_refs"]["minItems"] == 2
             assert note_rule["properties"]["source_refs"]["uniqueItems"] is True
+            filter_rule, = (rule for rule in previews["oneOf"]
+                            if rule["properties"]["action"].get("const") == "tab.set_category_filter")
+            assert set(filter_rule["required"]) == set(category_filter)
+            assert filter_rule["properties"]["category_filter"]["oneOf"] == [
+                {"const": "all"}, {"type": "array", "maxItems": 100, "uniqueItems": True,
+                                   "items": {"type": "string", "maxLength": 32767}}]
+            assert note_rule["properties"]["category_filter"] == {"type": "null"}
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -280,6 +288,14 @@ async def check_contract(exe):
                     {**category, "note": ""}, {**category, "send_method": 0},
                     {**category, "action": "mapping.move_up"})),
                 ("qkm_preview_changes", {**category, "category": ""}, ()),
+                ("qkm_preview_changes", category_filter, (
+                    {**category_filter, "category_filter": None}, {**category_filter, "category_filter": "none"},
+                    {**category_filter, "category_filter": ["", ""]}, {**category_filter, "category_filter": [False]},
+                    {**category_filter, "category_filter": ["two\nlines"]},
+                    {**category_filter, "category_filter": [str(i) for i in range(101)]},
+                    {**category_filter, "source_tab_ref": row}, {**category_filter, "category": ""})),
+                ("qkm_preview_changes", {**category_filter, "category_filter": "all"}, ()),
+                ("qkm_preview_changes", {**category_filter, "category_filter": []}, ()),
                 ("qkm_preview_changes", category_batch, (
                     {**category_batch, "source_ref": row}, {**category_batch, "source_refs": [row]},
                     {**category_batch, "source_refs": [row, row]},

@@ -50,6 +50,7 @@ struct MappingUpdateArguments {
     std::optional<QString> tabName;
     std::optional<QString> tabHotkey;
     std::optional<Qt::CheckState> tabNotificationMode;
+    std::optional<QJsonValue> tabCategoryFilter;
     QString tabNotificationFontColor;
     QString tabNotificationBackgroundColor;
     bool addBlankTab = false;

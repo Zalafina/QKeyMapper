@@ -110,6 +110,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool tabHotkeyPreview = preview && action == QLatin1String("tab.set_hotkey");
     const bool tabNotificationPreview = preview && action == QLatin1String("tab.set_notification_mode");
     const bool tabNotificationColorsPreview = preview && action == QLatin1String("tab.set_notification_colors");
+    const bool categoryFilterPreview = preview && action == QLatin1String("tab.set_category_filter");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
     const bool deleteTabPreview = preview && action == QLatin1String("tab.delete");
@@ -121,7 +122,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool commonFeaturePreview = preview && action == QLatin1String("configuration.set_common_enabled");
     const bool tabActionPreview = addBlankTabPreview || copyTabPreview || deleteTabPreview
         || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview
-        || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview;
+        || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -132,6 +133,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : renamePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_name")}
         : tabHotkeyPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_hotkey")}
         : tabNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_mode")}
+        : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
         : tabNotificationColorsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"),
             QStringLiteral("notification_font_color"), QStringLiteral("notification_background_color")}
         : (moveTabPreview || selectTabPreview) ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("target_tab_ref")}
@@ -203,6 +205,23 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             if (!value.isDouble() || value.toDouble() != mode || mode < Qt::Unchecked || mode > Qt::Checked)
                 return fail("notification_mode must be 0, 1, or 2.");
             result.update.tabNotificationMode = static_cast<Qt::CheckState>(mode);
+        }
+        if (categoryFilterPreview) {
+            const auto filter = arguments.value(QStringLiteral("category_filter"));
+            if (filter != QJsonValue(QStringLiteral("all"))) {
+                const auto names = filter.toArray();
+                if (!filter.isArray() || names.size() > 100)
+                    return fail("Use all or a list of up to 100 category names.");
+                QSet<QString> selected;
+                for (const auto &value : names) {
+                    const QString name = value.toString();
+                    if (!value.isString() || name.size() > 32767 || name.contains(QLatin1Char('\0'))
+                        || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n')) || selected.contains(name))
+                        return fail("Category filter names must be distinct single-line strings.");
+                    selected.insert(name);
+                }
+            }
+            result.update.tabCategoryFilter = filter;
         }
         if (tabNotificationColorsPreview) {
             const auto font = arguments.value(QStringLiteral("notification_font_color"));
@@ -635,7 +654,8 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     capabilities.append(renamePreview);
     capabilities.append(renameApply);
     for (const char *action : {"tab.add_blank", "tab.copy", "tab.delete", "tab.clear", "tab.move",
-        "tab.set_common_inheritance", "tab.set_common_collapsed", "configuration.set_common_enabled", "tab.select", "tab.set_hotkey", "tab.set_notification_mode", "tab.set_notification_colors"}) {
+        "tab.set_common_inheritance", "tab.set_common_collapsed", "configuration.set_common_enabled", "tab.select", "tab.set_hotkey", "tab.set_notification_mode", "tab.set_notification_colors",
+        "tab.set_category_filter"}) {
         const QByteArray actionId(action);
         const bool deleting = actionId == "tab.delete";
         const bool clearing = actionId == "tab.clear";
@@ -645,6 +665,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         const bool settingHotkey = actionId == "tab.set_hotkey";
         const bool settingNotification = actionId == "tab.set_notification_mode";
         const bool settingNotificationColors = actionId == "tab.set_notification_colors";
+        const bool categoryFilter = actionId == "tab.set_category_filter";
         const bool includingCommon = actionId == "tab.set_common_inheritance";
         const bool collapsingCommon = actionId == "tab.set_common_collapsed";
         const bool commonFeature = actionId == "configuration.set_common_enabled";
@@ -671,6 +692,15 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
                 {QStringLiteral("enum"), QJsonArray{0, 1, 2}}});
             tabRequired.append(QStringLiteral("notification_mode"));
         }
+        if (categoryFilter) {
+            const auto field = QStringLiteral("category_filter");
+            tabProperties.insert(field, QJsonObject{{QStringLiteral("oneOf"), QJsonArray{
+                QJsonObject{{QStringLiteral("const"), QStringLiteral("all")}},
+                QJsonObject{{QStringLiteral("type"), QStringLiteral("array")}, {QStringLiteral("maxItems"), 100},
+                    {QStringLiteral("uniqueItems"), true}, {QStringLiteral("items"), QJsonObject{
+                        {QStringLiteral("type"), QStringLiteral("string")}, {QStringLiteral("maxLength"), 32767}}}}}}});
+            tabRequired.append(field);
+        }
         const QString fontField = QStringLiteral("notification_font_color");
         const QString backgroundField = QStringLiteral("notification_background_color");
         if (settingNotificationColors) {
@@ -693,13 +723,15 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
             : selecting ? QStringLiteral("same_revision_attached_destination_selection_only")
             : settingHotkey ? QStringLiteral("gui_hotkey_validation_and_shared_targets")
             : settingNotification ? QStringLiteral("tab_start_and_switch_notifications")
+            : categoryFilter ? QStringLiteral("visible_category_column_view_only")
             : settingNotificationColors ? QStringLiteral("notification_colors_with_inherited_defaults")
             : includingCommon ? QStringLiteral("common_feature_must_be_enabled")
             : collapsingCommon ? QStringLiteral("inherited_common_separator_required")
             : commonFeature ? QStringLiteral("explicit_conflict_confirmation_if_needed")
             : actionId == "tab.copy" ? QStringLiteral("gui_copy_preserves_current_tab") : QStringLiteral("gui_default_name_and_activation");
         for (auto *item : {&tabPreview, &tabApply}) {
-            QJsonArray limits{clearing || commonFeature || selecting ? QStringLiteral("current_attached_source_only") : QStringLiteral("current_attached_normal_source_only"),
+            QJsonArray limits{clearing || commonFeature || selecting || categoryFilter
+                    ? QStringLiteral("current_attached_source_only") : QStringLiteral("current_attached_normal_source_only"),
                 QStringLiteral("memory_only_no_save_or_start"), behavior,
                 QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("no_open_editor_or_popup")};
             if (deleting) limits.append(QStringLiteral("last_normal_tab_protected"));

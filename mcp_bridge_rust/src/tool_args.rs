@@ -133,6 +133,8 @@ enum Action {
     SetTabHotkey,
     #[serde(rename = "tab.set_notification_mode")]
     SetTabNotificationMode,
+    #[serde(rename = "tab.set_category_filter")]
+    SetCategoryFilter,
     #[serde(rename = "tab.set_notification_colors")]
     SetTabNotificationColors,
     #[serde(rename = "tab.add_blank")]
@@ -196,6 +198,7 @@ struct Preview {
     disabled: Option<bool>,
     note: Option<String>,
     category: Option<String>,
+    category_filter: Option<Value>,
     tab_name: Option<String>,
     tab_hotkey: Option<String>,
     notification_mode: Option<u8>,
@@ -244,6 +247,16 @@ impl Preview {
             && self.tab_hotkey.as_deref().is_none_or(single_line)
             && self.note.as_deref().is_none_or(single_line)
             && self.category.as_deref().is_none_or(single_line)
+            && self.category_filter.as_ref().is_none_or(|filter| {
+                filter.as_str() == Some("all")
+                    || filter.as_array().is_some_and(|names| {
+                        names.len() <= 100
+                            && names.iter().enumerate().all(|(index, value)| {
+                                value.as_str().is_some_and(single_line)
+                                    && !names[..index].contains(value)
+                            })
+                    })
+            })
             && self.notification_mode.is_none_or(|mode| mode <= 2)
             && self
                 .notification_font_color
@@ -456,6 +469,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             let rename = action == Some("tab.rename");
             let set_hotkey = action == Some("tab.set_hotkey");
             let set_notification = action == Some("tab.set_notification_mode");
+            let category_filter = action == Some("tab.set_category_filter");
             let color_count = ["notification_font_color", "notification_background_color"]
                 .into_iter()
                 .filter(|field| values.contains_key(*field))
@@ -484,6 +498,9 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                     && source.split(':').next() == target.split(':').next()
                             })
                 }
+                Some("tab.set_category_filter") => {
+                    values.len() == 3 && values.contains_key("source_tab_ref")
+                }
                 Some("tab.set_notification_colors") => {
                     color_count > 0
                         && values.len() == 2 + color_count
@@ -499,6 +516,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 || rename != values.contains_key("tab_name")
                 || set_hotkey != values.contains_key("tab_hotkey")
                 || set_notification != values.contains_key("notification_mode")
+                || category_filter != values.contains_key("category_filter")
                 || (color_count > 0 && action != Some("tab.set_notification_colors"))
                 || common_inheritance != values.contains_key("include_common")
                 || common_collapsed != values.contains_key("common_collapsed")

@@ -121,6 +121,14 @@ For a batch, replace `source_ref` with 2–100 distinct `source_refs` from
 the same current source and revision. The preview lists each row in source
 order and rejects the entire request if any row is out of scope or hidden.
 
+## Filtering categories in a tab
+
+Use `tab.set_category_filter` with the current `source_tab_ref` while the
+category column is visible. Set `category_filter` to `"all"`, `[]` to select
+none, or a list of category names. An empty string in that list selects
+the Blank option when it is available. The filter affects the current view.
+Source references and the saved configuration stay stable.
+
 ## Renaming a mapping tab
 
 Use `tab.rename` with the current normal tab's `source_tab_ref` and the

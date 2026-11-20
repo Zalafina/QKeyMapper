@@ -26,6 +26,7 @@
 #include <QJsonObject>
 #include <QDeadlineTimer>
 #include <memory>
+#include <optional>
 #include <functional>
 
 class QkmUiScale;
@@ -406,11 +407,9 @@ public:
     bool hasActiveEditor() const { return state() == QAbstractItemView::EditingState; }
 
     // Category filtering methods
-    // void setCategoryFilter(const QString &category);
-    void setCategoryFilters(const QSet<QString> &categories);
+    void setCategoryFilters(const std::optional<QSet<QString>> &categories);
     void clearCategoryFilter();
     void clearCategoryFilters();
-    QStringList getAvailableCategories() const;
     void setFloatingColumnVisible(bool visible);
     bool isFloatingColumnVisible() const;
     void setCategoryColumnVisible(bool visible);
@@ -449,9 +448,9 @@ private:
     bool m_CommonRowsCollapsed = false;
 public:
     // Current category filters:
-    // - Empty set means "All" (no filtering)
-    // - Empty-string element (""), when present, represents the built-in "Blank" option
-    QSet<QString> m_CategoryFilters;
+    // An unset filter shows all categories. An empty set shows none.
+    // An empty string in the set matches blank categories.
+    std::optional<QSet<QString>> m_CategoryFilters;
 
     int commonSeparatorDisplayRow() const { return m_CommonSeparatorDisplayRow; }
     void setCommonSeparatorDisplayRow(int row) { m_CommonSeparatorDisplayRow = row; }
@@ -1913,9 +1912,9 @@ private:
     void clearLastAutoMatchedSetting();
     bool switchBackToLastMatchedSetting(const QString &settingToRestore);
     bool removeSettingByIndex(int targetSettingIndex);
-    QStringList getCurrentCategoryFilters() const;
+    std::optional<QSet<QString>> getCurrentCategoryFilters() const;
     bool isCategoryFilterVisible() const;
-    void restoreCategoryFilterState(const QStringList& filters, bool showState);
+    void restoreCategoryFilterState(const std::optional<QSet<QString>> &filters, bool showState);
     QPoint floatingButtonReferenceBasePoint(const MAP_KEYDATA &keymapdata) const;
     int findCurrentTabEnabledRowIndexByOriginalKey(const QString &originalKey) const;
     int findCurrentTabRowIndexFromActiveKeyMappingRow(int rowindex) const;
@@ -1974,7 +1973,7 @@ private:
         ~CategoryFilterStateGuard();
     private:
         QKeyMapper* m_parent;
-        QStringList m_savedFilters;
+        std::optional<QSet<QString>> m_savedFilters;
         bool m_savedShowState;
     };
 

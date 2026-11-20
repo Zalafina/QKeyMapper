@@ -2733,6 +2733,14 @@ static QSet<QString> collectAvailableCategoryFilterTokens(const KeyMappingDataTa
     return categoryTokens;
 }
 
+static QJsonValue automationCategoryFilterValue(const std::optional<QSet<QString>> &filter)
+{
+    if (!filter) return QStringLiteral("all");
+    QStringList names = filter->values();
+    names.sort();
+    return QJsonArray::fromStringList(names);
+}
+
 static void updateCategoryTableItemText(KeyMappingDataTableWidget *mappingDataTable, int row, const QString &category)
 {
     if (!mappingDataTable) {
@@ -34054,45 +34062,25 @@ bool QKeyMapper::isMappingDataTableFiltered()
 
 void QKeyMapper::updateCategoryFilterComboBox(void)
 {
-    static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
-
-    // Mark category filter menu dirty, then re-apply current filters against the
-    // latest category set so row visibility and summary stay in sync after edits.
     m_CategoryFilterDisplayOrder.clear();
-
     if (m_KeyMappingDataTable) {
-        QSet<QString> filters = m_KeyMappingDataTable->m_CategoryFilters;
-        const QSet<QString> previousFilters = filters;
-        const bool hadExplicitFilters = !previousFilters.isEmpty() && !previousFilters.contains(kNoneToken);
-
-        if (hadExplicitFilters) {
-            bool hasEmptyCategories = false;
-            bool hasNonEmptyCategories = false;
-            filters.intersect(collectAvailableCategoryFilterTokens(m_KeyMappingDataTable,
-                                                                  &hasEmptyCategories,
-                                                                  &hasNonEmptyCategories));
-
-            // Keep the existing blank-only behavior aligned with All when every row
-            // is blank and the menu intentionally omits a separate Blank option.
-            if (filters.isEmpty() && previousFilters.contains(QString()) && hasEmptyCategories && !hasNonEmptyCategories) {
-                filters.clear();
-            }
-            else if (filters.isEmpty()) {
-                filters.clear();
-                filters.insert(kNoneToken);
+        auto filters = m_KeyMappingDataTable->m_CategoryFilters;
+        if (filters && !filters->isEmpty()) {
+            const bool selectedBlank = filters->contains(QString());
+            bool hasBlank = false;
+            bool hasNamedCategories = false;
+            filters->intersect(collectAvailableCategoryFilterTokens(m_KeyMappingDataTable, &hasBlank, &hasNamedCategories));
+            if (filters->isEmpty() && selectedBlank && hasBlank && !hasNamedCategories) {
+                filters.reset();
             }
         }
-
         m_KeyMappingDataTable->setCategoryFilters(filters);
     }
-
     updateCategoryFilterHeaderAppearance();
 }
 
 void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
 {
-    static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
-
     if (!m_CategoryFilterMenu || !m_CategoryFilterListLayout || !m_CategoryFilterAllCheckBox) {
         return;
     }
@@ -34103,28 +34091,12 @@ void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
     const int tabIndex = s_KeyMappingTabWidgetCurrentIndex;
     m_CategoryFilterMenuTabIndex = tabIndex;
 
-#ifdef DEBUG_LOGOUT_ON
-    qDebug().nospace() << "[CategoryFilter][Rebuild] tabIndex=" << tabIndex
-                       << ", currentFiltersSize=" << m_KeyMappingDataTable->m_CategoryFilters.size()
-                       << ", hasNoneToken=" << m_KeyMappingDataTable->m_CategoryFilters.contains(kNoneToken);
-#endif
-
-    // Rebuild available categories
-    QStringList categories = m_KeyMappingDataTable->getAvailableCategories();
-    QStringList regularCategories;
-    bool hasBlankOption = false;
-    for (const QString &category : std::as_const(categories)) {
-        if (category == tr("Blank")) {
-            hasBlankOption = true;
-        }
-        else {
-            regularCategories.append(category);
-        }
-    }
-    regularCategories.sort();
-
-    m_CategoryFilterDisplayOrder = regularCategories;
-    if (hasBlankOption) {
+    const auto available = collectAvailableCategoryFilterTokens(m_KeyMappingDataTable);
+    auto namedCategories = available;
+    const bool hasBlank = namedCategories.remove(QString());
+    m_CategoryFilterDisplayOrder = namedCategories.values();
+    m_CategoryFilterDisplayOrder.sort();
+    if (hasBlank) {
         m_CategoryFilterDisplayOrder.append(QString());
     }
 
@@ -34168,45 +34140,19 @@ void QKeyMapper::rebuildCategoryFilterMenuForCurrentTab(void)
     }
     m_CategoryFilterListLayout->addStretch(1);
 
-    // Sync UI from current filters
-    QSet<QString> filters = m_KeyMappingDataTable->m_CategoryFilters;
-    // Clamp filters to current candidates (and keep special none token if present)
-    if (!filters.contains(kNoneToken)) {
-        QSet<QString> allowed;
-        for (const QString &v : std::as_const(m_CategoryFilterDisplayOrder)) {
-            allowed.insert(v);
-        }
-        filters = filters.intersect(allowed);
+    auto filters = m_KeyMappingDataTable->m_CategoryFilters;
+    if (filters) {
+        filters->intersect(available);
     }
-
     m_CategoryFilterGuard = true;
-
-    const int total = m_CategoryFilterCheckBoxes.size();
-    if (filters.isEmpty()) {
-        // All-mode: check all
-        for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
-            cb->setChecked(true);
-        }
+    for (auto it = m_CategoryFilterCheckBoxes.constBegin(); it != m_CategoryFilterCheckBoxes.constEnd(); ++it) {
+        it.value()->setChecked(!filters || filters->contains(it.key()));
     }
-    else if (filters.contains(kNoneToken)) {
-        for (QCheckBox *cb : std::as_const(m_CategoryFilterCheckBoxes)) {
-            cb->setChecked(false);
-        }
-    }
-    else {
-        for (auto it = m_CategoryFilterCheckBoxes.constBegin(); it != m_CategoryFilterCheckBoxes.constEnd(); ++it) {
-            it.value()->setChecked(filters.contains(it.key()));
-        }
-    }
-
     m_CategoryFilterGuard = false;
 
-    // Apply clamped filters if needed
     if (filters != m_KeyMappingDataTable->m_CategoryFilters) {
         m_KeyMappingDataTable->setCategoryFilters(filters);
     }
-
-    Q_UNUSED(total);
     updateCategoryFilterAllCheckStateFromItems();
     updateCategoryFilterHeaderAppearance();
 
@@ -34333,32 +34279,22 @@ void QKeyMapper::updateCategoryFilterAllCheckStateFromItems(void)
 
 void QKeyMapper::applyCategoryFilterFromMenuStateForCurrentTab(void)
 {
-    static const QString kNoneToken = QStringLiteral("__QKM_INTERNAL_NONE__");
     if (!m_KeyMappingDataTable) {
         return;
     }
 
-    int total = 0;
-    int checkedCount = 0;
     QSet<QString> selected;
-
     for (auto it = m_CategoryFilterCheckBoxes.constBegin(); it != m_CategoryFilterCheckBoxes.constEnd(); ++it) {
-        total += 1;
         if (it.value()->isChecked()) {
-            checkedCount += 1;
             selected.insert(it.key());
         }
     }
 
-    if (total > 0 && checkedCount == 0) {
-        selected.clear();
-        selected.insert(kNoneToken);
+    if (selected.size() == m_CategoryFilterCheckBoxes.size()) {
+        m_KeyMappingDataTable->clearCategoryFilters();
+    } else {
+        m_KeyMappingDataTable->setCategoryFilters(selected);
     }
-    else if (total > 0 && checkedCount == total) {
-        selected.clear();
-    }
-
-    m_KeyMappingDataTable->setCategoryFilters(selected);
     updateCategoryFilterAllCheckStateFromItems();
     updateCategoryFilterHeaderAppearance();
 }
@@ -34369,8 +34305,7 @@ void QKeyMapper::updateCategoryFilterHeaderAppearance(void)
         return;
     }
 
-    const QSet<QString> filters = m_KeyMappingDataTable->m_CategoryFilters;
-    const bool isFiltering = !filters.isEmpty();
+    const bool isFiltering = m_KeyMappingDataTable->m_CategoryFilters.has_value();
 
     // Keep the "All" checkbox text in sync with current UI language.
     if (m_CategoryFilterAllCheckBox) {
@@ -38042,6 +37977,12 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             {QStringLiteral("stop_completion"), automationSourceReadBasis() == QStringLiteral("completed_cleanup")
                 ? QStringLiteral("observed") : QStringLiteral("unobserved")},
             {QStringLiteral("actual_stop_shortcut"), s_MappingStopKeyString}}}};
+    const auto categoryFilter = getCurrentCategoryFilters();
+    result.insert(QStringLiteral("category_view"), QJsonObject{
+        {QStringLiteral("available"), m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()},
+        {QStringLiteral("mode"), !categoryFilter ? QStringLiteral("all")
+            : categoryFilter->isEmpty() ? QStringLiteral("none") : QStringLiteral("selected")},
+        {QStringLiteral("selected_count"), categoryFilter ? int(categoryFilter->size()) : 0}});
     const auto &ib = QkmIbInputClient::instance();
     const auto preferences = ib.preferences();
     const auto ibStatus = ib.statusSnapshot();
@@ -38709,6 +38650,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool renamingTab = updating && update.tabName.has_value();
         const bool changingTabHotkey = updating && update.tabHotkey.has_value();
         const bool changingTabNotification = updating && update.tabNotificationMode.has_value();
+        const bool filteringCategories = updating && update.tabCategoryFilter.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -38722,7 +38664,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
-            || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab;
+            || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab || filteringCategories;
         if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature)
             || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
@@ -38735,7 +38677,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
-        if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && isCommonMappingTabIndex(tab)) {
+        if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
@@ -38766,6 +38708,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonObject change;
         bool modified = false;
         bool selectionChanged = false;
+        bool filterChanged = false;
+        std::optional<QSet<QString>> pendingCategoryFilter;
         QString normalizedTabHotkey;
         QColor notificationFont;
         QColor notificationBackground;
@@ -38992,6 +38936,28 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("local_row_count"), 0},
                     {QStringLiteral("include_common"), MAPPINGTABLE_INCLUDE_COMMON_DEFAULT},
                     {QStringLiteral("activate_new_tab"), true}};
+            } else if (filteringCategories) {
+                if (!m_KeyMappingDataTable->isCategoryColumnVisible()) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("The current Tab must show the category column."));
+                    return;
+                }
+                if (update.tabCategoryFilter->isArray()) {
+                    const auto allowed = collectAvailableCategoryFilterTokens(m_KeyMappingDataTable);
+                    QSet<QString> selected;
+                    for (const auto &name : update.tabCategoryFilter->toArray()) {
+                        if (!allowed.contains(name.toString())) {
+                            reject(QStringLiteral("invalid_target"), QStringLiteral("Every requested category must be a current filter option."));
+                            return;
+                        }
+                        selected.insert(name.toString());
+                    }
+                    if (selected.isEmpty() || selected != allowed) pendingCategoryFilter = selected;
+                }
+                const auto before = getCurrentCategoryFilters();
+                filterChanged = before != pendingCategoryFilter;
+                change = {{QStringLiteral("kind"), QStringLiteral("set_tab_category_filter")},
+                    {QStringLiteral("before"), automationCategoryFilterValue(before)},
+                    {QStringLiteral("after"), automationCategoryFilterValue(pendingCategoryFilter)}};
             } else if (changingTabNotificationColors) {
                 const auto resolve = [](const QString &value, const QColor &stored) {
                     if (value.isEmpty()) return stored;
@@ -39219,6 +39185,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : deletingTab ? QStringLiteral("tab.delete")
             : copyingTab ? QStringLiteral("tab.copy")
             : addingBlankTab ? QStringLiteral("tab.add_blank")
+            : filteringCategories ? QStringLiteral("tab.set_category_filter")
             : changingTabNotificationColors ? QStringLiteral("tab.set_notification_colors")
             : changingTabNotification ? QStringLiteral("tab.set_notification_mode")
             : changingTabHotkey ? QStringLiteral("tab.set_hotkey")
@@ -39263,8 +39230,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("This preview does not allow conflict confirmation."));
             return;
         }
-        if (modified || selectionChanged) {
-            if (selectingTab) {
+        if (modified || selectionChanged || filterChanged) {
+            if (filteringCategories) {
+                m_KeyMappingDataTable->setCategoryFilters(pendingCategoryFilter);
+                updateCategoryFilterHeaderAppearance();
+            } else if (selectingTab) {
                 switchToMappingTableTab(tabAfter);
                 if (s_KeyMappingTabWidgetCurrentIndex != tabAfter) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The requested Tab was not selected."));
@@ -39368,6 +39338,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             {QStringLiteral("preferences_revision_after"), automationIbInputPreferencesRevision()},
             {QStringLiteral("query_source_again"), updating && (modified || selectionChanged)}};
         if (selectingTab) result.insert(QStringLiteral("selection_changed"), selectionChanged);
+        if (filteringCategories) {
+            result.insert(QStringLiteral("view_changed"), filterChanged);
+            result.insert(QStringLiteral("category_filter"), automationCategoryFilterValue(getCurrentCategoryFilters()));
+        }
         if (confirmationRequired) result.insert(QStringLiteral("disabled_other_rows"), int(conflictRows.size()));
         if (updating) {
             QString bindingError;
@@ -50942,24 +50916,7 @@ void KeyMappingDataTableWidget::dragMoveEvent(QDragMoveEvent *event)
     }
 }
 
-#if 0
-// Category filtering methods implementation
-void KeyMappingDataTableWidget::setCategoryFilter(const QString &category)
-{
-    m_CategoryFilters.clear();
-    if (!category.isEmpty()) {
-        if (category == tr("Blank")) {
-            m_CategoryFilters.insert(QString());
-        }
-        else {
-            m_CategoryFilters.insert(category);
-        }
-    }
-    updateRowVisibility();
-}
-#endif
-
-void KeyMappingDataTableWidget::setCategoryFilters(const QSet<QString> &categories)
+void KeyMappingDataTableWidget::setCategoryFilters(const std::optional<QSet<QString>> &categories)
 {
     m_CategoryFilters = categories;
     updateRowVisibility();
@@ -50988,58 +50945,13 @@ void KeyMappingDataTableWidget::reapplyRowVisibility()
 
 void KeyMappingDataTableWidget::clearCategoryFilter()
 {
-    m_CategoryFilters.clear();
+    m_CategoryFilters.reset();
     updateRowVisibility();
 }
 
 void KeyMappingDataTableWidget::clearCategoryFilters()
 {
     clearCategoryFilter();
-}
-
-QStringList KeyMappingDataTableWidget::getAvailableCategories() const
-{
-    QStringList categories;
-
-    if (!isCategoryColumnVisible()) {
-        return categories;
-    }
-
-    bool hasNonEmptyCategories = false;
-    bool hasEmptyCategories = false;
-
-    for (int row = 0; row < rowCount(); ++row) {
-        QTableWidgetItem *categoryItem = item(row, CATEGORY_COLUMN);
-        QString category;
-
-        if (categoryItem) {
-            category = categoryItem->text().trimmed();
-        }
-
-        if (category.isEmpty()) {
-            hasEmptyCategories = true;
-        } else {
-            hasNonEmptyCategories = true;
-            if (!categories.contains(category)) {
-#ifdef DEBUG_LOGOUT_ON
-                // Avoid confusion with the built-in "All" option
-                // Users can still create an "All" category, but we'll warn about it
-                if (category == tr("All")) {
-                    qDebug() << "[getAvailableCategories]" << "Warning: Found user-created category named 'All', which may cause confusion with the built-in 'All' option";
-                }
-#endif
-                categories.append(category);
-            }
-        }
-    }
-
-    // Add "(Blanks)" option only if there are both non-empty and empty categories
-    // If all categories are empty, showing "(Blanks)" would be the same as "All"
-    if (hasEmptyCategories && hasNonEmptyCategories) {
-        categories.append(tr("Blank"));
-    }
-
-    return categories;
 }
 
 void KeyMappingDataTableWidget::setFloatingColumnVisible(bool visible)
@@ -52279,7 +52191,7 @@ QItemSelectionModel::SelectionFlags KeyMappingDataTableWidget::selectionCommand(
 
 void KeyMappingDataTableWidget::updateRowVisibility()
 {
-    const bool hasCategoryFilter = isCategoryColumnVisible() && !m_CategoryFilters.isEmpty();
+    const bool hasCategoryFilter = isCategoryColumnVisible() && m_CategoryFilters.has_value();
     const bool hideDisabledEnabled = m_HideDisabledFilterEnabled;
     bool hasHiddenRows = false;
 
@@ -52305,15 +52217,7 @@ void KeyMappingDataTableWidget::updateRowVisibility()
                 itemCategory = categoryItem->text().trimmed();
             }
 
-            // Built-in "Blank" option is represented by empty-string token in the filter set.
-            // This also treats missing category items as blank.
-            if (itemCategory.isEmpty()) {
-                const bool isBlankRow = (categoryItem == Q_NULLPTR) || itemCategory.isEmpty();
-                categoryVisible = isBlankRow ? m_CategoryFilters.contains(QString()) : false;
-            }
-            else {
-                categoryVisible = m_CategoryFilters.contains(itemCategory);
-            }
+            categoryVisible = m_CategoryFilters->contains(itemCategory);
         }
 
         bool disabledVisible = true;
@@ -52754,14 +52658,9 @@ void QKeyMapper::on_processinfoTable_clicked(const QModelIndex &index)
 }
 #endif
 
-QStringList QKeyMapper::getCurrentCategoryFilters() const
+std::optional<QSet<QString>> QKeyMapper::getCurrentCategoryFilters() const
 {
-    if (!m_KeyMappingDataTable) {
-        return QStringList();
-    }
-    QStringList filters = m_KeyMappingDataTable->m_CategoryFilters.values();
-    filters.sort();
-    return filters;
+    return m_KeyMappingDataTable ? m_KeyMappingDataTable->m_CategoryFilters : std::nullopt;
 }
 
 bool QKeyMapper::isCategoryFilterVisible() const
@@ -52769,10 +52668,11 @@ bool QKeyMapper::isCategoryFilterVisible() const
     return m_ShowCategory;
 }
 
-void QKeyMapper::restoreCategoryFilterState(const QStringList& filters, bool showState)
+void QKeyMapper::restoreCategoryFilterState(const std::optional<QSet<QString>> &filters, bool showState)
 {
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[restoreCategoryFilterState] Attempting to restore - Filter:" << filters << ", ShowState:" << showState;
+    qDebug() << "[restoreCategoryFilterState] Restore filter" << filters.has_value()
+             << filters.value_or(QSet<QString>{}) << "visible" << showState;
 #endif
 
     // Restore category filter visibility state first
@@ -52785,16 +52685,7 @@ void QKeyMapper::restoreCategoryFilterState(const QStringList& filters, bool sho
 
     // Restore category filter selection (menu-based) if filter was visible
     if (m_KeyMappingDataTable) {
-        if (!showState) {
-            m_KeyMappingDataTable->clearCategoryFilters();
-        }
-        else {
-            QSet<QString> set;
-            for (const QString &f : filters) {
-                set.insert(f);
-            }
-            m_KeyMappingDataTable->setCategoryFilters(set);
-        }
+        m_KeyMappingDataTable->setCategoryFilters(showState ? filters : std::nullopt);
         updateCategoryFilterHeaderAppearance();
     }
 }
@@ -52812,7 +52703,8 @@ QKeyMapper::CategoryFilterStateGuard::CategoryFilterStateGuard(QKeyMapper* paren
         m_savedFilters = m_parent->getCurrentCategoryFilters();
         m_savedShowState = m_parent->isCategoryFilterVisible();
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[CategoryFilterStateGuard] Saved filter state - Filters:" << m_savedFilters << ", ShowState:" << m_savedShowState;
+        qDebug() << "[CategoryFilterStateGuard] Saved filter" << m_savedFilters.has_value()
+                 << m_savedFilters.value_or(QSet<QString>{}) << "visible" << m_savedShowState;
 #endif
     }
 }
@@ -52822,7 +52714,8 @@ QKeyMapper::CategoryFilterStateGuard::~CategoryFilterStateGuard()
     if (m_parent) {
         // Restore saved filter state
 #ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[CategoryFilterStateGuard] Restoring filter state - Filters:" << m_savedFilters << ", ShowState:" << m_savedShowState;
+        qDebug() << "[CategoryFilterStateGuard] Restoring filter" << m_savedFilters.has_value()
+                 << m_savedFilters.value_or(QSet<QString>{}) << "visible" << m_savedShowState;
 #endif
     m_parent->restoreCategoryFilterState(m_savedFilters, m_savedShowState);
     }

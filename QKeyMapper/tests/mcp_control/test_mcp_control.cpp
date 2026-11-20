@@ -595,8 +595,26 @@ void McpControlTest::mappingChangeArguments()
         changed = categoryUpdate; changed.insert(QStringLiteral("source_refs"), QJsonArray{sourceRef, badRef});
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     }
-    QCOMPARE(capabilities.size(), 48);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 46);
+    const QJsonObject categoryFilter{{QStringLiteral("action"), QStringLiteral("tab.set_category_filter")},
+        {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")},
+        {QStringLiteral("category_filter"), QJsonArray{QString(), QStringLiteral("分类#|")}}};
+    const auto filter = validateMappingChangeRequest(previewMethod, categoryFilter);
+    QVERIFY(filter.ok());
+    QCOMPARE(filter.update.tabCategoryFilter.value(), categoryFilter.value(QStringLiteral("category_filter")));
+    for (const auto &value : {QJsonValue(QStringLiteral("all")), QJsonValue(QJsonArray{})}) {
+        changed = categoryFilter; changed.insert(QStringLiteral("category_filter"), value);
+        QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    for (const auto &value : {QJsonValue(), QJsonValue(QStringLiteral("none")),
+        QJsonValue(QJsonArray{QString(), QString()}), QJsonValue(QJsonArray{QStringLiteral("two\nlines")}),
+        QJsonValue(QJsonArray{false})}) {
+        changed = categoryFilter; changed.insert(QStringLiteral("category_filter"), value);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    QCOMPARE(capabilities.size(), 50);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 48);
+    QCOMPARE(capabilities.at(47).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_category_filter.preview"));
+    QCOMPARE(capabilities.at(48).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_category_filter.apply"));
     QCOMPARE(capabilities.at(45).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.preview"));
     QCOMPARE(capabilities.at(46).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.apply"));
     QCOMPARE(capabilities.at(43).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_mode.preview"));
