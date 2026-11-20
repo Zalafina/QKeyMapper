@@ -398,8 +398,31 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }),
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
-            if arguments.get("category").is_some_and(Value::is_null) {
-                return Err(InvalidMessage);
+            if let Some(category) = arguments.get("category") {
+                let single = arguments.get("source_ref").is_some_and(Value::is_string);
+                let batch = arguments.get("source_refs").and_then(Value::as_array);
+                let valid_batch = batch.is_some_and(|rows| (2..=100).contains(&rows.len()));
+                if !category.is_string()
+                    || arguments.get("action").and_then(Value::as_str) != Some("mapping.update")
+                    || arguments.len() != 3
+                    || single == valid_batch
+                {
+                    return Err(InvalidMessage);
+                }
+                if let Some(rows) = batch {
+                    let first = rows[0].as_str().and_then(|r| r.rsplit_once(':'));
+                    if first.is_none()
+                        || rows.iter().enumerate().any(|(index, row)| {
+                            row.as_str()
+                                .and_then(|r| r.rsplit_once(':'))
+                                .map(|(prefix, _)| prefix)
+                                != first.map(|(prefix, _)| prefix)
+                                || rows[..index].contains(row)
+                        })
+                    {
+                        return Err(InvalidMessage);
+                    }
+                }
             }
             let mut values = typed(arguments, Preview::valid)?;
             values.retain(|_, value| !value.is_null());
@@ -420,10 +443,13 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 _ => true,
             };
             let action = values.get("action").and_then(Value::as_str);
-            if (values.contains_key("note") || values.contains_key("category"))
+            if (values.contains_key("note")
                 && (action != Some("mapping.update")
                     || values.len() != 3
-                    || !values.contains_key("source_ref"))
+                    || !values.contains_key("source_ref")))
+                || (action == Some("mapping.update")
+                    && values.contains_key("source_refs")
+                    && !values.contains_key("category"))
             {
                 return Err(InvalidMessage);
             }

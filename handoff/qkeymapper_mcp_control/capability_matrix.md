@@ -428,7 +428,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-VIEW-FLOATING | 显示／隐藏浮动列 | `m_ActionShowFloating`；M2-B；实际浮动按钮与表格显示的区别 |
 | ACT-VIEW-DISABLED | 显示／隐藏禁用行 | `m_ActionHideDisabled`；M2-A；动作名称与实际布尔语义、选区恢复 |
 | ACT-CATEGORY-FILTER | 分类多选／全部／空白分类 | `initCategoryFilterControls`／`showCategoryFilterPopup`；M2-A；视图筛选与业务数据分离 |
-| ACT-CATEGORY-ASSIGN | 选定分类／输入新分类／批量分类 | 表格 `contextMenuEvent` 的内嵌文本和 QWidgetAction；M2-A；183 选验当前可见源行单条赋值、清空、筛选选项和保存冷读，批量及混源边界待办 |
+| ACT-CATEGORY-ASSIGN | 选定分类／输入新分类／批量分类 | 表格 `contextMenuEvent` 的内嵌文本和 QWidgetAction；M2-A；183～184 选验当前可见源行单条／同源批量赋值、清空、混源及隐藏拒绝、筛选选项和保存冷读 |
 | ACT-MAP-STATE | 单项／批量启用禁用、连发开关、锁定开关、浮动按钮开关 | 表格状态菜单与 `keyMappingTableItemCheckStateChanged`；M2-A／M2-B；与映射项窗口逐项等价 |
 | ACT-MAP-TRIGGER | 普通／长按／双击及时间的单项／批量更改 | 表格触发类型菜单、内嵌 combo／spin；M2-A；完整原始键解析与互斥组变化 |
 | ACT-MAP-ORDER | 上移、下移、置顶、置底及拖拽 | `selectedItemsMove*`／`keyMappingTableDragDropMove`；M2-A；单行和连续行的相邻／两端移动共用 GUI；排除筛选、跨表和共通，拖拽待验 |

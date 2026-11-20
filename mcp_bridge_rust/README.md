@@ -117,6 +117,10 @@ standalone single-line `category`. The product trims surrounding whitespace
 and updates the category filter options, as in its context menu. An empty
 value clears the category. Save the configuration separately to persist it.
 
+For a batch, replace `source_ref` with 2–100 distinct `source_refs` from
+the same current source and revision. The preview lists each row in source
+order and rejects the entire request if any row is out of scope or hidden.
+
 ## Renaming a mapping tab
 
 Use `tab.rename` with the current normal tab's `source_tab_ref` and the

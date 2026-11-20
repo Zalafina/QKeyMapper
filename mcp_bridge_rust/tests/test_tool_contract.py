@@ -64,6 +64,8 @@ async def check_contract(exe):
     moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
     note = {"action": "mapping.update", "source_ref": row, "note": "  测试#分组|備考😀  "}
     category = {"action": "mapping.update", "source_ref": row, "category": "  组 #A|分類  "}
+    other_row = row.rsplit(":", 1)[0] + ":3"
+    category_batch = {"action": "mapping.update", "source_refs": [other_row, row], "category": "批量分類"}
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     hotkey = {"action": "tab.set_hotkey", "source_tab_ref": tab, "tab_hotkey": " $ F9 "}
     notification = {"action": "tab.set_notification_mode", "source_tab_ref": tab, "notification_mode": 0}
@@ -163,6 +165,10 @@ async def check_contract(exe):
             assert {"required": ["category"]} in note_rule["anyOf"]
             assert {"required": ["note"]} in note_rule["dependentSchemas"]["category"]["not"]["anyOf"]
             assert rename_rule["properties"]["category"] == {"type": "null"}
+            assert note_rule["oneOf"] == [{"required": ["source_ref"]}, {"required": ["source_refs"]}]
+            assert note_rule["dependentSchemas"]["source_refs"] == {"required": ["category"]}
+            assert note_rule["properties"]["source_refs"]["minItems"] == 2
+            assert note_rule["properties"]["source_refs"]["uniqueItems"] is True
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -274,6 +280,13 @@ async def check_contract(exe):
                     {**category, "note": ""}, {**category, "send_method": 0},
                     {**category, "action": "mapping.move_up"})),
                 ("qkm_preview_changes", {**category, "category": ""}, ()),
+                ("qkm_preview_changes", category_batch, (
+                    {**category_batch, "source_ref": row}, {**category_batch, "source_refs": [row]},
+                    {**category_batch, "source_refs": [row, row]},
+                    {**category_batch, "source_refs": [row, "a" * 64 + ":row:2:0"]},
+                    {**category_batch, "source_refs": [row, "b" * 64 + ":row:0:3"]},
+                    {**category_batch, "category": None}, {**category_batch, "note": ""},
+                    {"action": "mapping.update", "source_refs": [row, other_row], "send_method": 0})),
                 ("qkm_preview_changes", colors, (
                     {"action": "tab.set_notification_colors", "source_tab_ref": tab},
                     {**colors, "notification_background_color": "#405060"},

@@ -38773,6 +38773,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QList<QPair<int, int>> conflictRows;
         QJsonArray changes;
         int displayRow = -1;
+        QList<int> categoryDisplayRows;
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
@@ -38785,17 +38786,39 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("source_tab_ref"), update.sourceTabRef}, {QStringLiteral("offset"), update.sourceRow}, {QStringLiteral("limit"), 1}});
             if (!page.ok()) { reject(page.errorCode, page.message); return; }
             const auto rows = page.page.value(QStringLiteral("items")).toArray();
-            displayRow = displayRowFromSource(s_KeyMappingTabWidgetCurrentIndex, tab, update.sourceRow);
-            int actualTab = -1, actualRow = -1;
-            QList<MAP_KEYDATA> *actualData = nullptr;
+            const auto currentVisibleRow = [&](int sourceRow) {
+                const int shown = displayRowFromSource(s_KeyMappingTabWidgetCurrentIndex, tab, sourceRow);
+                int actualTab = -1, actualRow = -1;
+                QList<MAP_KEYDATA> *actualData = nullptr;
+                if (shown < 0 || shown >= m_KeyMappingDataTable->rowCount() || m_KeyMappingDataTable->isRowHidden(shown)
+                    || !resolveDisplayRowSource(s_KeyMappingTabWidgetCurrentIndex, shown, &actualTab, &actualRow, &actualData)
+                    || actualTab != tab || actualRow != sourceRow || actualData != KeyMappingDataList) return -1;
+                return shown;
+            };
+            displayRow = currentVisibleRow(update.sourceRow);
             if (rows.size() != 1 || rows.first().toObject().value(QStringLiteral("source_ref")) != update.sourceReference
-                || displayRow < 0 || displayRow >= m_KeyMappingDataTable->rowCount() || m_KeyMappingDataTable->isRowHidden(displayRow)
-                || !resolveDisplayRowSource(s_KeyMappingTabWidgetCurrentIndex, displayRow, &actualTab, &actualRow, &actualData)
-                || actualTab != tab || actualRow != update.sourceRow || actualData != KeyMappingDataList) {
+                || displayRow < 0) {
                 reject(QStringLiteral("invalid_target"), QStringLiteral("Only a current visible row attached to this source can be updated."));
                 return;
             }
-            target.insert(QStringLiteral("source_ref"), update.sourceReference);
+            if (update.categoryRows.isEmpty()) {
+                target.insert(QStringLiteral("source_ref"), update.sourceReference);
+                if (categoryUpdate) categoryDisplayRows.append(displayRow);
+            } else {
+                const QString prefix = update.sourceReference.section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
+                QJsonArray refs;
+                for (int sourceRow : std::as_const(update.categoryRows)) {
+                    const int shown = currentVisibleRow(sourceRow);
+                    if (shown < 0) {
+                        reject(QStringLiteral("invalid_target"), QStringLiteral("All category rows must be visible in the current source."));
+                        return;
+                    }
+                    categoryDisplayRows.append(shown);
+                    refs.append(prefix + QString::number(sourceRow));
+                }
+                target.insert(QStringLiteral("source_refs"), refs);
+                rowAfter = -1;
+            }
         }
         if (editingTab) {
             const auto page = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
@@ -39061,11 +39084,21 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             change = {{QStringLiteral("kind"), QStringLiteral("update_row_note")},
                 {QStringLiteral("before"), before}, {QStringLiteral("after"), *update.note}};
         } else if (categoryUpdate) {
-            const auto &before = KeyMappingDataList->at(update.sourceRow).Category;
             const QString after = update.category->trimmed();
-            modified = before != after;
-            change = {{QStringLiteral("kind"), QStringLiteral("update_row_category")},
-                {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
+            const auto rows = update.categoryRows.isEmpty() ? QList<int>{update.sourceRow} : update.categoryRows;
+            const auto refs = target.value(QStringLiteral("source_refs")).toArray();
+            for (int i = 0; i < rows.size(); ++i) {
+                const auto &before = KeyMappingDataList->at(rows.at(i)).Category;
+                modified |= before != after;
+                QJsonObject rowChange{{QStringLiteral("kind"), QStringLiteral("update_row_category")},
+                    {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
+                if (refs.isEmpty()) {
+                    change = rowChange;
+                } else {
+                    rowChange.insert(QStringLiteral("source_ref"), refs.at(i));
+                    changes.append(rowChange);
+                }
+            }
         } else if (updating) {
             const auto &before = KeyMappingDataList->at(update.sourceRow);
             auto after = before;
@@ -39192,7 +39225,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : renamingTab ? QStringLiteral("tab.rename")
             : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
-        changes.prepend(change);
+        if (!change.isEmpty()) changes.prepend(change);
         QJsonObject description{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
             {QStringLiteral("changes"), changes}, {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
@@ -39310,7 +39343,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     return;
                 }
             } else if (categoryUpdate) {
-                if (!applyBatchCategoryChange(m_KeyMappingDataTable, {displayRow}, *update.category)) {
+                if (!applyBatchCategoryChange(m_KeyMappingDataTable, categoryDisplayRows, *update.category)) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts category changes."));
                     return;
                 }

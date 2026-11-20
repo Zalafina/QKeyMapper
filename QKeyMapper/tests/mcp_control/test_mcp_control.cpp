@@ -580,6 +580,21 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     changed = categoryUpdate; changed.insert(QStringLiteral("category"), QString());
     QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());
+    categoryUpdate.remove(QStringLiteral("source_ref"));
+    const QString rowThree = sourceRef.section(QLatin1Char(':'), 0, 2) + QStringLiteral(":3");
+    categoryUpdate.insert(QStringLiteral("source_refs"), QJsonArray{rowThree, sourceRef});
+    const auto batchCategory = validateMappingChangeRequest(previewMethod, categoryUpdate);
+    QVERIFY(batchCategory.ok());
+    QCOMPARE(batchCategory.update.categoryRows, QList<int>({1, 3}));
+    QCOMPARE(batchCategory.update.sourceReference, sourceRef);
+    changed = categoryUpdate; changed.insert(QStringLiteral("source_ref"), sourceRef);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = categoryUpdate; changed.remove(QStringLiteral("category"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    for (const auto &badRef : {sourceRef, sourceRef.section(QLatin1Char(':'), 0, 1) + QStringLiteral(":1:0")}) {
+        changed = categoryUpdate; changed.insert(QStringLiteral("source_refs"), QJsonArray{sourceRef, badRef});
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
     QCOMPARE(capabilities.size(), 48);
     QCOMPARE(mappingChangeCapabilities(false).size(), 46);
     QCOMPARE(capabilities.at(45).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.preview"));

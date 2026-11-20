@@ -7,6 +7,7 @@
 #include <QJsonArray>
 #include <QSet>
 #include <QUuid>
+#include <algorithm>
 #include <limits>
 #include <utility>
 
@@ -139,7 +140,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : commonFeaturePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("common_feature_enabled")}
         : tabActionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref")}
         : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
-        : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method"),
+        : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs"), QStringLiteral("send_method"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled"), QStringLiteral("note"), QStringLiteral("category")}
         : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
             QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")} : preview
@@ -252,15 +253,16 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         const auto singleReference = arguments.value(QStringLiteral("source_ref"));
         const auto batch = arguments.value(QStringLiteral("source_refs"));
         const auto references = batch.toArray();
-        if (!batch.isUndefined() && (!singleReference.isUndefined() || references.size() < 2 || references.size() > 100))
-            return fail("Moves accept either one source_ref or 2 to 100 source_refs.");
+        const auto category = arguments.value(QStringLiteral("category"));
+        if (!batch.isUndefined() && ((!movePreview && category.isUndefined())
+            || !singleReference.isUndefined() || references.size() < 2 || references.size() > 100))
+            return fail("Only moves and category updates accept 2 to 100 source_refs instead of source_ref.");
         const auto reference = references.isEmpty() ? singleReference : references.first();
         const auto original = arguments.value(QStringLiteral("original_key"));
         const auto mapping = arguments.value(QStringLiteral("mapping_key"));
         const auto keyUp = arguments.value(QStringLiteral("key_up_mapping_key"));
         const auto disabled = arguments.value(QStringLiteral("disabled"));
         const auto note = arguments.value(QStringLiteral("note"));
-        const auto category = arguments.value(QStringLiteral("category"));
         if (!note.isUndefined() || !category.isUndefined()) {
             const auto &value = note.isUndefined() ? category : note;
             const QString text = value.toString();
@@ -290,19 +292,33 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3))
             return fail("A canonical current source row is required.");
         const int rowCount = qMax(1, int(references.size()));
-        if (row > std::numeric_limits<int>::max() - (rowCount - 1))
-            return fail("The contiguous source range exceeds the row index limit.");
-        if (!references.isEmpty()) {
-            const QString prefix = reference.toString().section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
+        const QString prefix = reference.toString().section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
+        QList<int> categoryRows;
+        if (movePreview) {
+            if (row > std::numeric_limits<int>::max() - (rowCount - 1))
+                return fail("The contiguous source range exceeds the row index limit.");
             for (int i = 1; i < rowCount; ++i) {
                 if (references.at(i) != prefix + QString::number(row + i))
                     return fail("Batch moves require contiguous, ascending row references of the same source and revision.");
             }
+        } else if (!references.isEmpty()) {
+            for (const auto &value : references) {
+                const QString ref = value.toString();
+                bool indexOk = false;
+                const int index = ref.mid(prefix.size()).toInt(&indexOk);
+                if (!indexOk || index < 0 || ref != prefix + QString::number(index) || categoryRows.contains(index))
+                    return fail("Category references must be distinct rows of the same source and revision.");
+                categoryRows.append(index);
+            }
+            std::sort(categoryRows.begin(), categoryRows.end());
         }
+        const int firstRow = categoryRows.isEmpty() ? row : categoryRows.constFirst();
         result.action = MappingChangeAction::UpdateMapping;
-        result.update = {reference.toString(), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, updatePreview ? sendMethod() : -1};
+        result.update = {prefix + QString::number(firstRow), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2),
+            firstRow, updatePreview ? sendMethod() : -1};
         result.update.move = rowMove;
-        result.update.rowCount = rowCount;
+        if (movePreview) result.update.rowCount = rowCount;
+        result.update.categoryRows = std::move(categoryRows);
         if (!original.isUndefined()) result.update.originalKey = original.toString();
         if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
         if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
@@ -477,12 +493,18 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     operation.insert(QStringLiteral("max_results"), MappingChangeStore::MaxResults);
     auto updateSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
         {QStringLiteral("source_ref"), rowReference}, {QStringLiteral("send_method"), sendMethodSchema},
+        {QStringLiteral("source_refs"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
+            {QStringLiteral("minItems"), 2}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("uniqueItems"), true},
+            {QStringLiteral("items"), rowReference}}},
         {QStringLiteral("disabled"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
         {QStringLiteral("note"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")}, {QStringLiteral("maxLength"), 32767}}},
         {QStringLiteral("category"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")}, {QStringLiteral("maxLength"), 32767}}},
         {QStringLiteral("original_key"), key}, {QStringLiteral("mapping_key"), key},
         {QStringLiteral("key_up_mapping_key"), QJsonObject{{QStringLiteral("anyOf"), QJsonArray{key,
-            QJsonObject{{QStringLiteral("const"), QString()}}}}}}}, {QStringLiteral("action"), QStringLiteral("source_ref")});
+            QJsonObject{{QStringLiteral("const"), QString()}}}}}}}, {QStringLiteral("action")});
+    updateSchema.insert(QStringLiteral("oneOf"), QJsonArray{
+        QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_ref")}}},
+        QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_refs")}}}});
     QJsonArray updateFields;
     for (const auto *name : {"send_method", "original_key", "mapping_key", "key_up_mapping_key"})
         updateFields.append(QJsonObject{{QStringLiteral("required"), QJsonArray{QString::fromLatin1(name)}}});
@@ -496,7 +518,8 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     updateSchema.insert(QStringLiteral("dependentSchemas"), QJsonObject{
         {QStringLiteral("disabled"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), updateFields}}}}},
         {QStringLiteral("note"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), noteConflicts}}}}},
-        {QStringLiteral("category"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), categoryConflicts}}}}}});
+        {QStringLiteral("category"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), categoryConflicts}}}}},
+        {QStringLiteral("source_refs"), categoryRequired}});
     updateFields.append(disabledRequired);
     updateFields.append(noteRequired);
     updateFields.append(categoryRequired);
