@@ -45,6 +45,7 @@ struct MappingUpdateArguments {
     MappingRowMove move = MappingRowMove::None;
     int rowCount = 1;
     std::optional<QString> tabName;
+    std::optional<QString> tabHotkey;
     bool addBlankTab = false;
     bool copyTab = false;
     bool deleteTab = false;

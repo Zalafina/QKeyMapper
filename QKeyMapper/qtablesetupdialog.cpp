@@ -633,23 +633,14 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
         return;
     }
 
-    static QRegularExpression whitespace_reg(R"(\s+)");
-    QString ori_tabhotkeystring = ui->tabHotkeyLineEdit->text().simplified();
-    ori_tabhotkeystring.remove(whitespace_reg);
-    QString tabhotkeystring = ori_tabhotkeystring;
-
-    // Extract the hotkey using REGEX_PATTERN_TABHOTKEY
-    static QRegularExpression tabhotkey_regex(REGEX_PATTERN_TABHOTKEY);
-    QRegularExpressionMatch tabhotkey_match = tabhotkey_regex.match(tabhotkeystring);
-    if (tabhotkey_match.hasMatch()) {
-        tabhotkeystring = tabhotkey_match.captured(3); // Extract the actual hotkey part
-    }
+    QString tabHotkey = ui->tabHotkeyLineEdit->text();
+    const auto validationResult = QKeyMapper::normalizeAndValidateTabHotkey(tabHotkey);
 
     QString popupMessage;
     QString popupMessageColor;
     int popupMessageDisplayTime = 3000;
 
-    if (ori_tabhotkeystring.isEmpty()) {
+    if (tabHotkey.isEmpty()) {
         if (QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
             qDebug() << "[on_tabHotkeyUpdateButton_clicked]" << "TabHotkey is empty; no action required.";
@@ -659,24 +650,23 @@ void QTableSetupDialog::on_tabHotkeyUpdateButton_clicked()
             popupMessageColor = SUCCESS_COLOR;
             popupMessage = tr("TabHotkey clear success");
 
-            QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
+            QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, tabHotkey);
             QKeyMapper::getInstance()->requestSaveSettingDirty();
         }
     }
-    else if (ori_tabhotkeystring == QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey) {
+    else if (tabHotkey == QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabHotkey) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_tabHotkeyUpdateButton_clicked]" << "TabHotkey was not modified, no action required.";
 #endif
     }
     else
     {
-        ValidationResult validationResult = QKeyMapper::validateCombinationKey(tabhotkeystring);
         if (validationResult.isValid)
         {
             popupMessageColor = SUCCESS_COLOR;
-            popupMessage = tr("TabHotkey update success: ") + ori_tabhotkeystring;
+            popupMessage = tr("TabHotkey update success: ") + tabHotkey;
 
-            QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, ori_tabhotkeystring);
+            QKeyMapper::getInstance()->updateKeyMappingTabInfoHotkey(m_TabIndex, tabHotkey);
             QKeyMapper::getInstance()->requestSaveSettingDirty();
         }
         else

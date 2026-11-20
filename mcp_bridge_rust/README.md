@@ -167,6 +167,11 @@ attached Common tab. Applying selects the tab and preserves the draft and
 source rows. When the current tab changes after preview, review a new
 preview. The result reports `selection_changed`.
 
+Use `tab.set_hotkey` with the current normal tab's `source_tab_ref` and a
+single-line `tab_hotkey`. Preview shows the key after the same normalization
+used by Tab settings. An empty string clears it. Tabs can share a shortcut
+and retain their order as destinations. Use a separate save to persist it.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

@@ -63,6 +63,7 @@ async def check_contract(exe):
     batch = {"action": "mapping.move_to_top", "source_refs": refs}
     moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
+    hotkey = {"action": "tab.set_hotkey", "source_tab_ref": tab, "tab_hotkey": " $ F9 "}
     add_tab = {"action": "tab.add_blank", "source_tab_ref": tab}
     copy_tab = {"action": "tab.copy", "source_tab_ref": tab}
     delete_tab = {"action": "tab.delete", "source_tab_ref": tab}
@@ -131,6 +132,11 @@ async def check_contract(exe):
                                  if rule["properties"]["action"].get("const") == "tab.select")
             assert set(selection_rule["required"]) == set(select_tab)
             assert selection_rule["properties"]["target_tab_ref"] == {"type": "string"}
+            hotkey_rule, = (rule for rule in previews["oneOf"]
+                              if rule["properties"]["action"].get("const") == "tab.set_hotkey")
+            assert set(hotkey_rule["required"]) == set(hotkey)
+            assert hotkey_rule["properties"]["tab_hotkey"] == {"type": "string", "maxLength": 32767}
+            assert selection_rule["properties"]["tab_hotkey"] == {"type": "null"}
             common_rule, = (rule for rule in previews["oneOf"]
                             if rule["properties"]["action"].get("const") == "tab.set_common_inheritance")
             assert set(common_rule["required"]) == set(common_inheritance)
@@ -220,6 +226,10 @@ async def check_contract(exe):
                 ("qkm_preview_changes", move_tab, (
                     {"action": "tab.move", "source_tab_ref": tab}, {**move_tab, "target_tab_ref": tab},
                     {**move_tab, "target_tab_ref": row}, {**move_tab, "target_tab_ref": "b" * 64 + ":source:2"})),
+                ("qkm_preview_changes", hotkey, (
+                    {"action": "tab.set_hotkey", "source_tab_ref": tab},
+                    {**hotkey, "tab_hotkey": 9}, {**hotkey, "tab_hotkey": "A\nB"}, {**hotkey, "tab_name": "Tab3"})),
+                ("qkm_preview_changes", {**hotkey, "tab_hotkey": ""}, ()),
                 ("qkm_preview_changes", select_tab, (
                     {"action": "tab.select", "source_tab_ref": tab}, {**select_tab, "target_tab_ref": row},
                     {**select_tab, "target_tab_ref": "b" * 64 + ":source:2"})),

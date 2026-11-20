@@ -13042,6 +13042,17 @@ ValidationResult QKeyMapper::validateCombinationKey(QString &input)
     return result;
 }
 
+ValidationResult QKeyMapper::normalizeAndValidateTabHotkey(QString &hotkey)
+{
+    static const QRegularExpression whitespace(R"(\s+)");
+    hotkey = hotkey.simplified().remove(whitespace);
+    if (hotkey.isEmpty()) return {true, {}};
+    static const QRegularExpression pattern(REGEX_PATTERN_TABHOTKEY);
+    const auto match = pattern.match(hotkey);
+    QString combination = match.hasMatch() ? match.captured(3) : hotkey;
+    return validateCombinationKey(combination);
+}
+
 int QKeyMapper::tabIndexToSwitchByTabHotkey(const QString &hotkey_string, bool *isSame)
 {
     int tabindex_toswitch = -1;
@@ -32716,6 +32727,7 @@ void QKeyMapper::updateKeyMappingTabInfoHotkey(int tabindex, const QString &tabh
 
     if (s_KeyMappingTabInfoList.at(tabindex).TabHotkey != tabhotkey) {
         s_KeyMappingTabInfoList[tabindex].TabHotkey = tabhotkey;
+        ++m_AutomationSourceEpoch;
         updateKeyMappingTabWidgetTabDisplay(tabindex);
     }
 
@@ -38657,6 +38669,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     if (updating || preferencesUpdate) {
         auto update = applying && updating ? *applyingPreview->update : validation.update;
         const bool renamingTab = updating && update.tabName.has_value();
+        const bool changingTabHotkey = updating && update.tabHotkey.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
@@ -38667,7 +38680,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
-        const bool editingTab = renamingTab || addingBlankTab || copyingTab || removingTabData
+        const bool editingTab = renamingTab || changingTabHotkey || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab;
         if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature)
             || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
@@ -38712,6 +38725,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonObject change;
         bool modified = false;
         bool selectionChanged = false;
+        QString normalizedTabHotkey;
         std::optional<MAP_KEYDATA> updatedRow;
         QList<QPair<int, int>> conflictRows;
         QJsonArray changes;
@@ -38910,6 +38924,16 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("local_row_count"), 0},
                     {QStringLiteral("include_common"), MAPPINGTABLE_INCLUDE_COMMON_DEFAULT},
                     {QStringLiteral("activate_new_tab"), true}};
+            } else if (changingTabHotkey) {
+                normalizedTabHotkey = *update.tabHotkey;
+                const auto hotkeyValidation = normalizeAndValidateTabHotkey(normalizedTabHotkey);
+                modified = normalizedTabHotkey != tabInfo.TabHotkey;
+                if (modified && !hotkeyValidation.isValid) {
+                    reject(QStringLiteral("invalid_arguments"), hotkeyValidation.errorMessage);
+                    return;
+                }
+                change = {{QStringLiteral("kind"), QStringLiteral("set_tab_hotkey")},
+                    {QStringLiteral("before"), tabInfo.TabHotkey}, {QStringLiteral("after"), normalizedTabHotkey}};
             } else {
                 const auto check = checkMappingTabName(tab, *update.tabName);
                 if (check != TabNameCheck::Accepted && check != TabNameCheck::Unchanged) {
@@ -39087,6 +39111,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : deletingTab ? QStringLiteral("tab.delete")
             : copyingTab ? QStringLiteral("tab.copy")
             : addingBlankTab ? QStringLiteral("tab.add_blank")
+            : changingTabHotkey ? QStringLiteral("tab.set_hotkey")
             : renamingTab ? QStringLiteral("tab.rename")
             : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
@@ -39180,6 +39205,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current source no longer allows creating the Tab."));
                     return;
                 }
+            } else if (changingTabHotkey) {
+                updateKeyMappingTabInfoHotkey(tab, normalizedTabHotkey);
             } else if (renamingTab) {
                 updateKeyMappingTabWidgetTabName(tab, *update.tabName);
             } else if (movingRow) {

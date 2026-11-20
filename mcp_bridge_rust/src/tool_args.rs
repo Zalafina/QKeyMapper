@@ -129,6 +129,8 @@ enum Action {
     MoveToBottom,
     #[serde(rename = "tab.rename")]
     RenameTab,
+    #[serde(rename = "tab.set_hotkey")]
+    SetTabHotkey,
     #[serde(rename = "tab.add_blank")]
     AddBlankTab,
     #[serde(rename = "tab.copy")]
@@ -189,10 +191,15 @@ struct Preview {
     key_up_mapping_key: Option<String>,
     disabled: Option<bool>,
     tab_name: Option<String>,
+    tab_hotkey: Option<String>,
     target_tab_ref: Option<String>,
     include_common: Option<bool>,
     common_collapsed: Option<bool>,
     common_feature_enabled: Option<bool>,
+}
+
+fn single_line(value: &str) -> bool {
+    value.encode_utf16().count() <= 32767 && !value.contains(['\0', '\r', '\n'])
 }
 
 impl Preview {
@@ -217,9 +224,8 @@ impl Preview {
                 .key_up_mapping_key
                 .as_deref()
                 .is_none_or(|key| key.chars().count() <= 1)
-            && self.tab_name.as_deref().is_none_or(|name| {
-                name.encode_utf16().count() <= 32767 && !name.contains(['\0', '\r', '\n'])
-            })
+            && self.tab_name.as_deref().is_none_or(single_line)
+            && self.tab_hotkey.as_deref().is_none_or(single_line)
     }
 }
 
@@ -385,6 +391,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             };
             let action = values.get("action").and_then(Value::as_str);
             let rename = action == Some("tab.rename");
+            let set_hotkey = action == Some("tab.set_hotkey");
             let common_inheritance = action == Some("tab.set_common_inheritance");
             let common_collapsed = action == Some("tab.set_common_collapsed");
             let common_feature = action == Some("configuration.set_common_enabled");
@@ -392,6 +399,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             let valid_tab_change = match action {
                 Some(
                     "tab.rename"
+                    | "tab.set_hotkey"
                     | "tab.set_common_inheritance"
                     | "tab.set_common_collapsed"
                     | "configuration.set_common_enabled",
@@ -415,6 +423,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             if !valid_move
                 || !valid_tab_change
                 || rename != values.contains_key("tab_name")
+                || set_hotkey != values.contains_key("tab_hotkey")
                 || common_inheritance != values.contains_key("include_common")
                 || common_collapsed != values.contains_key("common_collapsed")
                 || common_feature != values.contains_key("common_feature_enabled")
