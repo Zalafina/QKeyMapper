@@ -2114,6 +2114,8 @@ public:
     bool setMappingSourceRowBurstTiming(int row, std::optional<int> pressMs, std::optional<int> releaseMs);
     bool setMappingSourceRowLockOptions(int row, std::optional<bool> mappingKeyUnlock, std::optional<bool> disableOriginalKeyUnlock);
     bool setMappingSourceRowSendTiming(int row, int timing);
+    bool setMappingSourceRowSequenceOptions(int row, std::optional<bool> holdDown, std::optional<int> repeatMode,
+                                           std::optional<int> repeatTimes);
     bool setMappingSourceRowNote(int tabIndex, int row, const QString &note);
     bool setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode);
     bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);

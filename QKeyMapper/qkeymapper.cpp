@@ -18328,6 +18328,31 @@ bool QKeyMapper::setMappingSourceRowSendTiming(int row, int timing)
     return true;
 }
 
+static bool updateMappingRowSequenceOptions(MAP_KEYDATA &row, std::optional<bool> holdDown,
+                                            std::optional<int> repeatMode, std::optional<int> repeatTimes)
+{
+    const bool hold = holdDown.value_or(row.KeySeqHoldDown);
+    if (!isKeySequence(row.Mapping_Keys) || (holdDown && row.SendTiming != SENDTIMING_NORMAL)
+        || (hold && (repeatMode || repeatTimes))) return false;
+
+    row.KeySeqHoldDown = hold;
+    row.RepeatMode = hold ? REPEAT_MODE_NONE : repeatMode.value_or(row.RepeatMode);
+    row.RepeatTimes = repeatTimes.value_or(row.RepeatTimes);
+    return true;
+}
+
+bool QKeyMapper::setMappingSourceRowSequenceOptions(int row, std::optional<bool> holdDown,
+                                                   std::optional<int> repeatMode, std::optional<int> repeatTimes)
+{
+    if (!KeyMappingDataList || row < 0 || row >= KeyMappingDataList->size()) return false;
+    auto &data = (*KeyMappingDataList)[row];
+    auto candidate = data;
+    if (!updateMappingRowSequenceOptions(candidate, holdDown, repeatMode, repeatTimes) || candidate == data) return false;
+    data = candidate;
+    ++m_AutomationSourceEpoch;
+    return true;
+}
+
 bool QKeyMapper::setMappingSourceRowNote(int tabIndex, int row, const QString &note)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || !KeyMappingDataList
@@ -38756,6 +38781,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         std::optional<int> burstReleaseMs;
         std::optional<bool> mappingKeyUnlock;
         std::optional<bool> disableOriginalKeyUnlock;
+        std::optional<bool> sequenceHoldDown;
+        std::optional<int> repeatMode;
+        std::optional<int> repeatTimes;
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
@@ -39162,6 +39190,18 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 after.DisableOriginalKeyUnlock = disableOriginalKeyUnlock.value_or(after.DisableOriginalKeyUnlock);
                 after.BurstPressTime = burstPressMs.value_or(after.BurstPressTime);
                 after.BurstReleaseTime = burstReleaseMs.value_or(after.BurstReleaseTime);
+                const auto hold = update.rowModes.value(QStringLiteral("sequence_hold_down"));
+                const auto mode = update.rowModes.value(QStringLiteral("repeat_mode"));
+                const auto count = update.rowModes.value(QStringLiteral("repeat_times"));
+                if (hold.isBool()) sequenceHoldDown = hold.toBool();
+                if (!mode.isUndefined()) repeatMode = mode.toInt();
+                if (!count.isUndefined()) repeatTimes = count.toInt();
+                if ((sequenceHoldDown || repeatMode || repeatTimes)
+                    && !updateMappingRowSequenceOptions(after, sequenceHoldDown, repeatMode, repeatTimes)) {
+                    reject(QStringLiteral("unsupported_capability"),
+                        QStringLiteral("Sequence options require an eligible sequence. Hold requires normal timing, and repeat requires hold to be off."));
+                    return;
+                }
             }
             if (update.disabled.has_value()) {
                 after.Disabled = *update.disabled;
@@ -39441,6 +39481,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 if (mappingKeyUnlock || disableOriginalKeyUnlock) {
                     setMappingSourceRowLockOptions(update.sourceRow, mappingKeyUnlock, disableOriginalKeyUnlock);
+                }
+                if (sequenceHoldDown || repeatMode || repeatTimes) {
+                    setMappingSourceRowSequenceOptions(update.sourceRow, sequenceHoldDown, repeatMode, repeatTimes);
                 }
             } else if (updating) {
                 (*KeyMappingDataList)[update.sourceRow] = *updatedRow;

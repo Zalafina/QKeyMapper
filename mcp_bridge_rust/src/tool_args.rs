@@ -277,12 +277,16 @@ impl Preview {
             && self.row_modes.as_ref().is_none_or(|modes| {
                 !modes.is_empty()
                     && modes.iter().all(|(key, value)| match key.as_str() {
-                        "burst" | "lock" | "mapping_key_unlock" | "disable_original_key_unlock" => {
-                            value.is_boolean()
-                        }
+                        "burst"
+                        | "lock"
+                        | "mapping_key_unlock"
+                        | "disable_original_key_unlock"
+                        | "sequence_hold_down" => value.is_boolean(),
                         "burst_press_ms" | "burst_release_ms" => {
                             value.as_u64().is_some_and(|ms| (1..=99_999).contains(&ms))
                         }
+                        "repeat_mode" => value.as_u64().is_some_and(|mode| mode <= 2),
+                        "repeat_times" => value.as_u64().is_some_and(|count| count <= 99_999_999),
                         _ => false,
                     })
             })

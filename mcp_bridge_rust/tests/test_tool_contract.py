@@ -181,7 +181,10 @@ async def check_contract(exe):
                                "burst_press_ms": {"type": "integer", "minimum": 1, "maximum": 99999},
                                "burst_release_ms": {"type": "integer", "minimum": 1, "maximum": 99999},
                                "mapping_key_unlock": {"type": "boolean"},
-                               "disable_original_key_unlock": {"type": "boolean"}}}
+                               "disable_original_key_unlock": {"type": "boolean"},
+                               "sequence_hold_down": {"type": "boolean"},
+                               "repeat_mode": {"type": "integer", "minimum": 0, "maximum": 2},
+                               "repeat_times": {"type": "integer", "minimum": 0, "maximum": 99999999}}}
             assert note_rule["properties"]["send_timing"] == {"type": "integer", "minimum": 0, "maximum": 4}
             assert {"required": ["send_timing"]} in note_rule["anyOf"]
             assert {"required": ["key_up_mapping_key"]} in note_rule["dependentSchemas"]["send_timing"]["not"]["anyOf"]
@@ -332,6 +335,14 @@ async def check_contract(exe):
                     {**row_modes, "row_modes": {"mapping_key_unlock": 1}},
                     {**row_modes, "row_modes": {"disable_original_key_unlock": "false"}},
                     {**row_modes, "row_modes": {"disable_original_key_unlock": None}})),
+                ("qkm_preview_changes", {**row_modes, "row_modes": {"sequence_hold_down": False,
+                                                                    "repeat_mode": 2, "repeat_times": 0}}, (
+                    {**row_modes, "row_modes": {"sequence_hold_down": 0}},
+                    {**row_modes, "row_modes": {"repeat_mode": 3}},
+                    {**row_modes, "row_modes": {"repeat_times": -1}},
+                    {**row_modes, "row_modes": {"repeat_times": 1.25}},
+                    {**row_modes, "row_modes": {"repeat_times": 100000000}},
+                    {**row_modes, "row_modes": {"repeat_mode": None}})),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"burst_press_ms": 1, "burst_release_ms": 99999}}, (
                     {**row_modes, "row_modes": {"burst_press_ms": 0}},
                     {**row_modes, "row_modes": {"burst_release_ms": 100000}},

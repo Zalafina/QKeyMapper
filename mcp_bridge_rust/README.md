@@ -121,6 +121,15 @@ The boolean `mapping_key_unlock` and `disable_original_key_unlock` require
 Lock enabled. You can enable Lock in the same request. Turning Lock off
 retains the existing unlock values. Save separately to persist the change.
 
+## Configuring sequence options
+
+Use the standalone `row_modes` object of `mapping.update` with a current
+visible sequence row. `sequence_hold_down` is a boolean and requires normal
+send timing. Enabling it resets the repeat mode and preserves the count.
+With hold off, use `repeat_mode` 0, 1 or 2 for off, by key or by count, and
+`repeat_times` from 0 through 99999999. A request may turn hold off and
+configure repeat together. Preview shows the resulting fields. Save separately.
+
 ## Editing a mapping note
 
 Use `mapping.update` with the current visible row's `source_ref` and

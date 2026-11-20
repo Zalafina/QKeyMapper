@@ -3925,9 +3925,9 @@ void QItemSetupDialog::on_keySeqHoldDownCheckBox_stateChanged(int state)
         return;
     }
 
-    bool keyseqholddown = ui->keySeqHoldDownCheckBox->isChecked();
-    if (keyseqholddown != QKeyMapper::KeyMappingDataList->at(m_ItemRow).KeySeqHoldDown) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].KeySeqHoldDown = keyseqholddown;
+    const bool keyseqholddown = ui->keySeqHoldDownCheckBox->isChecked();
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowSequenceOptions(m_ItemRow, keyseqholddown, std::nullopt, std::nullopt)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]["<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << "] KeySequenceHoldDown -> " << keyseqholddown;
@@ -4025,8 +4025,8 @@ void QItemSetupDialog::on_repeatByKeyCheckBox_stateChanged(int state)
         ui->repeatByTimesCheckBox->setChecked(false);
     }
     ui->repeatByTimesCheckBox->blockSignals(false);
-    if (repeatmode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatMode) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = repeatmode;
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowSequenceOptions(m_ItemRow, std::nullopt, repeatmode, std::nullopt)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") RepeatMode -> " << repeatmode;
@@ -4054,8 +4054,8 @@ void QItemSetupDialog::on_repeatByTimesCheckBox_stateChanged(int state)
         ui->repeatByKeyCheckBox->setChecked(false);
     }
     ui->repeatByKeyCheckBox->blockSignals(false);
-    if (repeatmode != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatMode) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatMode = repeatmode;
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowSequenceOptions(m_ItemRow, std::nullopt, repeatmode, std::nullopt)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[" << __func__ << "] Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") RepeatMode -> " << repeatmode;
@@ -4070,10 +4070,9 @@ void QItemSetupDialog::on_repeatTimesSpinBox_valueChanged(int value)
         return;
     }
 
-    int current_value = ui->repeatTimesSpinBox->value();
-
-    if (current_value != QKeyMapper::KeyMappingDataList->at(m_ItemRow).RepeatTimes) {
-        (*QKeyMapper::KeyMappingDataList)[m_ItemRow].RepeatTimes = current_value;
+    const int current_value = ui->repeatTimesSpinBox->value();
+    if (auto *mapper = QKeyMapper::getInstance();
+        mapper && mapper->setMappingSourceRowSequenceOptions(m_ItemRow, std::nullopt, std::nullopt, current_value)) {
         notifySaveSettingDirty();
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote() << "[on_repeatTimesSpinBox_valueChanged]" << " Row[" << m_ItemRow << "]("<< (*QKeyMapper::KeyMappingDataList)[m_ItemRow].Original_Key << ") Repeat Times -> " << current_value;

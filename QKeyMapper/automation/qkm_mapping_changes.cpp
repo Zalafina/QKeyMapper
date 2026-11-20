@@ -319,13 +319,21 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 const QString key = it.key();
                 const auto value = it.value();
                 if (key == QStringLiteral("burst") || key == QStringLiteral("lock")
-                    || key == QStringLiteral("mapping_key_unlock") || key == QStringLiteral("disable_original_key_unlock")) {
-                    if (!value.isBool()) return fail("Burst, lock and unlock options must be booleans.");
+                    || key == QStringLiteral("mapping_key_unlock") || key == QStringLiteral("disable_original_key_unlock")
+                    || key == QStringLiteral("sequence_hold_down")) {
+                    if (!value.isBool()) return fail("Row toggles must be booleans.");
                 } else if (key == QStringLiteral("burst_press_ms") || key == QStringLiteral("burst_release_ms")) {
                     const int ms = value.toInt(-1);
                     if (!value.isDouble() || value.toDouble() != ms || ms < QKeyMapperConstants::BURST_TIME_MIN
                         || ms > QKeyMapperConstants::BURST_TIME_MAX)
                         return fail("Burst timings must be integer milliseconds within the supported range.");
+                } else if (key == QStringLiteral("repeat_mode") || key == QStringLiteral("repeat_times")) {
+                    const int number = value.toInt(-1);
+                    const bool mode = key == QStringLiteral("repeat_mode");
+                    const int minimum = mode ? QKeyMapperConstants::REPEAT_MODE_NONE : QKeyMapperConstants::REPEAT_TIMES_MIN;
+                    const int maximum = mode ? QKeyMapperConstants::REPEAT_MODE_BYTIMES : QKeyMapperConstants::REPEAT_TIMES_MAX;
+                    if (!value.isDouble() || value.toDouble() != number || number < minimum || number > maximum)
+                        return fail("Repeat mode and count must be integers within the supported range.");
                 } else {
                     return fail("Unsupported row mode field.");
                 }
@@ -566,7 +574,12 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         {QStringLiteral("minimum"), QKeyMapperConstants::BURST_TIME_MIN}, {QStringLiteral("maximum"), QKeyMapperConstants::BURST_TIME_MAX}};
     auto rowModesSchema = schema({{QStringLiteral("burst"), toggle}, {QStringLiteral("lock"), toggle},
         {QStringLiteral("burst_press_ms"), burstTiming}, {QStringLiteral("burst_release_ms"), burstTiming},
-        {QStringLiteral("mapping_key_unlock"), toggle}, {QStringLiteral("disable_original_key_unlock"), toggle}}, {});
+        {QStringLiteral("mapping_key_unlock"), toggle}, {QStringLiteral("disable_original_key_unlock"), toggle},
+        {QStringLiteral("sequence_hold_down"), toggle},
+        {QStringLiteral("repeat_mode"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+            {QStringLiteral("minimum"), QKeyMapperConstants::REPEAT_MODE_NONE}, {QStringLiteral("maximum"), QKeyMapperConstants::REPEAT_MODE_BYTIMES}}},
+        {QStringLiteral("repeat_times"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+            {QStringLiteral("minimum"), QKeyMapperConstants::REPEAT_TIMES_MIN}, {QStringLiteral("maximum"), QKeyMapperConstants::REPEAT_TIMES_MAX}}}}, {});
     rowModesSchema.insert(QStringLiteral("minProperties"), 1);
     auto updateSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.update")}}},
         {QStringLiteral("row_modes"), rowModesSchema},

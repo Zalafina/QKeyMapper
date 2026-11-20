@@ -643,6 +643,17 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(unlock.update.rowModes, changed.value(QStringLiteral("row_modes")).toObject());
     changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("mapping_key_unlock"), 1}});
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{
+        {QStringLiteral("sequence_hold_down"), false}, {QStringLiteral("repeat_mode"), 2}, {QStringLiteral("repeat_times"), 0}});
+    const auto sequence = validateMappingChangeRequest(previewMethod, changed);
+    QVERIFY(sequence.ok());
+    QCOMPARE(sequence.update.rowModes, changed.value(QStringLiteral("row_modes")).toObject());
+    for (const auto &invalid : {QJsonObject{{QStringLiteral("sequence_hold_down"), 1}},
+            QJsonObject{{QStringLiteral("repeat_mode"), 3}}, QJsonObject{{QStringLiteral("repeat_times"), 100000000}},
+            QJsonObject{{QStringLiteral("repeat_times"), 0.25}}, QJsonObject{{QStringLiteral("repeat_mode"), QJsonValue::Null}}}) {
+        changed = rowModes; changed.insert(QStringLiteral("row_modes"), invalid);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
     for (const int ms : {1, 99999}) {
         changed = rowModes; changed.insert(QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("burst_press_ms"), ms}});
         QVERIFY(validateMappingChangeRequest(previewMethod, changed).ok());
