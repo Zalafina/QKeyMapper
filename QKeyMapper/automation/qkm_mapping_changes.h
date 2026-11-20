@@ -44,7 +44,7 @@ struct MappingUpdateArguments {
     std::optional<bool> disabled;
     std::optional<QString> note;
     std::optional<QString> category;
-    QList<int> categoryRows;
+    QList<int> batchRows;
     QJsonObject rowModes;
     std::optional<int> sendTiming;
     MappingRowMove move = MappingRowMove::None;

@@ -2614,7 +2614,8 @@ private:
         QList<QPair<int, int>> disableOtherRows;
         QString confirmationMessage;
     };
-    OriginalKeyConflictAnalysis analyzeOriginalKeyConflict(int tabindex, int row, const QString &originalKey, bool disabled) const;
+    OriginalKeyConflictAnalysis analyzeOriginalKeyConflict(int tabindex, int row, const QString &originalKey, bool disabled,
+                                                          const QList<MAP_KEYDATA> *candidateRows = nullptr) const;
 
     MappingDataInsertSummary prepareMappingDataForInsertion(int targetTabIndex,
                                                             const QList<MAP_KEYDATA> &sourceMappingData,

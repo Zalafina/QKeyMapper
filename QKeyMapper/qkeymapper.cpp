@@ -19848,11 +19848,12 @@ int QKeyMapper::applyExclusiveEnableMutualExclusion(int tabindex, int enabledRow
     return auto_disabled;
 }
 
-QKeyMapper::OriginalKeyConflictAnalysis QKeyMapper::analyzeOriginalKeyConflict(int tabindex, int row, const QString &originalKey, bool disabled) const
+QKeyMapper::OriginalKeyConflictAnalysis QKeyMapper::analyzeOriginalKeyConflict(int tabindex, int row, const QString &originalKey,
+                                                                              bool disabled, const QList<MAP_KEYDATA> *candidateRows) const
 {
     OriginalKeyConflictAnalysis analysis;
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) return analysis;
-    const auto *rows = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+    const auto *rows = candidateRows ? candidateRows : s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
     if (!rows || row < 0 || row >= rows->size()) return analysis;
     analysis.sourceAvailable = true;
     const QString group = normalizeOriginalKeyForExclusiveGroup(originalKey);
@@ -38778,8 +38779,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay;
+        const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
+        const bool triggerUpdate = updating && !trigger.isEmpty();
+        const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
         if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature)
-            || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
+            || (validation.confirmScope && !batchTrigger) || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
             return;
         }
@@ -38852,8 +38856,6 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
         const bool categoryUpdate = updating && update.category.has_value();
-        const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
-        const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool rowModeUpdate = updating && !update.rowModes.isEmpty() && !triggerUpdate;
         const bool sendTimingUpdate = updating && update.sendTiming.has_value();
         const bool keyUpdate = updating && (update.originalKey.has_value() || update.mappingKey.has_value()
@@ -38879,19 +38881,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 reject(QStringLiteral("invalid_target"), QStringLiteral("Only a current visible row attached to this source can be updated."));
                 return;
             }
-            if (update.categoryRows.isEmpty()) {
+            if (update.batchRows.isEmpty()) {
                 target.insert(QStringLiteral("source_ref"), update.sourceReference);
                 if (categoryUpdate) categoryDisplayRows.append(displayRow);
             } else {
                 const QString prefix = update.sourceReference.section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
                 QJsonArray refs;
-                for (int sourceRow : std::as_const(update.categoryRows)) {
+                for (int sourceRow : std::as_const(update.batchRows)) {
                     const int shown = currentVisibleRow(sourceRow);
                     if (shown < 0) {
-                        reject(QStringLiteral("invalid_target"), QStringLiteral("All category rows must be visible in the current source."));
+                        reject(QStringLiteral("invalid_target"), QStringLiteral("All rows must be visible in the current source."));
                         return;
                     }
-                    categoryDisplayRows.append(shown);
+                    if (categoryUpdate) categoryDisplayRows.append(shown);
                     refs.append(prefix + QString::number(sourceRow));
                 }
                 target.insert(QStringLiteral("source_refs"), refs);
@@ -39204,7 +39206,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("before"), before}, {QStringLiteral("after"), *update.note}};
         } else if (categoryUpdate) {
             const QString after = update.category->trimmed();
-            const auto rows = update.categoryRows.isEmpty() ? QList<int>{update.sourceRow} : update.categoryRows;
+            const auto rows = update.batchRows.isEmpty() ? QList<int>{update.sourceRow} : update.batchRows;
             const auto refs = target.value(QStringLiteral("source_refs")).toArray();
             for (int i = 0; i < rows.size(); ++i) {
                 const auto &before = KeyMappingDataList->at(rows.at(i)).Category;
@@ -39218,36 +39220,37 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     changes.append(rowChange);
                 }
             }
-        } else if (updating) {
-            const auto &before = KeyMappingDataList->at(update.sourceRow);
-            auto after = before;
-            if (update.sendMethod >= 0) after.SendMappingKeyMethod = update.sendMethod;
-            if (sendTimingUpdate) {
-                if (before.Mapping_Keys.isEmpty() || before.MappingKeys_KeyUp.isEmpty() || !validateSendTimingByKeyMapData(before)) {
-                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("The current row does not support the Send Timing control."));
-                    return;
-                }
-                updateMappingRowSendTiming(after, *update.sendTiming);
-            }
-            if (triggerUpdate) {
+        } else if (triggerUpdate) {
+            const QString type = trigger.value(QStringLiteral("type")).toString();
+            if (type == QStringLiteral("long_press")) triggerType = OriginalKeyTriggerType::LongPress;
+            else if (type == QStringLiteral("double_press")) triggerType = OriginalKeyTriggerType::DoublePress;
+            const auto selectedRows = batchTrigger ? update.batchRows : QList<int>{update.sourceRow};
+            const auto &currentRows = *KeyMappingDataList;
+            auto candidates = currentRows;
+            const auto firstTrigger = parseOriginalKeyTriggerInfo(currentRows.at(update.sourceRow).Original_Key);
+            triggerTime = batchTrigger ? PRESSTIME_DEFAULT : trigger.value(QStringLiteral("duration_ms")).toInt(firstTrigger.pressTime);
+            for (int row : selectedRows) {
+                const auto &before = currentRows.at(row);
                 QString supportError;
-                if (!originalKeySupportsTimedTrigger(before, update.sourceRow, &supportError)) {
+                if (!batchTrigger && !originalKeySupportsTimedTrigger(before, row, &supportError)) {
                     reject(QStringLiteral("unsupported_capability"), supportError);
                     return;
                 }
-                const QString type = trigger.value(QStringLiteral("type")).toString();
-                if (type == QStringLiteral("long_press")) triggerType = OriginalKeyTriggerType::LongPress;
-                else if (type == QStringLiteral("double_press")) triggerType = OriginalKeyTriggerType::DoublePress;
-                const auto previous = parseOriginalKeyTriggerInfo(before.Original_Key);
-                triggerTime = trigger.value(QStringLiteral("duration_ms")).toInt(previous.pressTime);
-                const auto validation = validateOriginalKeyTriggerChange(before, update.sourceRow, triggerType, triggerTime);
+                const auto validation = validateOriginalKeyTriggerChange(before, row, triggerType, triggerTime);
                 if (!validation.isValid) {
                     reject(QStringLiteral("invalid_mapping"), validation.errorMessage);
                     return;
                 }
-                after.Original_Key = buildOriginalKeyTriggerString(previous.baseKey, triggerType, triggerTime);
+                const auto original = parseOriginalKeyTriggerInfo(before.Original_Key);
+                candidates[row].Original_Key = buildOriginalKeyTriggerString(original.baseKey, triggerType, triggerTime);
+            }
+            const auto refs = target.value(QStringLiteral("source_refs")).toArray();
+            for (int i = 0; i < selectedRows.size(); ++i) {
+                const int row = selectedRows.at(i);
+                const auto &before = currentRows.at(row);
+                const auto &after = candidates.at(row);
                 if (normalizeOriginalKeyForExclusiveGroup(after.Original_Key) != normalizeOriginalKeyForExclusiveGroup(before.Original_Key)) {
-                    const auto analysis = analyzeOriginalKeyConflict(tab, update.sourceRow, after.Original_Key, before.Disabled);
+                    const auto analysis = analyzeOriginalKeyConflict(tab, row, after.Original_Key, before.Disabled, &candidates);
                     if (!analysis.sourceAvailable) {
                         reject(QStringLiteral("context_busy"), QStringLiteral("The source row is no longer available."));
                         return;
@@ -39258,6 +39261,27 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                         return;
                     }
                 }
+                modified |= after.Original_Key != before.Original_Key;
+                QJsonObject rowChange{{QStringLiteral("kind"), QStringLiteral("update_original_trigger")},
+                    {QStringLiteral("before"), automationSourceRow(before)}, {QStringLiteral("after"), automationSourceRow(after)}};
+                if (batchTrigger) rowChange.insert(QStringLiteral("source_ref"), refs.at(i));
+                changes.append(rowChange);
+            }
+            const auto conflict = ibInputSaveConflict({{tab, std::move(candidates)}});
+            if (!conflict.isEmpty()) {
+                reject(QStringLiteral("invalid_mapping"), conflict);
+                return;
+            }
+        } else if (updating) {
+            const auto &before = KeyMappingDataList->at(update.sourceRow);
+            auto after = before;
+            if (update.sendMethod >= 0) after.SendMappingKeyMethod = update.sendMethod;
+            if (sendTimingUpdate) {
+                if (before.Mapping_Keys.isEmpty() || before.MappingKeys_KeyUp.isEmpty() || !validateSendTimingByKeyMapData(before)) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("The current row does not support the Send Timing control."));
+                    return;
+                }
+                updateMappingRowSendTiming(after, *update.sendTiming);
             }
             if (rowModeUpdate) {
                 const auto burst = update.rowModes.value(QStringLiteral("burst"));
@@ -39394,7 +39418,6 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             updatedRow = after;
             change = {{QStringLiteral("kind"), update.disabled.has_value() ? QStringLiteral("update_row_disabled")
                     : sendTimingUpdate ? QStringLiteral("update_send_timing")
-                    : triggerUpdate ? QStringLiteral("update_original_trigger")
                     : rowModeUpdate ? QStringLiteral("update_row_modes")
                     : keyUpdate ? QStringLiteral("update_row_keys") : QStringLiteral("update_send_method")},
                 {QStringLiteral("before"), automationSourceRow(before)}, {QStringLiteral("after"), automationSourceRow(after)}};
@@ -39450,7 +39473,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             {QStringLiteral("changes"), changes}, {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
         const bool confirmationRequired = !conflictRows.isEmpty();
-        if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired || removingTabData);
+        if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired || removingTabData || batchTrigger);
         if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
             reject(QStringLiteral("result_too_large"), QStringLiteral("The complete settings update exceeds the response limit.")); return;
         }
@@ -39473,6 +39496,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         if (removingTabData && !validation.confirmDelete) {
             reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the affected Tab and explicitly confirm the removal with a fresh preview."));
+            return;
+        }
+        if (batchTrigger && !validation.confirmScope) {
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review all listed rows and explicitly confirm the batch trigger scope in a fresh preview."));
             return;
         }
         if (confirmationRequired && !validation.confirmConflicts) {
@@ -39586,7 +39613,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
             } else if (triggerUpdate) {
                 QString error;
-                if (!applyOriginalKeyTriggerChange(m_KeyMappingDataTable, {update.sourceRow}, triggerType, triggerTime, &error)) {
+                const auto selectedRows = batchTrigger ? update.batchRows : QList<int>{update.sourceRow};
+                if (!applyOriginalKeyTriggerChange(m_KeyMappingDataTable, selectedRows, triggerType, triggerTime, &error)) {
                     reject(QStringLiteral("context_busy"), error.isEmpty() ? QStringLiteral("The current row no longer accepts a trigger change.") : error);
                     return;
                 }

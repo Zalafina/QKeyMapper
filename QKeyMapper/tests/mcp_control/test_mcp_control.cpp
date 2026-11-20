@@ -585,7 +585,7 @@ void McpControlTest::mappingChangeArguments()
     categoryUpdate.insert(QStringLiteral("source_refs"), QJsonArray{rowThree, sourceRef});
     const auto batchCategory = validateMappingChangeRequest(previewMethod, categoryUpdate);
     QVERIFY(batchCategory.ok());
-    QCOMPARE(batchCategory.update.categoryRows, QList<int>({1, 3}));
+    QCOMPARE(batchCategory.update.batchRows, QList<int>({1, 3}));
     QCOMPARE(batchCategory.update.sourceReference, sourceRef);
     changed = categoryUpdate; changed.insert(QStringLiteral("source_ref"), sourceRef);
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
@@ -685,6 +685,15 @@ void McpControlTest::mappingChangeArguments()
         changed.insert(QStringLiteral("row_modes"), triggerModes(invalid));
         QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     }
+    QJsonObject triggerBatch{{QStringLiteral("action"), QStringLiteral("mapping.update")},
+        {QStringLiteral("source_refs"), QJsonArray{sourceRef.section(QLatin1Char(':'), 0, 2) + QStringLiteral(":3"), sourceRef}},
+        {QStringLiteral("row_modes"), triggerModes({{QStringLiteral("type"), QStringLiteral("double_press")}})}};
+    const auto batchTrigger = validateMappingChangeRequest(previewMethod, triggerBatch);
+    QVERIFY(batchTrigger.ok());
+    QCOMPARE(batchTrigger.update.batchRows, QList<int>({1, 3}));
+    triggerBatch.insert(QStringLiteral("row_modes"), triggerModes(
+        {{QStringLiteral("type"), QStringLiteral("double_press")}, {QStringLiteral("duration_ms"), 500}}));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, triggerBatch).ok());
     auto mixedTrigger = triggerModes({{QStringLiteral("type"), QStringLiteral("normal")}});
     mixedTrigger.insert(QStringLiteral("lock"), true);
     changed.insert(QStringLiteral("row_modes"), mixedTrigger);

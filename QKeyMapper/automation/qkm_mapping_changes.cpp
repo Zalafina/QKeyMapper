@@ -294,9 +294,11 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         const auto batch = arguments.value(QStringLiteral("source_refs"));
         const auto references = batch.toArray();
         const auto category = arguments.value(QStringLiteral("category"));
-        if (!batch.isUndefined() && ((!movePreview && category.isUndefined())
+        const auto rowModes = arguments.value(QStringLiteral("row_modes"));
+        const bool triggerBatch = !batch.isUndefined() && rowModes.toObject().contains(QStringLiteral("original_trigger"));
+        if (!batch.isUndefined() && ((!movePreview && category.isUndefined() && !triggerBatch)
             || !singleReference.isUndefined() || references.size() < 2 || references.size() > 100))
-            return fail("Only moves and category updates accept 2 to 100 source_refs instead of source_ref.");
+            return fail("Only moves, category and trigger updates accept 2 to 100 source_refs instead of source_ref.");
         const auto reference = references.isEmpty() ? singleReference : references.first();
         const auto original = arguments.value(QStringLiteral("original_key"));
         const auto mapping = arguments.value(QStringLiteral("mapping_key"));
@@ -310,11 +312,10 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 || mode < QKeyMapperConstants::SENDTIMING_NORMAL || mode > QKeyMapperConstants::SENDTIMING_NORMAL_AND_KEYUP)
                 return fail("Provide one source_ref and an integer send_timing from 0 to 4.");
         }
-        const auto rowModes = arguments.value(QStringLiteral("row_modes"));
         if (!rowModes.isUndefined()) {
             const auto modes = rowModes.toObject();
-            if (modes.isEmpty() || arguments.size() != 3 || !singleReference.isString())
-                return fail("Provide row_modes and one source_ref, without other changed fields.");
+            if (modes.isEmpty() || arguments.size() != 3 || (!singleReference.isString() && !triggerBatch))
+                return fail("Provide row_modes and an eligible source reference, without other changed fields.");
             for (auto it = modes.constBegin(); it != modes.constEnd(); ++it) {
                 const QString key = it.key();
                 const auto value = it.value();
@@ -350,6 +351,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                     const bool normal = type == QStringLiteral("normal");
                     const int time = duration.toInt(-1);
                     if (modes.size() != 1 || trigger.size() != (duration.isUndefined() ? 1 : 2)
+                        || (triggerBatch && !duration.isUndefined())
                         || (!normal && type != QStringLiteral("long_press") && type != QStringLiteral("double_press"))
                         || (!duration.isUndefined() && (normal || !duration.isDouble() || duration.toDouble() != time
                             || time < QKeyMapperConstants::PRESSTIME_MIN || time > QKeyMapperConstants::PRESSTIME_MAX)))
@@ -389,7 +391,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             return fail("A canonical current source row is required.");
         const int rowCount = qMax(1, int(references.size()));
         const QString prefix = reference.toString().section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
-        QList<int> categoryRows;
+        QList<int> batchRows;
         if (movePreview) {
             if (row > std::numeric_limits<int>::max() - (rowCount - 1))
                 return fail("The contiguous source range exceeds the row index limit.");
@@ -402,19 +404,19 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 const QString ref = value.toString();
                 bool indexOk = false;
                 const int index = ref.mid(prefix.size()).toInt(&indexOk);
-                if (!indexOk || index < 0 || ref != prefix + QString::number(index) || categoryRows.contains(index))
-                    return fail("Category references must be distinct rows of the same source and revision.");
-                categoryRows.append(index);
+                if (!indexOk || index < 0 || ref != prefix + QString::number(index) || batchRows.contains(index))
+                    return fail("Batch references must be distinct rows of the same source and revision.");
+                batchRows.append(index);
             }
-            std::sort(categoryRows.begin(), categoryRows.end());
+            std::sort(batchRows.begin(), batchRows.end());
         }
-        const int firstRow = categoryRows.isEmpty() ? row : categoryRows.constFirst();
+        const int firstRow = batchRows.isEmpty() ? row : batchRows.constFirst();
         result.action = MappingChangeAction::UpdateMapping;
         result.update = {prefix + QString::number(firstRow), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2),
             firstRow, updatePreview ? sendMethod() : -1};
         result.update.move = rowMove;
         if (movePreview) result.update.rowCount = rowCount;
-        result.update.categoryRows = std::move(categoryRows);
+        result.update.batchRows = std::move(batchRows);
         if (!original.isUndefined()) result.update.originalKey = original.toString();
         if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
         if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
@@ -648,16 +650,22 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     categoryConflicts.append(noteRequired);
     QJsonArray rowModeConflicts = categoryConflicts;
     rowModeConflicts.append(categoryRequired);
-    rowModeConflicts.append(QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_refs")}}});
     const QJsonObject rowModesRequired{{QStringLiteral("required"), QJsonArray{QStringLiteral("row_modes")}}};
     const QJsonObject timingRequired{{QStringLiteral("required"), QJsonArray{QStringLiteral("send_timing")}}};
     QJsonArray timingConflicts = rowModeConflicts;
+    timingConflicts.append(QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("source_refs")}}});
     timingConflicts.append(rowModesRequired);
+    const QJsonObject noDuration{{QStringLiteral("not"),
+        QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("duration_ms")}}}}};
+    const QJsonObject batchTriggerMode{{QStringLiteral("required"), QJsonArray{QStringLiteral("original_trigger")}},
+        {QStringLiteral("properties"), QJsonObject{{QStringLiteral("original_trigger"), noDuration}}}};
+    const QJsonObject batchTriggerSchema{{QStringLiteral("required"), QJsonArray{QStringLiteral("row_modes")}},
+        {QStringLiteral("properties"), QJsonObject{{QStringLiteral("row_modes"), batchTriggerMode}}}};
     updateSchema.insert(QStringLiteral("dependentSchemas"), QJsonObject{
         {QStringLiteral("disabled"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), updateFields}}}}},
         {QStringLiteral("note"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), noteConflicts}}}}},
         {QStringLiteral("category"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), categoryConflicts}}}}},
-        {QStringLiteral("source_refs"), categoryRequired},
+        {QStringLiteral("source_refs"), QJsonObject{{QStringLiteral("oneOf"), QJsonArray{categoryRequired, batchTriggerSchema}}}},
         {QStringLiteral("row_modes"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), rowModeConflicts}}}}},
         {QStringLiteral("send_timing"), QJsonObject{{QStringLiteral("not"), QJsonObject{{QStringLiteral("anyOf"), timingConflicts}}}}}});
     updateFields.append(disabledRequired);
@@ -689,6 +697,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     auto updateApplySchema = settingsApplySchema;
     auto updateConfirmations = updateApplySchema.value(QStringLiteral("properties")).toObject();
     updateConfirmations.insert(QStringLiteral("confirm_conflicts"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}});
+    updateConfirmations.insert(QStringLiteral("confirm_scope"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}});
     updateApplySchema.insert(QStringLiteral("properties"), updateConfirmations);
     auto updateApply = capability("mapping.update.apply", "qkm_apply_changes", Read | Configure, false, updateApplySchema);
     auto preferencesApply = capability("ibinput.preferences.update.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);

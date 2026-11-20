@@ -152,7 +152,11 @@ Use `mapping.update` with a current visible `source_ref`. Set
 is `normal`, `long_press` or `double_press`. Timed types can include
 `duration_ms` from 1 through 9999. Omitting it keeps the current duration
 or uses 500 ms for a previously untimed key. The product rejects unavailable
-controls and conflicts with an enabled mapping group. Save separately.
+controls and conflicts with an enabled mapping group. Use 2–100 distinct,
+visible `source_refs` from the same source revision to change a batch.
+In a batch, omit `duration_ms`. Timed types use 500 ms for all selected rows.
+Inspect every previewed row, then submit with `confirm_scope: true`.
+Save separately.
 
 ## Editing a mapping note
 

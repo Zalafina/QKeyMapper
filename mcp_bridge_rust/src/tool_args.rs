@@ -477,22 +477,22 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             {
                 return Err(InvalidMessage);
             }
-            if let Some(modes) = arguments.get("row_modes")
-                && (!modes.is_object()
-                    || arguments.len() != 3
-                    || !arguments.contains_key("source_ref")
-                    || arguments.get("action").and_then(Value::as_str) != Some("mapping.update"))
-            {
-                return Err(InvalidMessage);
-            }
-            if let Some(category) = arguments.get("category") {
+            let modes = arguments.get("row_modes");
+            let category = arguments.get("category");
+            if modes.is_some() || category.is_some() {
                 let single = arguments.get("source_ref").is_some_and(Value::is_string);
                 let batch = arguments.get("source_refs").and_then(Value::as_array);
                 let valid_batch = batch.is_some_and(|rows| (2..=100).contains(&rows.len()));
-                if !category.is_string()
+                if modes.is_some_and(|value| !value.is_object())
+                    || category.is_some_and(|value| !value.is_string())
                     || arguments.get("action").and_then(Value::as_str) != Some("mapping.update")
                     || arguments.len() != 3
                     || single == valid_batch
+                    || (valid_batch
+                        && category.is_none()
+                        && !modes
+                            .and_then(|value| value.get("original_trigger"))
+                            .is_some_and(|trigger| trigger.get("duration_ms").is_none()))
                 {
                     return Err(InvalidMessage);
                 }
@@ -536,7 +536,8 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                     || !values.contains_key("source_ref")))
                 || (action == Some("mapping.update")
                     && values.contains_key("source_refs")
-                    && !values.contains_key("category"))
+                    && !values.contains_key("category")
+                    && !values.contains_key("row_modes"))
             {
                 return Err(InvalidMessage);
             }

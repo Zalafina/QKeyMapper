@@ -430,7 +430,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-CATEGORY-FILTER | 分类多选／全部／无匹配／空白分类 | `initCategoryFilterControls`／`showCategoryFilterPopup`；M2-A；185 双 Qt 私有 GUI 和 Rust 选验视图、可见行守卫及源／INI 不变 |
 | ACT-CATEGORY-ASSIGN | 选定分类／输入新分类／批量分类 | 表格 `contextMenuEvent` 的内嵌文本和 QWidgetAction；M2-A；183～184 选验当前可见源行单条／同源批量赋值、清空、混源及隐藏拒绝、筛选选项和保存冷读 |
 | ACT-MAP-STATE | 单项／批量启用禁用、连发开关、锁定开关、浮动按钮开关 | 表格状态菜单与 `keyMappingTableItemCheckStateChanged`；188～194 选验连发／锁定、发送时机、序列、输入与高级选项的配置和冷读，实际输出及悬浮动作另验 |
-| ACT-MAP-TRIGGER | 普通／长按／双击及时间的单项／批量更改 | 195 真菜单与正式 Rust 单行选验类型、时长、互斥组拒绝、保存及冷读；批量确认和运行触发另验 |
+| ACT-MAP-TRIGGER | 普通／长按／双击及时间的单项／批量更改 | 195～196 真菜单与正式 Rust 单行／批量选验时长、整批冲突拒绝、明确确认、保存和冷读；运行触发另验 |
 | ACT-MAP-ORDER | 上移、下移、置顶、置底及拖拽 | `selectedItemsMove*`／`keyMappingTableDragDropMove`；M2-A；单行和连续行的相邻／两端移动共用 GUI；排除筛选、跨表和共通，拖拽待验 |
 | ACT-MAP-COPYPASTE | 复制／向顶部、尾部、上方、下方插入 | 表格 `contextMenuEvent`；M2-A；剪贴板、内部拷贝缓冲、位置与批量校验 |
 | ACT-MAP-CODE | 复制映射码／应用剪贴板映射码 | 表格／映射项窗口；M2-A；字符串解析与业务提交不能混同 |

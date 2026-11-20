@@ -172,7 +172,11 @@ async def check_contract(exe):
             assert {"required": ["note"]} in note_rule["dependentSchemas"]["category"]["not"]["anyOf"]
             assert rename_rule["properties"]["category"] == {"type": "null"}
             assert note_rule["oneOf"] == [{"required": ["source_ref"]}, {"required": ["source_refs"]}]
-            assert note_rule["dependentSchemas"]["source_refs"] == {"required": ["category"]}
+            assert note_rule["dependentSchemas"]["source_refs"]["oneOf"] == [
+                {"required": ["category"]},
+                {"required": ["row_modes"], "properties": {"row_modes": {
+                    "required": ["original_trigger"], "properties": {
+                        "original_trigger": {"not": {"required": ["duration_ms"]}}}}}}]
             assert note_rule["properties"]["source_refs"]["minItems"] == 2
             assert note_rule["properties"]["source_refs"]["uniqueItems"] is True
             assert note_rule["properties"]["row_modes"] == {
@@ -356,6 +360,16 @@ async def check_contract(exe):
                     {**row_modes, "row_modes": {"original_trigger": {"type": "other"}}},
                     {**row_modes, "row_modes": {"original_trigger": {"type": "normal", "extra": 1}}},
                     {**row_modes, "row_modes": {"original_trigger": {"type": "normal"}, "lock": True}})),
+                ("qkm_preview_changes", {"action": "mapping.update", "source_refs": [row, row.rsplit(":", 1)[0]+":3"],
+                                         "row_modes": {"original_trigger": {"type": "double_press"}}}, (
+                    {"action": "mapping.update", "source_refs": [row, row],
+                     "row_modes": {"original_trigger": {"type": "double_press"}}},
+                    {"action": "mapping.update", "source_refs": [row],
+                     "row_modes": {"original_trigger": {"type": "double_press"}}},
+                    {"action": "mapping.update", "source_refs": [row, row.rsplit(":", 1)[0]+":3"],
+                     "row_modes": {"original_trigger": {"type": "double_press", "duration_ms": 500}}},
+                    {"action": "mapping.update", "source_refs": [row, row.rsplit(":", 1)[0]+":3"],
+                     "row_modes": {"lock": True}})),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"original_trigger": {"type": "normal"}}}, ()),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"original_trigger": {"type": "long_press"}}}, ()),
                 ("qkm_preview_changes", {**row_modes, "row_modes": {"fixed_vkey_code": 255,
