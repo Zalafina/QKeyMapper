@@ -646,6 +646,10 @@ if ($Action -eq 'AddBasicMapping') {
     $mappingButtonText = $startButton.Current.Name
     $sourceTabNames = @('Tab1','Normal')
     if ($privateTabName) { $sourceTabNames += 'Mcp Tab 168' }
+    if ($DesktopName -cmatch '^QkmProduct_[a-f0-9]{32}$' -and
+        [IO.Path]::GetFileName($expected) -ceq 'QKeyMapperMcpAcceptance_TabDelete.exe') {
+        $sourceTabNames = @('Tab2')
+    }
     $sourceTab = Find-Control $mainRoot ([Windows.Automation.ControlType]::TabItem) '' $sourceTabNames
     $sourceTabName = $sourceTab.Current.Name
     $configuration = Find-Control $mainRoot ([Windows.Automation.ControlType]::ComboBox) 'settingselectComboBox' @()

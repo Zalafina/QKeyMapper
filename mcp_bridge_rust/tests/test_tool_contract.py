@@ -65,6 +65,7 @@ async def check_contract(exe):
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     add_tab = {"action": "tab.add_blank", "source_tab_ref": tab}
     copy_tab = {"action": "tab.copy", "source_tab_ref": tab}
+    delete_tab = {"action": "tab.delete", "source_tab_ref": tab}
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
     capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
@@ -109,8 +110,8 @@ async def check_contract(exe):
                        if field not in rename)
             add_rule, = (rule for rule in previews["oneOf"]
                          if "tab.add_blank" in rule["properties"]["action"].get("enum", []))
-            assert set(add_rule["properties"]["action"]["enum"]) == {"tab.add_blank", "tab.copy"}
-            assert set(add_rule["required"]) == set(add_tab) == set(copy_tab)
+            assert set(add_rule["properties"]["action"]["enum"]) == {"tab.add_blank", "tab.copy", "tab.delete"}
+            assert set(add_rule["required"]) == set(add_tab) == set(copy_tab) == set(delete_tab)
             assert add_rule["properties"]["source_tab_ref"] == {"type": "string"}
             assert set(add_rule["properties"]) == set(previews["properties"])
             assert all(rule == {"type": "null"} for field, rule in add_rule["properties"].items()
@@ -182,6 +183,9 @@ async def check_contract(exe):
                 ("qkm_preview_changes", copy_tab, (
                     {"action": "tab.copy"}, {**copy_tab, "source_tab_ref": row},
                     {**copy_tab, "tab_name": "Custom name"}, {**copy_tab, "activate_new_tab": True})),
+                ("qkm_preview_changes", delete_tab, (
+                    {"action": "tab.delete"}, {**delete_tab, "source_tab_ref": row},
+                    {**delete_tab, "source_refs": [row]}, {**delete_tab, "confirm_delete": True})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),

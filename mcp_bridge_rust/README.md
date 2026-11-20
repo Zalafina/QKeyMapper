@@ -126,6 +126,11 @@ appears immediately after its source and the source stays selected.
 The preview uses the GUI copy name and reports if the hotkey is copied.
 A new snapshot is needed for source references after the commit.
 
+Use `action: "tab.delete"` with the selected normal tab's `source_tab_ref`.
+Review the whole-tab scope and the tab that will become selected. Apply
+with `confirm_delete: true`. Common and the last normal tab are protected.
+Persistence still requires the separate `configuration.save` action.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

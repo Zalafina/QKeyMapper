@@ -133,6 +133,8 @@ enum Action {
     AddBlankTab,
     #[serde(rename = "tab.copy")]
     CopyTab,
+    #[serde(rename = "tab.delete")]
+    DeleteTab,
     #[serde(rename = "configuration.save")]
     Save,
     #[serde(rename = "ibinput.preferences.update")]
@@ -368,7 +370,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
             let rename = action == Some("tab.rename");
             let valid_tab_change = match action {
                 Some("tab.rename") => values.len() == 3 && values.contains_key("source_tab_ref"),
-                Some("tab.add_blank" | "tab.copy") => {
+                Some("tab.add_blank" | "tab.copy" | "tab.delete") => {
                     values.len() == 2 && values.contains_key("source_tab_ref")
                 }
                 _ => true,

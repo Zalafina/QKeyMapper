@@ -47,7 +47,8 @@ struct MappingUpdateArguments {
     std::optional<QString> tabName;
     bool addBlankTab = false;
     bool copyTab = false;
-    QByteArray copyTabSettingsDigest;
+    bool deleteTab = false;
+    QByteArray tabSettingsDigest;
 };
 
 struct IbInputPreferencesArguments {

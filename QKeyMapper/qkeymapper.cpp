@@ -18442,6 +18442,7 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 
 int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
 {
+    if (m_KeyMapStatus != KEYMAP_IDLE) return REMOVE_MAPPINGTAB_FAILED;
     if ((tabindex < 0) || (tabindex >= ui->keyMappingTabWidget->count()) || (tabindex >= s_KeyMappingTabInfoList.size())) {
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[removeTabFromKeyMappingTabWidget] Invalid index : " << tabindex << ", ValidTabWidgetCount:" << ui->keyMappingTabWidget->count() << ", TabInfoListSize:" << s_KeyMappingTabInfoList.size();
@@ -18490,6 +18491,7 @@ int QKeyMapper::removeTabFromKeyMappingTabWidget(int tabindex)
 
     ui->keyMappingTabWidget->blockSignals(false);
 
+    collectMappingTableTabHotkeys();
     markSaveSettingDirty();
 
     return REMOVE_MAPPINGTAB_SUCCESS;
@@ -38117,9 +38119,9 @@ QJsonObject QKeyMapper::collectAutomationSourceSnapshotWithAccess(QString &error
         {QStringLiteral("common_feature_enabled"), isCommonMappingFeatureEnabled()}, {QStringLiteral("sources"), sources}};
 }
 
-static QByteArray automationTabCopySettingsDigest(const KeyMappingTab_Info &tab)
+static QByteArray automationTabSettingsDigest(const KeyMappingTab_Info &tab)
 {
-    // These copied properties are outside the source snapshot exposed to clients.
+    // Bind properties that are outside the source snapshot.
     QByteArray settings;
     QDataStream stream(&settings, QIODevice::WriteOnly);
     stream.setVersion(QDataStream::Qt_5_15);
@@ -38659,9 +38661,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool renamingTab = updating && update.tabName.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
-        const bool editingTab = renamingTab || addingBlankTab || copyingTab;
+        const bool deletingTab = updating && update.deleteTab;
+        const bool editingTab = renamingTab || addingBlankTab || copyingTab || deletingTab;
         if ((validation.confirmConflicts && !update.originalKey.has_value())
-            || validation.confirmScope || validation.confirmOverwrite || validation.confirmDelete) {
+            || validation.confirmScope || validation.confirmOverwrite || (validation.confirmDelete && !deletingTab)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
             return;
         }
@@ -38741,14 +38744,31 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 return;
             }
             target.insert(QStringLiteral("source_tab_ref"), update.sourceTabRef);
-            if (copyingTab) {
-                const auto &tabInfo = s_KeyMappingTabInfoList.at(tab);
-                const auto settingsDigest = automationTabCopySettingsDigest(tabInfo);
-                if (settingsDigest.isEmpty() || (applying && update.copyTabSettingsDigest != settingsDigest)) {
-                    reject(QStringLiteral("stale_preview"), QStringLiteral("The copied Tab settings cannot be verified; review a fresh preview."));
+            const auto &tabInfo = s_KeyMappingTabInfoList.at(tab);
+            if (copyingTab || deletingTab) {
+                const auto settingsDigest = automationTabSettingsDigest(tabInfo);
+                if (settingsDigest.isEmpty() || (applying && update.tabSettingsDigest != settingsDigest)) {
+                    reject(QStringLiteral("stale_preview"), QStringLiteral("The Tab settings cannot be verified; review a fresh preview."));
                     return;
                 }
-                update.copyTabSettingsDigest = settingsDigest;
+                update.tabSettingsDigest = settingsDigest;
+            }
+            if (deletingTab) {
+                if (countNormalMappingTabs() <= 1) {
+                    reject(QStringLiteral("protected_tab"), QStringLiteral("The last normal Tab cannot be removed."));
+                    return;
+                }
+                const int successor = tab < s_KeyMappingTabInfoList.size() - 1 ? tab + 1 : tab - 1;
+                tabAfter = qMin(tab, int(s_KeyMappingTabInfoList.size()) - 2);
+                const auto &nextTab = s_KeyMappingTabInfoList.at(successor);
+                modified = true;
+                change = {{QStringLiteral("kind"), QStringLiteral("delete_tab")},
+                    {QStringLiteral("tab_name"), tabInfo.TabName}, {QStringLiteral("ui_index"), tab},
+                    {QStringLiteral("local_row_count"), item.value(QStringLiteral("row_count"))},
+                    {QStringLiteral("removes_tab_hotkey"), !tabInfo.TabHotkey.isEmpty()},
+                    {QStringLiteral("selected_tab_after"), QJsonObject{{QStringLiteral("name"), nextTab.TabName},
+                        {QStringLiteral("index"), tabAfter}, {QStringLiteral("is_common"), isCommonMappingTab(nextTab)}}}};
+            } else if (copyingTab) {
                 const QString name = availableMappingTabCopyName(tabInfo.TabName);
                 if (name.isEmpty()) {
                     reject(QStringLiteral("tab_name_limit"), QStringLiteral("All names for a copy of this Tab are already in use."));
@@ -38941,7 +38961,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = copyingTab ? QStringLiteral("tab.copy")
+        const QString action = deletingTab ? QStringLiteral("tab.delete")
+            : copyingTab ? QStringLiteral("tab.copy")
             : addingBlankTab ? QStringLiteral("tab.add_blank")
             : renamingTab ? QStringLiteral("tab.rename")
             : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
@@ -38951,7 +38972,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             {QStringLiteral("changes"), changes}, {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
         const bool confirmationRequired = !conflictRows.isEmpty();
-        if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired);
+        if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired || deletingTab);
         if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
             reject(QStringLiteral("result_too_large"), QStringLiteral("The complete settings update exceeds the response limit.")); return;
         }
@@ -38972,6 +38993,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("stale_preview"), QStringLiteral("The mapping change no longer matches the preview; query the source and review a fresh preview."));
             return;
         }
+        if (deletingTab && !validation.confirmDelete) {
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the complete Tab deletion and explicitly confirm it with a fresh preview."));
+            return;
+        }
         if (confirmationRequired && !validation.confirmConflicts) {
             reject(QStringLiteral("confirmation_required"), QStringLiteral("Review every listed row before confirming the Common original-key update in a fresh preview."));
             return;
@@ -38981,7 +39006,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (addingBlankTab || copyingTab) {
+            if (deletingTab) {
+                if (removeTabFromKeyMappingTabWidget(tab) != REMOVE_MAPPINGTAB_SUCCESS) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The Tab could not be removed from this source."));
+                    return;
+                }
+                tabAfter = s_KeyMappingTabWidgetCurrentIndex;
+            } else if (addingBlankTab || copyingTab) {
                 const bool created = copyingTab ? copyCurrentTabToKeyMappingTabWidget() : addTabToKeyMappingTabWidget(QString(), true);
                 if (!created) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current source no longer allows creating the Tab."));
@@ -52058,6 +52089,7 @@ void QKeyMapper::importMappingTableByTabIndex(int tabIndex)
 
 bool QKeyMapper::deleteMappingTableByTabIndex(int tabIndex)
 {
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) return false;
     const QString name = s_KeyMappingTabInfoList.at(tabIndex).TabName;
     if (QkmMessageBox::warning(this, PROGRAM_NAME,
             QObject::tr("Are you sure you want to remove the mapping table \"%1\"?").arg(name),
