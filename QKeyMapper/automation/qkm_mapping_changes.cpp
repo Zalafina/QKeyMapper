@@ -107,15 +107,17 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool movePreview = rowMove != MappingRowMove::None;
     const bool renamePreview = preview && action == QLatin1String("tab.rename");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
+    const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
+    const bool createTabPreview = addBlankTabPreview || copyTabPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
-        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !renamePreview && !addBlankTabPreview && !preferencesPreview))) return fail("Unsupported preview action.");
+        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !renamePreview && !createTabPreview && !preferencesPreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
     const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")}
         : preferencesPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("preferences_revision"),
             QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")}
         : renamePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_name")}
-        : addBlankTabPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref")}
+        : createTabPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref")}
         : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
         : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("send_method"),
             QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled")}
@@ -151,7 +153,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.preferences = {revision.toString(), backend.toString(), policy.toString()};
         return result;
     }
-    if (renamePreview || addBlankTabPreview) {
+    if (renamePreview || createTabPreview) {
         const auto reference = arguments.value(QStringLiteral("source_tab_ref"));
         const auto name = arguments.value(QStringLiteral("tab_name"));
         const QString text = name.toString();
@@ -167,6 +169,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.update.sourceTabRef = reference.toString();
         if (renamePreview) result.update.tabName = text;
         result.update.addBlankTab = addBlankTabPreview;
+        result.update.copyTab = copyTabPreview;
         return result;
     }
     if (updatePreview || movePreview) {
@@ -504,20 +507,25 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     renameApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));
     capabilities.append(renamePreview);
     capabilities.append(renameApply);
-    const auto addTabSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("tab.add_blank")}}},
-        {QStringLiteral("source_tab_ref"), reference}}, {QStringLiteral("action"), QStringLiteral("source_tab_ref")});
-    auto addTabPreview = capability("tab.add_blank.preview", "qkm_preview_changes", Read | Configure, true, addTabSchema);
-    auto addTabApply = capability("tab.add_blank.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&addTabPreview, &addTabApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_attached_normal_source_only"),
-            QStringLiteral("memory_only_no_save_or_start"), QStringLiteral("gui_default_name_and_activation"),
-            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("no_open_editor_or_popup")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    for (const char *action : {"tab.add_blank", "tab.copy"}) {
+        const QByteArray actionId(action);
+        const auto tabSchema = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QString::fromLatin1(action)}}},
+            {QStringLiteral("source_tab_ref"), reference}}, {QStringLiteral("action"), QStringLiteral("source_tab_ref")});
+        auto tabPreview = capability((actionId + ".preview").constData(), "qkm_preview_changes", Read | Configure, true, tabSchema);
+        auto tabApply = capability((actionId + ".apply").constData(), "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+        const auto behavior = actionId == "tab.copy" ? QStringLiteral("gui_copy_preserves_current_tab")
+            : QStringLiteral("gui_default_name_and_activation");
+        for (auto *item : {&tabPreview, &tabApply}) {
+            item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_attached_normal_source_only"),
+                QStringLiteral("memory_only_no_save_or_start"), behavior,
+                QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("no_open_editor_or_popup")});
+            item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        }
+        tabPreview.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
+        tabApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));
+        capabilities.append(tabPreview);
+        capabilities.append(tabApply);
     }
-    addTabPreview.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
-    addTabApply.insert(QStringLiteral("source_binding_result"), QStringLiteral("commit_snapshot_or_null"));
-    capabilities.append(addTabPreview);
-    capabilities.append(addTabApply);
     capabilities.append(operation);
     return capabilities;
 }

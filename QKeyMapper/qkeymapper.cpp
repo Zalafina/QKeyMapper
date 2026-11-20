@@ -18278,6 +18278,17 @@ void QKeyMapper::refreshTabsForSourceTabChange(int sourceTabIndex, bool structur
     }
 }
 
+QString QKeyMapper::availableMappingTabCopyName(const QString &sourceName)
+{
+    const QString name = sourceName + tr("_copy");
+    if (!isTabTextDuplicate(name)) return name;
+    for (int i = 1; i <= 999; ++i) {
+        const QString candidate = QStringLiteral("%1%2").arg(name).arg(i, 3, 10, QLatin1Char('0'));
+        if (!isTabTextDuplicate(candidate)) return candidate;
+    }
+    return {};
+}
+
 bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
 {
     if (m_KeyMapStatus != KEYMAP_IDLE) {
@@ -18294,30 +18305,8 @@ bool QKeyMapper::copyCurrentTabToKeyMappingTabWidget()
         return false;
     }
 
-    QString tabName = s_KeyMappingTabInfoList.at(current_tabindex).TabName + tr("_copy");
-
-    // Check if tabName already exists. If a duplicate is found, generate a unique name in the format "tabName(001~999)"
-    if (isTabTextDuplicate(tabName)) {
-        bool uniqueNameFound = false;
-        for (int i = 1; i <= 999; ++i) {
-            QString tempName = QString("%1%2").arg(tabName).arg(i, 3, 10, QChar('0'));
-            if (!isTabTextDuplicate(tempName)) {
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[copyCurrentTabToKeyMappingTabWidget] TabName:" << tabName << " is already exists, set a unique tabname:" << tempName;
-#endif
-                tabName = tempName;
-                uniqueNameFound = true;
-                break;
-            }
-        }
-        // If no unique name is found after checking all possible values (001~999), return false
-        if (!uniqueNameFound) {
-#ifdef DEBUG_LOGOUT_ON
-            qDebug().nospace() << "[copyCurrentTabToKeyMappingTabWidget] Can not found unique name for TabName:" << tabName << ", return false";
-#endif
-            return false;
-        }
-    }
+    const QString tabName = availableMappingTabCopyName(s_KeyMappingTabInfoList.at(current_tabindex).TabName);
+    if (tabName.isEmpty()) return false;
 
     KeyMappingDataTableWidget *KeyMappingTableWidget = new KeyMappingDataTableWidget(this);
 
@@ -38128,6 +38117,22 @@ QJsonObject QKeyMapper::collectAutomationSourceSnapshotWithAccess(QString &error
         {QStringLiteral("common_feature_enabled"), isCommonMappingFeatureEnabled()}, {QStringLiteral("sources"), sources}};
 }
 
+static QByteArray automationTabCopySettingsDigest(const KeyMappingTab_Info &tab)
+{
+    // These copied properties are outside the source snapshot exposed to clients.
+    QByteArray settings;
+    QDataStream stream(&settings, QIODevice::WriteOnly);
+    stream.setVersion(QDataStream::Qt_5_15);
+    stream << tab.TabHotkey << tab.TabFontColor << tab.TabBackgroundColor << qint32(tab.TabHideNotification)
+        << tab.TabCustomImage_Path << tab.TabCustomImage_ShowPosition << tab.TabCustomImage_Padding
+        << tab.TabCustomImage_ShowAsTrayIcon << tab.TabCustomImage_ShowAsFloatingWindow << tab.TabCustomImage_TrayIconPixel
+        << tab.FloatingWindow_Position << tab.FloatingWindow_ReferencePoint << tab.FloatingWindow_Size
+        << tab.FloatingWindow_BackgroundColor << tab.FloatingWindow_Radius << tab.FloatingWindow_Opacity
+        << tab.FloatingWindow_MousePassThrough << tab.FloatingWindow_MousePassThroughSwitchKey;
+    if (stream.status() != QDataStream::Ok || settings.size() > QkmAutomation::MaxSourceSnapshotBytes) return {};
+    return QCryptographicHash::hash(settings, QCryptographicHash::Sha256);
+}
+
 QJsonObject QKeyMapper::automationPostChangeSourceBinding(const QJsonObject &snapshot,
     const QkmAutomation::MappingChangeOwner &owner, int sourceTab, int sourceRow)
 {
@@ -38650,10 +38655,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     const bool preferencesUpdate = (!applying && validation.action == MappingChangeAction::UpdateIbInputPreferences)
         || (applyingPreview && applyingPreview->preferences.has_value());
     if (updating || preferencesUpdate) {
-        const auto update = applying && updating ? *applyingPreview->update : validation.update;
+        auto update = applying && updating ? *applyingPreview->update : validation.update;
         const bool renamingTab = updating && update.tabName.has_value();
-        const bool creatingTab = updating && update.addBlankTab;
-        const bool editingTab = renamingTab || creatingTab;
+        const bool addingBlankTab = updating && update.addBlankTab;
+        const bool copyingTab = updating && update.copyTab;
+        const bool editingTab = renamingTab || addingBlankTab || copyingTab;
         if ((validation.confirmConflicts && !update.originalKey.has_value())
             || validation.confirmScope || validation.confirmOverwrite || validation.confirmDelete) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
@@ -38735,7 +38741,29 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 return;
             }
             target.insert(QStringLiteral("source_tab_ref"), update.sourceTabRef);
-            if (creatingTab) {
+            if (copyingTab) {
+                const auto &tabInfo = s_KeyMappingTabInfoList.at(tab);
+                const auto settingsDigest = automationTabCopySettingsDigest(tabInfo);
+                if (settingsDigest.isEmpty() || (applying && update.copyTabSettingsDigest != settingsDigest)) {
+                    reject(QStringLiteral("stale_preview"), QStringLiteral("The copied Tab settings cannot be verified; review a fresh preview."));
+                    return;
+                }
+                update.copyTabSettingsDigest = settingsDigest;
+                const QString name = availableMappingTabCopyName(tabInfo.TabName);
+                if (name.isEmpty()) {
+                    reject(QStringLiteral("tab_name_limit"), QStringLiteral("All names for a copy of this Tab are already in use."));
+                    return;
+                }
+                tabAfter = tab + 1;
+                modified = true;
+                change = {{QStringLiteral("kind"), QStringLiteral("copy_tab")},
+                    {QStringLiteral("tab_name"), name}, {QStringLiteral("ui_index"), tabAfter},
+                    {QStringLiteral("local_row_count"), item.value(QStringLiteral("row_count"))},
+                    {QStringLiteral("include_common"), tabInfo.IncludeCommonMappingTable},
+                    {QStringLiteral("common_collapsed"), tabInfo.CommonMappingCollapsed},
+                    {QStringLiteral("copies_tab_hotkey"), !tabInfo.TabHotkey.isEmpty()},
+                    {QStringLiteral("activate_new_tab"), false}};
+            } else if (addingBlankTab) {
                 const QString name = availableMappingTabName(QString());
                 if (name.isEmpty()) {
                     reject(QStringLiteral("tab_name_limit"), QStringLiteral("All default Tab names are already in use."));
@@ -38913,7 +38941,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("after"), QJsonObject{{QStringLiteral("preferred_backend"), candidatePreferences.backend},
                     {QStringLiteral("unavailable_policy"), candidatePreferences.unavailablePolicy}}}};
         }
-        const QString action = creatingTab ? QStringLiteral("tab.add_blank")
+        const QString action = copyingTab ? QStringLiteral("tab.copy")
+            : addingBlankTab ? QStringLiteral("tab.add_blank")
             : renamingTab ? QStringLiteral("tab.rename")
             : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
@@ -38952,9 +38981,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             return;
         }
         if (modified) {
-            if (creatingTab) {
-                if (!addTabToKeyMappingTabWidget(QString(), true)) {
-                    reject(QStringLiteral("context_busy"), QStringLiteral("The current source no longer allows adding a blank Tab."));
+            if (addingBlankTab || copyingTab) {
+                const bool created = copyingTab ? copyCurrentTabToKeyMappingTabWidget() : addTabToKeyMappingTabWidget(QString(), true);
+                if (!created) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current source no longer allows creating the Tab."));
                     return;
                 }
             } else if (renamingTab) {

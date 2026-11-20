@@ -120,6 +120,12 @@ default name, insertion index, empty local source and Common inheritance
 setting. Applying it selects the new tab and advances the source revision.
 Query the sources again. Use a separate `configuration.save` to persist it.
 
+Use `action: "tab.copy"` with the same reference and permissions to copy
+the ordered local rows, macro references and tab properties. The copy
+appears immediately after its source and the source stays selected.
+The preview uses the GUI copy name and reports if the hotkey is copied.
+A new snapshot is needed for source references after the commit.
+
 ## Monitoring and stop results
 
 `qkm_wait_state` samples the authenticated target for `monitoring_enabled`,

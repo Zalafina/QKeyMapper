@@ -64,6 +64,7 @@ async def check_contract(exe):
     moves = ["mapping.move_up", "mapping.move_down", "mapping.move_to_top", "mapping.move_to_bottom"]
     rename = {"action": "tab.rename", "source_tab_ref": tab, "tab_name": "测试 Tab"}
     add_tab = {"action": "tab.add_blank", "source_tab_ref": tab}
+    copy_tab = {"action": "tab.copy", "source_tab_ref": tab}
     editor = {"source_ref": row, "presentation": "private_background"}
     settings = {"source_tab_ref": tab, "presentation": "private_background"}
     capture = {"role": "ibinput_settings", "window_ref": window, "source_revision": revision, "source_tab_ref": tab}
@@ -107,8 +108,9 @@ async def check_contract(exe):
             assert all(rule == {"type": "null"} for field, rule in rename_rule["properties"].items()
                        if field not in rename)
             add_rule, = (rule for rule in previews["oneOf"]
-                         if rule["properties"]["action"].get("const") == "tab.add_blank")
-            assert set(add_rule["required"]) == set(add_tab)
+                         if "tab.add_blank" in rule["properties"]["action"].get("enum", []))
+            assert set(add_rule["properties"]["action"]["enum"]) == {"tab.add_blank", "tab.copy"}
+            assert set(add_rule["required"]) == set(add_tab) == set(copy_tab)
             assert add_rule["properties"]["source_tab_ref"] == {"type": "string"}
             assert set(add_rule["properties"]) == set(previews["properties"])
             assert all(rule == {"type": "null"} for field, rule in add_rule["properties"].items()
@@ -177,6 +179,9 @@ async def check_contract(exe):
                 ("qkm_preview_changes", add_tab, (
                     {"action": "tab.add_blank"}, {**add_tab, "source_tab_ref": row},
                     {**add_tab, "tab_name": "Custom name"}, {**add_tab, "activate_new_tab": False})),
+                ("qkm_preview_changes", copy_tab, (
+                    {"action": "tab.copy"}, {**copy_tab, "source_tab_ref": row},
+                    {**copy_tab, "tab_name": "Custom name"}, {**copy_tab, "activate_new_tab": True})),
                 ("qkm_apply_changes", {"preview_id": "a" * 32, "confirm_scope": True}, (
                     {}, {"preview_id": "?" * 32}, {"preview_id": "a" * 32, "confirm_scope": 1},
                     {"preview_id": "a" * 32, "confirm_overwrite": None})),

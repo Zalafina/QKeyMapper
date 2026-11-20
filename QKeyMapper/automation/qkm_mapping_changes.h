@@ -1,6 +1,7 @@
 #ifndef QKM_MAPPING_CHANGES_H
 #define QKM_MAPPING_CHANGES_H
 
+#include <QByteArray>
 #include <QElapsedTimer>
 #include <QDeadlineTimer>
 #include <QHash>
@@ -45,6 +46,8 @@ struct MappingUpdateArguments {
     int rowCount = 1;
     std::optional<QString> tabName;
     bool addBlankTab = false;
+    bool copyTab = false;
+    QByteArray copyTabSettingsDigest;
 };
 
 struct IbInputPreferencesArguments {

@@ -1651,6 +1651,7 @@ public slots:
     bool recoverKeyMappingTabWidgetOrderAfterTabMoved(int from, int to);
     void finalizeCommonMappingTabAtIndex(int tabIndex, bool showNameConflictWarning = false);
     QString availableMappingTabName(const QString &requestedName) const;
+    static QString availableMappingTabCopyName(const QString &sourceName);
     bool addTabToKeyMappingTabWidget(const QString& customTabName = QString(), bool activateNewTab = false);
     bool addCommonMappingTabToKeyMappingTabWidget(void);
     void ensureCommonMappingTabExists(void);
