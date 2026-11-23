@@ -165,16 +165,16 @@ async def check_contract(exe):
                 validator.validate(request)
             for extra in ({"document_base64": "QUJD"}, {"file_name": "../escape.ini"}, {"overwrite": True}):
                 assert not validator.is_valid(table_import | extra)
-            remember_size = {"action": "general.set_save_window_size", "source_tab_ref": tab, "save_window_size": True}
-            for value in (True, False):
-                request = remember_size | {"save_window_size": value}
-                validator.validate(request)
-                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
-            for extra in ({"save_window_size": 1}, {"save_window_size": "true"}, {"save_window_size": None},
-                          {"window_display_mode": 1}):
-                assert not validator.is_valid(remember_size | extra)
-                denied = await client.call_tool("qkm_preview_changes", remember_size | extra)
-                assert denied.is_error is True and denied.structured_content is None
+            for field in ("save_window_size", "save_splitter_position"):
+                option = {"action": f"general.set_{field}", "source_tab_ref": tab, field: True}
+                for value in (True, False):
+                    request = option | {field: value}
+                    validator.validate(request)
+                    expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+                for extra in ({field: 1}, {field: "true"}, {field: None}, {"window_display_mode": 1}):
+                    assert not validator.is_valid(option | extra)
+                    denied = await client.call_tool("qkm_preview_changes", option | extra)
+                    assert denied.is_error is True and denied.structured_content is None
             for section, field, count in (("general", "table_insert_mode", 2), ("general", "table_edit_trigger", 2),
                                           ("configuration", "window_display_mode", 3)):
                 request = {"action": f"{section}.set_{field}", "source_tab_ref": tab, field: 0}
@@ -214,7 +214,7 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
-                "save_window_size"}
+                "save_window_size", "save_splitter_position"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
             assert move_rule["required"] == ["action"]

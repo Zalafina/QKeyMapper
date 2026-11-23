@@ -238,6 +238,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool editTriggerPreview = preview && action == QLatin1String("general.set_table_edit_trigger");
     const bool windowDisplayModePreview = preview && action == QLatin1String("configuration.set_window_display_mode");
     const bool saveWindowSizePreview = preview && action == QLatin1String("general.set_save_window_size");
+    const bool saveSplitterPositionPreview = preview && action == QLatin1String("general.set_save_splitter_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
     const bool deleteTabPreview = preview && action == QLatin1String("tab.delete");
@@ -251,7 +252,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
-        || windowDisplayModePreview || saveWindowSizePreview;
+        || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -267,6 +268,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : editTriggerPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_edit_trigger")}
         : windowDisplayModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_display_mode")}
         : saveWindowSizePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_window_size")}
+        : saveSplitterPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_splitter_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
         : tabNotificationColorsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"),
@@ -355,6 +357,11 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             const auto value = arguments.value(QStringLiteral("save_window_size"));
             if (!value.isBool()) return fail("Provide an explicit boolean save_window_size.");
             result.update.saveWindowSize = value.toBool();
+        }
+        if (saveSplitterPositionPreview) {
+            const auto value = arguments.value(QStringLiteral("save_splitter_position"));
+            if (!value.isBool()) return fail("Provide an explicit boolean save_splitter_position.");
+            result.update.saveSplitterPosition = value.toBool();
         }
         if (tabHotkeyPreview) {
             const auto hotkey = arguments.value(QStringLiteral("tab_hotkey"));
@@ -1271,6 +1278,20 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     capabilities.append(windowSizePreview);
     capabilities.append(windowSizeApply);
+    auto splitterPreview = capability("general.set_save_splitter_position.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_save_splitter_position")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("save_splitter_position"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_splitter_position")}));
+    auto splitterApply = capability("general.set_save_splitter_position.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&splitterPreview, &splitterApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
+            QStringLiteral("startup_splitter_position_restore_option"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    capabilities.append(splitterPreview);
+    capabilities.append(splitterApply);
     capabilities.append(operation);
     return capabilities;
 }

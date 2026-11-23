@@ -38069,6 +38069,7 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     result.insert(QStringLiteral("table_edit_trigger"), getTableEditModeTriggerIndex());
     result.insert(QStringLiteral("window_display_mode"), ui->checkDisplayModeComboBox->currentIndex());
     result.insert(QStringLiteral("save_window_size"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveWindowSize());
+    result.insert(QStringLiteral("save_splitter_position"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveSplitterPosition());
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
         {QStringLiteral("available"), m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()},
@@ -39470,7 +39471,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingTableEditTrigger = updating && update.tableEditTrigger.has_value();
         const bool changingGeneralTablePreference = changingTableInsertMode || changingTableEditTrigger;
         const bool changingSaveWindowSize = updating && update.saveWindowSize.has_value();
-        const bool changingGeneralPreference = changingGeneralTablePreference || changingSaveWindowSize;
+        const bool changingSaveSplitterPosition = updating && update.saveSplitterPosition.has_value();
+        const bool changingLayoutRestore = changingSaveWindowSize || changingSaveSplitterPosition;
+        const bool changingGeneralPreference = changingGeneralTablePreference || changingLayoutRestore;
         const bool changingWindowDisplayMode = updating && update.windowDisplayMode.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
@@ -39837,12 +39840,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), changingTableEditTrigger
                         ? QStringLiteral("set_table_edit_trigger") : QStringLiteral("set_table_insert_mode")},
                     {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
-            } else if (changingSaveWindowSize) {
-                const bool before = m_GeneralAdvancedDialog->getSaveWindowSize();
-                const bool after = *update.saveWindowSize;
+            } else if (changingLayoutRestore) {
+                const bool before = changingSaveWindowSize ? m_GeneralAdvancedDialog->getSaveWindowSize()
+                    : m_GeneralAdvancedDialog->getSaveSplitterPosition();
+                const bool after = changingSaveWindowSize ? *update.saveWindowSize : *update.saveSplitterPosition;
                 modified = before != after;
                 target.insert(QStringLiteral("scope"), QStringLiteral("application_preferences"));
-                change = {{QStringLiteral("kind"), QStringLiteral("set_save_window_size")},
+                change = {{QStringLiteral("kind"), changingSaveWindowSize ? QStringLiteral("set_save_window_size")
+                    : QStringLiteral("set_save_splitter_position")},
                     {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
             } else if (changingMappingDisplay) {
                 const auto before = automationMappingDisplay();
@@ -40282,6 +40287,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingTableEditTrigger ? QStringLiteral("general.set_table_edit_trigger")
             : changingTableInsertMode ? QStringLiteral("general.set_table_insert_mode")
             : changingSaveWindowSize ? QStringLiteral("general.set_save_window_size")
+            : changingSaveSplitterPosition ? QStringLiteral("general.set_save_splitter_position")
             : changingWindowDisplayMode ? QStringLiteral("configuration.set_window_display_mode")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
@@ -40345,6 +40351,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 m_GeneralAdvancedDialog->setTableInsertMode(*update.tableInsertMode);
             } else if (changingSaveWindowSize) {
                 m_GeneralAdvancedDialog->setSaveWindowSize(*update.saveWindowSize);
+            } else if (changingSaveSplitterPosition) {
+                m_GeneralAdvancedDialog->setSaveSplitterPosition(*update.saveSplitterPosition);
             } else if (changingWindowDisplayMode) {
                 ui->checkDisplayModeComboBox->setCurrentIndex(*update.windowDisplayMode);
             } else if (changingMappingDisplay) {

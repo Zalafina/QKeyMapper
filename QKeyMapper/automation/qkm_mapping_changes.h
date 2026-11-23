@@ -63,6 +63,7 @@ struct MappingUpdateArguments {
     std::optional<int> tableEditTrigger;
     std::optional<int> windowDisplayMode;
     std::optional<bool> saveWindowSize;
+    std::optional<bool> saveSplitterPosition;
     QByteArray tableImportDocument;
     QString tabNotificationFontColor;
     QString tabNotificationBackgroundColor;

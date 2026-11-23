@@ -328,6 +328,14 @@ struct SaveWindowSize {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct SaveSplitterPosition {
+    action: String,
+    source_tab_ref: String,
+    save_splitter_position: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct Preview {
     #[serde(default)]
     action: Action,
@@ -684,6 +692,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 }
                 Some("general.set_save_window_size") => {
                     return typed(arguments, |v: &SaveWindowSize| tab_ref(&v.source_tab_ref));
+                }
+                Some("general.set_save_splitter_position") => {
+                    return typed(arguments, |v: &SaveSplitterPosition| {
+                        tab_ref(&v.source_tab_ref)
+                    });
                 }
                 Some("table.import") => {
                     return typed(arguments, |v: &TableImport| {

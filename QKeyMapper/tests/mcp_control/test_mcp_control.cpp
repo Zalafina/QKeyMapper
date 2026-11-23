@@ -1098,8 +1098,24 @@ void McpControlTest::mappingChangeArguments()
     for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
         QVERIFY(!validateSaveWindowSize(value).ok());
 
-    QCOMPARE(capabilities.size(), 72);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 70);
+    const auto validateSaveSplitterPosition = [&](const QJsonValue &value) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("general.set_save_splitter_position")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("save_splitter_position"), value}});
+    };
+    for (bool value : {true, false}) {
+        const auto result = validateSaveSplitterPosition(value);
+        QVERIFY(result.ok() && result.update.saveSplitterPosition.has_value());
+        QCOMPARE(*result.update.saveSplitterPosition, value);
+    }
+    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
+        QVERIFY(!validateSaveSplitterPosition(value).ok());
+
+    QCOMPARE(capabilities.size(), 74);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 72);
+    QCOMPARE(capabilities.at(71).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_splitter_position.preview"));
+    QCOMPARE(capabilities.at(72).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_splitter_position.apply"));
     QCOMPARE(capabilities.at(69).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_window_size.preview"));
     QCOMPARE(capabilities.at(70).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_window_size.apply"));
     QCOMPARE(capabilities.at(67).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("table.import.preview"));

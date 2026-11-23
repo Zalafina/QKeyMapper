@@ -348,7 +348,7 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 | GEN-STARTUP-MODE／M2-B | 通用高级 startupPositionComboBox 的 currentIndexChanged → updateStartupSpecifyPositionState／dirty；枚举 Default=0、LastSaved=1、Specify=2，缺省 LastSaved | getter 为当前索引；指定坐标控件启用联动。根 StartupPosition_Index；只改模式不会立即移动当前主窗，首次 loadKeyMapSetting 的空 settingtext 分支才选择启动坐标并做屏幕相交检查／回退 | 共用明确枚举校验、联动及 dirty，不借改变模式执行移动。EQ-GEN-STARTUP-MODE 比较三模式、当前窗口不意外移动、冷启动落点、屏幕外回退和全局重载差异 |
 | GEN-STARTUP-POINT／M2-B | X／Y valueChanged → dirty；各轴整数 -50000…50000，默认 (0,0)，仅 Specify 时界面可编辑 | getSpecifyStartupPosition 读 QPoint；根 StartupPosition_SpecifyPoint。模式切换保留值；加载非法点整体回退默认，启动时还有可见屏幕回退 | 明确模式及坐标更新策略，拒绝正式参数越界；不可按控件禁用就丢失已有坐标。EQ-GEN-STARTUP-POINT 比较负坐标、两轴边界、切换保留、加载兼容及实际启动位置 |
 | GEN-SAVE-SIZE／M2-B | saveWindowSizeCheckBox toggled → dirty；bool | 根 SaveWindowSize；保存仍写 LastWindowSize 的 m_normalWindowBaseSize，即逻辑基准尺寸而非当前物理 size。该开关控制加载恢复，取消勾选不删除旧尺寸；resizeEvent 只在实际用户调整且非 live scale／加载／最大化时更新基准 | 共用开关与原尺寸保存／恢复链路，不能把开关 setter 当作 resize。EQ-GEN-SAVE-SIZE 比较勾选／取消、真实调整与缩放、最大化、冷启动和 DPI 换算；无真实 DPI 输入时只记已覆盖部分 |
-| GEN-SAVE-SPLITTER／M2-B | saveSplitterPositionCheckBox toggled → dirty；bool | 根 SaveSplitterPosition；仅开关开启、进程表可见且两分区正数时写 LastSplitterPosition。加载解析两正整数并 setSizes；关闭开关不清除旧比例，也不立即重排 | 共用保存条件及恢复；EQ-GEN-SAVE-SPLITTER 覆盖进程表隐藏、无效／旧值、开关切换、有效实际分区尺寸和冷启动，不只比复选框 |
+| GEN-SAVE-SPLITTER／M2-B | saveSplitterPositionCheckBox toggled → dirty；bool | 根 SaveSplitterPosition；开关开启、进程表可见且两分区正数时写 LastSplitterPosition。加载解析两正整数并 setSizes | 225 真 GUI 选验实际分区及即时保持，正式 Rust 验草稿、显式保存及冷读。进程表隐藏、无效值和物理拖动另验 |
 | GEN-EDIT-TRIGGER／M2-B | tableEditModeTriggerComboBox currentIndexChanged → dirty；右双击=0／左双击=1；`general.set_table_edit_trigger` 共用 setter | 根 EditModeTrigger。主表、序列编辑及宏窗口读取 getTableEditModeTriggerIndex，各有实际列／Alt／鼠标键规则 | 214 私有 GUI 对照主表代表性左双击打开单项窗或内联编辑，正式 Rust 验证草稿与冷读。其他列、宏／序列窗口及实体键鼠修饰键待验证 |
 | GEN-INSERT-MODE／M2-B | tableInsertModeComboBox currentIndexChanged → dirty；Above=0／Below=1，默认 Above；正式 `general.set_table_insert_mode` 共用 setter | 根 TABLE_INSERTMODE；主表 insertNewMappingData、宏及序列编辑在各自插入／Shift／选区分支读取 getTableInsertModeIndex。没有选区或未请求相应插入模式的路径仍可追加 | 213 私有 Qt6 GUI、正式 Rust 选验两档、保持源行、独立持久化及冷读。各插入消费者及真实输入另验 |
 | GEN-SOUND／M2-B | soundEffectCheckBox toggled → dirty；bool，默认 true | 根 PlaySoundEffect；isSoundEffectEnabled 被 playStartSound／playStopSound 在事件时读取，控制对应 WAV 的异步 PlaySound；修改开关本身不播放预览，不代表所有系统声音 | 共用设置及 dirty；EQ-GEN-SOUND 比较下次开始／停止声音入口、关闭开关和缺失声音文件、保存恢复；自动脚本检查调用不能冒充实际音频输出验收 |
@@ -512,7 +512,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-general/startupSpecifyPositionXSpinBox` | QSpinBox | `connect valueChanged @85` | 静态见 GEN-STARTUP-POINT；业务／运行未验 |
 | `U-general/startupSpecifyPositionYSpinBox` | QSpinBox | `connect valueChanged @87` | 静态见 GEN-STARTUP-POINT；业务／运行未验 |
 | `U-general/saveWindowSizeCheckBox` | QCheckBox；Save Window Size | `connect toggled @95` | 静态见 GEN-SAVE-SIZE；业务／运行未验 |
-| `U-general/saveSplitterPositionCheckBox` | QCheckBox；Save Window Splitter Position | `connect toggled @97` | 静态见 GEN-SAVE-SPLITTER；业务／运行未验 |
+| `U-general/saveSplitterPositionCheckBox` | QCheckBox；Save Window Splitter Position | `toggled` → dirty | GEN-SAVE-SPLITTER-225 真 GUI 选验复选框、两种分区和启动恢复 |
 | `U-general/tableEditModeTriggerComboBox` | QComboBox | `connect currentIndexChanged @89` | 静态见 GEN-EDIT-TRIGGER；业务／运行未验 |
 | `U-general/tableInsertModeComboBox` | QComboBox | `connect currentIndexChanged @91` | 静态见 GEN-INSERT-MODE；业务／运行未验 |
 | `U-general/disableGlobalMappingInFullscreenCheckBox` | QCheckBox；Disable GlobalKeyMapping in Fullscreen | `connect toggled @80` | 静态见 GEN-FULLSCREEN；业务／运行未验 |
