@@ -209,6 +209,8 @@ private slots:
     void configurationBackupEscapesIniIdentifiers();
     void configurationBackupDecodesQtProfiles();
     void configurationBackupChecksBoundsAndScope();
+    void configurationImportPlansSelectedGroups();
+    void configurationImportPreservesScope();
     void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
@@ -608,6 +610,82 @@ void McpControlTest::configurationBackupChecksBoundsAndScope()
     QByteArray unknownColorModel("[Profile]\n");
     QVERIFY(appendBackupIniValue(unknownColorModel, "Value", QColor::fromHsv(0, 255, 255), MaxConfigurationBackupBytes));
     QCOMPARE(status(unknownColorModel), BackupDecodeStatus::InvalidFormat);
+}
+
+void McpControlTest::configurationImportPlansSelectedGroups()
+{
+    using Action = ConfigurationImportAction;
+    using Conflict = ConfigurationImportConflict;
+    using Status = ConfigurationImportStatus;
+    const auto document = decodeConfigurationBackup("[General]\nLanguageIndex=0\n"
+        "[Existing]\nKeyMapData_OriginalKeys=N\n"
+        "[Unselected]\nKeyMapData_OriginalKeys=B\n"
+        "[新组]\nKeyMapData_OriginalKeys=A\n");
+    QCOMPARE(document.status, BackupDecodeStatus::Ok);
+    const QString existing = QStringLiteral("Existing");
+    const QString created = QStringLiteral("新组");
+    const QString loaded = QStringLiteral("Loaded");
+    const QStringList saved{loaded, existing};
+    const QStringList selected{created, existing};
+
+    const auto keep = planConfigurationImport(document, selected, saved, loaded, Conflict::Keep);
+    QCOMPARE(keep.status, Status::Ok);
+    QCOMPARE(keep.groups.size(), 2);
+    QCOMPARE(keep.groups.first().name, created);
+    QCOMPARE(keep.groups.first().action, Action::Create);
+    QCOMPARE(keep.groups.first().values.value(QStringLiteral("KeyMapData_OriginalKeys")).toString(), QStringLiteral("A"));
+    QCOMPARE(keep.groups.last().name, existing);
+    QCOMPARE(keep.groups.last().action, Action::Keep);
+    QVERIFY(keep.groups.last().values.isEmpty());
+
+    const auto overwrite = planConfigurationImport(document, selected, saved, loaded, Conflict::Overwrite);
+    QCOMPARE(overwrite.status, Status::Ok);
+    QCOMPARE(overwrite.groups.size(), 2);
+    QCOMPARE(overwrite.groups.last().action, Action::Merge);
+    QCOMPARE(overwrite.groups.last().values, document.groups.first().values);
+    QVERIFY(!overwrite.groups.last().values.contains(QStringLiteral("ExistingOnly")));
+
+    const auto missing = planConfigurationImport(document, {created, QStringLiteral("General")}, saved, loaded, Conflict::Keep);
+    QCOMPARE(missing.status, Status::UnknownGroup);
+    QCOMPARE(missing.group, QStringLiteral("General"));
+    QVERIFY(missing.groups.isEmpty());
+    QCOMPARE(planConfigurationImport(document, {created, created}, saved, loaded, Conflict::Keep).status, Status::InvalidSelection);
+    QCOMPARE(planConfigurationImport(document, {}, saved, loaded, Conflict::Keep).status, Status::InvalidSelection);
+}
+
+void McpControlTest::configurationImportPreservesScope()
+{
+    using Conflict = ConfigurationImportConflict;
+    using Status = ConfigurationImportStatus;
+    const QString loaded = QStringLiteral("Loaded");
+    const auto document = decodeConfigurationBackup("[Loaded]\nPROCESSINFO_CUSTOMICONPATH=asset.ico\n"
+        "[UnsafeTab]\nMappingTable_TabCustomImage_PathList=, asset.png\n"
+        "[UnsafeProcess]\nProcessInfo_FilePath=C:/Synthetic/Example.exe\n"
+        "[Clear]\nProcessInfo_FilePath=\nProcessInfo_CustomIconPath=\nMappingTable_TabCustomImage_PathList=, , \n");
+    QCOMPARE(document.status, BackupDecodeStatus::Ok);
+    const auto keepLoaded = planConfigurationImport(document, {loaded}, {loaded}, loaded, Conflict::Keep);
+    QCOMPARE(keepLoaded.status, Status::Ok);
+    QCOMPARE(keepLoaded.groups.first().action, ConfigurationImportAction::Keep);
+    const auto overwriteLoaded = planConfigurationImport(document, {loaded}, {loaded}, loaded, Conflict::Overwrite);
+    QCOMPARE(overwriteLoaded.status, Status::ActiveDestination);
+    QCOMPARE(overwriteLoaded.group, loaded);
+    const auto caseCollision = planConfigurationImport(document, {loaded}, {QStringLiteral("loaded")}, {}, Conflict::Keep);
+    QCOMPARE(caseCollision.status, Status::AmbiguousDestination);
+    const auto twoMatches = planConfigurationImport(document, {loaded}, {loaded, QStringLiteral("LOADED")}, {}, Conflict::Keep);
+    QCOMPARE(twoMatches.status, Status::AmbiguousDestination);
+    const auto icons = planConfigurationImport(document, {QStringLiteral("Clear"), loaded}, {}, {}, Conflict::Keep);
+    QCOMPARE(icons.status, Status::ExternalPath);
+    QCOMPARE(icons.field, QStringLiteral("PROCESSINFO_CUSTOMICONPATH"));
+    QVERIFY(icons.groups.isEmpty());
+    const auto tab = planConfigurationImport(document, {QStringLiteral("UnsafeTab")}, {}, {}, Conflict::Keep);
+    QCOMPARE(tab.status, Status::ExternalPath);
+    QCOMPARE(tab.field, QStringLiteral("MappingTable_TabCustomImage_PathList"));
+    const auto process = planConfigurationImport(document, {QStringLiteral("UnsafeProcess")}, {}, {}, Conflict::Overwrite);
+    QCOMPARE(process.status, Status::ExternalPath);
+    QCOMPARE(process.field, QStringLiteral("ProcessInfo_FilePath"));
+    const auto clear = planConfigurationImport(document, {QStringLiteral("Clear")}, {}, {}, Conflict::Overwrite);
+    QCOMPARE(clear.status, Status::Ok);
+    QCOMPARE(clear.groups.first().action, ConfigurationImportAction::Create);
 }
 
 void McpControlTest::mappingChangeArguments()

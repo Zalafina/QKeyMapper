@@ -453,7 +453,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-SEQUENCE | 序列编辑／载入／排序／复制／替换／四种插入／四种空白插入／删除／撤销重做／确认取消 | `MappingSequenceEditTableWidget::contextMenuEvent`、`QMappingSequenceEdit`；M2-A；编辑草稿与最终提交、分段备注 |
 | ACT-PROCESS-COPY | 进程列表信息复制和选中目标载入窗口条件 | `ProcessInfoTableWidget::contextMenuEvent` 及主窗点击事件；M2-B；快照与窗口销毁竞态 |
 | ACT-COLOR-RESTORE | 颜色选择器右键恢复默认 | `ColorPickerWidget`；M2-B；预览／提交／取消和消费者联动 |
-| ACT-CONFIG-TRANSFER | 配置导入／导出文件选择、配置组多选及确认／取消 | `SettingTransferDialog`／`GroupSelectionWidget`；M2-A；222／223 验真实 GUI 及正式普通组导出。224 真 GUI 验普通同名组取消、正常导入、占用失败后保留已加载数据和草稿。226 双 Qt 对照五份真实 INI，覆盖普通组有界解码。General、全局、排序及正式导入续接 |
+| ACT-CONFIG-TRANSFER | 配置导入／导出文件选择、配置组多选及确认／取消 | `SettingTransferDialog`／`GroupSelectionWidget`；M2-A；222／223 验真实 GUI 及正式普通组导出。224 真 GUI 验普通同名组取消、正常导入、占用失败后保留已加载数据和草稿。226／228 双 Qt 对照真实 INI，覆盖有界解码、显式选择和同名补丁；正式草稿／保存、General、全局、排序续接 |
 
 后续还须对照键盘快捷键、拖拽、表格直接编辑、首选项即时保存、状态／设备按钮及手册覆盖表补漏。宏／序列行暂以动作族归并，不计作逐动作契约完成。原始键／宏录制、真实设备枚举与运行期 DSL 的完整动作域均属于最终覆盖范围，不能用 GUI 控件扫描代替。
 
