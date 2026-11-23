@@ -233,6 +233,30 @@ struct TableImport {
 
 #[derive(Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
+enum ConfigurationImportConflict {
+    Keep,
+    Overwrite,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct ConfigurationImport {
+    action: String,
+    catalog_revision: String,
+    groups: Vec<String>,
+    file_name: String,
+    on_conflict: ConfigurationImportConflict,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct SaveConfigurationImport {
+    action: String,
+    import_draft_id: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
 enum MacroInsertPosition {
     Above,
     Below,
@@ -746,6 +770,23 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                     return typed(arguments, |v: &TableImport| {
                         tab_ref(&v.source_tab_ref) && valid_macro_backup_name(&v.file_name)
                     });
+                }
+                Some("configuration.import") => {
+                    return typed(arguments, |v: &ConfigurationImport| {
+                        let mut seen = std::collections::HashSet::new();
+                        revision(&v.catalog_revision)
+                            && (1..=100).contains(&v.groups.len())
+                            && v.groups.iter().all(|name| {
+                                !name.is_empty()
+                                    && name.trim() == name
+                                    && single_line(name)
+                                    && seen.insert(name)
+                            })
+                            && valid_macro_backup_name(&v.file_name)
+                    });
+                }
+                Some("configuration.save_import") => {
+                    return typed(arguments, |v: &SaveConfigurationImport| id(&v.import_draft_id));
                 }
                 Some("macro.upsert") => {
                     return typed(arguments, |v: &MacroPreview<MacroUpsert>| {

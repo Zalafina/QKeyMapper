@@ -475,6 +475,11 @@ QStringList orderedSettingSelectUserGroups(QSettings &settingFile)
     return normalizeSettingSelectOrderList(userGroups, storedOrder);
 }
 
+QString settingSelectDisplayText(const QString &group, const QString &description)
+{
+    return description.isEmpty() ? group : QString(SETTING_DESCRIPTION_FORMAT).arg(group, description);
+}
+
 SettingSelectDisplayData buildSettingSelectDisplayData(QSettings &settingFile, const QString &group)
 {
     SettingSelectDisplayData displayData;
@@ -525,13 +530,7 @@ SettingSelectDisplayData buildSettingSelectDisplayData(QSettings &settingFile, c
         }
     }
 
-    QString descriptionString;
-    if (settingFile.contains(tempSettingSelectStr + PROCESSINFO_DESCRIPTION)) {
-        descriptionString = settingFile.value(tempSettingSelectStr + PROCESSINFO_DESCRIPTION).toString();
-    }
-    if (!descriptionString.isEmpty()) {
-        displayData.displayText = QString(SETTING_DESCRIPTION_FORMAT).arg(group, descriptionString);
-    }
+    displayData.displayText = settingSelectDisplayText(group, settingFile.value(tempSettingSelectStr + PROCESSINFO_DESCRIPTION).toString());
 
     return displayData;
 }
@@ -22852,6 +22851,23 @@ QKeyMapper::SettingSaveValues QKeyMapper::collectSettingSaveValues(const Setting
     return result;
 }
 
+QKeyMapper::SettingSavePreparation::Error QKeyMapper::readSettingSaveFile(const QString &path, QByteArray &bytes, bool &exists)
+{
+    using Error = SettingSavePreparation::Error;
+    QFile file(path);
+    const QFileInfo info(file);
+    exists = info.exists();
+    if (!exists) {
+        bytes.clear();
+        return Error::None;
+    }
+    if (!info.isFile() || !file.open(QIODevice::ReadOnly)) return Error::ReadFailed;
+    bytes = file.read(QkmAutomation::MaxSourceSnapshotBytes + 1);
+    if (file.error() != QFile::NoError) return Error::ReadFailed;
+    if (bytes.size() > QkmAutomation::MaxSourceSnapshotBytes || !file.atEnd()) return Error::FileTooLarge;
+    return Error::None;
+}
+
 QKeyMapper::SettingSavePreparation QKeyMapper::prepareSettingSave(const QString &requestedName,
     const QString &currentSelectedSetting, bool globalSelected, int languageIndex, const QString &sourceRevision) const
 {
@@ -22865,18 +22881,7 @@ QKeyMapper::SettingSavePreparation QKeyMapper::prepareSettingSave(const QString 
         result.revision.clear();
         return result;
     };
-    const auto readConfiguration = [&](QByteArray &bytes, bool &exists) {
-        QFile file(result.configurationPath);
-        const QFileInfo info(file);
-        exists = info.exists();
-        if (!exists) { bytes.clear(); return Error::None; }
-        if (!info.isFile() || !file.open(QIODevice::ReadOnly)) return Error::ReadFailed;
-        bytes = file.read(QkmAutomation::MaxSourceSnapshotBytes + 1);
-        if (file.error() != QFile::NoError) return Error::ReadFailed;
-        if (bytes.size() > QkmAutomation::MaxSourceSnapshotBytes || !file.atEnd()) return Error::FileTooLarge;
-        return Error::None;
-    };
-    const auto readError = readConfiguration(result.configurationData, result.configurationExists);
+    const auto readError = readSettingSaveFile(result.configurationPath, result.configurationData, result.configurationExists);
     if (readError != Error::None) return fail(readError);
     // Parse one private copy; same-path QSettings readers can share pending writes and consumed errors.
     QTemporaryFile snapshot(QDir::tempPath() + QStringLiteral("/QKeyMapper-save-XXXXXX.ini"));
@@ -22894,7 +22899,7 @@ QKeyMapper::SettingSavePreparation QKeyMapper::prepareSettingSave(const QString 
     if (result.values.error != SettingSaveValues::Error::None) return fail(Error::ValuesUnavailable);
     QByteArray latest;
     bool latestExists = false;
-    const auto recheckError = readConfiguration(latest, latestExists);
+    const auto recheckError = readSettingSaveFile(result.configurationPath, latest, latestExists);
     if (recheckError != Error::None) return fail(recheckError);
     if (latestExists != result.configurationExists || latest != result.configurationData) return fail(Error::DiskChanged);
     result.revision = settingSaveValuesFingerprint(result.target, result.values, result.configurationPath,
@@ -38677,6 +38682,248 @@ void QKeyMapper::handleAutomationConfigurationExport(const QkmAutomation::Automa
         {QStringLiteral("bytes"), int(document.size())}, {QStringLiteral("document_base64"), QString::fromLatin1(document.toBase64())}});
 }
 
+void QKeyMapper::handleAutomationConfigurationImport(const QkmAutomation::AutomationRequest &request,
+    const QkmAutomation::MappingChangeRequest &validation, const QkmAutomation::MappingChangeOwner &owner,
+    const QkmAutomation::MappingChangePreview *applying)
+{
+    using namespace QkmAutomation;
+    using ReadError = SettingSavePreparation::Error;
+    Q_ASSERT(QThread::currentThread() == thread());
+    auto &server = m_McpControlDialog->server();
+    auto &store = *m_AutomationMappingChanges;
+    const auto reject = [&](const QString &code, const QString &message) {
+        if (applying) store.finish(owner, validation.id, QStringLiteral("rejected"),
+            {{QStringLiteral("modified"), false}, {QStringLiteral("saved"), false}}, code, message);
+        server.replyError(request.connectionId, request.requestId, code, message);
+    };
+    const ConfigurationImportBinding &requested = applying ? *applying->configurationImport : validation.configurationImport;
+    const bool saving = !requested.draftId.isEmpty();
+    if (validation.confirmConflicts || validation.confirmDelete || (saving ? validation.confirmOverwrite : validation.confirmScope)) {
+        reject(QStringLiteral("invalid_arguments"), QStringLiteral("Review the confirmation required for this configuration import step."));
+        return;
+    }
+    const auto ready = [&] {
+        return mappingAdditionAllowed(s_KeyMappingTabWidgetCurrentIndex) && !hasOpenMappingEditor()
+            && !QApplication::activePopupWidget() && !m_KeyMappingDataTable->hasActiveEditor()
+            && currentSettingSelectGroupName() == m_LoadedMappingSettingGroup;
+    };
+    if (!ready() || !m_AutomationSettingsReader || (request.scopes & (Read | Configure)) != (Read | Configure)
+        || !server.isRequestCurrent(request)) {
+        reject(QStringLiteral("context_busy"), QStringLiteral("Configuration import requires current authorization and an idle source after cleanup."));
+        return;
+    }
+    const auto confirmed = saving ? store.configurationImportDraft(owner, requested.draftId) : std::nullopt;
+    if (saving && !confirmed) {
+        reject(QStringLiteral("stale_preview"), QStringLiteral("The owned configuration import draft is unavailable."));
+        return;
+    }
+    const auto &source = saving ? *confirmed : requested;
+    QElapsedTimer budget;
+    budget.start();
+    const quint64 runtime = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
+    const auto catalog = collectAutomationCatalog();
+    if (catalog.isEmpty() || automationCatalogRevision(catalog, owner) != source.catalogRevision) {
+        reject(QStringLiteral("stale_catalog"), QStringLiteral("Query the current configuration catalog and review the import again."));
+        return;
+    }
+    const auto backup = decodeConfigurationBackup(source.document);
+    if (backup.status != BackupDecodeStatus::Ok) {
+        const bool exceeded = backup.status == BackupDecodeStatus::TooLarge || backup.status == BackupDecodeStatus::TooManyEntries;
+        reject(exceeded ? QStringLiteral("backup_too_large") : QStringLiteral("invalid_configuration_backup"),
+            QStringLiteral("Provide a valid ordinary configuration backup with at most 100 groups and 128 KiB."));
+        return;
+    }
+    SettingSavePreparation snapshot;
+    snapshot.configurationPath = QFileInfo(QString::fromLatin1(CONFIG_FILENAME)).absoluteFilePath();
+    if (readSettingSaveFile(snapshot.configurationPath, snapshot.configurationData, snapshot.configurationExists) != ReadError::None
+        || !snapshot.configurationExists) {
+        reject(QStringLiteral("configuration_unavailable"), QStringLiteral("The fixed configuration file could not be read."));
+        return;
+    }
+    auto &cache = *m_AutomationSettingsReader;
+    const auto storedGroups = cache.childGroups();
+    const auto plan = planConfigurationImport(backup, source.groups, storedGroups, m_LoadedMappingSettingGroup,
+        source.overwrite ? ConfigurationImportConflict::Overwrite : ConfigurationImportConflict::Keep);
+    if (plan.status != ConfigurationImportStatus::Ok) {
+        reject(plan.status == ConfigurationImportStatus::ExternalPath ? QStringLiteral("unsupported_profile_fields") : QStringLiteral("invalid_target"),
+            QStringLiteral("The selected group %1 cannot be imported. Check its exact name, active status and external path fields.").arg(plan.group));
+        return;
+    }
+    OrderedMap<QString, QVariant> values;
+    QSet<QString> changedGroups;
+    QJsonArray changes;
+    bool merging = false;
+    for (const auto &group : plan.groups) {
+        using Action = ConfigurationImportAction;
+        const auto prefix = group.name + QLatin1Char('/');
+        QJsonArray keys;
+        if (group.action != Action::Keep) {
+            const auto after = [&](const char *field) {
+                for (auto it = group.values.cbegin(); it != group.values.cend(); ++it) {
+                    if (it.key().compare(QLatin1String(field), Qt::CaseInsensitive) == 0) return it.value();
+                }
+                return cache.value(prefix + QLatin1String(field));
+            };
+            QVariantMap paths;
+            for (const char *field : {PROCESSINFO_FILEPATH, PROCESSINFO_CUSTOMICONPATH, MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST})
+                paths.insert(QLatin1String(field), after(field));
+            if (!configurationImportExternalPathField(paths).isEmpty() || after(ENABLESYSTEMFILTERKEY_CHECKED).toBool()
+                || after(AUTOSTARTMAPPING_CHECKED).toInt() == Qt::Checked) {
+                reject(QStringLiteral("unsupported_profile_fields"),
+                    QStringLiteral("The resulting group %1 uses external paths, automatic matching or system Filter Keys.").arg(group.name));
+                return;
+            }
+            const QVariant originals = after(KEYMAPDATA_ORIGINALKEYS);
+            const QVariant mappings = after(KEYMAPDATA_MAPPINGKEYS);
+            if (originals.userType() != QMetaType::QString || mappings.userType() != QMetaType::QString
+                || originals.toString().count(QLatin1String(SEPARATOR_KEYMAPDATA_LEVEL2))
+                    != mappings.toString().count(QLatin1String(SEPARATOR_KEYMAPDATA_LEVEL2))) {
+                reject(QStringLiteral("invalid_configuration_backup"), QStringLiteral("The resulting group %1 lacks paired mapping columns.").arg(group.name));
+                return;
+            }
+            merging = merging || group.action == Action::Merge;
+            changedGroups.insert(group.name);
+            for (auto it = group.values.cbegin(); it != group.values.cend(); ++it) {
+                values.insert(prefix + it.key(), it.value());
+                keys.append(it.key());
+            }
+        }
+        changes.append(QJsonObject{{QStringLiteral("group"), group.name}, {QStringLiteral("decision"), group.action == Action::Keep
+                ? QStringLiteral("keep") : group.action == Action::Merge ? QStringLiteral("merge") : QStringLiteral("create")},
+            {QStringLiteral("write_fields"), keys}});
+    }
+    if (cache.status() != QSettings::NoError) {
+        reject(QStringLiteral("configuration_unavailable"), QStringLiteral("The saved configuration cache could not be read."));
+        return;
+    }
+    const auto backupHash = QCryptographicHash::hash(source.document, QCryptographicHash::Sha256).toHex();
+    const QJsonObject context{{QStringLiteral("catalog_revision"), source.catalogRevision},
+        {QStringLiteral("runtime_revision"), QString::number(runtime)}, {QStringLiteral("load_generation"), QString::number(m_MappingLoadGeneration)},
+        {QStringLiteral("source_epoch"), QString::number(m_AutomationSourceEpoch)},
+        {QStringLiteral("backup_sha256"), QString::fromLatin1(backupHash)}, {QStringLiteral("changes"), changes}};
+    QCryptographicHash fingerprint(QCryptographicHash::Sha256);
+    fingerprint.addData(QJsonDocument(context).toJson(QJsonDocument::Compact));
+    fingerprint.addData(snapshot.configurationData);
+    snapshot.revision = QString::fromLatin1(fingerprint.result().toHex());
+    snapshot.error = ReadError::None;
+    if ((saving && confirmed->contextRevision != snapshot.revision) || (applying && requested.contextRevision != snapshot.revision)) {
+        reject(QStringLiteral("stale_preview"), QStringLiteral("The saved file or source context differs from the reviewed import."));
+        return;
+    }
+    const QJsonObject target{{QStringLiteral("instance_id"), owner.instance},
+        {QStringLiteral("catalog_revision"), source.catalogRevision}, {QStringLiteral("import_revision"), snapshot.revision}};
+    const QJsonObject description{{QStringLiteral("action"), saving ? QStringLiteral("configuration.save_import") : QStringLiteral("configuration.import")},
+        {QStringLiteral("target"), target}, {QStringLiteral("changes"), changes},
+        {QStringLiteral("backup_sha256"), QString::fromLatin1(backupHash)},
+        {QStringLiteral("confirmation_required"), saving || merging}, {QStringLiteral("modified"), false},
+        {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+    if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
+        reject(QStringLiteral("result_too_large"), QStringLiteral("The selected groups exceed the preview response limit."));
+        return;
+    }
+    if (saving && compareSettingSaveCache(cache, snapshot) != ReadError::None) {
+        reject(QStringLiteral("context_busy"), QStringLiteral("The fixed configuration file and cache no longer agree."));
+        return;
+    }
+    QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+    if (!ready() || !server.isRequestCurrent(request) || automationSourceReadBasis().isEmpty()
+        || QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() != runtime || budget.hasExpired(MappingChangeBudgetMs)) {
+        reject(QStringLiteral("context_busy"), QStringLiteral("Authorization, cleanup or source context changed during validation."));
+        return;
+    }
+    if (!applying) {
+        auto binding = requested;
+        binding.contextRevision = snapshot.revision;
+        const auto preview = store.createConfigurationImport(owner, binding, description, automationIbInputPreferencesRevision());
+        if (!preview) {
+            reject(QStringLiteral("preview_limit"), QStringLiteral("The import preview or its owned draft slot is unavailable."));
+            return;
+        }
+        server.reply(request.connectionId, request.requestId, {{QStringLiteral("preview_id"), preview->id},
+            {QStringLiteral("operation_id"), preview->id}, {QStringLiteral("expires_in_ms"), double(MappingChangeStore::PreviewTtlMs)},
+            {QStringLiteral("description"), description}});
+        return;
+    }
+    if (store.expired(*applying)) {
+        reject(QStringLiteral("preview_expired"), QStringLiteral("The configuration import preview expired."));
+        return;
+    }
+    if ((saving && !validation.confirmScope) || (!saving && merging && !validation.confirmOverwrite)) {
+        reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the exact group scope and confirm this step on a fresh preview."));
+        return;
+    }
+    if (!saving && !merging && validation.confirmOverwrite) {
+        reject(QStringLiteral("invalid_arguments"), QStringLiteral("This preview contains no overwrite."));
+        return;
+    }
+    if (!saving) {
+        auto result = description;
+        result.insert(QStringLiteral("draft_created"), !values.isEmpty());
+        if (values.isEmpty()) store.finish(owner, validation.id, QStringLiteral("applied"), result);
+        else if (!store.stageConfigurationImport(*applying, result)) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("The configuration import draft could not be staged."));
+            return;
+        }
+        server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
+        return;
+    }
+
+    QByteArray currentFile;
+    bool exists = false;
+    if (readSettingSaveFile(snapshot.configurationPath, currentFile, exists) != ReadError::None
+        || !exists || currentFile != snapshot.configurationData || !server.isRequestCurrent(request)) {
+        reject(QStringLiteral("stale_preview"), QStringLiteral("The fixed configuration file or authorization changed before writing."));
+        return;
+    }
+    QSettings file(snapshot.configurationPath, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(file);
+    auto result = description;
+    if (!writeIniBackupValues(file, values)) {
+        result.insert(QStringLiteral("modified"), QJsonValue(QJsonValue::Null));
+        result.insert(QStringLiteral("draft_retained"), true);
+        const auto code = QStringLiteral("save_write_failed");
+        const auto message = QStringLiteral("Writing the fixed configuration failed. The reviewed import draft is still available.");
+        store.finish(owner, validation.id, QStringLiteral("failed"), result, code, message);
+        server.replyError(request.connectionId, request.requestId, code, message);
+        return;
+    }
+    store.completeConfigurationImportSave(owner, requested.draftId);
+    result.insert(QStringLiteral("saved"), true);
+    result.insert(QStringLiteral("modified"), true);
+    result.insert(QStringLiteral("reloaded"), false);
+    const QString selected = currentSettingSelectGroupName();
+    const auto order = orderedSettingSelectUserGroups(file);
+    auto *combo = ui->settingselectComboBox;
+    QSignalBlocker selectionGuard(combo);
+    for (int index = 0; index < order.size(); ++index) {
+        const auto &group = order.at(index);
+        if (!changedGroups.remove(group)) continue;
+        const auto label = settingSelectDisplayText(group, file.value(group + QLatin1Char('/') + QLatin1String(PROCESSINFO_DESCRIPTION)).toString());
+        const int existing = findSettingSelectIndexByGroupName(group);
+        if (existing >= 0) {
+            combo->setItemText(existing, label);
+            combo->setItemIcon(existing, s_Icon_Blank);
+        } else {
+            const int insertion = qMin(GLOBALSETTING_INDEX + 1 + index, combo->count());
+            combo->insertItem(insertion, s_Icon_Blank, label);
+            combo->setItemData(insertion, group, SETTINGSELECT_ACTUAL_GROUP_ROLE);
+            m_SettingSelectListWithoutDescription.insert(insertion, group);
+        }
+    }
+    setCurrentSettingSelectByGroupName(selected);
+    const bool refreshed = changedGroups.isEmpty() && currentSettingSelectGroupName() == selected;
+    result.insert(QStringLiteral("catalog_refreshed"), refreshed);
+    if (!refreshed) {
+        const auto code = QStringLiteral("save_catalog_refresh_failed");
+        const auto message = QStringLiteral("The groups were saved to disk. The configuration list did not fully refresh.");
+        store.finish(owner, validation.id, QStringLiteral("failed"), result, code, message);
+        server.replyError(request.connectionId, request.requestId, code, message);
+        return;
+    }
+    store.finish(owner, validation.id, QStringLiteral("applied"), result);
+    server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
+}
+
 void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -39036,6 +39283,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
     };
     if (applyingPreview && applyingPreview->preferencesRevision != automationIbInputPreferencesRevision()) {
         reject(QStringLiteral("stale_preview"), QStringLiteral("IbInput preferences changed after preview; obtain a fresh preview."));
+        return;
+    }
+    if ((!applying && (validation.action == MappingChangeAction::ImportConfiguration
+            || validation.action == MappingChangeAction::SaveConfigurationImport))
+        || (applyingPreview && applyingPreview->configurationImport)) {
+        handleAutomationConfigurationImport(request, validation, owner, applyingPreview ? &*applyingPreview : nullptr);
         return;
     }
     const auto *tableImport = applying

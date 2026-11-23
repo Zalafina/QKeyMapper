@@ -163,6 +163,21 @@ async def check_contract(exe):
             validator = Draft202012Validator(previews)
             for request in (upsert, remove, import_request, table_import):
                 validator.validate(request)
+            configuration_import = {"action": "configuration.import", "catalog_revision": revision,
+                                    "groups": ["合成配置", "Other"], "file_name": "配置.ini", "on_conflict": "keep"}
+            validator.validate(configuration_import)
+            unavailable = await client.call_tool("qkm_preview_changes", configuration_import)
+            assert unavailable.is_error and unavailable.structured_content["error"] == "backup_directory_unavailable"
+            save_import = {"action": "configuration.save_import", "import_draft_id": "a" * 32}
+            validator.validate(save_import)
+            expect_not_connected(await client.call_tool("qkm_preview_changes", save_import))
+            for invalid in (configuration_import | {"groups": []}, configuration_import | {"groups": ["D", "D"]},
+                            configuration_import | {"on_conflict": "replace"}, configuration_import | {"document_base64": "QQ=="},
+                            configuration_import | {"file_name": "../config.ini"}, save_import | {"import_draft_id": "a" * 31},
+                            save_import | {"groups": ["Other"]}):
+                assert not validator.is_valid(invalid)
+                denied = await client.call_tool("qkm_preview_changes", invalid)
+                assert denied.is_error is True and denied.structured_content is None
             for extra in ({"document_base64": "QUJD"}, {"file_name": "../escape.ini"}, {"overwrite": True}):
                 assert not validator.is_valid(table_import | extra)
             for field in ("save_window_size", "save_splitter_position"):
@@ -227,7 +242,8 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
-                "save_window_size", "save_splitter_position", "startup_position"}
+                "save_window_size", "save_splitter_position", "startup_position",
+                "catalog_revision", "groups", "on_conflict", "import_draft_id"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
             assert move_rule["required"] == ["action"]

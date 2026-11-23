@@ -212,6 +212,7 @@ private slots:
     void configurationImportPlansSelectedGroups();
     void configurationImportPreservesScope();
     void configurationImportDraftLifecycle();
+    void configurationImportArguments();
     void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
@@ -763,6 +764,43 @@ void McpControlTest::configurationImportDraftLifecycle()
     MappingChangeStoreTestAccess::expireResult(store, expired->id);
     QVERIFY(!store.configurationImportDraft(owner, expired->id));
     QVERIFY(!store.operation(owner, expired->id).value(QStringLiteral("result_known")).toBool());
+}
+
+void McpControlTest::configurationImportArguments()
+{
+    const QString revision(64, QLatin1Char('a'));
+    const QByteArray document("[配置甲]\nKeyMapData_OriginalKeys=A\nKeyMapData_MappingKeys=B\n");
+    const QString action = QStringLiteral("action");
+    const QString method = QStringLiteral("qkm_preview_changes");
+    const QJsonObject arguments{{action, QStringLiteral("configuration.import")},
+        {QStringLiteral("catalog_revision"), revision}, {QStringLiteral("groups"), QJsonArray{QStringLiteral("配置甲")}},
+        {QStringLiteral("on_conflict"), QStringLiteral("overwrite")},
+        {QStringLiteral("document_base64"), QString::fromLatin1(document.toBase64())}};
+    const auto parsed = validateMappingChangeRequest(method, arguments);
+    QVERIFY(parsed.ok());
+    QCOMPARE(parsed.action, MappingChangeAction::ImportConfiguration);
+    QCOMPARE(parsed.configurationImport.document, document);
+    QCOMPARE(parsed.configurationImport.groups, QStringList{QStringLiteral("配置甲")});
+    QVERIFY(parsed.configurationImport.overwrite);
+    const auto invalid = [&](const QString &key, const QJsonValue &value) {
+        auto candidate = arguments;
+        candidate.insert(key, value);
+        return !validateMappingChangeRequest(method, candidate).ok();
+    };
+    QVERIFY(invalid(QStringLiteral("file_name"), QStringLiteral("source.ini")));
+    QVERIFY(invalid(QStringLiteral("groups"), QJsonArray()));
+    QVERIFY(invalid(QStringLiteral("groups"), QJsonArray{QStringLiteral("Same"), QStringLiteral("Same")}));
+    QVERIFY(invalid(QStringLiteral("on_conflict"), QStringLiteral("replace")));
+    QVERIFY(invalid(QStringLiteral("document_base64"), QStringLiteral("@")));
+    QVERIFY(invalid(QStringLiteral("catalog_revision"), revision.toUpper()));
+    const QString draft(32, QLatin1Char('b'));
+    const QJsonObject save{{action, QStringLiteral("configuration.save_import")}, {QStringLiteral("import_draft_id"), draft}};
+    const auto saveRequest = validateMappingChangeRequest(method, save);
+    QVERIFY(saveRequest.ok());
+    QCOMPARE(saveRequest.action, MappingChangeAction::SaveConfigurationImport);
+    QCOMPARE(saveRequest.configurationImport.draftId, draft);
+    QVERIFY(!validateMappingChangeRequest(method, {{action, QStringLiteral("configuration.save_import")},
+        {QStringLiteral("import_draft_id"), draft.toUpper()}}).ok());
 }
 
 void McpControlTest::mappingChangeArguments()
@@ -1393,8 +1431,12 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 76);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 74);
+    QCOMPARE(capabilities.size(), 80);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 78);
+    QCOMPARE(capabilities.at(75).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.import.preview"));
+    QCOMPARE(capabilities.at(76).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.import.apply"));
+    QCOMPARE(capabilities.at(77).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save_import.preview"));
+    QCOMPARE(capabilities.at(78).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save_import.apply"));
     QCOMPARE(capabilities.at(73).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_startup_position.preview"));
     QCOMPARE(capabilities.at(74).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_startup_position.apply"));
     QCOMPARE(capabilities.at(71).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_splitter_position.preview"));

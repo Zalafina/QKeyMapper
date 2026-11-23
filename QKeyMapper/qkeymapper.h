@@ -104,7 +104,8 @@ class QkmIbInputPopup;
 #include "qmappingsequenceedit.h"
 #include "qpointpickerdialog.h"
 
-namespace QkmAutomation { class ControlDialog; class MappingChangeStore; class WindowAccess; struct AutomationRequest; struct ConfigurationSaveBinding; struct MappingChangeOwner; }
+namespace QkmAutomation { class ControlDialog; class MappingChangeStore; class WindowAccess; struct AutomationRequest;
+struct ConfigurationSaveBinding; struct MappingChangeOwner; struct MappingChangePreview; struct MappingChangeRequest; }
 
 namespace Ui {
 class QKeyMapper;
@@ -2144,6 +2145,9 @@ private:
     void handleAutomationMappingEditor(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMappingEditorClose(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMappingChange(const QkmAutomation::AutomationRequest &request);
+    void handleAutomationConfigurationImport(const QkmAutomation::AutomationRequest &request,
+        const QkmAutomation::MappingChangeRequest &validation, const QkmAutomation::MappingChangeOwner &owner,
+        const QkmAutomation::MappingChangePreview *applying);
     void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
     void handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMacroExport(const QkmAutomation::AutomationRequest &request);
@@ -2262,6 +2266,7 @@ private:
     };
     SettingSavePreparation prepareSettingSave(const QString &requestedName, const QString &currentSelectedSetting,
         bool globalSelected, int languageIndex, const QString &sourceRevision) const;
+    static SettingSavePreparation::Error readSettingSaveFile(const QString &path, QByteArray &bytes, bool &exists);
     static SettingSavePreparation::Error compareSettingSaveCache(const QSettings &cache, const SettingSavePreparation &preparation);
     void initializeAutomationSettingsReader();
     struct AutomationSettingSavePreparation {

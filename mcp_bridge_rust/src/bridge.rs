@@ -20,13 +20,14 @@ use crate::wire::Object;
 pub enum BackupImportKind {
     Macro,
     MappingTable,
+    Configuration,
 }
 
 impl BackupImportKind {
     pub fn fields(self, arguments: &mut Object) -> Option<&mut Object> {
         match self {
             Self::Macro => arguments.get_mut("macro").and_then(Value::as_object_mut),
-            Self::MappingTable => Some(arguments),
+            Self::MappingTable | Self::Configuration => Some(arguments),
         }
     }
 }
@@ -387,11 +388,13 @@ fn perform(
             let bytes = match directory.read(&name, cancel) {
                 Ok(bytes) => bytes,
                 Err(error) if error.code == "cancelled" => return Err(error),
-                Err(error)
-                    if error.code == "invalid_macro_backup"
-                        && matches!(kind, BackupImportKind::MappingTable) =>
-                {
-                    return Ok(json!({"ok":false, "error":"invalid_table_backup"}));
+                Err(error) if error.code == "invalid_macro_backup" => {
+                    let code = match kind {
+                        BackupImportKind::Macro => "invalid_macro_backup",
+                        BackupImportKind::MappingTable => "invalid_table_backup",
+                        BackupImportKind::Configuration => "invalid_configuration_backup",
+                    };
+                    return Ok(json!({"ok":false, "error":code}));
                 }
                 Err(error) => return Ok(json!({"ok":false, "error":error.code})),
             };

@@ -59,6 +59,7 @@ QByteArray encodeBackupIniIdentifier(const QString &identifier);
 MacroBackupDocument decodeMacroBackup(const QByteArray &document);
 MappingTableBackupDocument decodeMappingTableBackup(const QByteArray &document, const QStringList &fieldNames);
 ConfigurationBackupDocument decodeConfigurationBackup(const QByteArray &document);
+QString configurationImportExternalPathField(const QVariantMap &values);
 ConfigurationImportPlan planConfigurationImport(const ConfigurationBackupDocument &document,
     const QStringList &selected, const QStringList &savedGroups, const QString &loadedGroup, ConfigurationImportConflict conflict);
 

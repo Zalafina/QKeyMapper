@@ -203,6 +203,7 @@ impl Handler {
         let import = match (method, arguments.get("action").and_then(Value::as_str)) {
             ("qkm_preview_changes", Some("macro.import")) => Some(BackupImportKind::Macro),
             ("qkm_preview_changes", Some("table.import")) => Some(BackupImportKind::MappingTable),
+            ("qkm_preview_changes", Some("configuration.import")) => Some(BackupImportKind::Configuration),
             _ => None,
         };
         let admitted = if matches!(
@@ -269,6 +270,8 @@ impl Handler {
                             | "configuration.backup.read"
                             | "table.import.preview"
                             | "table.import.apply"
+                            | "configuration.import.preview"
+                            | "configuration.import.apply"
                     )
                 )
             });

@@ -107,6 +107,38 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     result.method = preview ? MappingChangeMethod::Preview : apply ? MappingChangeMethod::Apply
         : query ? MappingChangeMethod::Operation : MappingChangeMethod::Cancel;
     const auto action = arguments.value(QStringLiteral("action"));
+    if (preview && action == QLatin1String("configuration.import")) {
+        auto &binding = result.configurationImport;
+        binding.catalogRevision = arguments.value(QStringLiteral("catalog_revision")).toString();
+        const auto groups = arguments.value(QStringLiteral("groups")).toArray();
+        const auto conflict = arguments.value(QStringLiteral("on_conflict"));
+        if (arguments.size() != 5 || !isLowerHex(binding.catalogRevision, 64)
+            || groups.isEmpty() || groups.size() > MaxConfigurationBackupGroups
+            || (conflict != QLatin1String("keep") && conflict != QLatin1String("overwrite")))
+            return fail("Select up to 100 ordinary groups, a current catalog revision, a backup, and a conflict policy.");
+        QSet<QString> distinct;
+        for (const auto &item : groups) {
+            const QString group = item.toString();
+            if (group.isEmpty() || group != group.trimmed() || group.size() > 32767 || group.contains(QLatin1Char('\0'))
+                || group.contains(QLatin1Char('\r')) || group.contains(QLatin1Char('\n')) || distinct.contains(group))
+                return fail("Use distinct, nonempty single-line group names.");
+            distinct.insert(group);
+            binding.groups.append(group);
+        }
+        binding.document = decodeBackupDocument(arguments.value(QStringLiteral("document_base64")), MaxConfigurationBackupBytes);
+        if (binding.document.isEmpty()) return fail("Provide a valid bounded base64 configuration backup.");
+        binding.overwrite = conflict == QLatin1String("overwrite");
+        result.action = MappingChangeAction::ImportConfiguration;
+        return result;
+    }
+    if (preview && action == QLatin1String("configuration.save_import")) {
+        auto &binding = result.configurationImport;
+        binding.draftId = arguments.value(QStringLiteral("import_draft_id")).toString();
+        if (arguments.size() != 2 || !isLowerHex(binding.draftId, 32))
+            return fail("Provide the exact configuration import draft ID.");
+        result.action = MappingChangeAction::SaveConfigurationImport;
+        return result;
+    }
     if (preview && action == QLatin1String("table.import")) {
         auto &table = result.update;
         table.sourceTabRef = arguments.value(QStringLiteral("source_tab_ref")).toString();
@@ -1347,6 +1379,39 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     capabilities.append(startupPreview);
     capabilities.append(startupApply);
+    auto stage = capability("configuration.import.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.import")}}},
+            {QStringLiteral("catalog_revision"), revision},
+            {QStringLiteral("groups"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
+                {QStringLiteral("minItems"), 1}, {QStringLiteral("maxItems"), MaxConfigurationBackupGroups},
+                {QStringLiteral("uniqueItems"), true},
+                {QStringLiteral("items"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                    {QStringLiteral("minLength"), 1}, {QStringLiteral("maxLength"), 32767}}}}},
+            {QStringLiteral("file_name"), string(QStringLiteral("^[^<>:\"/\\\\|?*]+\\.[iI][nN][iI]$"), 255)},
+            {QStringLiteral("on_conflict"), QJsonObject{{QStringLiteral("enum"),
+                QJsonArray{QStringLiteral("keep"), QStringLiteral("overwrite")}}}}},
+            {QStringLiteral("action"), QStringLiteral("catalog_revision"), QStringLiteral("groups"),
+                QStringLiteral("file_name"), QStringLiteral("on_conflict")}));
+    stage.insert(QStringLiteral("max_document_bytes"), MaxConfigurationBackupBytes);
+    stage.insert(QStringLiteral("max_groups"), MaxConfigurationBackupGroups);
+    const QJsonArray importLimits{QStringLiteral("ordinary_groups_no_external_assets"), QStringLiteral("idle_after_completed_cleanup"),
+        QStringLiteral("preserve_loaded_configuration"), QStringLiteral("same_name_merge_only_supplied_fields"),
+        QStringLiteral("require_explicit_save_of_owned_draft")};
+    auto stageApply = capability("configuration.import.apply", "qkm_apply_changes", Read | Configure, false, macroApplySchema);
+    auto importSave = capability("configuration.save_import.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.save_import")}}},
+            {QStringLiteral("import_draft_id"), identifierSchema}}, {QStringLiteral("action"), QStringLiteral("import_draft_id")}));
+    auto saveImportSchema = settingsApplySchema;
+    auto saveImportProperties = saveImportSchema.value(QStringLiteral("properties")).toObject();
+    saveImportProperties.insert(QStringLiteral("confirm_scope"), QJsonObject{{QStringLiteral("const"), true}});
+    saveImportSchema.insert(QStringLiteral("properties"), saveImportProperties);
+    saveImportSchema.insert(QStringLiteral("required"), QJsonArray{QStringLiteral("preview_id"), QStringLiteral("confirm_scope")});
+    auto importSaveApply = capability("configuration.save_import.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
+    for (auto *item : {&stage, &stageApply, &importSave, &importSaveApply}) {
+        item->insert(QStringLiteral("limitations"), importLimits);
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
     capabilities.append(operation);
     return capabilities;
 }

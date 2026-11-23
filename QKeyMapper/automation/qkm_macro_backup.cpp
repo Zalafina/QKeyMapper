@@ -520,10 +520,27 @@ ConfigurationBackupDocument decodeConfigurationBackup(const QByteArray &document
     return {Status::Ok, groups};
 }
 
+QString configurationImportExternalPathField(const QVariantMap &values)
+{
+    using namespace QKeyMapperConstants;
+    for (auto field = values.cbegin(); field != values.cend(); ++field) {
+        const bool tabImages = field.key().compare(QLatin1String(MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST), Qt::CaseInsensitive) == 0;
+        if (!tabImages && field.key().compare(QLatin1String(PROCESSINFO_FILEPATH), Qt::CaseInsensitive) != 0
+            && field.key().compare(QLatin1String(PROCESSINFO_CUSTOMICONPATH), Qt::CaseInsensitive) != 0) continue;
+        if (!field.value().isValid()) continue;
+        if (field.value().userType() == QMetaType::QString && field.value().toString().isEmpty()) continue;
+        if (tabImages && field.value().userType() == QMetaType::QStringList) {
+            const auto paths = field.value().toStringList();
+            if (std::all_of(paths.cbegin(), paths.cend(), [](const QString &path) { return path.isEmpty(); })) continue;
+        }
+        return field.key();
+    }
+    return {};
+}
+
 ConfigurationImportPlan planConfigurationImport(const ConfigurationBackupDocument &document,
     const QStringList &selected, const QStringList &savedGroups, const QString &loadedGroup, ConfigurationImportConflict conflict)
 {
-    using namespace QKeyMapperConstants;
     using ImportStatus = ConfigurationImportStatus;
     using Action = ConfigurationImportAction;
     if (document.status != Status::Ok || selected.isEmpty() || selected.size() > MaxConfigurationBackupGroups)
@@ -533,7 +550,7 @@ ConfigurationImportPlan planConfigurationImport(const ConfigurationBackupDocumen
 
     QHash<QString, QString> savedByFoldedName;
     for (const auto &group : savedGroups) {
-        const auto folded = group.toCaseFolded();
+        const auto folded = group.trimmed().toCaseFolded();
         const auto previous = savedByFoldedName.constFind(folded);
         if (previous == savedByFoldedName.cend()) savedByFoldedName.insert(folded, group);
         else if (*previous != group) savedByFoldedName.insert(folded, QString());
@@ -556,18 +573,8 @@ ConfigurationImportPlan planConfigurationImport(const ConfigurationBackupDocumen
             continue;
         }
         if (folded == loadedName) return {ImportStatus::ActiveDestination, name, {}, {}};
-        for (auto field = source->values.cbegin(); field != source->values.cend(); ++field) {
-            const bool tabImages = field.key().compare(QLatin1String(MAPPINGTABLE_TABCUSTOMIMAGE_PATHLIST), Qt::CaseInsensitive) == 0;
-            if (!tabImages && field.key().compare(QLatin1String(PROCESSINFO_FILEPATH), Qt::CaseInsensitive) != 0
-                && field.key().compare(QLatin1String(PROCESSINFO_CUSTOMICONPATH), Qt::CaseInsensitive) != 0) continue;
-            if (!field.value().isValid()) continue;
-            if (field.value().userType() == QMetaType::QString && field.value().toString().isEmpty()) continue;
-            if (tabImages && field.value().userType() == QMetaType::QStringList) {
-                const auto paths = field.value().toStringList();
-                if (std::all_of(paths.cbegin(), paths.cend(), [](const QString &path) { return path.isEmpty(); })) continue;
-            }
-            return {ImportStatus::ExternalPath, name, field.key(), {}};
-        }
+        const auto pathField = configurationImportExternalPathField(source->values);
+        if (!pathField.isEmpty()) return {ImportStatus::ExternalPath, name, pathField, {}};
         // The GUI writes the supplied keys into existing groups and leaves other keys intact.
         groups.append(ConfigurationImportGroup{name, exists ? Action::Merge : Action::Create, source->values});
     }

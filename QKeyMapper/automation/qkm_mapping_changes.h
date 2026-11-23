@@ -103,8 +103,18 @@ struct MacroChangeArguments {
     bool overwriteImportDuplicates = false;
 };
 
+struct ConfigurationImportBinding {
+    QString catalogRevision;
+    QStringList groups;
+    QByteArray document;
+    QString contextRevision;
+    QString draftId;
+    bool overwrite = false;
+};
+
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };
-enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences, UpsertMacro, DeleteMacro, ImportMacro };
+enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences,
+    UpsertMacro, DeleteMacro, ImportMacro, ImportConfiguration, SaveConfigurationImport };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
     MappingChangeAction action = MappingChangeAction::AddMapping;
@@ -113,6 +123,7 @@ struct MappingChangeRequest {
     MappingUpdateArguments update;
     IbInputPreferencesArguments preferences;
     MacroChangeArguments macro;
+    ConfigurationImportBinding configurationImport;
     QString settingName;
     QString id;
     QString instance;
@@ -146,15 +157,6 @@ struct ConfigurationSaveBinding {
     QJsonObject context;
     QJsonObject scope;
     QDeadlineTimer expiresAt;
-};
-
-struct ConfigurationImportBinding {
-    QString catalogRevision;
-    QStringList groups;
-    QByteArray document;
-    QString contextRevision;
-    QString draftId;
-    bool overwrite = false;
 };
 
 struct MappingChangePreview {
