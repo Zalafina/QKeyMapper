@@ -964,19 +964,13 @@ void QMacroListDialog::exportMacroListToFile()
     QSettings exportFile(export_filename, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(exportFile);
 
-    // Convert OrderedMap to QVariantList for INI storage
-    QVariantList macroList;
-    for (auto it = exportMacroList.begin(); it != exportMacroList.end(); ++it) {
-        QVariantMap macroMap;
-        macroMap[MACROLIST_FIELD_MACRONAME] = it.key();
-        macroMap[MACROLIST_FIELD_MACROCONTENT] = it.value().MappingMacro;
-        macroMap[MACROLIST_FIELD_MACROCATEGORY] = it.value().Category;
-        macroMap[MACROLIST_FIELD_MACRONOTE] = it.value().Note;
-        macroList.append(macroMap);
-    }
-
-    exportFile.setValue(MACROLIST_EXPORT, macroList);
+    exportFile.setValue(MACROLIST_EXPORT, QKeyMapper::serializeMappingMacros(exportMacroList));
     exportFile.sync();
+    if (exportFile.status() != QSettings::NoError) {
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(
+            tr("Could not write the macro export file."), FAILURE_COLOR, 3000);
+        return;
+    }
 
     // Show success popup message
     QString popupMessage = tr("Successfully exported %1 macro(s).").arg(exportMacroList.size());
@@ -1041,25 +1035,8 @@ void QMacroListDialog::importMacroListFromFile()
         return;
     }
 
-    // Parse imported macro data
     OrderedMap<QString, MappingMacroData> importMacroList;
-    QVariantList macroList = macroListVar.toList();
-    for (const QVariant &macroVar : std::as_const(macroList)) {
-        if (!macroVar.canConvert<QVariantMap>()) {
-            continue;
-        }
-
-        QVariantMap macroMap = macroVar.toMap();
-
-        QString macroName = macroMap.value(MACROLIST_FIELD_MACRONAME).toString();
-        QString macroContent = macroMap.value(MACROLIST_FIELD_MACROCONTENT).toString();
-        QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
-        QString note = macroMap.value(MACROLIST_FIELD_MACRONOTE).toString();
-
-        if (!macroName.isEmpty()) {
-            importMacroList[macroName] = MappingMacroData{ macroContent, category, note };
-        }
-    }
+    QKeyMapper::deserializeMappingMacros(macroListVar.toList(), importMacroList);
 
     if (importMacroList.isEmpty()) {
         QString popupMessage = tr("No valid macro data found in the selected file.");

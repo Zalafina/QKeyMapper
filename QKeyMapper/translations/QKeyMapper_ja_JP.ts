@@ -5129,6 +5129,11 @@ Interceptionドライバのインストールを続行してもよろしいで�
         <translation>マクロ一覧をエクスポート : </translation>
     </message>
     <message>
+        <location filename="../qmacrolistdialog.cpp" line="971"/>
+        <source>Could not write the macro export file.</source>
+        <translation>マクロのエクスポートファイルに書き込めませんでした。</translation>
+    </message>
+    <message>
         <location filename="../qmacrolistdialog.cpp" line="982"/>
         <source>Successfully exported %1 macro(s).</source>
         <translation>%1 件のマクロを正常にエクスポートしました。</translation>

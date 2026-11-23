@@ -5129,6 +5129,11 @@ Do you confirm to continue installing Interception driver?</source>
         <translation>导出宏列表 : </translation>
     </message>
     <message>
+        <location filename="../qmacrolistdialog.cpp" line="971"/>
+        <source>Could not write the macro export file.</source>
+        <translation>无法写入宏导出文件。</translation>
+    </message>
+    <message>
         <location filename="../qmacrolistdialog.cpp" line="982"/>
         <source>Successfully exported %1 macro(s).</source>
         <translation>成功导出了 %1 个宏。</translation>

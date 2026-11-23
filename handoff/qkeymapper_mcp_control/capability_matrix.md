@@ -332,8 +332,8 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 | MACRO-READ／M2-A | 宏列表普通／通用两个页签，均按 OrderedMap 顺序 | 202 私有真实 GUI 与 Rust 选验两个作用域、同名、分页和配置切换。返回逐段备注，读目录不改变草稿或磁盘 | `qkm_query(macros)`，Read 当前加载配置，旧目录修订拒绝。宏编辑与运行仍独立验收 |
 | MACRO-UPSERT／M2-A | 按钮／快捷键 → `addMacroToListInternal(allowInsertBySelection)` | 目标取普通／通用 OrderedMap；去首尾空白及换行、非空／名称不含右括号、完整映射串校验，同名需确认。新项可按 Shift／全局插入模式插入；同名更新保持位置。消费待提交逐段备注或按段对齐旧备注，再刷新／dirty；改变输入名称不自动重写旧引用 | 203 通过 `macro.upsert` 选验追加、同作用域同名替换、普通键序列、真实 GUI 校验和备注对齐，确认后只改内存，普通及通用保存和冷读通过。205 选验相对插入，206 选验显式逐段备注、清空与长度校验及保存冷读。嵌套引用与运行另验 |
 | MACRO-DELETE／M2-A | Delete／菜单 → `deleteMacroSelectedItems` | 从当前宏表首个连续选区的名称删除相应 OrderedMap 键，刷新／重选并 dirty；未在该路径重写引用该名称的映射／其他宏 | 204 `macro.delete` 选验单作用域名单、同名隔离、取消、旧目录拒绝、真实 GUI、正式 Rust 及保存冷读。原引用保留，名称可能无法再解析。筛选下交互与实际宏展开另验 |
-| MACRO-EXPORT／M2-A | `exportMacroListToFile` 从选区或全部构造有序列表，再选择文件 | 来源为内存普通／通用宏；现导出字段为名称／内容／分类／备注，**未含 MacroComments**；调用 sync 后不检查 status 即提示成功。完整配置保存包含逐段备注，不能把两种格式视为相同覆盖 | 两种入口共用规范序列化／完成检查，逐段备注差异在接入时统一修正并保持旧文件兼容。`EQ-MACRO-EXPORT` 比较选区／筛选／顺序、逐段备注往返、无法写入、Qt5 Unicode 和真正新进程读回 |
-| MACRO-IMPORT／M2-A | `importMacroListFromFile` 读取 MacroList_Export → QVariantList／Map → OrderedMap → 同名覆盖选择 | 跳过非 Map／空名称；按当前 scope 导入。与手工添加的名称／DSL 校验不同；同名覆盖使用 insert 移到末尾，保留同名时跳过；只解析四个导出字段，刷新／dirty 后仍未保存配置。导入中重复名称也受 OrderedMap 规则影响 | 复用同一文件解析与覆盖／顺序计划，区分旧格式容错与正式 typed 参数拒绝未知字段；不能只给 MCP 另写严格逻辑形成隐性差异。`EQ-MACRO-IMPORT` 覆盖部分忽略、重名保留／替换顺序、空／非法内容、作用域、备注格式和保存恢复 |
+| MACRO-EXPORT／M2-A | 真实 GUI 选区或全部，按作用域构造有序宏备份 | 207 与配置保存共享五字段，并检查 sync/status；原版丢备注和文件锁下误报已复现。Qt6 真 GUI 与双 Qt 新进程读回 | `EQ-MACRO-EXPORT` 普通权限文件层、正式 Read、版本与边界校验待接入 |
+| MACRO-IMPORT／M2-A | GUI 读取 MacroList_Export 并处理当前作用域同名选择 | 207 共用读取器，跳过非 Map／空名，兼容四字段旧文件；同名保留跳过，覆盖移到末尾。真实 Qt6 独立导入和读回通过 | `EQ-MACRO-IMPORT` 正式有界文件解析、内容校验、草稿与保存各自验证；GUI 旧文件容错与 typed 参数严格性分别说明 |
 
 后续接口接入必须额外核对：这些内部函数有的依赖当前表／当前编辑框，有的只靠 GUI 启用状态限制运行中操作；不能直接按函数名透传。列表操作会改变源引用，源 Tab、配置修订和编辑会话须在提交前再次核实。
 

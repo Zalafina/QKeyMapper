@@ -20959,6 +20959,28 @@ QVariantList QKeyMapper::serializeMappingMacros(const OrderedMap<QString, Mappin
     return macroList;
 }
 
+void QKeyMapper::deserializeMappingMacros(const QVariantList &macroList,
+                                         OrderedMap<QString, MappingMacroData> &macros)
+{
+    for (const QVariant &entry : macroList) {
+        const QVariantMap macro = entry.toMap();
+        const QString name = macro.value(MACROLIST_FIELD_MACRONAME).toString();
+        if (name.isEmpty()) {
+            continue;
+        }
+
+        QStringList comments;
+        const QVariantList values = macro.value(MACROLIST_FIELD_MACROCOMMENTS).toList();
+        for (const QVariant &value : values) {
+            comments.append(value.toString());
+        }
+        macros[name] = {macro.value(MACROLIST_FIELD_MACROCONTENT).toString(),
+                        macro.value(MACROLIST_FIELD_MACROCATEGORY).toString(),
+                        macro.value(MACROLIST_FIELD_MACRONOTE).toString(),
+                        comments};
+    }
+}
+
 void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
 {
     if (setting_groupname.isEmpty()) {
@@ -21001,36 +21023,7 @@ void QKeyMapper::loadMacroListFromINI(const QString &setting_groupname)
         return;
     }
 
-    QVariantList macroList = macroListVar.toList();
-    for (const QVariant &macroVar : std::as_const(macroList)) {
-        if (!macroVar.canConvert<QVariantMap>()) {
-            continue;
-        }
-
-        QVariantMap macroMap = macroVar.toMap();
-
-        QString macroName = macroMap.value(MACROLIST_FIELD_MACRONAME).toString();
-        QString macroContent = macroMap.value(MACROLIST_FIELD_MACROCONTENT).toString();
-        QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
-        QString note = macroMap.value(MACROLIST_FIELD_MACRONOTE).toString();
-
-        // Load comments (backward compatible: empty if not present)
-        QStringList macroComments;
-        QVariant commentsVar = macroMap.value(MACROLIST_FIELD_MACROCOMMENTS);
-        if (commentsVar.isValid() && commentsVar.canConvert<QVariantList>()) {
-            QVariantList commentsList = commentsVar.toList();
-            for (const QVariant &c : std::as_const(commentsList)) {
-                macroComments << c.toString();
-            }
-        }
-
-        // Add to map if macro name is not empty
-        if (!macroName.isEmpty()) {
-            MappingMacroData macroData = { macroContent, category, note };
-            macroData.MacroComments = macroComments;
-            s_MappingMacroList[macroName] = macroData;
-        }
-    }
+    deserializeMappingMacros(macroListVar.toList(), s_MappingMacroList);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[loadMacroListFromINI] Loaded " << s_MappingMacroList.size() << " macros from [" << settingKey << "]";
@@ -21134,36 +21127,7 @@ void QKeyMapper::loadUniversalMacroListFromINI()
         return;
     }
 
-    QVariantList macroList = macroListVar.toList();
-    for (const QVariant &macroVar : std::as_const(macroList)) {
-        if (!macroVar.canConvert<QVariantMap>()) {
-            continue;
-        }
-
-        QVariantMap macroMap = macroVar.toMap();
-
-        QString macroName = macroMap.value(MACROLIST_FIELD_MACRONAME).toString();
-        QString macroContent = macroMap.value(MACROLIST_FIELD_MACROCONTENT).toString();
-        QString category = macroMap.value(MACROLIST_FIELD_MACROCATEGORY).toString();
-        QString note = macroMap.value(MACROLIST_FIELD_MACRONOTE).toString();
-
-        // Load comments (backward compatible: empty if not present)
-        QStringList macroComments;
-        QVariant commentsVar = macroMap.value(MACROLIST_FIELD_MACROCOMMENTS);
-        if (commentsVar.isValid() && commentsVar.canConvert<QVariantList>()) {
-            QVariantList commentsList = commentsVar.toList();
-            for (const QVariant &c : std::as_const(commentsList)) {
-                macroComments << c.toString();
-            }
-        }
-
-        // Add to map if macro name is not empty
-        if (!macroName.isEmpty()) {
-            MappingMacroData macroData = { macroContent, category, note };
-            macroData.MacroComments = macroComments;
-            s_UniversalMappingMacroList[macroName] = macroData;
-        }
-    }
+    deserializeMappingMacros(macroListVar.toList(), s_UniversalMappingMacroList);
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace().noquote() << "[loadUniversalMacroListFromINI] Loaded " << s_UniversalMappingMacroList.size() << " universal macros from [" << MACROLIST_UNIVERSAL << "]";
