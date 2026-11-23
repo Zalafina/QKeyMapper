@@ -13578,15 +13578,8 @@ static OrderedMap<QString, QVariant> collectMappingTableExportValues(const QList
     return values;
 }
 
-bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filename)
+static bool writeIniBackupValues(QSettings &file, const OrderedMap<QString, QVariant> &values)
 {
-    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size() || filename.isEmpty()) return false;
-    const auto *mappingData = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
-    if (!mappingData || mappingData->isEmpty()) return false;
-
-    const auto values = collectMappingTableExportValues(*mappingData);
-    QSettings file(filename, QSettings::IniFormat);
-    QKeyMapperQtCompat::setIniCodecUtf8(file);
     QVariantMap previous;
     for (auto it = values.begin(); it != values.end(); ++it) {
         if (file.contains(it.key())) previous.insert(it.key(), file.value(it.key()));
@@ -13604,6 +13597,17 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         else file.remove(it.key());
     }
     return false;
+}
+
+bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filename)
+{
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size() || filename.isEmpty()) return false;
+    const auto *mappingData = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+    if (!mappingData || mappingData->isEmpty()) return false;
+
+    QSettings file(filename, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(file);
+    return writeIniBackupValues(file, collectMappingTableExportValues(*mappingData));
 }
 
 static const QStringList &mappingTableBackupFieldNames()
@@ -21220,6 +21224,26 @@ void QKeyMapper::importSettingFromFile()
     }
 }
 
+static OrderedMap<QString, QVariant> collectConfigurationBackupValues(QSettings &source, const QStringList &groups)
+{
+    OrderedMap<QString, QVariant> values;
+    const auto existing = source.childGroups();
+    const auto copyKeys = [&](const QString &prefix) {
+        const auto keys = source.childKeys();
+        for (const auto &key : keys) values.insert(prefix + key, source.value(key));
+    };
+    for (const auto &group : groups) {
+        if (group == QLatin1String(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
+            copyKeys(QString());
+        } else if (existing.contains(group)) {
+            source.beginGroup(group);
+            copyKeys(group + QLatin1Char('/'));
+            source.endGroup();
+        }
+    }
+    return values;
+}
+
 void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &targetIni, const QStringList &groups)
 {
 #ifdef DEBUG_LOGOUT_ON
@@ -21232,43 +21256,22 @@ void QKeyMapper::exportSelectedGroups(const QString &sourceIni, const QString &t
         return;
     }
 
-    // Only export user-selected groups, no automatic inclusion of General
+    if (groups.isEmpty()) return;
+
     QSettings src(sourceIni, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(src);
-    QStringList srcGroups = src.childGroups();
-    QStringList exportList = groups; // keep UI/childGroups order
-    // if (!src.childKeys().isEmpty() && !exportList.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME)) {
-    //     // Append General to keep caller-provided order intact
-    //     exportList << CONFIG_FILE_TOPLEVEL_GROUPNAME;
-    // }
-    if (exportList.isEmpty()) {
+    const auto values = collectConfigurationBackupValues(src, groups);
+    if (src.status() != QSettings::NoError || values.isEmpty()) {
+        showFailurePopup(tr("No valid setting found."));
         return;
     }
 
-    // Write selected groups to target file
     QSettings dst(targetIni, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(dst);
-    for (const QString &g : exportList) {
-        if (g == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
-            // Copy top-level keys (General)
-            QStringList keyList = src.childKeys();
-            for (const QString &key : std::as_const(keyList)) {
-                dst.setValue(key, src.value(key));
-            }
-        } else {
-            if (!srcGroups.contains(g)) continue; // Skip unknown real group
-            src.beginGroup(g);
-            dst.beginGroup(g);
-            QStringList keyList = src.childKeys();
-            for (const QString &key : std::as_const(keyList)) {
-                dst.setValue(key, src.value(key));
-            }
-            src.endGroup();
-            dst.endGroup();
-        }
+    if (!writeIniBackupValues(dst, values)) {
+        showFailurePopup(tr("Save failure : ") + QFileInfo(targetIni).fileName());
+        return;
     }
-
-    dst.sync();
     QkmMessageBox::information(this, tr("Setting Export"), tr("Export completed."));
 }
 
