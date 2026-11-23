@@ -2,17 +2,19 @@
 #include "../qkeymapper_constants.h"
 
 #include <QDataStream>
+#include <QHash>
 #include <QIODevice>
+#include <utility>
 
 namespace QkmAutomation {
 namespace {
 
-using Status = MacroBackupStatus;
+using Status = BackupDecodeStatus;
 constexpr char VariantPrefix[] = "@Variant(";
 constexpr int VariantPrefixLength = sizeof(VariantPrefix) - 1;
 constexpr quint32 NullDataLength = 0xffffffffU;
 
-int hexDigit(char ch)
+int hexDigit(ushort ch)
 {
     if (ch >= '0' && ch <= '9') return ch - '0';
     if (ch >= 'a' && ch <= 'f') return ch - 'a' + 10;
@@ -20,19 +22,19 @@ int hexDigit(char ch)
     return -1;
 }
 
-bool appendIniEscape(const QByteArray &value, int &index, QByteArray &token)
+bool appendIniEscape(const QString &value, qsizetype &index, QString &token)
 {
     if (++index == value.size()) return false;
-    const char ch = value.at(index);
+    const ushort ch = value.at(index).unicode();
     switch (ch) {
-    case 'a': token.append('\a'); return true;
-    case 'b': token.append('\b'); return true;
-    case 'f': token.append('\f'); return true;
-    case 'n': token.append('\n'); return true;
-    case 'r': token.append('\r'); return true;
-    case 't': token.append('\t'); return true;
-    case 'v': token.append('\v'); return true;
-    case '"': case '\\': token.append(ch); return true;
+    case 'a': token.append(QLatin1Char('\a')); return true;
+    case 'b': token.append(QLatin1Char('\b')); return true;
+    case 'f': token.append(QLatin1Char('\f')); return true;
+    case 'n': token.append(QLatin1Char('\n')); return true;
+    case 'r': token.append(QLatin1Char('\r')); return true;
+    case 't': token.append(QLatin1Char('\t')); return true;
+    case 'v': token.append(QLatin1Char('\v')); return true;
+    case '"': case '\\': case '\'': case '?': token.append(QChar(ch)); return true;
     default: break;
     }
 
@@ -41,39 +43,73 @@ bool appendIniEscape(const QByteArray &value, int &index, QByteArray &token)
     if (!hex && (number < 0 || number > 7)) return false;
     int digits = hex ? 0 : 1;
     while (index + 1 < value.size()) {
-        const int digit = hexDigit(value.at(index + 1));
+        const int digit = hexDigit(value.at(index + 1).unicode());
         if (digit < 0 || (!hex && digit > 7)) break;
         number = number * (hex ? 16 : 8) + digit;
-        if (++digits > (hex ? 2 : 3) || number > 255) return false;
+        if (++digits > (hex ? 4 : 6) || number > 0xffff) return false;
         ++index;
     }
     if (digits == 0) return false;
-    token.append(char(number));
+    token.append(QChar(ushort(number)));
     return true;
 }
 
-Status splitIniValue(const QByteArray &value, QList<QByteArray> &tokens)
+Status splitIniValue(const QByteArray &bytes, QStringList &tokens, int maxEntries)
 {
+    const auto value = QString::fromUtf8(bytes.constData(), bytes.size());
+    if (value.toUtf8() != bytes) return Status::InvalidFormat;
     bool quoted = false;
-    QByteArray token;
-    for (int index = 0; index < value.size(); ++index) {
-        const char ch = value.at(index);
-        if (ch == '\\') {
+    QString token;
+    qsizetype trailingSpaces = 0;
+    for (qsizetype index = 0; index < value.size(); ++index) {
+        const auto ch = value.at(index);
+        if (ch == QLatin1Char('\\')) {
             if (!appendIniEscape(value, index, token)) return Status::InvalidFormat;
-        } else if (ch == '"') {
+            trailingSpaces = 0;
+        } else if (ch == QLatin1Char('"')) {
             quoted = !quoted;
-        } else if (!quoted && ch == ',') {
-            tokens.append(token.trimmed());
-            if (tokens.size() == MaxMacroBackupEntries) return Status::TooManyEntries;
+            trailingSpaces = 0;
+        } else if (!quoted && ch == QLatin1Char(',')) {
+            token.chop(trailingSpaces);
+            tokens.append(token);
+            if (tokens.size() == maxEntries) return Status::TooManyEntries;
             token.clear();
-        } else if (!quoted && ch == ';') {
+            trailingSpaces = 0;
+        } else if (!quoted && ch == QLatin1Char(';')) {
             break;
+        } else if (!quoted && (ch == QLatin1Char(' ') || ch == QLatin1Char('\t'))) {
+            if (!token.isEmpty()) {
+                token.append(ch);
+                ++trailingSpaces;
+            }
         } else {
             token.append(ch);
+            trailingSpaces = 0;
         }
     }
     if (quoted) return Status::InvalidFormat;
-    tokens.append(token.trimmed());
+    token.chop(trailingSpaces);
+    tokens.append(token);
+    return Status::Ok;
+}
+
+template<typename FieldReader>
+Status readRootIniFields(const QByteArray &document, FieldReader &&readField)
+{
+    bool general = true;
+    for (auto line : document.split('\n')) {
+        if (line.startsWith("\xef\xbb\xbf")) line.remove(0, 3);
+        line = line.trimmed();
+        if (line.startsWith('[')) {
+            const auto end = line.indexOf(']');
+            general = end >= 0 && line.mid(1, end - 1).trimmed().compare("General", Qt::CaseInsensitive) == 0;
+        } else if (general && !line.startsWith(';') && !line.startsWith('#')) {
+            const auto equals = line.indexOf('=');
+            if (equals < 0) continue;
+            if (const auto status = readField(line.left(equals).trimmed(), line.mid(equals + 1)); status != Status::Ok)
+                return status;
+        }
+    }
     return Status::Ok;
 }
 
@@ -91,7 +127,7 @@ bool skipSizedValue(QDataStream &stream, bool utf16)
 }
 
 // Check Qt 4.0 types and lengths before QVariant is allowed to construct them.
-Status checkVariant(QDataStream &stream, int depth, bool listDocument)
+Status checkVariant(QDataStream &stream, int depth, bool listDocument, int maxRootEntries)
 {
     if (depth > 3) return Status::InvalidFormat;
     quint32 type = 0;
@@ -120,25 +156,29 @@ Status checkVariant(QDataStream &stream, int depth, bool listDocument)
     quint32 count = 0;
     stream >> count;
     if (stream.status() != QDataStream::Ok) return Status::InvalidFormat;
-    if (listDocument && count > MaxMacroBackupEntries) return Status::TooManyEntries;
+    if (depth == 0 && maxRootEntries > 0 && count > quint32(maxRootEntries)) return Status::TooManyEntries;
     const bool map = type == QMetaType::QVariantMap;
     if (count > quint64(stream.device()->bytesAvailable()) / (map ? 8 : 4)) return Status::InvalidFormat;
     for (quint32 i = 0; i < count; ++i) {
         if ((map || type == QMetaType::QStringList) && !skipSizedValue(stream, true)) return Status::InvalidFormat;
-        if (type != QMetaType::QStringList && checkVariant(stream, depth + 1, false) != Status::Ok)
+        if (type != QMetaType::QStringList && checkVariant(stream, depth + 1, false, 0) != Status::Ok)
             return Status::InvalidFormat;
     }
     return Status::Ok;
 }
 
-Status decodeVariant(const QByteArray &token, bool listDocument, QVariant &value)
+Status decodeVariant(const QString &token, bool listDocument, int maxRootEntries, QVariant &value)
 {
-    if (!token.startsWith(VariantPrefix)) return listDocument ? Status::InvalidFormat : Status::Ok;
-    if (!token.endsWith(')')) return Status::InvalidFormat;
-    const auto payload = token.mid(VariantPrefixLength, token.size() - VariantPrefixLength - 1);
+    if (!token.startsWith(QLatin1String(VariantPrefix))) return listDocument ? Status::InvalidFormat : Status::Ok;
+    if (!token.endsWith(QLatin1Char(')'))) return Status::InvalidFormat;
+    const auto text = token.mid(VariantPrefixLength, token.size() - VariantPrefixLength - 1);
+    for (const auto ch : text) {
+        if (ch.unicode() > 255) return Status::InvalidFormat;
+    }
+    const auto payload = text.toLatin1();
     QDataStream checked(payload);
     checked.setVersion(QDataStream::Qt_4_0);
-    const auto status = checkVariant(checked, 0, listDocument);
+    const auto status = checkVariant(checked, 0, listDocument, maxRootEntries);
     if (status != Status::Ok) return status;
     if (!checked.atEnd()) return Status::InvalidFormat;
 
@@ -146,6 +186,60 @@ Status decodeVariant(const QByteArray &token, bool listDocument, QVariant &value
     stream.setVersion(QDataStream::Qt_4_0);
     stream >> value;
     return stream.status() == QDataStream::Ok && stream.atEnd() ? Status::Ok : Status::InvalidFormat;
+}
+
+Status decodeTableText(QStringList tokens, QVariant &value)
+{
+    if (tokens.size() == 1 && tokens.first() == QLatin1String("@Invalid()")) return Status::Ok;
+    if (tokens.size() == 1 && tokens.first().startsWith(QLatin1String(VariantPrefix))) {
+        const auto status = decodeVariant(tokens.first(), false, MaxTableBackupRows, value);
+        if (status != Status::Ok) return status;
+        return value.userType() == QMetaType::QStringList || value.userType() == QMetaType::QString
+            ? Status::Ok : Status::InvalidFormat;
+    }
+
+    for (auto &token : tokens) {
+        if (token.startsWith(QLatin1String("@@"))) {
+            token.remove(0, 1);
+        } else if (token.startsWith(QLatin1String("@String(")) && token.endsWith(QLatin1Char(')'))) {
+            token = token.mid(8, token.size() - 9);
+        } else if (token.startsWith(QLatin1String(VariantPrefix)) || token.startsWith(QLatin1String("@ByteArray("))
+                   || token.startsWith(QLatin1String("@DateTime(")) || token == QLatin1String("@Invalid()")) {
+            return Status::InvalidFormat;
+        }
+    }
+    value = tokens;
+    return Status::Ok;
+}
+
+Status decodeTableComments(const QStringList &tokens, QVariant &value)
+{
+    if (tokens.size() == 1 && tokens.first() == QLatin1String("@Invalid()")) return Status::Ok;
+
+    QVariantList rows;
+    if (tokens.size() == 1) {
+        const auto status = decodeVariant(tokens.first(), true, MaxTableBackupRows, value);
+        if (status != Status::Ok) return status;
+        rows = value.toList();
+    } else {
+        rows.reserve(tokens.size());
+        for (const auto &token : tokens) {
+            QVariant row;
+            const auto status = decodeVariant(token, true, 0, row);
+            if (status != Status::Ok) return status;
+            rows.append(row);
+        }
+    }
+    for (const auto &row : std::as_const(rows)) {
+        if (row.userType() != QMetaType::QVariantList && row.userType() != QMetaType::QStringList)
+            return Status::InvalidFormat;
+        const auto comments = row.toList();
+        for (const auto &comment : comments) {
+            if (comment.userType() != QMetaType::QString) return Status::InvalidFormat;
+        }
+    }
+    value = rows;
+    return Status::Ok;
 }
 
 } // namespace
@@ -186,43 +280,68 @@ MacroBackupDocument decodeMacroBackup(const QByteArray &document)
 {
     if (document.size() > MaxMacroBackupBytes) return {Status::TooLarge, {}};
     QByteArray value;
-    bool general = true;
     bool found = false;
-    const auto lines = document.split('\n');
-    for (auto line : lines) {
-        if (line.startsWith("\xef\xbb\xbf")) line.remove(0, 3);
-        line = line.trimmed();
-        if (line.startsWith('[')) {
-            const auto end = line.indexOf(']');
-            general = end >= 0 && line.mid(1, end - 1).compare("General", Qt::CaseInsensitive) == 0;
-        } else if (general && !line.startsWith(';') && !line.startsWith('#')) {
-            const auto equals = line.indexOf('=');
-            if (equals < 0 || line.left(equals).trimmed().compare(QKeyMapperConstants::MACROLIST_EXPORT,
-                    Qt::CaseInsensitive) != 0) continue;
-            if (found) return {Status::InvalidFormat, {}};
-            value = line.mid(equals + 1);
-            found = true;
-        }
-    }
-    if (!found) return {Status::MissingList, {}};
+    const auto fields = readRootIniFields(document, [&](const QByteArray &key, const QByteArray &rawValue) {
+        if (key.compare(QKeyMapperConstants::MACROLIST_EXPORT, Qt::CaseInsensitive) != 0) return Status::Ok;
+        if (found) return Status::InvalidFormat;
+        value = rawValue;
+        found = true;
+        return Status::Ok;
+    });
+    if (fields != Status::Ok) return {fields, {}};
+    if (!found) return {Status::MissingRequiredField, {}};
 
-    QList<QByteArray> tokens;
-    const auto split = splitIniValue(value, tokens);
+    QStringList tokens;
+    const auto split = splitIniValue(value, tokens, MaxMacroBackupEntries);
     if (split != Status::Ok) return {split, {}};
     if (tokens.size() == 1) {
         QVariant list;
-        const auto status = decodeVariant(tokens.first(), true, list);
+        const auto status = decodeVariant(tokens.first(), true, MaxMacroBackupEntries, list);
         return {status, list.toList()};
     }
     QVariantList entries;
     entries.reserve(tokens.size());
     for (const auto &token : tokens) {
         QVariant entry;
-        const auto status = decodeVariant(token, false, entry);
+        const auto status = decodeVariant(token, false, 0, entry);
         if (status != Status::Ok) return {status, {}};
         entries.append(entry);
     }
     return {Status::Ok, entries};
+}
+
+MappingTableBackupDocument decodeMappingTableBackup(const QByteArray &document, const QStringList &fieldNames)
+{
+    using namespace QKeyMapperConstants;
+    if (document.size() > MaxTableBackupBytes) return {Status::TooLarge, {}};
+    QHash<QByteArray, QString> names;
+    for (const auto &field : fieldNames) names.insert(field.toLatin1().toLower(), field);
+
+    QVariantMap values;
+    const auto fields = readRootIniFields(document, [&](const QByteArray &key, const QByteArray &rawValue) {
+        const auto name = names.constFind(key.toLower());
+        if (name == names.cend()) return Status::Ok;
+        if (values.contains(*name)) return Status::InvalidFormat;
+
+        QStringList tokens;
+        const auto split = splitIniValue(rawValue, tokens, MaxTableBackupRows);
+        if (split != Status::Ok) return split;
+        const bool comments = *name == QLatin1String(KEYMAPDATA_MAPPINGKEYS_COMMENTS)
+            || *name == QLatin1String(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS);
+        QVariant value;
+        const auto status = comments ? decodeTableComments(tokens, value) : decodeTableText(std::move(tokens), value);
+        if (status == Status::Ok) values.insert(*name, value);
+        return status;
+    });
+    if (fields != Status::Ok) return {fields, {}};
+
+    const auto originalKeys = QLatin1String(KEYMAPDATA_ORIGINALKEYS);
+    const auto mappingKeys = QLatin1String(KEYMAPDATA_MAPPINGKEYS);
+    if (!values.contains(originalKeys) || !values.contains(mappingKeys)) return {Status::MissingRequiredField, {}};
+    const auto count = values.value(originalKeys).toStringList().size();
+    if (count == 0 || count != values.value(mappingKeys).toStringList().size())
+        return {Status::InvalidFormat, {}};
+    return {Status::Ok, values};
 }
 
 }

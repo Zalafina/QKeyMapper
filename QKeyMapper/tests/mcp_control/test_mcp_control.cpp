@@ -204,6 +204,8 @@ private slots:
     void mappingChangeArguments();
     void macroBackupDecodesQtExports();
     void macroBackupChecksLimitsAndFormat();
+    void mappingTableBackupDecodesQtExports();
+    void mappingTableBackupChecksLimitsAndShape();
     void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
@@ -343,7 +345,7 @@ void McpControlTest::macroBackupDecodesQtExports()
         QFile file(path);
         QVERIFY(file.open(QIODevice::ReadOnly));
         const auto fromGui = decodeMacroBackup(file.readAll());
-        QCOMPARE(fromGui.status, MacroBackupStatus::Ok);
+        QCOMPARE(fromGui.status, BackupDecodeStatus::Ok);
         QCOMPARE(fromGui.entries.size(), entries.size());
         QCOMPARE(fromGui.entries.first(), entries.first());
         QCOMPARE(fromGui.entries.last(), entries.last());
@@ -352,7 +354,7 @@ void McpControlTest::macroBackupDecodesQtExports()
         const auto document = encodeMacroBackup(entries);
         QVERIFY(!document.isEmpty());
         const auto fromMcp = decodeMacroBackup(document);
-        QCOMPARE(fromMcp.status, MacroBackupStatus::Ok);
+        QCOMPARE(fromMcp.status, BackupDecodeStatus::Ok);
         QCOMPARE(fromMcp.entries, entries);
 
         const auto mcpPath = files.filePath(QStringLiteral("mcp-%1.ini").arg(i));
@@ -371,16 +373,16 @@ void McpControlTest::macroBackupChecksLimitsAndFormat()
     QVariantList entries;
     for (int i = 0; i < MaxMacroBackupEntries; ++i) entries.append(QVariantMap{});
     const auto document = encodeMacroBackup(entries);
-    QCOMPARE(decodeMacroBackup(document).status, MacroBackupStatus::Ok);
-    QCOMPARE(decodeMacroBackup("\xef\xbb\xbf; backup\r\n" + document).status, MacroBackupStatus::Ok);
-    QCOMPARE(decodeMacroBackup(document + document).status, MacroBackupStatus::InvalidFormat);
-    QCOMPARE(decodeMacroBackup(document.left(document.size() - 4)).status, MacroBackupStatus::InvalidFormat);
-    QCOMPARE(decodeMacroBackup("[Other]\nMacroList_Export=hello\n").status, MacroBackupStatus::MissingList);
-    QCOMPARE(decodeMacroBackup("[General]\nMacroList_Export=hello\n").status, MacroBackupStatus::InvalidFormat);
-    QCOMPARE(decodeMacroBackup(QByteArray(MaxMacroBackupBytes + 1, 'x')).status, MacroBackupStatus::TooLarge);
+    QCOMPARE(decodeMacroBackup(document).status, BackupDecodeStatus::Ok);
+    QCOMPARE(decodeMacroBackup("\xef\xbb\xbf; backup\r\n" + document).status, BackupDecodeStatus::Ok);
+    QCOMPARE(decodeMacroBackup(document + document).status, BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(decodeMacroBackup(document.left(document.size() - 4)).status, BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(decodeMacroBackup("[Other]\nMacroList_Export=hello\n").status, BackupDecodeStatus::MissingRequiredField);
+    QCOMPARE(decodeMacroBackup("[General]\nMacroList_Export=hello\n").status, BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(decodeMacroBackup(QByteArray(MaxMacroBackupBytes + 1, 'x')).status, BackupDecodeStatus::TooLarge);
     entries.append(QVariantMap{});
-    QCOMPARE(decodeMacroBackup(encodeMacroBackup(entries)).status, MacroBackupStatus::TooManyEntries);
-    QCOMPARE(decodeMacroBackup(encodeMacroBackup({QDateTime::currentDateTimeUtc()})).status, MacroBackupStatus::InvalidFormat);
+    QCOMPARE(decodeMacroBackup(encodeMacroBackup(entries)).status, BackupDecodeStatus::TooManyEntries);
+    QCOMPARE(decodeMacroBackup(encodeMacroBackup({QDateTime::currentDateTimeUtc()})).status, BackupDecodeStatus::InvalidFormat);
 
     QByteArray multiField = "[General]\n";
     const auto keys = QStringList{QStringLiteral("A"), QStringLiteral("B")};
@@ -399,6 +401,92 @@ void McpControlTest::macroBackupChecksLimitsAndFormat()
     QCOMPARE(settings.value(QStringLiteral("KeyMapData_OriginalKeys")).toStringList(), keys);
     QCOMPARE(settings.value(QStringLiteral("KeyMapData_MappingKeys")).toStringList(), keys);
     QCOMPARE(settings.status(), QSettings::NoError);
+}
+
+void McpControlTest::mappingTableBackupDecodesQtExports()
+{
+    using namespace QKeyMapperConstants;
+    const QString originals = QLatin1String(KEYMAPDATA_ORIGINALKEYS);
+    const QString mappings = QLatin1String(KEYMAPDATA_MAPPINGKEYS);
+    const QString notes = QLatin1String(KEYMAPDATA_NOTE);
+    const QString categories = QLatin1String(KEYMAPDATA_CATEGORY);
+    const QString comments = QLatin1String(KEYMAPDATA_MAPPINGKEYS_COMMENTS);
+    const QString upComments = QLatin1String(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS);
+    const QStringList fields{originals, mappings, notes, categories, comments, upComments};
+    QTemporaryDir files;
+    QVERIFY(files.isValid());
+
+    const QString note = QStringLiteral("  中文, 日本語; = \"\\\n段落  ");
+    const QVariantList segmentNotes{QStringLiteral("段"), QString()};
+    const QVariantList commentRows{QVariant(segmentNotes), QVariant(QVariantList{QStringLiteral("二")})};
+    const QVariantMap multipleRows{{originals, QStringList{QStringLiteral("A"), QStringLiteral("B")}},
+        {mappings, QStringList{QStringLiteral("C"), QStringLiteral("D")}}, {notes, QStringList{note, QString()}},
+        {categories, QStringList{}}, {comments, commentRows}, {upComments, QVariantList{}}};
+    const QVariantMap singleRow{{originals, QStringList{QStringLiteral("A")}}, {mappings, QStringList{QStringLiteral("C")}},
+        {notes, QStringList{note}}, {comments, QVariantList{QVariant(segmentNotes)}}};
+
+    int fileIndex = 0;
+    for (const auto &values : {singleRow, multipleRows}) {
+        const auto path = files.filePath(QString::number(fileIndex++) + QStringLiteral(".ini"));
+        {
+            QSettings settings(path, QSettings::IniFormat);
+            QKeyMapperQtCompat::setIniCodecUtf8(settings);
+            for (auto it = values.cbegin(); it != values.cend(); ++it) settings.setValue(it.key(), it.value());
+            settings.setValue(QStringLiteral("Other/KeyMapData_OriginalKeys"), QStringLiteral("Z"));
+            settings.sync();
+            QCOMPARE(settings.status(), QSettings::NoError);
+        }
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const auto fromGui = decodeMappingTableBackup(file.readAll(), fields);
+        QByteArray encoded("[General]\n");
+        for (auto it = values.cbegin(); it != values.cend(); ++it)
+            QVERIFY(appendBackupIniValue(encoded, it.key().toLatin1(), it.value(), MaxTableBackupBytes));
+        const auto fromMcp = decodeMappingTableBackup(encoded, fields);
+        QSettings readback(path, QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(readback);
+        for (const auto &decoded : {fromGui, fromMcp}) {
+            QCOMPARE(decoded.status, BackupDecodeStatus::Ok);
+            QCOMPARE(decoded.values.keys(), values.keys());
+            for (const auto &field : values.keys()) {
+                if (field == comments || field == upComments) {
+                    QCOMPARE(decoded.values.value(field).toList(), readback.value(field).toList());
+                } else {
+                    QCOMPARE(decoded.values.value(field).toStringList(), readback.value(field).toStringList());
+                }
+            }
+            QCOMPARE(decoded.values.value(notes).toStringList().first(), note);
+        }
+    }
+}
+
+void McpControlTest::mappingTableBackupChecksLimitsAndShape()
+{
+    using namespace QKeyMapperConstants;
+    const QStringList fields{QLatin1String(KEYMAPDATA_ORIGINALKEYS), QLatin1String(KEYMAPDATA_MAPPINGKEYS),
+        QLatin1String(KEYMAPDATA_MAPPINGKEYS_COMMENTS)};
+    const QByteArray legacy("\xef\xbb\xbf; legacy\r\n[General]\r\nkeymapdata_originalkeys=A\r\nKeyMapData_MappingKeys=B\r\n");
+    const auto read = [&](const QByteArray &bytes) { return decodeMappingTableBackup(bytes, fields).status; };
+    QCOMPARE(read(legacy), BackupDecodeStatus::Ok);
+    QCOMPARE(read("[Other]\nKeyMapData_OriginalKeys=A\nKeyMapData_MappingKeys=B\n"), BackupDecodeStatus::MissingRequiredField);
+    QCOMPARE(read("[General]\nKeyMapData_OriginalKeys=A, C\nKeyMapData_MappingKeys=B\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(read(legacy + "KeyMapData_OriginalKeys=C\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(read(legacy + "KeyMapData_MappingKeys_Comments=\"unterminated\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(read(legacy + "KeyMapData_MappingKeys_Comments=@Variant(\\0\\0\\0\\t\\xff\\xff\\xff\\xff)\n"),
+             BackupDecodeStatus::TooManyEntries);
+    QCOMPARE(read(legacy + "KeyMapData_MappingKeys_Comments=@Variant(\\0\\0\\0\\x7f)\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(read(legacy + "Future=any ignored representation\n"), BackupDecodeStatus::Ok);
+    QCOMPARE(read(QByteArray(MaxTableBackupBytes + 1, 'x')), BackupDecodeStatus::TooLarge);
+
+    const auto many = QByteArray("A, ").repeated(MaxTableBackupRows - 1) + 'A';
+    QCOMPARE(read("KeyMapData_OriginalKeys=" + many + "\nKeyMapData_MappingKeys=" + many + '\n'), BackupDecodeStatus::Ok);
+    QCOMPARE(read("KeyMapData_OriginalKeys=" + many + ", A\nKeyMapData_MappingKeys=" + many + ", A\n"),
+             BackupDecodeStatus::TooManyEntries);
+
+    QByteArray wrongType("[General]\n");
+    QVERIFY(appendBackupIniValue(wrongType, KEYMAPDATA_ORIGINALKEYS, 42, MaxTableBackupBytes));
+    wrongType.append("KeyMapData_MappingKeys=B\n");
+    QCOMPARE(read(wrongType), BackupDecodeStatus::InvalidFormat);
 }
 
 void McpControlTest::mappingChangeArguments()

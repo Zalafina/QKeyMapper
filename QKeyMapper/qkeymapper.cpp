@@ -13048,9 +13048,6 @@ int QKeyMapper::tabIndexToSwitchByTabName(const QString &tabName)
     return -1;
 }
 
-static constexpr int MaxTableBackupRows = 100;
-static constexpr int MaxTableBackupBytes = 128 * 1024;
-
 static OrderedMap<QString, QVariant> collectMappingTableExportValues(const QList<MAP_KEYDATA> &mappingData)
 {
     QStringList original_keys;
@@ -38958,11 +38955,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         int coalescedEntries = 0;
         if (importing) {
             const auto backup = decodeMacroBackup(macro.importDocument);
-            if (backup.status == MacroBackupStatus::TooManyEntries || backup.status == MacroBackupStatus::TooLarge) {
+            if (backup.status == BackupDecodeStatus::TooManyEntries || backup.status == BackupDecodeStatus::TooLarge) {
                 reject(QStringLiteral("backup_too_large"), QStringLiteral("Import up to 100 entries and 128 KiB at a time."));
                 return;
             }
-            if (backup.status != MacroBackupStatus::Ok) {
+            if (backup.status != BackupDecodeStatus::Ok) {
                 reject(QStringLiteral("invalid_macro_backup"), QStringLiteral("The file must contain a valid MacroList_Export backup."));
                 return;
             }
