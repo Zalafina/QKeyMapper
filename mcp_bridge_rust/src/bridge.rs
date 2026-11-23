@@ -11,7 +11,7 @@ use tokio::sync::oneshot;
 use crate::demo_scene::DemoSession;
 use crate::native::{
     Cancel, Connection, DemoOptions, MacroBackupDirectory, NativeError, Result, Target,
-    backup_bytes, require_pristine_thread,
+    backup_bytes, require_pristine_thread, table_backup_bytes,
 };
 use crate::state_wait::StateWait;
 use crate::wire::Object;
@@ -21,7 +21,8 @@ enum Operation {
         pair: bool,
     },
     Request(&'static str, Object),
-    ExportMacros {
+    ExportBackup {
+        method: &'static str,
         arguments: Object,
         directory: Arc<MacroBackupDirectory>,
         name: String,
@@ -167,14 +168,19 @@ impl Bridge {
         self.submit(Operation::Request(method, arguments))
     }
 
-    pub fn export_macros(
+    pub fn export_backup(
         &self,
+        method: &'static str,
         arguments: Object,
         directory: Arc<MacroBackupDirectory>,
         name: String,
         overwrite: bool,
     ) -> Result<Pending> {
-        self.submit(Operation::ExportMacros {
+        if !matches!(method, "qkm_export_macros" | "qkm_export_mapping_table") {
+            return Err(NativeError::new("unsupported_method"));
+        }
+        self.submit(Operation::ExportBackup {
+            method,
             arguments,
             directory,
             name,
@@ -299,7 +305,8 @@ fn perform(
             state.lock().unwrap().status = status.clone();
             Ok(status)
         }
-        Operation::ExportMacros {
+        Operation::ExportBackup {
+            method,
             arguments,
             directory,
             name,
@@ -308,15 +315,24 @@ fn perform(
             let session = session
                 .as_mut()
                 .ok_or_else(|| NativeError::new("not_connected"))?;
-            let revision = arguments["catalog_revision"].clone();
-            let scope = arguments["scope"].clone();
-            let mut response = session.call("qkm_export_macros", arguments, cancel)?;
+            let expected = Value::Object(arguments.clone());
+            let mut response = session.call(method, arguments, cancel)?;
             state.lock().unwrap().status = session.info();
             if response["ok"].as_bool() != Some(true) {
                 return Ok(response);
             }
             let result = &mut response["result"];
-            let bytes = backup_bytes(result, &session.instance(), &revision, &scope)?;
+            let instance = session.instance();
+            let bytes = if method == "qkm_export_macros" {
+                backup_bytes(
+                    result,
+                    &instance,
+                    &expected["catalog_revision"],
+                    &expected["scope"],
+                )?
+            } else {
+                table_backup_bytes(result, &instance, &expected["source_tab_ref"])?
+            };
             match directory.write(&name, overwrite, &bytes, cancel) {
                 Ok(path) => {
                     result.as_object_mut().unwrap().remove("document_base64");

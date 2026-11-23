@@ -150,25 +150,36 @@ Status decodeVariant(const QByteArray &token, bool listDocument, QVariant &value
 
 } // namespace
 
-QByteArray encodeMacroBackup(const QVariantList &macros)
+bool appendBackupIniValue(QByteArray &document, const QByteArray &key, const QVariant &value, int maxBytes)
 {
-    QByteArray document("[General]\nMacroList_Export=\"@Variant(");
+    const QByteArray prefix("=\"@Variant(");
     const QByteArray suffix(")\"\n");
-    const qsizetype maximumPayload = (MaxMacroBackupBytes - document.size() - suffix.size()) / 4;
+    const qsizetype available = maxBytes - document.size() - key.size() - prefix.size() - suffix.size();
+    if (available <= 0) return false;
 
-    // Wrap a single macro in a list so QSettings still reads the value as a list.
     QByteArray payload;
     QDataStream stream(&payload, QIODevice::WriteOnly);
     stream.setVersion(QDataStream::Qt_4_0);
-    stream << QVariant(macros);
-    if (stream.status() != QDataStream::Ok || payload.size() > maximumPayload) return {};
+    stream << value;
+    if (stream.status() != QDataStream::Ok || payload.size() > available / 4) return false;
 
     const QByteArray hex = payload.toHex();
-    document.reserve(document.size() + 2 * hex.size() + suffix.size());
+    document.reserve(document.size() + key.size() + prefix.size() + 2 * hex.size() + suffix.size());
+    document.append(key).append(prefix);
     for (qsizetype index = 0; index < hex.size(); index += 2) {
         document.append("\\x").append(hex.constData() + index, 2);
     }
-    return document.append(suffix);
+    document.append(suffix);
+    return true;
+}
+
+QByteArray encodeMacroBackup(const QVariantList &macros)
+{
+    QByteArray document("[General]\n");
+    // Wrap a single macro in a list so QSettings still reads the value as a list.
+    if (!appendBackupIniValue(document, QKeyMapperConstants::MACROLIST_EXPORT, QVariant(macros), MaxMacroBackupBytes))
+        return {};
+    return document;
 }
 
 MacroBackupDocument decodeMacroBackup(const QByteArray &document)

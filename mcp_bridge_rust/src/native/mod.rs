@@ -26,8 +26,8 @@ pub use credentials::{Credential, CredentialStore};
 pub use demo::{DemoOptions, DemoRecord};
 pub use discovery::{Discovery, discover, file_identity};
 pub use identity::{Identity, identity, own_identity, require_pristine_thread};
-pub(crate) use macro_backup::backup_bytes;
 pub use macro_backup::{MacroBackupDirectory, valid_macro_backup_name};
+pub(crate) use macro_backup::{backup_bytes, table_backup_bytes};
 pub use pipe::{Cancel, Pipe};
 pub use session::{Connection, Target};
 

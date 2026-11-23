@@ -381,6 +381,24 @@ void McpControlTest::macroBackupChecksLimitsAndFormat()
     entries.append(QVariantMap{});
     QCOMPARE(decodeMacroBackup(encodeMacroBackup(entries)).status, MacroBackupStatus::TooManyEntries);
     QCOMPARE(decodeMacroBackup(encodeMacroBackup({QDateTime::currentDateTimeUtc()})).status, MacroBackupStatus::InvalidFormat);
+
+    QByteArray multiField = "[General]\n";
+    const auto keys = QStringList{QStringLiteral("A"), QStringLiteral("B")};
+    QVERIFY(appendBackupIniValue(multiField, "KeyMapData_OriginalKeys", keys, MaxMacroBackupBytes));
+    const auto before = multiField;
+    QVERIFY(!appendBackupIniValue(multiField, "KeyMapData_MappingKeys", keys, int(before.size())));
+    QCOMPARE(multiField, before);
+    QVERIFY(appendBackupIniValue(multiField, "KeyMapData_MappingKeys", keys, MaxMacroBackupBytes));
+    QTemporaryDir files;
+    QVERIFY(files.isValid());
+    QFile output(files.filePath(QStringLiteral("mapping-table.ini")));
+    QVERIFY(output.open(QIODevice::WriteOnly));
+    QCOMPARE(output.write(multiField), qint64(multiField.size()));
+    output.close();
+    QSettings settings(output.fileName(), QSettings::IniFormat);
+    QCOMPARE(settings.value(QStringLiteral("KeyMapData_OriginalKeys")).toStringList(), keys);
+    QCOMPARE(settings.value(QStringLiteral("KeyMapData_MappingKeys")).toStringList(), keys);
+    QCOMPARE(settings.status(), QSettings::NoError);
 }
 
 void McpControlTest::mappingChangeArguments()

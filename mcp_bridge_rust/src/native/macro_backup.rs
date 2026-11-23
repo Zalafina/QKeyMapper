@@ -224,7 +224,6 @@ pub(crate) fn backup_bytes(
     scope: &Value,
 ) -> Result<Vec<u8>> {
     let invalid = || NativeError::new("invalid_macro_backup");
-    let text = result["document_base64"].as_str().ok_or_else(invalid)?;
     if result["instance"] != instance
         || result["format"] != "qkeymapper_macro_ini_v1"
         || &result["catalog_revision"] != revision
@@ -232,16 +231,46 @@ pub(crate) fn backup_bytes(
         || !result["macro_count"]
             .as_u64()
             .is_some_and(|count| (1..=100).contains(&count))
-        || text.len() > MAX_BACKUP_BYTES.div_ceil(3) * 4
     {
         return Err(invalid());
     }
-    let bytes = STANDARD.decode(text).map_err(|_| invalid())?;
-    if bytes.len() > MAX_BACKUP_BYTES
-        || result["bytes"].as_u64() != Some(bytes.len() as u64)
-        || !bytes.starts_with(INI_PREFIX)
-        || !bytes.ends_with(INI_SUFFIX)
+    let bytes = bounded_document(result, "invalid_macro_backup")?;
+    if !bytes.starts_with(INI_PREFIX) || !bytes.ends_with(INI_SUFFIX) {
+        return Err(invalid());
+    }
+    Ok(bytes)
+}
+
+pub(crate) fn table_backup_bytes(
+    result: &Value,
+    instance: &str,
+    target: &Value,
+) -> Result<Vec<u8>> {
+    let invalid = || NativeError::new("invalid_table_backup");
+    if result["instance"] != instance
+        || result["format"] != "qkeymapper_mapping_table_ini_v1"
+        || &result["source_tab_ref"] != target
+        || !result["row_count"]
+            .as_u64()
+            .is_some_and(|count| (1..=100).contains(&count))
     {
+        return Err(invalid());
+    }
+    let bytes = bounded_document(result, "invalid_table_backup")?;
+    if !bytes.starts_with(b"[General]") {
+        return Err(invalid());
+    }
+    Ok(bytes)
+}
+
+fn bounded_document(result: &Value, code: &'static str) -> Result<Vec<u8>> {
+    let invalid = || NativeError::new(code);
+    let text = result["document_base64"].as_str().ok_or_else(invalid)?;
+    if text.len() > MAX_BACKUP_BYTES.div_ceil(3) * 4 {
+        return Err(invalid());
+    }
+    let bytes = STANDARD.decode(text).map_err(|_| invalid())?;
+    if bytes.len() > MAX_BACKUP_BYTES || result["bytes"].as_u64() != Some(bytes.len() as u64) {
         return Err(invalid());
     }
     Ok(bytes)
@@ -291,6 +320,30 @@ mod tests {
             let mut bad = result.clone();
             bad[key] = value;
             assert!(backup_bytes(&bad, "owned", &revision, &scope).is_err());
+        }
+    }
+
+    #[test]
+    fn table_export_requires_the_bound_source_and_document() {
+        let document = b"[General]\r\nKeyMapData_OriginalKeys=A\r\n";
+        let source = json!("bound-source");
+        let result = json!({
+            "instance": "owned", "format": "qkeymapper_mapping_table_ini_v1", "row_count": 1,
+            "source_tab_ref": source, "bytes": document.len(), "document_base64": STANDARD.encode(document)
+        });
+        assert_eq!(
+            table_backup_bytes(&result, "owned", &source).unwrap(),
+            document
+        );
+        assert!(table_backup_bytes(&result, "owned", &json!("other")).is_err());
+        for (key, value) in [
+            ("row_count", json!(101)),
+            ("bytes", json!(1)),
+            ("document_base64", json!("%")),
+        ] {
+            let mut bad = result.clone();
+            bad[key] = value;
+            assert!(table_backup_bytes(&bad, "owned", &source).is_err());
         }
     }
 

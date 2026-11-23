@@ -9,7 +9,7 @@
     "选择另一个文件名，或经用户确认后明确允许覆盖。"
   ],
   "backup_directory_unavailable": [
-    "配置的本地宏备份目录不可用。",
+      "配置的本地备份目录不可用。",
     "核对 Sidecar 的 --macro-backup-directory 及本地目录访问。"
   ],
     "backup_read_failed": [
@@ -21,7 +21,7 @@
       "分成多份备份并分别预览。"
     ],
   "backup_write_failed": [
-    "未能写入宏备份文件。",
+      "未能写入备份文件。",
     "核对该本地目录权限、空间和目标文件占用。"
   ],
   "empty_macro_export": [
@@ -32,10 +32,18 @@
       "备份中没有带名称的宏。",
       "选择包含宏的旧版或当前 QKeyMapper 备份。"
     ],
+    "empty_table_export": [
+      "所选源表没有可导出的映射。",
+      "查询当前已附着的源表并选择有映射行的表。"
+    ],
   "invalid_macro_backup": [
       "宏备份数据未通过校验。",
       "核对备份文件的格式，或重新导出后再预览。"
   ],
+    "invalid_table_backup": [
+      "映射表备份未通过来源、大小或格式校验。",
+      "查询当前源表和连接实例后确认导出目标。"
+    ],
   "macro_not_found": [
     "至少一个宏不在所选作用域。",
     "查询当前宏目录，确认每个名称属于所选作用域。"
@@ -300,6 +308,42 @@
       "outputSchema": {
         "additionalProperties": true,
         "title": "qkm_export_macrosDictOutput",
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "从 qkm_query mapping_sources 取得同修订的 source_tab_ref，导出一个已附着的普通表或共通表的内存源行。需要产品 Read 和已完成清理的空闲状态。最多 100 个源行及 128 KiB，保留已有宏引用，宏定义另用宏备份。Rust 从启动时配置的 --macro-backup-directory 下写入单个 .ini，覆盖需 overwrite=true。返回文件、来源和字节数，配置草稿与配置文件保持。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["source_tab_ref", "file_name"],
+        "properties": {
+          "source_tab_ref": {
+            "type": "string",
+            "maxLength": 128,
+            "pattern": "^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$"
+          },
+          "file_name": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 255,
+            "pattern": "^[^<>:\"/\\\\|?*\\u0000-\\u001F]+\\.[iI][nN][iI]$"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "name": "qkm_export_mapping_table",
+      "outputSchema": {
+        "additionalProperties": true,
         "type": "object"
       }
     },

@@ -13048,6 +13048,9 @@ int QKeyMapper::tabIndexToSwitchByTabName(const QString &tabName)
     return -1;
 }
 
+static constexpr int MaxTableBackupRows = 100;
+static constexpr int MaxTableBackupBytes = 128 * 1024;
+
 static OrderedMap<QString, QVariant> collectMappingTableExportValues(const QList<MAP_KEYDATA> &mappingData)
 {
     QStringList original_keys;
@@ -38500,6 +38503,78 @@ void QKeyMapper::handleAutomationMacroExport(const QkmAutomation::AutomationRequ
             {QStringLiteral("document_base64"), QString::fromLatin1(document.toBase64())}});
 }
 
+void QKeyMapper::handleAutomationMappingTableExport(const QkmAutomation::AutomationRequest &request)
+{
+    using namespace QkmAutomation;
+    Q_ASSERT(QThread::currentThread() == thread());
+    auto &server = m_McpControlDialog->server();
+    const auto fail = [&](const QString &code, const QString &message) {
+        server.replyError(request.connectionId, request.requestId, code, message);
+    };
+    const auto reference = request.arguments.value(QStringLiteral("source_tab_ref"));
+    const QString revision = reference.toString().left(64);
+    const auto validation = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
+        {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), reference}});
+    if (request.arguments.size() != 1 || !validation.ok()) {
+        fail(QStringLiteral("invalid_arguments"), QStringLiteral("Provide an attached source Tab reference from the current catalog."));
+        return;
+    }
+
+    const int index = reference.toString().section(QLatin1Char(':'), 2, 2).toInt();
+    OrderedMap<QString, QVariant> values;
+    QString kind;
+    int rowCount = 0;
+    {
+        QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+        if (!server.isRequestCurrent(request)) return;
+        QString snapshotError;
+        const auto snapshot = collectAutomationSourceSnapshotWithAccess(snapshotError);
+        if (snapshot.isEmpty() || !snapshotError.isEmpty()) {
+            fail(snapshotError.isEmpty() ? QStringLiteral("context_busy") : snapshotError,
+                QStringLiteral("A safe source snapshot is unavailable for export."));
+            return;
+        }
+        const auto page = querySourceSnapshot(snapshot, server.instanceId(), request.pairId, request.permissionEpoch,
+            {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), revision},
+                {QStringLiteral("limit"), 1}, {QStringLiteral("offset"), index}});
+        if (!page.ok()) { fail(page.errorCode, page.message); return; }
+        const auto items = page.page.value(QStringLiteral("items")).toArray();
+        const auto item = items.isEmpty() ? QJsonObject() : items.first().toObject();
+        if (index >= s_KeyMappingTabInfoList.size() || item.value(QStringLiteral("source_tab_ref")) != reference
+            || !item.value(QStringLiteral("attached_to_ui")).toBool() || item.value(QStringLiteral("ui_index")).toInt(-1) != index) {
+            fail(QStringLiteral("invalid_target"), QStringLiteral("Only attached source Tabs can be exported."));
+            return;
+        }
+        const auto *mappingData = s_KeyMappingTabInfoList.at(index).KeyMappingData;
+        if (!mappingData || mappingData->isEmpty()) {
+            fail(QStringLiteral("empty_table_export"), QStringLiteral("The selected source Tab has no mapping rows."));
+            return;
+        }
+        rowCount = int(mappingData->size());
+        if (rowCount > MaxTableBackupRows) {
+            fail(QStringLiteral("result_too_large"), QStringLiteral("A single mapping table backup allows up to 100 rows."));
+            return;
+        }
+        kind = item.value(QStringLiteral("kind")).toString();
+        values = collectMappingTableExportValues(*mappingData);
+    }
+
+    QByteArray document("[General]\n");
+    for (auto it = std::as_const(values).begin(); it != std::as_const(values).end(); ++it) {
+        if (!appendBackupIniValue(document, it.key().toLatin1(), it.value(), MaxTableBackupBytes)) {
+            fail(QStringLiteral("result_too_large"), QStringLiteral("The mapping table backup exceeds the 128 KiB document limit."));
+            return;
+        }
+    }
+    if (!server.isRequestCurrent(request)) return;
+    server.reply(request.connectionId, request.requestId, {{QStringLiteral("instance"), server.instanceId()},
+        {QStringLiteral("source_tab_ref"), reference}, {QStringLiteral("source_kind"), kind},
+        {QStringLiteral("row_count"), rowCount}, {QStringLiteral("format"), QStringLiteral("qkeymapper_mapping_table_ini_v1")},
+        {QStringLiteral("reference_policy"), QStringLiteral("macro_references_preserved_definitions_excluded")},
+        {QStringLiteral("bytes"), document.size()},
+        {QStringLiteral("document_base64"), QString::fromLatin1(document.toBase64())}});
+}
+
 void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -40886,6 +40961,10 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
         handleAutomationMacroExport(request);
         return;
     }
+    if (request.method == QStringLiteral("qkm_export_mapping_table")) {
+        handleAutomationMappingTableExport(request);
+        return;
+    }
     if (request.method == QStringLiteral("qkm_query")) {
         const QString entity = request.arguments.value(QStringLiteral("entity")).toString();
         if (entity == QStringLiteral("windows")) {
@@ -40954,6 +41033,13 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                 {QStringLiteral("max_macros"), 100}, {QStringLiteral("max_document_bytes"), 128 * 1024},
                 {QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_idle_macro_catalog"),
                     QStringLiteral("document_only"), QStringLiteral("one_scope_per_export")}}},
+            QJsonObject{{QStringLiteral("id"), QStringLiteral("mapping.table.backup.read")},
+                {QStringLiteral("method"), QStringLiteral("qkm_export_mapping_table")},
+                {QStringLiteral("required_scopes"), int(QkmAutomation::Read)},
+                {QStringLiteral("read_only"), true},
+                {QStringLiteral("max_rows"), MaxTableBackupRows}, {QStringLiteral("max_document_bytes"), MaxTableBackupBytes},
+                {QStringLiteral("limitations"), QJsonArray{QStringLiteral("attached_idle_source"),
+                    QStringLiteral("document_only"), QStringLiteral("macro_references_preserved_definitions_excluded")}}},
             QJsonObject{{QStringLiteral("id"), QStringLiteral("source.read")},
                 {QStringLiteral("method"), QStringLiteral("qkm_query")},
                 {QStringLiteral("required_scopes"), int(QkmAutomation::Read)}, {QStringLiteral("read_only"), true},

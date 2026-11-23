@@ -205,6 +205,15 @@ struct MacroExport {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct TableExport {
+    source_tab_ref: String,
+    file_name: String,
+    #[serde(default)]
+    overwrite: bool,
+}
+
+#[derive(Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum MacroInsertPosition {
     Above,
@@ -599,6 +608,9 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                     })
             })
         }
+        "qkm_export_mapping_table" => typed(arguments, |v: &TableExport| {
+            tab_ref(&v.source_tab_ref) && valid_macro_backup_name(&v.file_name)
+        }),
         "qkm_get_operation" => typed(arguments, |v: &Operation| id(&v.operation_id)),
         "qkm_stop_mapping" => typed(arguments, |v: &Stop| id(&v.instance) && id(&v.request_id)),
         "qkm_start_mapping" => typed(arguments, |v: &Start| {

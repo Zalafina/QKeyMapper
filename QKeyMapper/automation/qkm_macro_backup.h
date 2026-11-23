@@ -16,6 +16,7 @@ struct MacroBackupDocument {
 };
 
 QByteArray encodeMacroBackup(const QVariantList &macros);
+bool appendBackupIniValue(QByteArray &document, const QByteArray &key, const QVariant &value, int maxBytes);
 MacroBackupDocument decodeMacroBackup(const QByteArray &document);
 
 }

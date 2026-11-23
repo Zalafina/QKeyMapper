@@ -136,6 +136,10 @@ impl ServerHandler for Handler {
             "qkm_export_macros" if self.macro_backup.is_some() => {
                 self.request("qkm_export_macros", arguments, context).await
             }
+            "qkm_export_mapping_table" if self.macro_backup.is_some() => {
+                self.request("qkm_export_mapping_table", arguments, context)
+                    .await
+            }
             "qkm_get_operation" => self.request("qkm_get_operation", arguments, context).await,
             "qkm_stop_mapping" => self.request("qkm_stop_mapping", arguments, context).await,
             "qkm_start_mapping" => self.request("qkm_start_mapping", arguments, context).await,
@@ -192,7 +196,7 @@ impl Handler {
         if context.ct.is_cancelled() {
             return json!({"ok": false, "error": "cancelled"});
         }
-        let admitted = if method == "qkm_export_macros" {
+        let admitted = if matches!(method, "qkm_export_macros" | "qkm_export_mapping_table") {
             let directory = self
                 .macro_backup
                 .as_ref()
@@ -202,7 +206,7 @@ impl Handler {
             };
             let overwrite = arguments.remove("overwrite") == Some(Value::Bool(true));
             self.bridge
-                .export_macros(arguments, directory.clone(), name, overwrite)
+                .export_backup(method, arguments, directory.clone(), name, overwrite)
         } else if method == "qkm_preview_changes"
             && arguments.get("action").and_then(Value::as_str) == Some("macro.import")
         {
@@ -249,7 +253,9 @@ impl Handler {
             capabilities.retain(|capability| {
                 !matches!(
                     capability["id"].as_str(),
-                    Some("macro.import.preview" | "macro.import.apply")
+                    Some(
+                        "macro.import.preview" | "macro.import.apply" | "mapping.table.backup.read"
+                    )
                 )
             });
         }
@@ -325,7 +331,7 @@ pub fn run(
     contracts.tools.retain(|tool| match tool.name.as_ref() {
         "qkm_get_demo_state" => demo_configured,
         "qkm_demo_mapping" => demo_mapping,
-        "qkm_export_macros" => macro_backup.is_some(),
+        "qkm_export_macros" | "qkm_export_mapping_table" => macro_backup.is_some(),
         _ => true,
     });
     let worker = Worker::start(target, demo).map_err(|_| "Could not start the IPC worker")?;

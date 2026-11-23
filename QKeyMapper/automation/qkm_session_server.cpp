@@ -25,7 +25,7 @@ quint32 minimumScopes(const QString &method)
     if (method == QStringLiteral("qkm_start_mapping") || method == QStringLiteral("qkm_stop_mapping"))
         return Read | RunMapping;
     for (const char *name : {"qkm_get_capabilities", "qkm_get_state", "qkm_query", "qkm_get_help",
-                            "qkm_get_operation", "qkm_wait_state", "qkm_export_macros"}) {
+                            "qkm_get_operation", "qkm_wait_state", "qkm_export_macros", "qkm_export_mapping_table"}) {
         if (method == QLatin1String(name)) return Read;
     }
     return 0;
