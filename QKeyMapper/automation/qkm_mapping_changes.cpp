@@ -217,6 +217,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool mappingDisplayPreview = preview && action == QLatin1String("configuration.set_mapping_display");
     const bool insertModePreview = preview && action == QLatin1String("general.set_table_insert_mode");
     const bool editTriggerPreview = preview && action == QLatin1String("general.set_table_edit_trigger");
+    const bool windowDisplayModePreview = preview && action == QLatin1String("configuration.set_window_display_mode");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
     const bool deleteTabPreview = preview && action == QLatin1String("tab.delete");
@@ -229,7 +230,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool tabActionPreview = addBlankTabPreview || copyTabPreview || deleteTabPreview
         || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
-        || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview;
+        || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview || windowDisplayModePreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -243,6 +244,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : mappingDisplayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("mapping_display")}
         : insertModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_insert_mode")}
         : editTriggerPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_edit_trigger")}
+        : windowDisplayModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_display_mode")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
         : tabNotificationColorsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"),
@@ -318,6 +320,14 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 return fail("Table edit trigger must be 0 (right double-click) or 1 (left double-click).");
             }
             result.update.tableEditTrigger = trigger;
+        }
+        if (windowDisplayModePreview) {
+            const int mode = arguments.value(QStringLiteral("window_display_mode")).toInt(-1);
+            if (mode < QKeyMapperConstants::WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MIN
+                || mode > QKeyMapperConstants::WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MAX) {
+                return fail("Window display mode must be 0 (ignore), 1 (fullscreen), or 2 (windowed).");
+            }
+            result.update.windowDisplayMode = mode;
         }
         if (tabHotkeyPreview) {
             const auto hotkey = arguments.value(QStringLiteral("tab_hotkey"));
@@ -1188,6 +1198,21 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     capabilities.append(editTriggerPreview);
     capabilities.append(editTriggerApply);
+    auto windowDisplayModePreview = capability("configuration.set_window_display_mode.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_window_display_mode")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("window_display_mode"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("enum"), QJsonArray{0, 1, 2}}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_display_mode")}));
+    auto windowDisplayModeApply = capability("configuration.set_window_display_mode.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&windowDisplayModePreview, &windowDisplayModeApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_configuration"),
+            QStringLiteral("requires_editable_display_condition"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    capabilities.append(windowDisplayModePreview);
+    capabilities.append(windowDisplayModeApply);
     capabilities.append(operation);
     return capabilities;
 }

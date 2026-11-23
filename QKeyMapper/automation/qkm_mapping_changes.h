@@ -61,6 +61,7 @@ struct MappingUpdateArguments {
     QJsonObject mappingDisplay;
     std::optional<int> tableInsertMode;
     std::optional<int> tableEditTrigger;
+    std::optional<int> windowDisplayMode;
     QString tabNotificationFontColor;
     QString tabNotificationBackgroundColor;
     bool addBlankTab = false;

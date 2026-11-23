@@ -294,6 +294,14 @@ struct TableEditTrigger {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct WindowDisplayMode {
+    action: String,
+    source_tab_ref: String,
+    window_display_mode: u8,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct Preview {
     #[serde(default)]
     action: Action,
@@ -632,6 +640,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 Some("general.set_table_edit_trigger") => {
                     return typed(arguments, |v: &TableEditTrigger| {
                         tab_ref(&v.source_tab_ref) && v.table_edit_trigger <= 1
+                    });
+                }
+                Some("configuration.set_window_display_mode") => {
+                    return typed(arguments, |v: &WindowDisplayMode| {
+                        tab_ref(&v.source_tab_ref) && v.window_display_mode <= 2
                     });
                 }
                 Some("macro.upsert") => {

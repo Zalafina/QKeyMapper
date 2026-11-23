@@ -946,8 +946,23 @@ void McpControlTest::mappingChangeArguments()
         QVERIFY(!validateTablePreference(QStringLiteral("table_insert_mode"), mode).ok());
         QVERIFY(!validateTablePreference(QStringLiteral("table_edit_trigger"), mode).ok());
     }
-    QCOMPARE(capabilities.size(), 66);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 64);
+    const auto validateWindowDisplayMode = [&](const QJsonValue &mode) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_window_display_mode")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("window_display_mode"), mode}});
+    };
+    for (int mode : {0, 1, 2}) {
+        const auto result = validateWindowDisplayMode(mode);
+        QVERIFY(result.ok() && result.update.windowDisplayMode.has_value());
+        QCOMPARE(*result.update.windowDisplayMode, mode);
+    }
+    for (const auto &mode : {QJsonValue(-1), QJsonValue(3), QJsonValue(1.5), QJsonValue(true), QJsonValue(QStringLiteral("2"))})
+        QVERIFY(!validateWindowDisplayMode(mode).ok());
+    QCOMPARE(capabilities.size(), 68);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 66);
+    QCOMPARE(capabilities.at(65).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_display_mode.preview"));
+    QCOMPARE(capabilities.at(66).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_display_mode.apply"));
     QCOMPARE(capabilities.at(63).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_edit_trigger.preview"));
     QCOMPARE(capabilities.at(64).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_edit_trigger.apply"));
     QCOMPARE(capabilities.at(61).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_insert_mode.preview"));

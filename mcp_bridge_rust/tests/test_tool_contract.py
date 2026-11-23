@@ -158,13 +158,14 @@ async def check_contract(exe):
             validator = Draft202012Validator(previews)
             for request in (upsert, remove, import_request):
                 validator.validate(request)
-            for field in ("table_insert_mode", "table_edit_trigger"):
-                request = {"action": f"general.set_{field}", "source_tab_ref": tab, field: 0}
-                for mode_value in (0, 1):
+            for section, field, count in (("general", "table_insert_mode", 2), ("general", "table_edit_trigger", 2),
+                                          ("configuration", "window_display_mode", 3)):
+                request = {"action": f"{section}.set_{field}", "source_tab_ref": tab, field: 0}
+                for mode_value in range(count):
                     args = request | {field: mode_value}
                     validator.validate(args)
                     expect_not_connected(await client.call_tool("qkm_preview_changes", args))
-                for fields in ({field: 2}, {field: None}, {field: True}, {field: -1}, {"mapping_key": "A"}):
+                for fields in ({field: count}, {field: None}, {field: True}, {field: -1}, {"mapping_key": "A"}):
                     args = request | fields
                     assert not validator.is_valid(args)
                     denied = await client.call_tool("qkm_preview_changes", args)
@@ -195,7 +196,7 @@ async def check_contract(exe):
                 denied = await client.call_tool("qkm_preview_changes", invalid)
                 assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
-                "copy_to", "macro", "table_insert_mode", "table_edit_trigger"}
+                "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
             assert move_rule["required"] == ["action"]
