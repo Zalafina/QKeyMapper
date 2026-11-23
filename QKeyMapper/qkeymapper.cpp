@@ -13048,24 +13048,8 @@ int QKeyMapper::tabIndexToSwitchByTabName(const QString &tabName)
     return -1;
 }
 
-bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filename)
+static OrderedMap<QString, QVariant> collectMappingTableExportValues(const QList<MAP_KEYDATA> &mappingData)
 {
-    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
-        return false;
-    }
-
-    if (filename.isEmpty()) {
-        return false;
-    }
-
-    QList<MAP_KEYDATA> *mappingDataList = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
-
-    if (mappingDataList->isEmpty()) {
-        return false;
-    }
-
-    QSettings keyMappingDataFile(filename, QSettings::IniFormat);
-    QKeyMapperQtCompat::setIniCodecUtf8(keyMappingDataFile);
     QStringList original_keys;
     QStringList mapping_keysList;
     QStringList mappingkeys_keyupList;
@@ -13141,7 +13125,7 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     QStringList floatingbutton_dragtomoveList;
     QStringList floatingbutton_syncgroupidList;
 
-    for (const MAP_KEYDATA &keymapdata : std::as_const(*mappingDataList))
+    for (const MAP_KEYDATA &keymapdata : mappingData)
     {
         original_keys << keymapdata.Original_Key;
         QString mappingkeys_str = keymapdata.Mapping_Keys.join(SEPARATOR_NEXTARROW);
@@ -13514,83 +13498,112 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
         floatingbutton_syncgroupidList.append(QString::number(keymapdata.FloatingButton_SyncGroupId));
     }
 
-    keyMappingDataFile.setValue(KEYMAPDATA_ORIGINALKEYS, original_keys );
-    keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS, mapping_keysList);
-    keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS_KEYUP, mappingkeys_keyupList);
-    keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS_COMMENTS, mappingKeysCommentsList);
-    keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS, mappingKeysKeyUpCommentsList);
-    keyMappingDataFile.setValue(KEYMAPDATA_NOTE, notesList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CATEGORY, categorysList);
-    keyMappingDataFile.setValue(KEYMAPDATA_DISABLED, disabledList);
-    keyMappingDataFile.setValue(KEYMAPDATA_BURST, burstList);
-    keyMappingDataFile.setValue(KEYMAPDATA_BURSTPRESS_TIME, burstpresstimeList);
-    keyMappingDataFile.setValue(KEYMAPDATA_BURSTRELEASE_TIME , burstreleasetimeList);
-    keyMappingDataFile.setValue(KEYMAPDATA_LOCK, lockList);
-    keyMappingDataFile.setValue(KEYMAPDATA_MAPPINGKEYUNLOCK, mappingkeyunlockList);
-    keyMappingDataFile.setValue(KEYMAPDATA_DISABLEORIGINALKEYUNLOCK, disableoriginalkeyunlockList);
-    keyMappingDataFile.setValue(KEYMAPDATA_DISABLEFNKEYSWITCH, disablefnkeyswitchList);
-    keyMappingDataFile.setValue(KEYMAPDATA_SENDMAPPINGKEYMETHOD, sendmappingkeymethodList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FIXEDVKEYCODE, fixedvkeycodeList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CHECKCOMBKEYORDER, checkcombkeyorderList);
-    keyMappingDataFile.setValue(KEYMAPDATA_UNBREAKABLE, unbreakableList);
-    keyMappingDataFile.setValue(KEYMAPDATA_PASSTHROUGH, passthroughList);
-    keyMappingDataFile.setValue(KEYMAPDATA_SENDTIMING, sendtimingList);
-    keyMappingDataFile.setValue(KEYMAPDATA_PASTETEXTMODE, pastetextmodeList);
-    keyMappingDataFile.setValue(KEYMAPDATA_KEYSEQHOLDDOWN, keyseqholddownList);
-    keyMappingDataFile.setValue(KEYMAPDATA_REPEATMODE, repeatmodeList);
-    keyMappingDataFile.setValue(KEYMAPDATA_REPEATIMES, repeattimesList);
+    OrderedMap<QString, QVariant> values;
+    values.insert(QLatin1String(KEYMAPDATA_ORIGINALKEYS), original_keys);
+    values.insert(QLatin1String(KEYMAPDATA_MAPPINGKEYS), mapping_keysList);
+    values.insert(QLatin1String(KEYMAPDATA_MAPPINGKEYS_KEYUP), mappingkeys_keyupList);
+    values.insert(QLatin1String(KEYMAPDATA_MAPPINGKEYS_COMMENTS), mappingKeysCommentsList);
+    values.insert(QLatin1String(KEYMAPDATA_MAPPINGKEYS_KEYUP_COMMENTS), mappingKeysKeyUpCommentsList);
+    values.insert(QLatin1String(KEYMAPDATA_NOTE), notesList);
+    values.insert(QLatin1String(KEYMAPDATA_CATEGORY), categorysList);
+    values.insert(QLatin1String(KEYMAPDATA_DISABLED), disabledList);
+    values.insert(QLatin1String(KEYMAPDATA_BURST), burstList);
+    values.insert(QLatin1String(KEYMAPDATA_BURSTPRESS_TIME), burstpresstimeList);
+    values.insert(QLatin1String(KEYMAPDATA_BURSTRELEASE_TIME), burstreleasetimeList);
+    values.insert(QLatin1String(KEYMAPDATA_LOCK), lockList);
+    values.insert(QLatin1String(KEYMAPDATA_MAPPINGKEYUNLOCK), mappingkeyunlockList);
+    values.insert(QLatin1String(KEYMAPDATA_DISABLEORIGINALKEYUNLOCK), disableoriginalkeyunlockList);
+    values.insert(QLatin1String(KEYMAPDATA_DISABLEFNKEYSWITCH), disablefnkeyswitchList);
+    values.insert(QLatin1String(KEYMAPDATA_SENDMAPPINGKEYMETHOD), sendmappingkeymethodList);
+    values.insert(QLatin1String(KEYMAPDATA_FIXEDVKEYCODE), fixedvkeycodeList);
+    values.insert(QLatin1String(KEYMAPDATA_CHECKCOMBKEYORDER), checkcombkeyorderList);
+    values.insert(QLatin1String(KEYMAPDATA_UNBREAKABLE), unbreakableList);
+    values.insert(QLatin1String(KEYMAPDATA_PASSTHROUGH), passthroughList);
+    values.insert(QLatin1String(KEYMAPDATA_SENDTIMING), sendtimingList);
+    values.insert(QLatin1String(KEYMAPDATA_PASTETEXTMODE), pastetextmodeList);
+    values.insert(QLatin1String(KEYMAPDATA_KEYSEQHOLDDOWN), keyseqholddownList);
+    values.insert(QLatin1String(KEYMAPDATA_REPEATMODE), repeatmodeList);
+    values.insert(QLatin1String(KEYMAPDATA_REPEATIMES), repeattimesList);
 
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CENTERCOLOR, crosshair_centercolorList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CENTERSIZE, crosshair_centersizeList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CENTEROPACITY, crosshair_centeropacityList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR, crosshair_crosshaircolorList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH, crosshair_crosshairwidthList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH, crosshair_crosshairlengthList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY, crosshair_crosshairopacityList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWCENTER, crosshair_showcenterList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWTOP, crosshair_showtopList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWBOTTOM, crosshair_showbottomList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWLEFT, crosshair_showleftList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_SHOWRIGHT, crosshair_showrightList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_X_OFFSET, crosshair_x_offsetList);
-    keyMappingDataFile.setValue(KEYMAPDATA_CROSSHAIR_Y_OFFSET, crosshair_y_offsetList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_ENABLE, floatingbutton_enableList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_LABEL, floatingbutton_labelList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR, floatingbutton_buttoncolorList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR, floatingbutton_pressedcolorList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR, floatingbutton_lockedcolorList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR, floatingbutton_textcolorList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR, floatingbutton_bordercolorList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH, floatingbutton_borderwidthList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_WIDTH, floatingbutton_widthList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HEIGHT, floatingbutton_heightList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE, floatingbutton_fontsizeList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT, floatingbutton_fontweightList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY, floatingbutton_fontfamilyList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_RADIUS, floatingbutton_radiusList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY, floatingbutton_normalopacityList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY, floatingbutton_pressedopacityList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY, floatingbutton_lockedopacityList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_OPACITY, floatingbutton_opacityList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART, floatingbutton_showonmappingstartList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP, floatingbutton_showtooltipList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE, floatingbutton_syncpressedlockedstateList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP, floatingbutton_alwaysontopList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH, floatingbutton_mousepassthroughList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL, floatingbutton_enablegradientfillList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION, floatingbutton_enablehoveranimationList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH, floatingbutton_hovereffectstrengthList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH, floatingbutton_hoverglowstrengthList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE, floatingbutton_hovercontrastmodeList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION, floatingbutton_hoveranimationdurationList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR, floatingbutton_hovercustomcolorList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT, floatingbutton_referencepointList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET, floatingbutton_x_offsetList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET, floatingbutton_y_offsetList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE, floatingbutton_dragtomoveList);
-    keyMappingDataFile.setValue(KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID, floatingbutton_syncgroupidList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_CENTERCOLOR), crosshair_centercolorList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_CENTERSIZE), crosshair_centersizeList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_CENTEROPACITY), crosshair_centeropacityList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_CROSSHAIRCOLOR), crosshair_crosshaircolorList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_CROSSHAIRWIDTH), crosshair_crosshairwidthList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_CROSSHAIRLENGTH), crosshair_crosshairlengthList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_CROSSHAIROPACITY), crosshair_crosshairopacityList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_SHOWCENTER), crosshair_showcenterList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_SHOWTOP), crosshair_showtopList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_SHOWBOTTOM), crosshair_showbottomList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_SHOWLEFT), crosshair_showleftList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_SHOWRIGHT), crosshair_showrightList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_X_OFFSET), crosshair_x_offsetList);
+    values.insert(QLatin1String(KEYMAPDATA_CROSSHAIR_Y_OFFSET), crosshair_y_offsetList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_ENABLE), floatingbutton_enableList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_LABEL), floatingbutton_labelList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_BUTTONCOLOR), floatingbutton_buttoncolorList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_PRESSEDCOLOR), floatingbutton_pressedcolorList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_LOCKEDCOLOR), floatingbutton_lockedcolorList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_TEXTCOLOR), floatingbutton_textcolorList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_BORDERCOLOR), floatingbutton_bordercolorList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_BORDERWIDTH), floatingbutton_borderwidthList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_WIDTH), floatingbutton_widthList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_HEIGHT), floatingbutton_heightList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_FONTSIZE), floatingbutton_fontsizeList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_FONTWEIGHT), floatingbutton_fontweightList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_FONTFAMILY), floatingbutton_fontfamilyList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_RADIUS), floatingbutton_radiusList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_NORMALOPACITY), floatingbutton_normalopacityList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_PRESSEDOPACITY), floatingbutton_pressedopacityList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_LOCKEDOPACITY), floatingbutton_lockedopacityList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_OPACITY), floatingbutton_opacityList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_SHOWONMAPPINGSTART), floatingbutton_showonmappingstartList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_SHOWTOOLTIP), floatingbutton_showtooltipList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE), floatingbutton_syncpressedlockedstateList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_ALWAYSONTOP), floatingbutton_alwaysontopList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_MOUSEPASSTHROUGH), floatingbutton_mousepassthroughList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_ENABLEGRADIENTFILL), floatingbutton_enablegradientfillList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_ENABLEHOVERANIMATION), floatingbutton_enablehoveranimationList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_HOVEREFFECTSTRENGTH), floatingbutton_hovereffectstrengthList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_HOVERGLOWSTRENGTH), floatingbutton_hoverglowstrengthList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_HOVERCONTRASTMODE), floatingbutton_hovercontrastmodeList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_HOVERANIMATIONDURATION), floatingbutton_hoveranimationdurationList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_HOVERCUSTOMCOLOR), floatingbutton_hovercustomcolorList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_REFERENCEPOINT), floatingbutton_referencepointList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_X_OFFSET), floatingbutton_x_offsetList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_Y_OFFSET), floatingbutton_y_offsetList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_DRAGTOMOVE), floatingbutton_dragtomoveList);
+    values.insert(QLatin1String(KEYMAPDATA_FLOATINGBUTTON_SYNCGROUPID), floatingbutton_syncgroupidList);
 
-    return true;
+    return values;
+}
+
+bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filename)
+{
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size() || filename.isEmpty()) return false;
+    const auto *mappingData = s_KeyMappingTabInfoList.at(tabindex).KeyMappingData;
+    if (!mappingData || mappingData->isEmpty()) return false;
+
+    const auto values = collectMappingTableExportValues(*mappingData);
+    QSettings file(filename, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(file);
+    QVariantMap previous;
+    for (auto it = values.begin(); it != values.end(); ++it) {
+        if (file.contains(it.key())) previous.insert(it.key(), file.value(it.key()));
+    }
+    if (file.status() != QSettings::NoError) return false;
+    for (auto it = values.begin(); it != values.end(); ++it) {
+        file.setValue(it.key(), it.value());
+    }
+    file.sync();
+    if (file.status() == QSettings::NoError) return true;
+
+    // Undo this export in the shared QSettings cache before another reader can sync it.
+    for (auto it = values.begin(); it != values.end(); ++it) {
+        if (previous.contains(it.key())) file.setValue(it.key(), previous.value(it.key()));
+        else file.remove(it.key());
+    }
+    return false;
 }
 
 bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filename, MappingDataInsertSummary *insertSummary)
@@ -53075,6 +53088,8 @@ void QKeyMapper::exportMappingTableByTabIndex(int tabIndex)
         emit showPopupMessage_Signal(
             QObject::tr("Mapping data of table \"%1\" export successfully").arg(name),
             SUCCESS_COLOR, 3000);
+    } else {
+        emit showPopupMessage_Signal(tr("Save failure : ") + QFileInfo(filename).fileName(), FAILURE_COLOR, 3000);
     }
 }
 
