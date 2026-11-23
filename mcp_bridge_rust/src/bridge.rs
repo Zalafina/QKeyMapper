@@ -9,14 +9,23 @@ use tokio::sync::oneshot;
 
 use crate::demo_scene::DemoSession;
 use crate::native::{
-    Cancel, Connection, DemoOptions, NativeError, Result, Target, require_pristine_thread,
+    Cancel, Connection, DemoOptions, MacroBackupDirectory, NativeError, Result, Target,
+    backup_bytes, require_pristine_thread,
 };
 use crate::state_wait::StateWait;
 use crate::wire::Object;
 
 enum Operation {
-    Connect { pair: bool },
+    Connect {
+        pair: bool,
+    },
     Request(&'static str, Object),
+    ExportMacros {
+        arguments: Object,
+        directory: Arc<MacroBackupDirectory>,
+        name: String,
+        overwrite: bool,
+    },
 }
 
 enum Command {
@@ -152,6 +161,21 @@ impl Bridge {
         self.submit(Operation::Request(method, arguments))
     }
 
+    pub fn export_macros(
+        &self,
+        arguments: Object,
+        directory: Arc<MacroBackupDirectory>,
+        name: String,
+        overwrite: bool,
+    ) -> Result<Pending> {
+        self.submit(Operation::ExportMacros {
+            arguments,
+            directory,
+            name,
+            overwrite,
+        })
+    }
+
     pub fn disconnect(&self) -> Value {
         self.close(false);
         json!({"accepted": true, "status": "disconnecting"})
@@ -255,6 +279,33 @@ fn perform(
                 .unwrap_or_else(|| json!({"status": "pairing_required"}));
             state.lock().unwrap().status = status.clone();
             Ok(status)
+        }
+        Operation::ExportMacros {
+            arguments,
+            directory,
+            name,
+            overwrite,
+        } => {
+            let session = session
+                .as_mut()
+                .ok_or_else(|| NativeError::new("not_connected"))?;
+            let revision = arguments["catalog_revision"].clone();
+            let scope = arguments["scope"].clone();
+            let mut response = session.call("qkm_export_macros", arguments, cancel)?;
+            state.lock().unwrap().status = session.info();
+            if response["ok"].as_bool() != Some(true) {
+                return Ok(response);
+            }
+            let result = &mut response["result"];
+            let bytes = backup_bytes(result, &session.instance(), &revision, &scope)?;
+            match directory.write(&name, overwrite, &bytes, cancel) {
+                Ok(path) => {
+                    result.as_object_mut().unwrap().remove("document_base64");
+                    result["file_path"] = path.into();
+                    Ok(response)
+                }
+                Err(error) => Ok(json!({"ok":false, "error":error.code})),
+            }
         }
         Operation::Request(method, arguments) => {
             let session = session

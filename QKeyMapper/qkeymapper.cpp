@@ -38397,6 +38397,114 @@ static QString automationCatalogRevision(const QJsonObject &catalog, const QkmAu
         QJsonDocument(context).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
 }
 
+static QByteArray encodeAutomationMacroBackup(const QVariantList &macros)
+{
+    constexpr int MaximumBytes = 128 * 1024;
+    QByteArray document("[General]\nMacroList_Export=\"@Variant(");
+    const QByteArray suffix(")\"\n");
+    const qsizetype maximumPayload = (MaximumBytes - document.size() - suffix.size()) / 4;
+
+    // QSettings reads a Qt 4.0 QVariant from an INI @Variant value.
+    // Wrap the list as one value so a backup of one macro also reads as a list.
+    QByteArray payload;
+    QDataStream stream(&payload, QIODevice::WriteOnly);
+    stream.setVersion(QDataStream::Qt_4_0);
+    stream << QVariant(macros);
+    if (stream.status() != QDataStream::Ok || payload.size() > maximumPayload) {
+        return {};
+    }
+
+    const QByteArray hex = payload.toHex();
+    document.reserve(document.size() + 2 * hex.size() + suffix.size());
+    for (qsizetype index = 0; index < hex.size(); index += 2) {
+        document.append("\\x").append(hex.constData() + index, 2);
+    }
+    return document.append(suffix);
+}
+
+void QKeyMapper::handleAutomationMacroExport(const QkmAutomation::AutomationRequest &request)
+{
+    Q_ASSERT(QThread::currentThread() == thread());
+    auto &server = m_McpControlDialog->server();
+    const auto fail = [&](const char *code, const char *message) {
+        server.replyError(request.connectionId, request.requestId, QString::fromLatin1(code), QString::fromLatin1(message));
+    };
+    const auto &args = request.arguments;
+    const QString revision = args.value(QStringLiteral("catalog_revision")).toString();
+    const QString scope = args.value(QStringLiteral("scope")).toString();
+    const QJsonValue requestedNames = args.value(QStringLiteral("names"));
+    const bool all = requestedNames.isUndefined();
+    if (args.size() != (all ? 2 : 3) || !QkmAutomation::isLowerHex(revision, 64)
+        || (scope != QLatin1String("configuration") && scope != QLatin1String("universal"))
+        || (!all && !requestedNames.isArray())) {
+        fail("invalid_arguments", "Provide the current macro catalog revision, one scope and optional names.");
+        return;
+    }
+    const QJsonArray values = requestedNames.toArray();
+    if (!all && (values.isEmpty() || values.size() > 100)) {
+        fail("invalid_arguments", "Provide one to 100 names or omit names to export the whole scope.");
+        return;
+    }
+    QSet<QString> names;
+    for (const auto &value : values) {
+        const QString name = value.toString();
+        if (name.isEmpty() || name.size() > 32767 || name.contains(QChar::Null) || names.contains(name)) {
+            fail("invalid_arguments", "Macro names must be distinct, non-empty strings.");
+            return;
+        }
+        names.insert(name);
+    }
+
+    QJsonObject catalog = collectAutomationCatalog();
+    QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+    if (catalog.isEmpty() || automationSourceReadBasis().isEmpty() || !server.isRequestCurrent(request)) {
+        fail("context_busy", "Macro export requires the current loaded, idle source.");
+        return;
+    }
+    if (!addAutomationMacroCatalog(catalog)) {
+        fail("result_too_large", "Macro catalog exceeds its bounded size.");
+        return;
+    }
+    if (automationCatalogRevision(catalog, {server.instanceId(), request.pairId, request.permissionEpoch}) != revision) {
+        fail("stale_catalog", "Macro catalog or authorization context changed; query again.");
+        return;
+    }
+
+    const auto &macros = scope == QLatin1String("universal") ? s_UniversalMappingMacroList : s_MappingMacroList;
+    if (all && macros.size() > 100) {
+        fail("result_too_large", "Export up to 100 macros at a time.");
+        return;
+    }
+    OrderedMap<QString, MappingMacroData> selection;
+    for (auto it = macros.begin(); it != macros.end(); ++it) {
+        if (all || names.contains(it.key())) {
+            selection[it.key()] = it.value();
+        }
+    }
+    if (!all && selection.size() != names.size()) {
+        fail("macro_not_found", "At least one selected macro is missing from this scope.");
+        return;
+    }
+    if (selection.isEmpty()) {
+        fail("empty_macro_export", "There are no macros to export in this scope.");
+        return;
+    }
+    const QByteArray document = encodeAutomationMacroBackup(serializeMappingMacros(selection));
+    if (document.isEmpty()) {
+        fail("result_too_large", "The macro backup exceeds the 128 KiB document limit.");
+        return;
+    }
+    if (!server.isRequestCurrent(request)) {
+        return;
+    }
+    server.reply(request.connectionId, request.requestId,
+        {{QStringLiteral("instance"), server.instanceId()}, {QStringLiteral("catalog_revision"), revision},
+            {QStringLiteral("scope"), scope}, {QStringLiteral("macro_count"), selection.size()},
+            {QStringLiteral("format"), QStringLiteral("qkeymapper_macro_ini_v1")},
+            {QStringLiteral("bytes"), document.size()},
+            {QStringLiteral("document_base64"), QString::fromLatin1(document.toBase64())}});
+}
+
 void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -40670,6 +40778,10 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
         else server.replyError(request.connectionId, request.requestId, help.errorCode, help.message);
         return;
     }
+    if (request.method == QStringLiteral("qkm_export_macros")) {
+        handleAutomationMacroExport(request);
+        return;
+    }
     if (request.method == QStringLiteral("qkm_query")) {
         const QString entity = request.arguments.value(QStringLiteral("entity")).toString();
         if (entity == QStringLiteral("windows")) {
@@ -40731,6 +40843,13 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                 QStringLiteral("mapping_rows_use_source_snapshot_query"), QStringLiteral("saved_profile_contents_not_loaded"),
                 QStringLiteral("catalog_revision_is_not_a_business_revision"),
                 QStringLiteral("pagination_requires_catalog_revision"), QStringLiteral("macros_require_current_idle_source")}}},
+            QJsonObject{{QStringLiteral("id"), QStringLiteral("macro.backup.read")},
+                {QStringLiteral("method"), QStringLiteral("qkm_export_macros")},
+                {QStringLiteral("required_scopes"), int(QkmAutomation::Read)},
+                {QStringLiteral("read_only"), true},
+                {QStringLiteral("max_macros"), 100}, {QStringLiteral("max_document_bytes"), 128 * 1024},
+                {QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_idle_macro_catalog"),
+                    QStringLiteral("document_only"), QStringLiteral("one_scope_per_export")}}},
             QJsonObject{{QStringLiteral("id"), QStringLiteral("source.read")},
                 {QStringLiteral("method"), QStringLiteral("qkm_query")},
                 {QStringLiteral("required_scopes"), int(QkmAutomation::Read)}, {QStringLiteral("read_only"), true},

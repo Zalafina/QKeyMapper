@@ -2146,6 +2146,7 @@ private:
     void handleAutomationMappingChange(const QkmAutomation::AutomationRequest &request);
     void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
     void handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request);
+    void handleAutomationMacroExport(const QkmAutomation::AutomationRequest &request);
     void updateMousePointsList(void);
     void reloadUILanguage(void);
     void setUILanguage(int languageindex);

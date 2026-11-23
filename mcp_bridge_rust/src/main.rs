@@ -139,14 +139,15 @@ fn main() -> ExitCode {
         return finish(stdio::run(Fixture::default(), MAX_LINE_BYTES, || {}));
     }
     #[cfg(windows)]
-    if let Some((target, demo)) = connection::parse_target(&mut args.into_iter()) {
-        return finish(connection::run(target, demo));
+    if let Some((target, demo, backup_dir)) = connection::parse_target(&mut args.into_iter()) {
+        return finish(connection::run(target, demo, backup_dir));
     }
     eprintln!("Usage: qkeymapper-mcp-rust --protocol-fixture");
     eprintln!(
         "   or: qkeymapper-mcp-rust --executable PATH (--discovery-file PATH | --persistent-target)"
     );
     eprintln!("       [--demo-record PATH | --product-demo-record] [--enable-demo-mapping]");
+    eprintln!("       [--macro-backup-directory PATH]");
     ExitCode::from(2)
 }
 

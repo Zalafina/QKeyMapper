@@ -199,6 +199,23 @@ pass `segment_comments` with one string per key step in the normalized content.
 Use an empty string to clear an entry. Line breaks are removed and other whitespace
 is preserved. Save separately.
 
+## Exporting a macro backup
+
+Start the Rust Sidecar with `--macro-backup-directory PATH` to offer
+`qkm_export_macros`. Use an existing directory on a local fixed drive.
+Call the tool with product Read permission, the latest macro
+`catalog_revision`, a `scope`, and a single `file_name` ending in `.ini`.
+Omit `names` for the entire scope or list exact names from that scope.
+The file preserves macro order and segment comments. The limit is 100 macros
+and 128 KiB per backup.
+
+Set `overwrite: true` only when replacing a known file intentionally. The
+Sidecar writes a complete temporary file in the configured directory before
+publishing it. A successful result includes the absolute Windows file path
+and byte count. If a call disconnects during publication, check the destination
+before retrying. This action exports the loaded macros and leaves configuration
+and mapping state unchanged.
+
 ## Deleting macros
 
 Preview `macro.delete` with a `macro` object containing the latest

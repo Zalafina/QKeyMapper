@@ -1,3 +1,4 @@
+use qkeymapper_mcp_rust::native::valid_macro_backup_name;
 use qkeymapper_mcp_rust::state_wait::StateWait;
 use qkeymapper_mcp_rust::wire::{InvalidMessage, Object, decimal, hex_bytes};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -189,6 +190,18 @@ enum UnavailablePolicy {
 enum MacroScope {
     Configuration,
     Universal,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct MacroExport {
+    catalog_revision: String,
+    scope: MacroScope,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    names: Option<Vec<String>>,
+    file_name: String,
+    #[serde(default)]
+    overwrite: bool,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -538,6 +551,22 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 && v.source_revision.as_deref().is_none_or(revision)
                 && v.source_tab_ref.as_deref().is_none_or(tab_ref)
         }),
+        "qkm_export_macros" => {
+            if arguments.get("names").is_some_and(Value::is_null) {
+                return Err(InvalidMessage);
+            }
+            typed(arguments, |v: &MacroExport| {
+                let mut seen = std::collections::HashSet::new();
+                revision(&v.catalog_revision)
+                    && valid_macro_backup_name(&v.file_name)
+                    && v.names.as_ref().is_none_or(|names| {
+                        (1..=100).contains(&names.len())
+                            && names.iter().all(|name| {
+                                !name.is_empty() && macro_text(name, 32767) && seen.insert(name)
+                            })
+                    })
+            })
+        }
         "qkm_get_operation" => typed(arguments, |v: &Operation| id(&v.operation_id)),
         "qkm_stop_mapping" => typed(arguments, |v: &Stop| id(&v.instance) && id(&v.request_id)),
         "qkm_start_mapping" => typed(arguments, |v: &Start| {

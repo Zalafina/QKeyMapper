@@ -5,6 +5,7 @@ import asyncio
 import json
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from mcp import Client, StdioServerParameters
@@ -14,6 +15,7 @@ ROOT = HERE.parents[2]
 CATALOG = HERE.parents[1] / "src/tool_catalog.json"
 DEMO_STATE = "qkm_get_demo_state"
 DEMO_MAPPING = "qkm_demo_mapping"
+EXPORT = "qkm_export_macros"
 RECORD = ROOT / "out/rust_sidecar/catalog-only/creation.json"
 TOOLS = {
     "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect",
@@ -50,7 +52,7 @@ def expect_not_connected(result):
 
 async def check_contract(exe):
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
-    assert {tool["name"] for tool in catalog["tools"]} == TOOLS | {DEMO_STATE, DEMO_MAPPING}
+    assert {tool["name"] for tool in catalog["tools"]} == TOOLS | {DEMO_STATE, DEMO_MAPPING, EXPORT}
     revision = "a" * 64
     tab = revision + ":source:0"
     row = revision + ":row:0:0"
@@ -569,7 +571,8 @@ async def check_contract(exe):
             async with Client(config(exe, *flags), mode=mode, cache=None) as client:
                 enabled = "--enable-demo-mapping" in flags
                 assert metadata((await client.list_tools()).tools) == [
-                    tool for tool in catalog["tools"] if tool["name"] != DEMO_MAPPING or enabled]
+                    tool for tool in catalog["tools"] if tool["name"] != EXPORT
+                    and (tool["name"] != DEMO_MAPPING or enabled)]
                 expect_not_connected(await client.call_tool(DEMO_STATE))
                 if enabled:
                     mapping = {"original_key": "A", "mapping_key": "B"}
@@ -579,9 +582,39 @@ async def check_contract(exe):
                         assert denied.is_error is True and denied.structured_content is None
         print("PASS", mode, "explicit and product demo-record tool gates")
 
+        with tempfile.TemporaryDirectory(prefix="qkm-backup-contract-", dir=ROOT / "out") as directory:
+            async with Client(config(exe, "--macro-backup-directory", directory), mode=mode, cache=None) as client:
+                tools = (await client.list_tools()).tools
+                assert {tool.name for tool in tools} == TOOLS | {EXPORT}
+                transfer, = (tool for tool in tools if tool.name == EXPORT)
+                assert transfer.annotations.read_only_hint is False and transfer.annotations.destructive_hint is True
+                schema = transfer.input_schema
+                assert schema["additionalProperties"] is False
+                assert set(schema["required"]) == {"catalog_revision", "scope", "file_name"}
+                assert set(schema["properties"]) == {"catalog_revision", "scope", "file_name", "names", "overwrite"}
+                assert schema["properties"]["overwrite"] == {"type": "boolean", "default": False}
+                request = {"catalog_revision": revision, "scope": "universal", "file_name": "宏 示例.ini"}
+                expect_not_connected(await client.call_tool(EXPORT, request))
+                expect_not_connected(await client.call_tool(EXPORT, request | {"names": ["Z", "共享"]}))
+                invalid = ({"names": []}, {"names": None}, {"names": ["A", "A"]}, {"overwrite": 1},
+                           {"file_name": "../escape.ini"}, {"file_name": r"C:\escape.ini"},
+                           {"file_name": "A.ini:other"}, {"file_name": "NUL.ini"}, {"file_name": "example.txt"},
+                           {"scope": "both"}, {"catalog_revision": "A" * 64}, {"path": "unused"})
+                for extra in invalid:
+                    denied = await client.call_tool(EXPORT, request | extra)
+                    assert denied.is_error is True and denied.structured_content is None, extra
+            assert not list(Path(directory).iterdir())
+        print("PASS", mode, "opt-in macro export schema and missing connection")
+
     parameters = config(exe, "--enable-demo-mapping")
     rejected = subprocess.run([parameters.command, *parameters.args], capture_output=True, timeout=5)
     assert rejected.returncode == 2 and rejected.stdout == b""
+    invalid_directory = ROOT / "out/rust_sidecar/catalog-only/nonexistent-macro-backup-directory"
+    assert not invalid_directory.exists()
+    parameters = config(exe, "--macro-backup-directory", str(invalid_directory))
+    rejected = subprocess.run([parameters.command, *parameters.args], capture_output=True, timeout=5)
+    assert rejected.returncode != 0 and rejected.stdout == b"" and b"local directory" in rejected.stderr
+    assert not invalid_directory.exists()
 
 
 if __name__ == "__main__":

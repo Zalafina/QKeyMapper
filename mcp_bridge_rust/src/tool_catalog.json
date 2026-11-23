@@ -1,5 +1,37 @@
 {
   "feedback": {
+  "backup_cleanup_failed": [
+    "未能正常移除宏备份的临时文件。",
+    "检查已配置的本地备份目录，核对实际文件后再决定是否重试。"
+  ],
+  "backup_destination_exists": [
+    "备份文件已存在。",
+    "选择另一个文件名，或经用户确认后明确允许覆盖。"
+  ],
+  "backup_directory_unavailable": [
+    "配置的本地宏备份目录不可用。",
+    "核对 Sidecar 的 --macro-backup-directory 及本地目录访问。"
+  ],
+  "backup_write_failed": [
+    "未能写入宏备份文件。",
+    "核对该本地目录权限、空间和目标文件占用。"
+  ],
+  "empty_macro_export": [
+    "所选作用域没有可导出的宏。",
+    "重新查询宏目录并选择含宏的作用域。"
+  ],
+  "invalid_macro_backup": [
+    "产品备份数据未通过校验。",
+    "重新连接已核验目标并查询当前宏目录。"
+  ],
+  "macro_not_found": [
+    "至少一个宏不在所选作用域。",
+    "查询当前宏目录，确认每个名称属于所选作用域。"
+  ],
+  "unsafe_backup_destination": [
+    "备份目标不是普通文件。",
+    "在配置目录内选择另一个 .ini 文件名。"
+  ],
     "busy_or_closed": [
       "桥接正在处理或关闭请求。",
       "查询连接状态，等待当前作业清理；已关闭的桥接需由客户端重新启动。"
@@ -195,6 +227,66 @@
     "wrong_instance"
   ],
   "tools": [
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "将当前已载入目录中的普通宏或通用宏导出为 QKeyMapper INI 备份。查询 qkm_query macros 获得当前 catalog_revision；名称可省略以导出整个作用域，或指定同一作用域中至多 100 个确切名称，结果按现有顺序。需要产品 Read。只在启动时显式配置 --macro-backup-directory 的普通权限 Rust Sidecar 提供；file_name 是该目录下的 .ini 文件名，覆盖已有文件需显式 overwrite=true。完成后返回实际文件与字节数。产品不接触外部路径，配置与磁盘设置不改变。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": [
+          "catalog_revision",
+          "scope",
+          "file_name"
+        ],
+        "properties": {
+          "catalog_revision": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64,
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "scope": {
+            "type": "string",
+            "enum": [
+              "configuration",
+              "universal"
+            ]
+          },
+          "names": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32767
+            }
+          },
+          "file_name": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 255,
+            "description": "显式配置目录内单个本地 .ini 文件名"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "name": "qkm_export_macros",
+      "outputSchema": {
+        "additionalProperties": true,
+        "title": "qkm_export_macrosDictOutput",
+        "type": "object"
+      }
+    },
     {
       "annotations": {
         "destructiveHint": false,

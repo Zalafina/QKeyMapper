@@ -1,12 +1,13 @@
 use std::{
     collections::{BTreeMap, BTreeSet},
     ffi::OsString,
-    path,
+    path::{self, PathBuf},
+    sync::Arc,
 };
 
 use qkeymapper_mcp_rust::{
     bridge::{Bridge, Worker},
-    native::{DemoOptions, DemoRecord, NativeError, Target},
+    native::{DemoOptions, DemoRecord, MacroBackupDirectory, NativeError, Target},
     wire::Object,
 };
 use rmcp::{
@@ -32,9 +33,10 @@ struct Contracts {
 
 pub fn parse_target(
     args: &mut impl Iterator<Item = OsString>,
-) -> Option<(Target, Option<DemoOptions>)> {
+) -> Option<(Target, Option<DemoOptions>, Option<PathBuf>)> {
     let (mut executable, mut discovery, mut persistent) = (None, None, false);
     let mut demo = None;
+    let mut backup_dir = None;
     let mut enable_mapping = false;
     while let Some(flag) = args.next() {
         match flag.to_str()? {
@@ -53,6 +55,9 @@ pub fn parse_target(
                 demo = Some(DemoRecord::Explicit(path::absolute(args.next()?).ok()?));
             }
             "--product-demo-record" if demo.is_none() => demo = Some(DemoRecord::Product),
+            "--macro-backup-directory" if backup_dir.is_none() => {
+                backup_dir = Some(path::absolute(args.next()?).ok()?)
+            }
             "--enable-demo-mapping" if !enable_mapping => enable_mapping = true,
             _ => return None,
         }
@@ -69,6 +74,7 @@ pub fn parse_target(
             record,
             enable_mapping,
         }),
+        backup_dir,
     ))
 }
 
@@ -77,6 +83,7 @@ struct Handler {
     contracts: Contracts,
     demo_configured: bool,
     demo_mapping: bool,
+    macro_backup: Option<Arc<MacroBackupDirectory>>,
 }
 
 impl ServerHandler for Handler {
@@ -126,6 +133,9 @@ impl ServerHandler for Handler {
             "qkm_wait_state" => self.request("qkm_wait_state", arguments, context).await,
             "qkm_get_help" => self.request("qkm_get_help", arguments, context).await,
             "qkm_query" => self.request("qkm_query", arguments, context).await,
+            "qkm_export_macros" if self.macro_backup.is_some() => {
+                self.request("qkm_export_macros", arguments, context).await
+            }
             "qkm_get_operation" => self.request("qkm_get_operation", arguments, context).await,
             "qkm_stop_mapping" => self.request("qkm_stop_mapping", arguments, context).await,
             "qkm_start_mapping" => self.request("qkm_start_mapping", arguments, context).await,
@@ -176,13 +186,27 @@ impl Handler {
     async fn request(
         &self,
         method: &'static str,
-        arguments: Object,
+        mut arguments: Object,
         context: RequestContext<RoleServer>,
     ) -> Value {
         if context.ct.is_cancelled() {
             return json!({"ok": false, "error": "cancelled"});
         }
-        let mut job = match self.bridge.request(method, arguments) {
+        let admitted = if method == "qkm_export_macros" {
+            let directory = self
+                .macro_backup
+                .as_ref()
+                .expect("backup tool requires a configured directory");
+            let Some(Value::String(name)) = arguments.remove("file_name") else {
+                return json!({"ok":false, "error":"invalid_arguments"});
+            };
+            let overwrite = arguments.remove("overwrite") == Some(Value::Bool(true));
+            self.bridge
+                .export_macros(arguments, directory.clone(), name, overwrite)
+        } else {
+            self.bridge.request(method, arguments)
+        };
+        let mut job = match admitted {
             Ok(job) => job,
             Err(error) => return json!({"ok": false, "error": error.code}),
         };
@@ -254,7 +278,16 @@ impl Contracts {
     }
 }
 
-pub fn run(target: Target, demo: Option<DemoOptions>) -> Result<(), &'static str> {
+pub fn run(
+    target: Target,
+    demo: Option<DemoOptions>,
+    backup_dir: Option<PathBuf>,
+) -> Result<(), &'static str> {
+    let macro_backup = backup_dir
+        .map(MacroBackupDirectory::open)
+        .transpose()
+        .map_err(|_| "The macro backup directory must be an existing local directory without reparse points")?
+        .map(Arc::new);
     let mut contracts: Contracts = serde_json::from_str(include_str!("tool_catalog.json"))
         .map_err(|_| "Invalid embedded MCP tool catalog")?;
     let demo_configured = demo.is_some();
@@ -262,6 +295,7 @@ pub fn run(target: Target, demo: Option<DemoOptions>) -> Result<(), &'static str
     contracts.tools.retain(|tool| match tool.name.as_ref() {
         "qkm_get_demo_state" => demo_configured,
         "qkm_demo_mapping" => demo_mapping,
+        "qkm_export_macros" => macro_backup.is_some(),
         _ => true,
     });
     let worker = Worker::start(target, demo).map_err(|_| "Could not start the IPC worker")?;
@@ -271,6 +305,7 @@ pub fn run(target: Target, demo: Option<DemoOptions>) -> Result<(), &'static str
         contracts,
         demo_configured,
         demo_mapping,
+        macro_backup,
     };
     let outcome = crate::stdio::run(handler, MAX_REQUEST_LINE, move || client.stop());
     worker.join().map_err(|_| "IPC worker did not finish")?;
