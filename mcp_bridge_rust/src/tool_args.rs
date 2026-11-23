@@ -310,6 +310,14 @@ struct WindowDisplayMode {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct SaveWindowSize {
+    action: String,
+    source_tab_ref: String,
+    save_window_size: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct Preview {
     #[serde(default)]
     action: Action,
@@ -654,6 +662,9 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                     return typed(arguments, |v: &WindowDisplayMode| {
                         tab_ref(&v.source_tab_ref) && v.window_display_mode <= 2
                     });
+                }
+                Some("general.set_save_window_size") => {
+                    return typed(arguments, |v: &SaveWindowSize| tab_ref(&v.source_tab_ref));
                 }
                 Some("table.import") => {
                     return typed(arguments, |v: &TableImport| {

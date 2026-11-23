@@ -1064,8 +1064,23 @@ void McpControlTest::mappingChangeArguments()
     tablePath.insert(QStringLiteral("file_name"), QStringLiteral("backup.ini"));
     QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), tablePath).ok());
 
-    QCOMPARE(capabilities.size(), 70);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 68);
+    const auto validateSaveWindowSize = [&](const QJsonValue &value) {
+        return validateMappingChangeRequest(previewMethod, {{QStringLiteral("action"), QStringLiteral("general.set_save_window_size")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+            {QStringLiteral("save_window_size"), value}});
+    };
+    for (bool value : {true, false}) {
+        const auto result = validateSaveWindowSize(value);
+        QVERIFY(result.ok() && result.update.saveWindowSize.has_value());
+        QCOMPARE(*result.update.saveWindowSize, value);
+    }
+    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
+        QVERIFY(!validateSaveWindowSize(value).ok());
+
+    QCOMPARE(capabilities.size(), 72);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 70);
+    QCOMPARE(capabilities.at(69).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_window_size.preview"));
+    QCOMPARE(capabilities.at(70).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_window_size.apply"));
     QCOMPARE(capabilities.at(67).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("table.import.preview"));
     QCOMPARE(capabilities.at(68).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("table.import.apply"));
     QCOMPARE(capabilities.at(65).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_display_mode.preview"));

@@ -126,7 +126,7 @@ GUI／MCP 采用同一逐项状态限制。现有 GUI 要求空闲的配置及�
 | UI-WINDOW-MOVE／M2-B | 主窗口标题栏／系统移动；当前 pos() 由 saveKeyMapSetting 保存 | 映射运行期间与 GUI 一样允许即时移动；其余窗口／加载条件按 GUI 核实。共用明确位置操作，不开放任意 Qt 属性或外部 HWND | 仅改变实际窗口位置并沿用 LAST_WINDOWPOSITION 保存语义；不编辑映射或设置“启动位置”选项。显示／焦点导致既有匹配变化另记。EQ-OPSTATE-01／04 |
 | UI-WINDOW-RESIZE／M2-B | 原生窗口边框拖动 → resizeEvent → applyResizeLayout；用户手势更新 m_normalWindowBaseSize | 映射运行期间与 GUI 一样允许即时调整尺寸；保持原有最小尺寸、最大化及 DPI 条件。共用操作包含用户尺寸基线和布局处理，不能仅 resize 后成功回显 | 实际窗口／表列布局及正常用户尺寸基线；保留 LAST_WINDOW_SIZE／SAVE_WINDOW_SIZE 既有保存恢复，不自动保存映射。程序化改变几何不能遗漏 GUI 手势会更新的基线。EQ-OPSTATE-01／04 |
 | SET-STARTUP-POSITION／M2-B | 通用高级设定的启动位置模式／指定坐标及 updateStartupSpecifyPositionState | 这是设定编辑，按该 GUI 实际允许状态及联动校验；不能继承即时移动的运行中许可 | 启动位置 getter、模式／坐标、dirty 及保存／下一次启动语义；不通过移动窗口代替设置提交。EQ-SET-GENERAL、EQ-OPSTATE-02／03 |
-| SET-REMEMBER-SIZE／M2-B | 通用高级设定“保存窗口尺寸”选项／getSaveWindowSize | 这是设定编辑，按该 GUI 实际允许状态校验；不能继承即时缩放的运行中许可 | SAVE_WINDOW_SIZE、dirty 和冷启动恢复条件；不改变当前尺寸来伪造选项效果。EQ-SET-GENERAL、EQ-OPSTATE-02／03 |
+| SET-REMEMBER-SIZE／M2-B | 通用高级“保存窗口尺寸”复选框 → setSaveWindowSize／dirty | 221 复用已加载空闲源守卫和既有全局设置；即时窗口尺寸保持 | 221 私有真 GUI 两种冷启尺寸、正式 Rust 草稿、SAVE_WINDOW_SIZE 保存及新进程恢复通过。物理手势、活动态和混合 DPI 另验 |
 
 MAP-ADD／MAP-EDIT／MAP-DELETE 及 SET-SCALE 等现有 GUI 要求空闲的操作继续保留原限制，在其共用业务入口补齐状态与清理守卫；具体参数／链路仍见下文。既有所有设置和操作接入时都按本表字段逐项记录，不以模块级一句“运行中禁止”代替。
 
