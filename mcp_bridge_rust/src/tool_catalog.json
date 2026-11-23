@@ -3505,7 +3505,10 @@
               "tab.set_notification_colors",
               "tab.set_category_filter",
               "configuration.set_show_disabled_rows",
-              "configuration.set_mapping_display"
+              "configuration.set_mapping_display",
+              "macro.upsert",
+              "macro.delete",
+              "macro.import"
             ],
             "title": "Action",
             "type": "string"

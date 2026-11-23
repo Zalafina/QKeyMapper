@@ -8,6 +8,7 @@ import sys
 import tempfile
 from pathlib import Path
 
+from jsonschema import Draft202012Validator
 from mcp import Client, StdioServerParameters
 
 HERE = Path(__file__).resolve()
@@ -153,6 +154,9 @@ async def check_contract(exe):
             assert macro_fields["properties"]["scope"]["enum"] == ["configuration", "universal"]
             macro = {"catalog_revision": "b" * 64, "scope": "configuration", "name": "New", "content": "A»B"}
             upsert = {"action": "macro.upsert", "macro": macro}
+            validator = Draft202012Validator(previews)
+            for request in (upsert, remove, import_request):
+                validator.validate(request)
             expect_not_connected(await client.call_tool("qkm_preview_changes", upsert))
             assert macro_fields["properties"]["segment_comments"] == {"type": ["array", "null"], "minItems": 1,
                                                                       "items": {"type": "string", "maxLength": 32767}}
