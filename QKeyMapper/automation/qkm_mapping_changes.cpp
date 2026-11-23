@@ -1363,7 +1363,8 @@ bool MappingChangeStore::remember(const MappingChangePreview &preview, const QSt
     QJsonObject value{{QStringLiteral("status"), status}, {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
     if (preview.save) value.insert(QStringLiteral("target"), saveOperationTarget(preview));
     if (preview.removal) value.insert(QStringLiteral("target"), removalOperationTarget(preview));
-    if (preview.update || preview.preferences || preview.macro) value.insert(QStringLiteral("target"), preview.description.value(QStringLiteral("target")));
+    if (preview.update || preview.preferences || preview.macro || preview.configurationImport)
+        value.insert(QStringLiteral("target"), preview.description.value(QStringLiteral("target")));
     if (!errorCode.isEmpty()) value.insert(QStringLiteral("error"), QJsonObject{
         {QStringLiteral("code"), errorCode}, {QStringLiteral("message"), message}});
     return remember(preview.owner, preview.id, std::move(value));
@@ -1536,6 +1537,66 @@ std::optional<MappingChangePreview> MappingChangeStore::createMacro(const Mappin
     return preview;
 }
 
+std::optional<MappingChangePreview> MappingChangeStore::createConfigurationImport(const MappingChangeOwner &owner,
+    const ConfigurationImportBinding &binding, const QJsonObject &description, const QString &preferencesRevision)
+{
+    if (!isLowerHex(binding.contextRevision, 64)) return std::nullopt;
+    if (binding.draftId.isEmpty()) {
+        if (!isLowerHex(binding.catalogRevision, 64) || binding.groups.isEmpty() || binding.groups.size() > MaxConfigurationBackupGroups
+            || binding.document.isEmpty() || binding.document.size() > MaxConfigurationBackupBytes) return std::nullopt;
+    } else {
+        if (!isLowerHex(binding.draftId, 32) || !binding.catalogRevision.isEmpty() || !binding.groups.isEmpty()
+            || !binding.document.isEmpty() || binding.overwrite) return std::nullopt;
+        const auto draft = configurationImportDraft(owner, binding.draftId);
+        if (!draft || draft->contextRevision != binding.contextRevision) return std::nullopt;
+    }
+    auto preview = create(owner, MappingAdditionArguments{}, description, preferencesRevision);
+    if (preview) {
+        preview->configurationImport = binding;
+        m_previews[preview->id] = *preview;
+    }
+    return preview;
+}
+
+bool MappingChangeStore::stageConfigurationImport(const MappingChangePreview &preview, QJsonObject result)
+{
+    if (!preview.configurationImport || !preview.configurationImport->draftId.isEmpty() || expired(preview)) return false;
+    const auto operation = m_results.find(preview.id);
+    if (operation == m_results.end() || !(operation->owner == preview.owner)
+        || operation->value.value(QStringLiteral("status")) != QLatin1String("applying")) return false;
+    operation->configurationImportDraft = preview.configurationImport;
+    result.insert(QStringLiteral("draft_id"), preview.id);
+    result.insert(QStringLiteral("draft_state"), QStringLiteral("pending"));
+    finish(preview.owner, preview.id, QStringLiteral("applied"), result);
+    return true;
+}
+
+std::optional<ConfigurationImportBinding> MappingChangeStore::configurationImportDraft(const MappingChangeOwner &owner, const QString &id)
+{
+    prune();
+    const auto operation = m_results.constFind(id);
+    if (operation == m_results.cend() || !(operation->owner == owner)) return std::nullopt;
+    return operation->configurationImportDraft;
+}
+
+bool MappingChangeStore::releaseConfigurationImportDraft(const MappingChangeOwner &owner, const QString &id, const QString &state)
+{
+    const auto operation = m_results.find(id);
+    if (operation == m_results.end() || !(operation->owner == owner)) return false;
+    auto result = operation->value.value(QStringLiteral("result")).toObject();
+    if (!operation->configurationImportDraft) return result.value(QStringLiteral("draft_state")) == state;
+    operation->configurationImportDraft.reset();
+    result.insert(QStringLiteral("draft_state"), state);
+    operation->value.insert(QStringLiteral("result"), result);
+    operation->value.insert(QStringLiteral("sampled_at_utc"), sampleTime());
+    return true;
+}
+
+void MappingChangeStore::completeConfigurationImportSave(const MappingChangeOwner &owner, const QString &id)
+{
+    releaseConfigurationImportDraft(owner, id, QStringLiteral("saved"));
+}
+
 std::optional<MappingChangePreview> MappingChangeStore::begin(const MappingChangeOwner &owner, const QString &id)
 {
     prune();
@@ -1565,7 +1626,8 @@ bool MappingChangeStore::cancel(const MappingChangeOwner &owner, const QString &
 {
     prune();
     const auto it = m_previews.find(id);
-    if (it == m_previews.end() || !(it->owner == owner)) return false;
+    if (it == m_previews.end()) return releaseConfigurationImportDraft(owner, id, QStringLiteral("cancelled"));
+    if (!(it->owner == owner)) return false;
     remember(it.value(), QStringLiteral("cancelled"));
     m_previews.erase(it);
     return true;
@@ -1590,7 +1652,8 @@ QJsonObject MappingChangeStore::operation(const MappingChangeOwner &owner, const
             {QStringLiteral("remaining_ms"), double(qMax(qint64(0), remaining))}};
         if (preview->save) value.insert(QStringLiteral("target"), saveOperationTarget(*preview));
         if (preview->removal) value.insert(QStringLiteral("target"), removalOperationTarget(*preview));
-        if (preview->macro) value.insert(QStringLiteral("target"), preview->description.value(QStringLiteral("target")));
+        if (preview->macro || preview->configurationImport)
+            value.insert(QStringLiteral("target"), preview->description.value(QStringLiteral("target")));
         return value;
     }
     return {{QStringLiteral("operation_id"), id}, {QStringLiteral("status"), QStringLiteral("unknown")},

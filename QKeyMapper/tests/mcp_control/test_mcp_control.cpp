@@ -211,6 +211,7 @@ private slots:
     void configurationBackupChecksBoundsAndScope();
     void configurationImportPlansSelectedGroups();
     void configurationImportPreservesScope();
+    void configurationImportDraftLifecycle();
     void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
@@ -686,6 +687,82 @@ void McpControlTest::configurationImportPreservesScope()
     const auto clear = planConfigurationImport(document, {QStringLiteral("Clear")}, {}, {}, Conflict::Overwrite);
     QCOMPARE(clear.status, Status::Ok);
     QCOMPARE(clear.groups.first().action, ConfigurationImportAction::Create);
+}
+
+void McpControlTest::configurationImportDraftLifecycle()
+{
+    MappingChangeStore store;
+    const MappingChangeOwner owner{QStringLiteral("profile-instance"), QStringLiteral("original-pair"), 1};
+    const MappingChangeOwner otherPair{owner.instance, QStringLiteral("other-pair"), owner.permissionEpoch};
+    const MappingChangeOwner otherInstance{QStringLiteral("other-instance"), owner.pairId, owner.permissionEpoch};
+    const MappingChangeOwner nextEpoch{owner.instance, owner.pairId, 2};
+    const QString preferences(64, QLatin1Char('d'));
+    const ConfigurationImportBinding binding{QString(64, QLatin1Char('a')), {QStringLiteral("Incoming")},
+        QByteArray("[Incoming]\nNote=private-draft-value\n"), QString(64, QLatin1Char('b')), {}, true};
+    const QJsonObject result{{QStringLiteral("saved"), false}};
+    const QJsonObject description{{QStringLiteral("target"), QJsonObject{{QStringLiteral("instance_id"), owner.instance}}}};
+    const auto prepare = [&] { return store.createConfigurationImport(owner, binding, description, preferences); };
+    const auto preview = prepare();
+    QVERIFY(preview);
+    QVERIFY(!store.configurationImportDraft(owner, preview->id));
+    QVERIFY(!store.stageConfigurationImport(*preview, result));
+    QVERIFY(!store.begin(otherPair, preview->id));
+    QVERIFY(!store.cancel(nextEpoch, preview->id));
+    QVERIFY(store.cancel(owner, preview->id));
+    QVERIFY(!store.begin(owner, preview->id));
+
+    const auto accepted = prepare();
+    QVERIFY(accepted);
+    const auto begun = store.begin(owner, accepted->id);
+    QVERIFY(begun && store.stageConfigurationImport(*begun, result));
+    const auto draft = store.configurationImportDraft(owner, accepted->id);
+    QVERIFY(draft);
+    QCOMPARE(draft->document, binding.document);
+    QCOMPARE(draft->groups, binding.groups);
+    QVERIFY(!store.stageConfigurationImport(*begun, result));
+    for (const auto &different : {otherPair, otherInstance, nextEpoch}) {
+        QVERIFY(!store.configurationImportDraft(different, accepted->id));
+        QVERIFY(!store.cancel(different, accepted->id));
+    }
+    const auto staged = store.operation(owner, accepted->id);
+    QVERIFY(!QJsonDocument(staged).toJson().contains("private-draft-value"));
+    QCOMPARE(staged.value(QStringLiteral("result")).toObject().value(QStringLiteral("draft_state")), QJsonValue(QStringLiteral("pending")));
+    ConfigurationImportBinding save;
+    save.contextRevision = binding.contextRevision;
+    save.draftId = accepted->id;
+    QVERIFY(!store.createConfigurationImport(otherPair, save, description, preferences));
+    auto stale = save;
+    stale.contextRevision = QString(64, QLatin1Char('f'));
+    QVERIFY(!store.createConfigurationImport(owner, stale, description, preferences));
+    const auto pendingSave = store.createConfigurationImport(owner, save, description, preferences);
+    QVERIFY(pendingSave && store.cancel(owner, pendingSave->id));
+    QVERIFY(store.configurationImportDraft(owner, accepted->id));
+    const auto retry = store.createConfigurationImport(owner, save, description, preferences);
+    QVERIFY(retry && store.begin(owner, retry->id));
+    store.finish(owner, retry->id, QStringLiteral("failed"), {}, QStringLiteral("save_write_failed"));
+    QVERIFY(store.configurationImportDraft(owner, accepted->id));
+    store.completeConfigurationImportSave(owner, accepted->id);
+    QVERIFY(!store.configurationImportDraft(owner, accepted->id));
+    QVERIFY(!store.createConfigurationImport(owner, save, description, preferences));
+    QCOMPARE(store.operation(owner, accepted->id).value(QStringLiteral("result")).toObject()
+        .value(QStringLiteral("draft_state")), QJsonValue(QStringLiteral("saved")));
+
+    const auto cancelled = prepare();
+    QVERIFY(cancelled);
+    const auto cancelling = store.begin(owner, cancelled->id);
+    QVERIFY(cancelling && store.stageConfigurationImport(*cancelling, result));
+    QVERIFY(store.cancel(owner, cancelled->id) && store.cancel(owner, cancelled->id));
+    QVERIFY(!store.configurationImportDraft(owner, cancelled->id));
+    QCOMPARE(store.operation(owner, cancelled->id).value(QStringLiteral("result")).toObject()
+        .value(QStringLiteral("draft_state")), QJsonValue(QStringLiteral("cancelled")));
+
+    const auto expired = prepare();
+    QVERIFY(expired);
+    const auto expiring = store.begin(owner, expired->id);
+    QVERIFY(expiring && store.stageConfigurationImport(*expiring, result));
+    MappingChangeStoreTestAccess::expireResult(store, expired->id);
+    QVERIFY(!store.configurationImportDraft(owner, expired->id));
+    QVERIFY(!store.operation(owner, expired->id).value(QStringLiteral("result_known")).toBool());
 }
 
 void McpControlTest::mappingChangeArguments()

@@ -148,6 +148,15 @@ struct ConfigurationSaveBinding {
     QDeadlineTimer expiresAt;
 };
 
+struct ConfigurationImportBinding {
+    QString catalogRevision;
+    QStringList groups;
+    QByteArray document;
+    QString contextRevision;
+    QString draftId;
+    bool overwrite = false;
+};
+
 struct MappingChangePreview {
     MappingChangeOwner owner;
     MappingAdditionArguments arguments;
@@ -160,6 +169,7 @@ struct MappingChangePreview {
     std::optional<IbInputPreferencesArguments> preferences;
     std::optional<MacroChangeArguments> macro;
     QString preferencesRevision;
+    std::optional<ConfigurationImportBinding> configurationImport;
 };
 
 // GUI-thread request state only; no source pointers, worker work, persistence or retries.
@@ -181,6 +191,11 @@ public:
         const IbInputPreferencesArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
     std::optional<MappingChangePreview> createMacro(const MappingChangeOwner &owner,
         const MacroChangeArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
+    std::optional<MappingChangePreview> createConfigurationImport(const MappingChangeOwner &owner,
+        const ConfigurationImportBinding &binding, const QJsonObject &description, const QString &preferencesRevision);
+    bool stageConfigurationImport(const MappingChangePreview &preview, QJsonObject result);
+    std::optional<ConfigurationImportBinding> configurationImportDraft(const MappingChangeOwner &owner, const QString &id);
+    void completeConfigurationImportSave(const MappingChangeOwner &owner, const QString &id);
     // The caller must revalidate live source, permissions and expiry before committing.
     std::optional<MappingChangePreview> begin(const MappingChangeOwner &owner, const QString &id);
     bool expired(const MappingChangePreview &preview)
@@ -205,12 +220,14 @@ private:
         QJsonObject value;
         qint64 created = 0;
         quint64 stopGeneration = 0;
+        std::optional<ConfigurationImportBinding> configurationImportDraft;
     };
     qint64 now();
     void prune();
     bool remember(const MappingChangePreview &preview, const QString &status,
         const QString &errorCode = {}, const QString &message = {});
     bool remember(const MappingChangeOwner &owner, const QString &id, QJsonObject value);
+    bool releaseConfigurationImportDraft(const MappingChangeOwner &owner, const QString &id, const QString &state);
     RunReservation reserveRun(const MappingChangeOwner &owner, const QString &id, QJsonObject value);
     void updateStop(Operation &operation, bool completed, bool timedOut);
     QElapsedTimer m_clock;
