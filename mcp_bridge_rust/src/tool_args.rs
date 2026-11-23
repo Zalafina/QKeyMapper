@@ -218,6 +218,8 @@ struct MacroUpsert {
     note: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     insert_at: Option<MacroInsertAt>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    segment_comments: Option<Vec<String>>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -566,6 +568,10 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                 .is_none_or(|value| macro_text(value, 32767))
                             && v.data.insert_at.as_ref().is_none_or(|at| {
                                 !at.anchor_name.is_empty() && macro_text(&at.anchor_name, 32767)
+                            })
+                            && v.data.segment_comments.as_ref().is_none_or(|comments| {
+                                !comments.is_empty()
+                                    && comments.iter().all(|text| macro_text(text, 32767))
                             })
                     });
                 }

@@ -194,7 +194,10 @@ by `»`. For a new macro, optionally pass `insert_at` with `position`
 (`above` or `below`) and an exact `anchor_name` in the selected list. An
 existing name in that list keeps its position
 and requires `confirm_overwrite=true` after review. Replacing the content
-aligns existing segment comments with the new sequence. Save separately.
+aligns existing segment comments with the new sequence. To set them explicitly,
+pass `segment_comments` with one string per key step in the normalized content.
+Use an empty string to clear an entry. Line breaks are removed and other whitespace
+is preserved. Save separately.
 
 ## Deleting macros
 

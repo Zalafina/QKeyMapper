@@ -38887,7 +38887,16 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             const auto before = list.value(name);
             after = {content, macro.category ? QMacroListDialog::normalizedMacroText(*macro.category) : before.Category,
                 macro.note ? QMacroListDialog::normalizedMacroText(*macro.note) : before.Note, {}};
-            if (replacing) after.MacroComments = QMacroListDialog::reconcileMacroComments(before, content);
+            if (macro.segmentComments) {
+                if (macro.segmentComments->size() != steps.size()) {
+                    reject(QStringLiteral("invalid_arguments"), QStringLiteral("Provide one segment comment per normalized key step."));
+                    return;
+                }
+                for (const auto &comment : *macro.segmentComments)
+                    after.MacroComments.append(QMappingSequenceEdit::normalizedSegmentComment(comment));
+            } else if (replacing) {
+                after.MacroComments = QMacroListDialog::reconcileMacroComments(before, content);
+            }
             const auto beforeRow = replacing ? QJsonValue(automationMacroRow(macro.scope, name, before)) : QJsonValue(QJsonValue::Null);
             const auto afterRow = automationMacroRow(macro.scope, name, after);
             int index = insertionIndex >= 0 ? insertionIndex : list.size();

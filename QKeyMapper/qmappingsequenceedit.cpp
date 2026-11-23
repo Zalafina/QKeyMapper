@@ -1165,6 +1165,11 @@ void QMappingSequenceEdit::on_insertMappingKeyButton_clicked()
     insertMappingKeyToTable(insertMode);
 }
 
+QString QMappingSequenceEdit::normalizedSegmentComment(QString comment)
+{
+    return comment.remove(QChar::LineFeed).remove(QChar::CarriageReturn);
+}
+
 void QMappingSequenceEdit::on_confirmButton_clicked()
 {
     QString joined_mappingsequence = joinCurentMappingSequenceTable();
@@ -1519,10 +1524,7 @@ void QMappingSequenceEdit::mappingSequenceTableCellChanged(int row, int column)
     }
 
     if (column == MAPPINGSEQUENCEEDIT_COMMENT_COLUMN) {
-        // Comment column: strip newlines, commit to m_MappingCommentList
-        QString commentText = item->text();
-        commentText.remove(QChar::LineFeed);
-        commentText.remove(QChar::CarriageReturn);
+        const QString commentText = normalizedSegmentComment(item->text());
         if (item->text() != commentText) {
             QSignalBlocker blocker(table);
             item->setText(commentText);

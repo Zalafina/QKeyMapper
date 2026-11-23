@@ -139,6 +139,13 @@ async def check_contract(exe):
             macro = {"catalog_revision": "b" * 64, "scope": "configuration", "name": "New", "content": "A»B"}
             upsert = {"action": "macro.upsert", "macro": macro}
             expect_not_connected(await client.call_tool("qkm_preview_changes", upsert))
+            assert macro_fields["properties"]["segment_comments"] == {"type": ["array", "null"], "minItems": 1,
+                                                                      "items": {"type": "string", "maxLength": 32767}}
+            with_notes = upsert | {"macro": macro | {"segment_comments": ["", "second"]}}
+            expect_not_connected(await client.call_tool("qkm_preview_changes", with_notes))
+            for invalid in (True, [], ["", 3]):
+                result = await client.call_tool("qkm_preview_changes", upsert | {"macro": macro | {"segment_comments": invalid}})
+                assert result.is_error is True and result.structured_content is None
             placement = {"position": "below", "anchor_name": "Existing"}
             nested_position, null_position = macro_fields["properties"]["insert_at"]["anyOf"]
             assert not nested_position["additionalProperties"] and null_position == {"type": "null"}

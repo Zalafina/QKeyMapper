@@ -773,6 +773,16 @@ void McpControlTest::mappingChangeArguments()
     const auto insertion = validateMappingChangeRequest(previewMethod, changed);
     QVERIFY(insertion.ok() && insertion.macro.insertBelow);
     QCOMPARE(insertion.macro.anchorName, QStringLiteral("Existing macro"));
+    auto notedMacro = macroFields;
+    notedMacro.insert(QStringLiteral("segment_comments"), QJsonArray{QStringLiteral(""), QStringLiteral("second")});
+    changed = macroUpsert;
+    changed.insert(QStringLiteral("macro"), notedMacro);
+    const auto notes = validateMappingChangeRequest(previewMethod, changed);
+    QVERIFY(notes.ok() && notes.macro.segmentComments.has_value());
+    QCOMPARE(*notes.macro.segmentComments, QStringList({QStringLiteral(""), QStringLiteral("second")}));
+    notedMacro.insert(QStringLiteral("segment_comments"), QJsonArray{true});
+    changed.insert(QStringLiteral("macro"), notedMacro);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     relativeMacro.insert(QStringLiteral("insert_at"), QJsonObject{{QStringLiteral("position"), QStringLiteral("append")}});
     changed.insert(QStringLiteral("macro"), relativeMacro);
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());

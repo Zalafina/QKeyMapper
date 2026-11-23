@@ -48,6 +48,7 @@ public:
     }
 
     void setUILanguage(int languageindex);
+    static QString normalizedSegmentComment(QString comment);
     void setTitle(const QString &title);
     void setMappingSequence(const QString &mappingsequence);
     void setMappingSequenceWithComments(const QString &mappingsequence, const QStringList &comments);
