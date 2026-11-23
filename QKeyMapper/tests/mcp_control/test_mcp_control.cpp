@@ -10,6 +10,7 @@
 #include "../../qkm_mapping_source_access.h"
 #include "../../qkeymapper_qt_compat.h"
 #include "../../qkeymapper_constants.h"
+#include "../../orderedmap/orderedmap.h"
 #include "ui_qgeneraladvanceddialog.h"
 
 #include <QApplication>
@@ -154,6 +155,9 @@ class McpControlTest : public QObject {
     Q_OBJECT
 private slots:
     void initTestCase();
+    void orderedMapMoveAssignment_data();
+    void orderedMapMoveAssignment();
+    void orderedMapCopyAndMoveConstruction();
     void defaultOffAndLanguage_data();
     void defaultOffAndLanguage();
     void startupChoice_data();
@@ -1688,6 +1692,101 @@ void McpControlTest::sourceSnapshotQueryCost()
     QBENCHMARK { result = querySourceSnapshot(snapshot, "instance", "pair", 1, arguments); }
     QVERIFY(result.ok());
     QCOMPARE(result.page.value(QStringLiteral("items")).toArray().size(), 1);
+}
+
+void McpControlTest::orderedMapMoveAssignment_data()
+{
+    QTest::addColumn<bool>("sourceHasValues");
+    QTest::addColumn<bool>("targetHasValues");
+    QTest::newRow("empty-to-empty") << false << false;
+    QTest::newRow("empty-to-populated") << false << true;
+    QTest::newRow("populated-to-empty") << true << false;
+    QTest::newRow("populated-to-populated") << true << true;
+}
+
+void McpControlTest::orderedMapMoveAssignment()
+{
+    QFETCH(bool, sourceHasValues);
+    QFETCH(bool, targetHasValues);
+    OrderedMap<int, QString> target;
+    if (targetHasValues) {
+        target[10] = QStringLiteral("old shared key");
+        target[99] = QStringLiteral("old target only");
+    }
+    {
+        OrderedMap<int, QString> source;
+        if (sourceHasValues) {
+            source[30] = QStringLiteral("first");
+            source[10] = QStringLiteral("second");
+            source[20] = QStringLiteral("third");
+        }
+        auto &assigned = (target = std::move(source));
+        QCOMPARE(&assigned, &target);
+
+        source.clear();
+        source[99] = QStringLiteral("reused source");
+        QCOMPARE(source.take(99), QStringLiteral("reused source"));
+        QVERIFY(source.isEmpty());
+    }
+
+    if (!sourceHasValues) {
+        QVERIFY(target.isEmpty());
+        QCOMPARE(target.keys(), QList<int>{});
+        return;
+    }
+    QCOMPARE(target.keys(), (QList<int>{30, 10, 20}));
+    QVERIFY(!target.contains(99));
+    const auto &observed = target;
+    const auto found = observed.find(10);
+    QVERIFY(found != observed.end());
+    QCOMPARE(found.key(), 10);
+    QCOMPARE(found.value(), QStringLiteral("second"));
+
+    auto &same = target;
+    target = std::move(same);
+    QCOMPARE(target.keys(), (QList<int>{30, 10, 20}));
+    target.insert(10, QStringLiteral("replaced"));
+    QCOMPARE(target.keys(), (QList<int>{30, 20, 10}));
+    QCOMPARE(target.remove(30), 1);
+    QCOMPARE(target.take(20), QStringLiteral("third"));
+    target.insertAt(0, 40, QStringLiteral("inserted"));
+    QCOMPARE(target.keys(), (QList<int>{40, 10}));
+    QCOMPARE(target.find(40).value(), QStringLiteral("inserted"));
+
+    OrderedMap<int, QString> last;
+    {
+        OrderedMap<int, QString> intermediate;
+        intermediate = std::move(target);
+        last = std::move(intermediate);
+    }
+    QCOMPARE(last.keys(), (QList<int>{40, 10}));
+    QCOMPARE(last.take(10), QStringLiteral("replaced"));
+    last.insertAt(1, 50, QStringLiteral("tail"));
+    QCOMPARE(last.keys(), (QList<int>{40, 50}));
+}
+
+void McpControlTest::orderedMapCopyAndMoveConstruction()
+{
+    OrderedMap<int, QString> source;
+    source[4] = QStringLiteral("first");
+    source[2] = QStringLiteral("second");
+    OrderedMap<int, QString> moved(std::move(source));
+    source.clear();
+    source[42] = QStringLiteral("reused source");
+    QCOMPARE(source.take(42), QStringLiteral("reused source"));
+
+    OrderedMap<int, QString> copy(moved);
+    OrderedMap<int, QString> assigned;
+    assigned[99] = QStringLiteral("unrelated old value");
+    assigned = copy;
+    moved.clear();
+    QCOMPARE(copy.find(2).key(), 2);
+    QCOMPARE(copy.take(2), QStringLiteral("second"));
+    QCOMPARE(assigned.keys(), (QList<int>{4, 2}));
+    assigned.insert(4, QStringLiteral("updated"));
+    QCOMPARE(assigned.keys(), (QList<int>{2, 4}));
+    QCOMPARE(copy.value(4), QStringLiteral("first"));
+    QVERIFY(!assigned.contains(99));
 }
 
 void McpControlTest::initTestCase()

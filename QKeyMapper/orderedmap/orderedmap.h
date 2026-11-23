@@ -754,8 +754,9 @@ template <typename Key, typename Value>
 OrderedMap<Key, Value> & OrderedMap<Key, Value>::operator=(OrderedMap<Key, Value>&& other)
 {
     if (this != &other) {
-        data = other.data;
-        insertOrder = other.insertOrder;
+        // Keep each hash's iterators attached to the list it indexes.
+        data.swap(other.data);
+        insertOrder.swap(other.insertOrder);
     }
     return *this;
 }
