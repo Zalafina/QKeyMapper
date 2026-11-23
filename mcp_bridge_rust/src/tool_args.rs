@@ -214,6 +214,14 @@ struct TableExport {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct TableImport {
+    action: String,
+    source_tab_ref: String,
+    file_name: String,
+}
+
+#[derive(Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum MacroInsertPosition {
     Above,
@@ -645,6 +653,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 Some("configuration.set_window_display_mode") => {
                     return typed(arguments, |v: &WindowDisplayMode| {
                         tab_ref(&v.source_tab_ref) && v.window_display_mode <= 2
+                    });
+                }
+                Some("table.import") => {
+                    return typed(arguments, |v: &TableImport| {
+                        tab_ref(&v.source_tab_ref) && valid_macro_backup_name(&v.file_name)
                     });
                 }
                 Some("macro.upsert") => {

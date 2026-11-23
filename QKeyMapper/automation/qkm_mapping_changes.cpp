@@ -34,6 +34,18 @@ QJsonObject removalOperationTarget(const MappingChangePreview &preview)
         {QStringLiteral("source_revision"), preview.removal->sourceRevision},
         {QStringLiteral("source_tab_ref"), preview.removal->sourceTabRef}};
 }
+
+QByteArray decodeBackupDocument(const QJsonValue &value, int maxBytes)
+{
+    const auto encoded = value.toString();
+    const int encodedLimit = ((maxBytes + 2) / 3) * 4;
+    if (encoded.isEmpty() || encoded.size() > encodedLimit) return {};
+    const auto bytes = encoded.toLatin1();
+    auto decoded = QByteArray::fromBase64Encoding(bytes, QByteArray::AbortOnBase64DecodingErrors);
+    if (!decoded || decoded.decoded.isEmpty() || decoded.decoded.size() > maxBytes || decoded.decoded.toBase64() != bytes)
+        return {};
+    return std::move(decoded.decoded);
+}
 }
 
 const char *mappingRowMoveAction(MappingRowMove move)
@@ -95,6 +107,19 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     result.method = preview ? MappingChangeMethod::Preview : apply ? MappingChangeMethod::Apply
         : query ? MappingChangeMethod::Operation : MappingChangeMethod::Cancel;
     const auto action = arguments.value(QStringLiteral("action"));
+    if (preview && action == QLatin1String("table.import")) {
+        auto &table = result.update;
+        table.sourceTabRef = arguments.value(QStringLiteral("source_tab_ref")).toString();
+        table.sourceRevision = table.sourceTabRef.left(64);
+        const auto source = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
+            {QStringLiteral("source_revision"), table.sourceRevision}, {QStringLiteral("source_tab_ref"), table.sourceTabRef}});
+        if (arguments.size() != 3 || !source.ok())
+            return fail("Provide the attached source Tab reference and a bounded table backup.");
+        table.tableImportDocument = decodeBackupDocument(arguments.value(QStringLiteral("document_base64")), MaxTableBackupBytes);
+        if (table.tableImportDocument.isEmpty()) return fail("Provide a valid bounded base64 document.");
+        result.action = MappingChangeAction::UpdateMapping;
+        return result;
+    }
     const bool macroDelete = action == QLatin1String("macro.delete");
     const bool macroImport = action == QLatin1String("macro.import");
     if (preview && (macroDelete || macroImport || action == QLatin1String("macro.upsert"))) {
@@ -120,19 +145,13 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         }
         if (macroImport) {
             const auto policy = fields.value(QStringLiteral("on_conflict"));
-            const auto encoded = fields.value(QStringLiteral("document_base64")).toString();
-            constexpr int encodedLimit = ((MaxMacroBackupBytes + 2) / 3) * 4;
-            if ((policy != QLatin1String("keep") && policy != QLatin1String("overwrite"))
-                || encoded.isEmpty() || encoded.size() > encodedLimit) {
+            if (policy != QLatin1String("keep") && policy != QLatin1String("overwrite")) {
                 return fail("Macro import requires keep or overwrite and a bounded backup document.");
             }
-            const auto bytes = encoded.toLatin1();
-            auto decoded = QByteArray::fromBase64Encoding(bytes, QByteArray::AbortOnBase64DecodingErrors);
-            if (!decoded || decoded.decoded.isEmpty() || decoded.decoded.size() > MaxMacroBackupBytes
-                || decoded.decoded.toBase64() != bytes) {
+            macro.importDocument = decodeBackupDocument(fields.value(QStringLiteral("document_base64")), MaxMacroBackupBytes);
+            if (macro.importDocument.isEmpty()) {
                 return fail("Provide a valid bounded base64 document.");
             }
-            macro.importDocument = std::move(decoded.decoded);
             macro.overwriteImportDuplicates = policy == QLatin1String("overwrite");
             result.action = MappingChangeAction::ImportMacro;
             return result;
@@ -1213,6 +1232,23 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     capabilities.append(windowDisplayModePreview);
     capabilities.append(windowDisplayModeApply);
+    auto tableImportPreview = capability("table.import.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("table.import")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("file_name"), string(QStringLiteral("^[^<>:\"/\\\\|?*]+\\.[iI][nN][iI]$"), 255)}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("file_name")}));
+    auto tableImportApply = capability("table.import.apply", "qkm_apply_changes", Read | Configure, false, updateApplySchema);
+    for (auto *item : {&tableImportPreview, &tableImportApply}) {
+        item->insert(QStringLiteral("max_rows"), MaxTableBackupRows);
+        item->insert(QStringLiteral("max_document_bytes"), MaxTableBackupBytes);
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("sidecar_local_backup_directory"),
+            QStringLiteral("attached_source_tab"), QStringLiteral("append_at_end"),
+            QStringLiteral("confirm_disabling_existing_rows"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    capabilities.append(tableImportPreview);
+    capabilities.append(tableImportApply);
     capabilities.append(operation);
     return capabilities;
 }

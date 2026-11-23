@@ -1047,8 +1047,27 @@ void McpControlTest::mappingChangeArguments()
     }
     for (const auto &mode : {QJsonValue(-1), QJsonValue(3), QJsonValue(1.5), QJsonValue(true), QJsonValue(QStringLiteral("2"))})
         QVERIFY(!validateWindowDisplayMode(mode).ok());
-    QCOMPARE(capabilities.size(), 68);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 66);
+    const QJsonObject tableImport{{QStringLiteral("action"), QStringLiteral("table.import")},
+        {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+        {QStringLiteral("document_base64"), QStringLiteral("QUJD")}};
+    const auto validTableImport = validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), tableImport);
+    QVERIFY(validTableImport.ok());
+    QCOMPARE(validTableImport.update.sourceRevision, revision);
+    QCOMPARE(validTableImport.update.tableImportDocument, QByteArray("ABC"));
+    for (const auto &invalidDocument : {QString(), QStringLiteral("QUJD="), QStringLiteral("--"),
+             QString::fromLatin1(QByteArray(MaxTableBackupBytes + 1, 'a').toBase64())}) {
+        auto rejected = tableImport;
+        rejected.insert(QStringLiteral("document_base64"), invalidDocument);
+        QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), rejected).ok());
+    }
+    auto tablePath = tableImport;
+    tablePath.insert(QStringLiteral("file_name"), QStringLiteral("backup.ini"));
+    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), tablePath).ok());
+
+    QCOMPARE(capabilities.size(), 70);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 68);
+    QCOMPARE(capabilities.at(67).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("table.import.preview"));
+    QCOMPARE(capabilities.at(68).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("table.import.apply"));
     QCOMPARE(capabilities.at(65).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_display_mode.preview"));
     QCOMPARE(capabilities.at(66).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_display_mode.apply"));
     QCOMPARE(capabilities.at(63).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_edit_trigger.preview"));

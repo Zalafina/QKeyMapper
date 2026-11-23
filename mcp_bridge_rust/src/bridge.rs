@@ -16,6 +16,21 @@ use crate::native::{
 use crate::state_wait::StateWait;
 use crate::wire::Object;
 
+#[derive(Clone, Copy)]
+pub enum BackupImportKind {
+    Macro,
+    MappingTable,
+}
+
+impl BackupImportKind {
+    pub fn fields(self, arguments: &mut Object) -> Option<&mut Object> {
+        match self {
+            Self::Macro => arguments.get_mut("macro").and_then(Value::as_object_mut),
+            Self::MappingTable => Some(arguments),
+        }
+    }
+}
+
 enum Operation {
     Connect {
         pair: bool,
@@ -28,7 +43,8 @@ enum Operation {
         name: String,
         overwrite: bool,
     },
-    PreviewMacroImport {
+    PreviewBackupImport {
+        kind: BackupImportKind,
         arguments: Object,
         directory: Arc<MacroBackupDirectory>,
         name: String,
@@ -188,13 +204,15 @@ impl Bridge {
         })
     }
 
-    pub fn preview_macro_import(
+    pub fn preview_backup_import(
         &self,
+        kind: BackupImportKind,
         arguments: Object,
         directory: Arc<MacroBackupDirectory>,
         name: String,
     ) -> Result<Pending> {
-        self.submit(Operation::PreviewMacroImport {
+        self.submit(Operation::PreviewBackupImport {
+            kind,
             arguments,
             directory,
             name,
@@ -342,7 +360,8 @@ fn perform(
                 Err(error) => Ok(json!({"ok":false, "error":error.code})),
             }
         }
-        Operation::PreviewMacroImport {
+        Operation::PreviewBackupImport {
+            kind,
             mut arguments,
             directory,
             name,
@@ -357,12 +376,18 @@ fn perform(
             let bytes = match directory.read(&name, cancel) {
                 Ok(bytes) => bytes,
                 Err(error) if error.code == "cancelled" => return Err(error),
+                Err(error)
+                    if error.code == "invalid_macro_backup"
+                        && matches!(kind, BackupImportKind::MappingTable) =>
+                {
+                    return Ok(json!({"ok":false, "error":"invalid_table_backup"}));
+                }
                 Err(error) => return Ok(json!({"ok":false, "error":error.code})),
             };
-            let Some(macro_args) = arguments.get_mut("macro").and_then(Value::as_object_mut) else {
+            let Some(fields) = kind.fields(&mut arguments) else {
                 return Ok(json!({"ok":false, "error":"invalid_arguments"}));
             };
-            macro_args.insert("document_base64".to_owned(), STANDARD.encode(bytes).into());
+            fields.insert("document_base64".to_owned(), STANDARD.encode(bytes).into());
             let response = session.call("qkm_preview_changes", arguments, cancel)?;
             state.lock().unwrap().status = session.info();
             Ok(response)

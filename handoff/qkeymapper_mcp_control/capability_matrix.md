@@ -328,7 +328,7 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 | TAB-NAME／M2-A | Tab 设置文本编辑／更新 → `on_tabNameUpdateButton_clicked` → `updateKeyMappingTabWidgetTabName` | 校验非空、重复及保留共通显示名；写 TabInfo.TabName、更新真实 Tab 显示并 dirty；不以显示文字作为永久身份 | 复用校验／提交，输入框只采集参数；`EQ-TAB-NAME` 检查重复／保留名拒绝、非当前源、提示和图片组合显示、名称变化后源身份及保存恢复 |
 | TAB-HOTKEY／M2-A | Tab 快捷键更新 → 规范空白／提取包装内组合键 → `validateCombinationKey` → `updateKeyMappingTabInfoHotkey` | 保存原规范串、更新显示并调用 `collectMappingTableTabHotkeys`，Worker `detectMappingTableTabHotkeys` 消费该缓存和各 Tab 字段。多个 Tab 的同一快捷键对应有序索引列表，不能自行改成唯一限制 | TAB-HOTKEY-179 共用解析、校验、清除和重建缓存。私有真设置窗与 Rust 选验规范串、同键多目标、错误、旧引用和冷读缓存。物理按键及运行中切换另验 |
 | TABLE-EXPORT／M2-A | 菜单／Tab 设置 → `exportMappingTableByTabIndex`；正式 `qkm_export_mapping_table` 按 Read、当前源修订 | 内存源表共用 74 字段。GUI 215 显式同步／失败回退；216 产品生成有界文档，普通 Rust 原子发布至已配置目录，保留宏引用 | 215 真 GUI 占用／正常对照，216 正式 Rust 选验普通／共通、草稿和覆盖，双 Qt 独立进程读回。活动态及超限产品场景另验 |
-| TABLE-IMPORT／M2-A | 菜单／Tab 设置 → `importMappingTableByTabIndex` → `importKeyMappingDataFromFile` → MAP-INSERT-PLAN | 共用字段重建检查原始／主映射，跳过无效行，空或无效抬起键回退主映射。构造派生字段后追加，冲突可影响其他表。外层刷新并置 dirty | 218 组件选验格式及限额；219 真 GUI 前后同结果，覆盖旧／新文件、同批重复、共通冲突取消及确认。正式预览、提交与保存恢复续接 |
+| TABLE-IMPORT／M2-A | 菜单／Tab 设置 → `importMappingTableByTabIndex` → `importKeyMappingDataFromFile` → MAP-INSERT-PLAN | 共用字段重建跳过无效行，回退空或无效抬起键。按序追加并应用共通优先；保存独立 | 218 双 Qt 有界格式、219 真 GUI、220 真 Rust／产品选验本地文件、已附着源、确认、取消、源修订、保存及冷读。活动态、Qt5 实窗和更广映射用例另验 |
 | MACRO-READ／M2-A | 宏列表普通／通用两个页签，均按 OrderedMap 顺序 | 202 私有真实 GUI 与 Rust 选验两个作用域、同名、分页和配置切换。返回逐段备注，读目录不改变草稿或磁盘 | `qkm_query(macros)`，Read 当前加载配置，旧目录修订拒绝。宏编辑与运行仍独立验收 |
 | MACRO-UPSERT／M2-A | 按钮／快捷键 → `addMacroToListInternal(allowInsertBySelection)` | 目标取普通／通用 OrderedMap；去首尾空白及换行、非空／名称不含右括号、完整映射串校验，同名需确认。新项可按 Shift／全局插入模式插入；同名更新保持位置。消费待提交逐段备注或按段对齐旧备注，再刷新／dirty；改变输入名称不自动重写旧引用 | 203 通过 `macro.upsert` 选验追加、同作用域同名替换、普通键序列、真实 GUI 校验和备注对齐，确认后只改内存，普通及通用保存和冷读通过。205 选验相对插入，206 选验显式逐段备注、清空与长度校验及保存冷读。嵌套引用与运行另验 |
 | MACRO-DELETE／M2-A | Delete／菜单 → `deleteMacroSelectedItems` | 从当前宏表首个连续选区的名称删除相应 OrderedMap 键，刷新／重选并 dirty；未在该路径重写引用该名称的映射／其他宏 | 204 `macro.delete` 选验单作用域名单、同名隔离、取消、旧目录拒绝、真实 GUI、正式 Rust 及保存冷读。原引用保留，名称可能无法再解析。筛选下交互与实际宏展开另验 |
@@ -421,7 +421,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-TAB-DELETE | 删除当前／指定 Tab | TAB-DELETE-171 选验当前普通源、取消、共通／最后一表保护、接替与热键索引。非当前表待验 |
 | ACT-TABLE-CLEAR | 清空当前表 | `clearCurrentMappingTable`／`tab.clear`，TAB-CLEAR-173 选验整源、明确确认与保存重载 |
 | ACT-TABLE-EXPORT | 导出映射表 | `exportMappingTableByTabIndex`／`exportKeyMappingDataToFile`；M2-A；导出内存还是磁盘、覆盖与文件权限 |
-| ACT-TABLE-IMPORT | 导入映射表 | `importMappingTableByTabIndex`／`importKeyMappingDataFromFile`；M2-A；插入位置、校验、互斥联动、宏及失败保护 |
+| ACT-TABLE-IMPORT | 导入映射表 | `importMappingTableByTabIndex`／`importKeyMappingDataFromFile`；M2-A；219／220 选验追加、校验、跨表确认、草稿和保存冷读 |
 | ACT-VIEW-PROCESS | 显示／隐藏进程列表 | `m_ActionShowProcessList`；M2-B；真实布局、尺寸和保存范围 |
 | ACT-VIEW-POINT | 显示／隐藏坐标拾取 | `m_ActionShowPointPicker`；M2-B／M3-A；实际采集和真实输入权限 |
 | ACT-VIEW-CATEGORY | 显示／隐藏分类列 | `setCategoryColumnVisible`；M2-A；187 选验列、清除当前筛选、草稿与保存冷读 |

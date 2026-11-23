@@ -38964,6 +38964,169 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         reject(QStringLiteral("stale_preview"), QStringLiteral("IbInput preferences changed after preview; obtain a fresh preview."));
         return;
     }
+    const auto *tableImport = applying
+        ? (applyingPreview->update ? &*applyingPreview->update : nullptr) : &validation.update;
+    if (tableImport && !tableImport->tableImportDocument.isEmpty()) {
+        if (validation.confirmScope || validation.confirmOverwrite || validation.confirmDelete) {
+            reject(QStringLiteral("invalid_arguments"), QStringLiteral("Only conflict confirmation can authorize a table import."));
+            return;
+        }
+        const int selected = s_KeyMappingTabWidgetCurrentIndex;
+        const auto idle = [&] {
+            return mappingAdditionAllowed(selected) && !hasOpenMappingEditor()
+                && !QApplication::activePopupWidget() && !m_KeyMappingDataTable->hasActiveEditor();
+        };
+        if (!idle()) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("Table import requires an idle source and completed cleanup, with no open editor or popup."));
+            return;
+        }
+        if (currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
+            reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
+            return;
+        }
+
+        const quint64 runtime = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
+        const auto preferences = automationIbInputPreferencesRevision();
+        const auto backup = decodeMappingTableBackup(tableImport->tableImportDocument, mappingTableBackupFieldNames());
+        if (backup.status == BackupDecodeStatus::TooLarge || backup.status == BackupDecodeStatus::TooManyEntries) {
+            reject(QStringLiteral("backup_too_large"), QStringLiteral("Import up to 100 rows and 128 KiB at a time."));
+            return;
+        }
+        if (backup.status != BackupDecodeStatus::Ok) {
+            reject(QStringLiteral("invalid_table_backup"), QStringLiteral("The file must contain a valid single-table backup."));
+            return;
+        }
+        const auto decoded = decodeMappingTableRows(backup.values);
+        if (decoded.rows.isEmpty()) {
+            reject(QStringLiteral("no_valid_mapping_rows"), QStringLiteral("None of the backup rows has a valid original and mapping key."));
+            return;
+        }
+
+        QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
+        const auto contextValid = [&] {
+            return idle() && !automationSourceReadBasis().isEmpty()
+                && QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() == runtime
+                && automationIbInputPreferencesRevision() == preferences
+                && !validationBudget.hasExpired(MappingChangeBudgetMs) && server.isRequestCurrent(request);
+        };
+        if (!contextValid()) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("Authorization or source context changed during import validation."));
+            return;
+        }
+        QString snapshotError;
+        const auto snapshot = collectAutomationSourceSnapshotWithAccess(snapshotError);
+        if (!snapshotError.isEmpty() || snapshot.isEmpty()) {
+            reject(snapshotError.isEmpty() ? QStringLiteral("context_busy") : snapshotError,
+                QStringLiteral("A safe source snapshot is unavailable for import."));
+            return;
+        }
+        const auto &revision = tableImport->sourceRevision;
+        const auto &reference = tableImport->sourceTabRef;
+        const int tab = reference.section(QLatin1Char(':'), 2, 2).toInt();
+        const auto page = querySourceSnapshot(snapshot, owner.instance, owner.pairId, owner.permissionEpoch,
+            {{QStringLiteral("entity"), QStringLiteral("mapping_sources")}, {QStringLiteral("source_revision"), revision},
+                {QStringLiteral("offset"), tab}, {QStringLiteral("limit"), 1}});
+        if (!page.ok()) { reject(page.errorCode, page.message); return; }
+        const auto items = page.page.value(QStringLiteral("items")).toArray();
+        const auto item = items.isEmpty() ? QJsonObject() : items.first().toObject();
+        if (tab >= s_KeyMappingTabInfoList.size() || item.value(QStringLiteral("source_tab_ref")) != reference
+            || !item.value(QStringLiteral("attached_to_ui")).toBool() || item.value(QStringLiteral("ui_index")).toInt(-1) != tab) {
+            reject(QStringLiteral("invalid_target"), QStringLiteral("Only attached source Tabs accept table imports."));
+            return;
+        }
+        const auto *targetRows = s_KeyMappingTabInfoList.at(tab).KeyMappingData;
+        if (!targetRows) {
+            reject(QStringLiteral("invalid_target"), QStringLiteral("The selected source Tab has no mapping data."));
+            return;
+        }
+        QList<MAP_KEYDATA> inserted;
+        QList<QPair<int, int>> conflicts;
+        const auto prepared = prepareMappingDataForInsertion(tab, decoded.rows, &inserted, &conflicts);
+        if (prepared.Cancelled || inserted.size() != decoded.rows.size()) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("The source Tab could not prepare all valid rows."));
+            return;
+        }
+        auto candidate = *targetRows;
+        candidate.append(inserted);
+        QHash<int, QList<MAP_KEYDATA>> overrides{{tab, std::move(candidate)}};
+        QJsonArray changes;
+        for (int i = 0; i < inserted.size(); ++i) {
+            changes.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("append_mapping")},
+                {QStringLiteral("insert_row"), int(targetRows->size()) + i}, {QStringLiteral("after"), automationSourceRow(inserted.at(i))}});
+        }
+        for (const auto &conflict : std::as_const(conflicts)) {
+            const auto &affected = s_KeyMappingTabInfoList.at(conflict.first);
+            if (!overrides.contains(conflict.first)) overrides.insert(conflict.first, *affected.KeyMappingData);
+            auto &row = overrides[conflict.first][conflict.second];
+            row.Disabled = true;
+            const auto sourceIndex = QString::number(conflict.first);
+            changes.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("disable_mapping")},
+                {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:") + sourceIndex},
+                {QStringLiteral("source_ref"), revision + QStringLiteral(":row:") + sourceIndex + QLatin1Char(':') + QString::number(conflict.second)},
+                {QStringLiteral("source_name"), affected.TabName}, {QStringLiteral("source_row"), conflict.second},
+                {QStringLiteral("original_key"), row.Original_Key}, {QStringLiteral("mapping_keys"), QJsonArray::fromStringList(row.Mapping_Keys)},
+                {QStringLiteral("disabled_before"), false}, {QStringLiteral("disabled_after"), true}});
+        }
+        const auto backendConflict = ibInputSaveConflict(overrides);
+        if (!backendConflict.isEmpty()) { reject(QStringLiteral("invalid_mapping"), backendConflict); return; }
+
+        const QJsonObject summary{{QStringLiteral("input_rows"), decoded.inputCount},
+            {QStringLiteral("accepted_rows"), int(inserted.size())},
+            {QStringLiteral("skipped_rows"), decoded.inputCount - int(inserted.size())},
+            {QStringLiteral("key_up_fallback_rows"), decoded.keyUpFallbackCount},
+            {QStringLiteral("disabled_due_to_target_conflict"), prepared.ExclusiveConflictDisabledNewRowCount},
+            {QStringLiteral("disabled_due_to_common"), prepared.CommonConflictDisabledNewRowCount},
+            {QStringLiteral("normal_rows_disabled"), int(conflicts.size())}};
+        const QJsonObject target{{QStringLiteral("instance_id"), owner.instance}, {QStringLiteral("source_revision"), revision},
+            {QStringLiteral("source_tab_ref"), reference}, {QStringLiteral("source_kind"), item.value(QStringLiteral("kind"))}};
+        const auto action = QStringLiteral("table.import");
+        const bool confirmationRequired = !conflicts.isEmpty();
+        const QJsonObject description{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
+            {QStringLiteral("summary"), summary}, {QStringLiteral("changes"), changes},
+            {QStringLiteral("confirmation_required"), confirmationRequired}, {QStringLiteral("modified"), false},
+            {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+        if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
+            reject(QStringLiteral("result_too_large"), QStringLiteral("The complete table import preview exceeds the response limit."));
+            return;
+        }
+        if (!contextValid()) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("Authorization or source context changed, or import validation expired."));
+            return;
+        }
+        if (!applying) {
+            const auto preview = store.createUpdate(owner, *tableImport, description, preferences);
+            if (!preview) { reject(QStringLiteral("preview_limit"), QStringLiteral("The bounded preview store is full.")); return; }
+            server.reply(request.connectionId, request.requestId, {{QStringLiteral("preview_id"), preview->id},
+                {QStringLiteral("operation_id"), preview->id}, {QStringLiteral("expires_in_ms"), double(MappingChangeStore::PreviewTtlMs)},
+                {QStringLiteral("description"), description}});
+            return;
+        }
+        if (store.expired(*applyingPreview)) {
+            reject(QStringLiteral("preview_expired"), QStringLiteral("The table import preview expired before commit."));
+            return;
+        }
+        if (applyingPreview->description != description) {
+            reject(QStringLiteral("stale_preview"), QStringLiteral("The table import no longer matches the preview."));
+            return;
+        }
+        if (validation.confirmConflicts != confirmationRequired) {
+            reject(confirmationRequired ? QStringLiteral("confirmation_required") : QStringLiteral("invalid_arguments"),
+                confirmationRequired ? QStringLiteral("Review and confirm the existing rows to disable with a fresh preview.")
+                                     : QStringLiteral("The table import has no existing conflicts to confirm."));
+            return;
+        }
+        for (auto it = overrides.begin(); it != overrides.end(); ++it) {
+            *s_KeyMappingTabInfoList.at(it.key()).KeyMappingData = std::move(it.value());
+        }
+        refreshTabsForSourceTabChange(tab);
+        requestSaveSettingDirty();
+        store.finish(owner, validation.id, QStringLiteral("applied"), {{QStringLiteral("action"), action},
+            {QStringLiteral("target"), target}, {QStringLiteral("summary"), summary}, {QStringLiteral("modified"), true},
+            {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
+            {QStringLiteral("query_source_again"), true}});
+        server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
+        return;
+    }
     if ((!applying && (validation.action == MappingChangeAction::UpsertMacro || validation.action == MappingChangeAction::DeleteMacro
                        || validation.action == MappingChangeAction::ImportMacro))
         || (applyingPreview && applyingPreview->macro.has_value())) {

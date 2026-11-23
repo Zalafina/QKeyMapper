@@ -6,7 +6,7 @@ use std::{
 };
 
 use qkeymapper_mcp_rust::{
-    bridge::{Bridge, Worker},
+    bridge::{BackupImportKind, Bridge, Worker},
     native::{DemoOptions, DemoRecord, MacroBackupDirectory, NativeError, Target},
     wire::Object,
 };
@@ -196,6 +196,11 @@ impl Handler {
         if context.ct.is_cancelled() {
             return json!({"ok": false, "error": "cancelled"});
         }
+        let import = match (method, arguments.get("action").and_then(Value::as_str)) {
+            ("qkm_preview_changes", Some("macro.import")) => Some(BackupImportKind::Macro),
+            ("qkm_preview_changes", Some("table.import")) => Some(BackupImportKind::MappingTable),
+            _ => None,
+        };
         let admitted = if matches!(method, "qkm_export_macros" | "qkm_export_mapping_table") {
             let directory = self
                 .macro_backup
@@ -207,21 +212,18 @@ impl Handler {
             let overwrite = arguments.remove("overwrite") == Some(Value::Bool(true));
             self.bridge
                 .export_backup(method, arguments, directory.clone(), name, overwrite)
-        } else if method == "qkm_preview_changes"
-            && arguments.get("action").and_then(Value::as_str) == Some("macro.import")
-        {
+        } else if let Some(kind) = import {
             let Some(directory) = self.macro_backup.as_ref() else {
                 return json!({"ok":false, "error":"backup_directory_unavailable"});
             };
-            let Some(Value::String(name)) = arguments
-                .get_mut("macro")
-                .and_then(Value::as_object_mut)
+            let Some(Value::String(name)) = kind
+                .fields(&mut arguments)
                 .and_then(|fields| fields.remove("file_name"))
             else {
                 return json!({"ok":false, "error":"invalid_arguments"});
             };
             self.bridge
-                .preview_macro_import(arguments, directory.clone(), name)
+                .preview_backup_import(kind, arguments, directory.clone(), name)
         } else {
             self.bridge.request(method, arguments)
         };
@@ -254,7 +256,11 @@ impl Handler {
                 !matches!(
                     capability["id"].as_str(),
                     Some(
-                        "macro.import.preview" | "macro.import.apply" | "mapping.table.backup.read"
+                        "macro.import.preview"
+                            | "macro.import.apply"
+                            | "mapping.table.backup.read"
+                            | "table.import.preview"
+                            | "table.import.apply"
                     )
                 )
             });

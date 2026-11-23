@@ -62,6 +62,7 @@ struct MappingUpdateArguments {
     std::optional<int> tableInsertMode;
     std::optional<int> tableEditTrigger;
     std::optional<int> windowDisplayMode;
+    QByteArray tableImportDocument;
     QString tabNotificationFontColor;
     QString tabNotificationBackgroundColor;
     bool addBlankTab = false;

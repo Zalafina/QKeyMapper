@@ -145,6 +145,9 @@ async def check_contract(exe):
             import_request = {"action": "macro.import", "macro": import_args}
             unavailable = await client.call_tool("qkm_preview_changes", import_request)
             assert unavailable.is_error and unavailable.structured_content["error"] == "backup_directory_unavailable"
+            table_import = {"action": "table.import", "source_tab_ref": tab, "file_name": "表 格.ini"}
+            unavailable = await client.call_tool("qkm_preview_changes", table_import)
+            assert unavailable.is_error and unavailable.structured_content["error"] == "backup_directory_unavailable"
             removal = {"catalog_revision": "c" * 64, "scope": "universal", "names": ["Shared", "Other"]}
             remove = {"action": "macro.delete", "macro": removal}
             expect_not_connected(await client.call_tool("qkm_preview_changes", remove))
@@ -156,8 +159,10 @@ async def check_contract(exe):
             macro = {"catalog_revision": "b" * 64, "scope": "configuration", "name": "New", "content": "A»B"}
             upsert = {"action": "macro.upsert", "macro": macro}
             validator = Draft202012Validator(previews)
-            for request in (upsert, remove, import_request):
+            for request in (upsert, remove, import_request, table_import):
                 validator.validate(request)
+            for extra in ({"document_base64": "QUJD"}, {"file_name": "../escape.ini"}, {"overwrite": True}):
+                assert not validator.is_valid(table_import | extra)
             for section, field, count in (("general", "table_insert_mode", 2), ("general", "table_edit_trigger", 2),
                                           ("configuration", "window_display_mode", 3)):
                 request = {"action": f"{section}.set_{field}", "source_tab_ref": tab, field: 0}
@@ -196,7 +201,7 @@ async def check_contract(exe):
                 denied = await client.call_tool("qkm_preview_changes", invalid)
                 assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
-                "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode"}
+                "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
             assert move_rule["required"] == ["action"]
@@ -644,6 +649,11 @@ async def check_contract(exe):
                 expect_not_connected(await client.call_tool("qkm_preview_changes", import_request))
                 expect_not_connected(await client.call_tool("qkm_preview_changes",
                                       import_request | {"macro": import_args | {"on_conflict": "overwrite"}}))
+                expect_not_connected(await client.call_tool("qkm_preview_changes", table_import))
+                for extra in ({"source_tab_ref": row}, {"file_name": "NUL.ini"}, {"file_name": "../escape.ini"},
+                              {"document_base64": "AAAA"}, {"overwrite": True}, {"source_revision": revision}):
+                    denied = await client.call_tool("qkm_preview_changes", table_import | extra)
+                    assert denied.is_error is True and denied.structured_content is None, extra
                 for fields in (request, import_args | {"file_name": "../escape.ini"},
                                import_args | {"on_conflict": "replace"}, import_args | {"document_base64": "AAAA"},
                                import_args | {"names": ["Z"]}, import_args | {"catalog_revision": "stale"}):
@@ -657,7 +667,7 @@ async def check_contract(exe):
                     denied = await client.call_tool(EXPORT, request | extra)
                     assert denied.is_error is True and denied.structured_content is None, extra
             assert not list(Path(directory).iterdir())
-        print("PASS", mode, "opt-in macro transfer schema and missing connection")
+        print("PASS", mode, "opt-in macro and mapping table transfers")
 
     parameters = config(exe, "--enable-demo-mapping")
     rejected = subprocess.run([parameters.command, *parameters.args], capture_output=True, timeout=5)
