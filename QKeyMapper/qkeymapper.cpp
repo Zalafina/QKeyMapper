@@ -23899,7 +23899,14 @@ bool QKeyMapper::moveSettingSelectOrderEntry(const QString &settingName, int tar
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
-    writeSettingSelectOrder(settingFile, orderedUserGroups);
+    const auto diskGroups = settingSelectUserGroupsFromChildGroups(settingFile.childGroups());
+    const auto orderToSave = normalizeSettingSelectOrderList(diskGroups, orderedUserGroups);
+    OrderedMap<QString, QVariant> values;
+    values.insert(QString::fromLatin1(SETTINGSELECT_ORDER_LIST), orderToSave);
+    if (orderToSave != orderedUserGroups || !writeIniBackupValues(settingFile, values)) {
+        showFailurePopup(tr("Save failure : ") + QFileInfo(settingFile.fileName()).fileName());
+        return false;
+    }
 
     QSignalBlocker blocker(ui->settingselectComboBox);
     ui->settingselectComboBox->removeItem(sourceComboIndex);
