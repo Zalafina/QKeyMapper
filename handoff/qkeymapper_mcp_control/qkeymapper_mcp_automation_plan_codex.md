@@ -14,15 +14,21 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | ORDERED-MAP-209 OrderedMap 移动赋值修复与选验完成 |
+| 当前切片 | MACRO-IMPORT-FORMAT-210 有界宏备份读取，组件选验完成 |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | Rust 显式启停与事务。M2-A 表与行属性、普通／共通复制及宏编辑按下文选验 |
-| 当前验证／证据 | 双 Qt Release／Qt6 ASan 各 7 项；Qt6 私有宏旧新格式导入、Rust 保存与独立冷读。原件仅本机 |
-| 当前控制器 | PID 27880 至 11-23 19:00，ORDERED-MAP-209 专属授权撤出 |
-| 下一项动作 | M2-A 接续宏文件导入的有界格式与草稿事务。Win10 三包另验 |
+| 当前已完成 | M2-A 表与行属性、普通／共通复制及宏编辑按下文选验。宏文件的有界 Qt 格式读取完成，调用链待接入 |
+| 当前验证／证据 | Qt 6.8.3 产品 Release 零警告；双 Qt 离屏组件各通过 2 个格式用例。复用 207／209 真实 GUI 导入基线 |
+| 当前控制器 | 本轮以普通 Medium 只读核验 PID 27880，有效至 11-23 19:00，查询时无活动或待处理作业 |
+| 下一项动作 | M2-A 共用 GUI 的同名合并，接入 Rust 普通权限读取及已认证草稿事务。Win10 三包另验 |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### MACRO-IMPORT-FORMAT-210：有界宏备份读取
+
+源码基线 `f0963dcb`。GUI 用 QSettings 读 `MacroList_Export`，共用配置解码跳过空名／非 Map，同名文件项保留首次位置与最后内容；GUI 对目标同名选择保留会跳过，覆盖会把已接受项按文件顺序移到尾部。207／209 的真实 Qt6 私有 GUI 已建立该基线。新组件兼容 GUI 的单包装／逗号列表和 208 导出，只将经过大小（128 KiB）、条目（100）及 Qt 4.0 类型／长度校验的值交给原 Qt 流解码；GUI 路径现有容错和限制保持。抽取现有导出编码，正式导入权限和草稿事务续接。
+
+PC-W11 build 26100。Qt6 产品 Release `out/mcp_macro_import_210_20261123/qt6-product-medium/release/QKeyMapper.exe` 编译零警告；Qt5.15.2／Qt6.8.3 组件各 2 个用例（QSettings 四／五字段、双向读取、转义和限额）通过。低完整性首次编译遇 MSVC C1902；平台拒绝 Qt6 组件改用 Medium，Qt6 组件改用沙箱内 `/Z7` 并验证通过。原件 `out/mcp_macro_import_210_20261123/`。本片仅编译产品，产品 MCP、界面及安装包待相应切片验证。
 
 ### ORDERED-MAP-209：修复 OrderedMap 移动赋值迭代器失效
 

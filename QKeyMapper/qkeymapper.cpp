@@ -3,6 +3,7 @@
 #include "automation/qkm_source_snapshot.h"
 #include "automation/qkm_mapping_help.h"
 #include "automation/qkm_mapping_changes.h"
+#include "automation/qkm_macro_backup.h"
 #include "automation/qkm_window_access.h"
 #include "automation/qkm_demo_mode.h"
 #include "automation/qkm_window_image.h"
@@ -38397,31 +38398,6 @@ static QString automationCatalogRevision(const QJsonObject &catalog, const QkmAu
         QJsonDocument(context).toJson(QJsonDocument::Compact), QCryptographicHash::Sha256).toHex());
 }
 
-static QByteArray encodeAutomationMacroBackup(const QVariantList &macros)
-{
-    constexpr int MaximumBytes = 128 * 1024;
-    QByteArray document("[General]\nMacroList_Export=\"@Variant(");
-    const QByteArray suffix(")\"\n");
-    const qsizetype maximumPayload = (MaximumBytes - document.size() - suffix.size()) / 4;
-
-    // QSettings reads a Qt 4.0 QVariant from an INI @Variant value.
-    // Wrap the list as one value so a backup of one macro also reads as a list.
-    QByteArray payload;
-    QDataStream stream(&payload, QIODevice::WriteOnly);
-    stream.setVersion(QDataStream::Qt_4_0);
-    stream << QVariant(macros);
-    if (stream.status() != QDataStream::Ok || payload.size() > maximumPayload) {
-        return {};
-    }
-
-    const QByteArray hex = payload.toHex();
-    document.reserve(document.size() + 2 * hex.size() + suffix.size());
-    for (qsizetype index = 0; index < hex.size(); index += 2) {
-        document.append("\\x").append(hex.constData() + index, 2);
-    }
-    return document.append(suffix);
-}
-
 void QKeyMapper::handleAutomationMacroExport(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -38441,7 +38417,7 @@ void QKeyMapper::handleAutomationMacroExport(const QkmAutomation::AutomationRequ
         return;
     }
     const QJsonArray values = requestedNames.toArray();
-    if (!all && (values.isEmpty() || values.size() > 100)) {
+    if (!all && (values.isEmpty() || values.size() > QkmAutomation::MaxMacroBackupEntries)) {
         fail("invalid_arguments", "Provide one to 100 names or omit names to export the whole scope.");
         return;
     }
@@ -38471,7 +38447,7 @@ void QKeyMapper::handleAutomationMacroExport(const QkmAutomation::AutomationRequ
     }
 
     const auto &macros = scope == QLatin1String("universal") ? s_UniversalMappingMacroList : s_MappingMacroList;
-    if (all && macros.size() > 100) {
+    if (all && macros.size() > QkmAutomation::MaxMacroBackupEntries) {
         fail("result_too_large", "Export up to 100 macros at a time.");
         return;
     }
@@ -38489,7 +38465,7 @@ void QKeyMapper::handleAutomationMacroExport(const QkmAutomation::AutomationRequ
         fail("empty_macro_export", "There are no macros to export in this scope.");
         return;
     }
-    const QByteArray document = encodeAutomationMacroBackup(serializeMappingMacros(selection));
+    const QByteArray document = QkmAutomation::encodeMacroBackup(serializeMappingMacros(selection));
     if (document.isEmpty()) {
         fail("result_too_large", "The macro backup exceeds the 128 KiB document limit.");
         return;

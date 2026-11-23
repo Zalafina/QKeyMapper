@@ -2,6 +2,7 @@
 #include "../../automation/qkm_source_snapshot.h"
 #include "../../automation/qkm_mapping_help.h"
 #include "../../automation/qkm_mapping_changes.h"
+#include "../../automation/qkm_macro_backup.h"
 #include "../../automation/qkm_window_access.h"
 #include "../../automation/qkm_demo_mode.h"
 #include "../../automation/qkm_demo_process.h"
@@ -201,6 +202,8 @@ private slots:
     void mappingHelpReference();
     void mappingHelpBoundaries();
     void mappingChangeArguments();
+    void macroBackupDecodesQtExports();
+    void macroBackupChecksLimitsAndFormat();
     void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
@@ -308,6 +311,76 @@ void McpControlTest::ibInputChangeArguments()
     QCOMPARE(begun->update->sourceReference, source);
     store.finish(owner, preview->id, QStringLiteral("applied"), {{QStringLiteral("modified"), true}});
     QCOMPARE(store.operation(owner, preview->id).value(QStringLiteral("target")).toObject().value(QStringLiteral("source_ref")).toString(), source);
+}
+
+void McpControlTest::macroBackupDecodesQtExports()
+{
+    using namespace QKeyMapperConstants;
+    const QVariantMap legacy{
+        {QLatin1String(MACROLIST_FIELD_MACRONAME), QStringLiteral("旧 宏")},
+        {QLatin1String(MACROLIST_FIELD_MACROCONTENT), QStringLiteral("A»B")},
+        {QLatin1String(MACROLIST_FIELD_MACROCATEGORY), QStringLiteral("分類")},
+        {QLatin1String(MACROLIST_FIELD_MACRONOTE), QStringLiteral("note,;=\r\n\"\\🙂")}
+    };
+    QVariantMap current = legacy;
+    current[QLatin1String(MACROLIST_FIELD_MACRONAME)] = QStringLiteral("新 宏");
+    current[QLatin1String(MACROLIST_FIELD_MACROCOMMENTS)] = QVariantList{QStringLiteral(" 段一 "), QString()};
+    current[QStringLiteral("unknownField")] = true;
+    QTemporaryDir files;
+    QVERIFY(files.isValid());
+
+    const QList<QVariantList> fixtures{{legacy}, {current}, {legacy, QStringLiteral("ignore"), current}};
+    for (qsizetype i = 0; i < fixtures.size(); ++i) {
+        const auto &entries = fixtures.at(int(i));
+        const auto path = files.filePath(QString::number(i) + QStringLiteral(".ini"));
+        {
+            QSettings settings(path, QSettings::IniFormat);
+            QKeyMapperQtCompat::setIniCodecUtf8(settings);
+            settings.setValue(QLatin1String(MACROLIST_EXPORT), entries);
+            settings.sync();
+            QCOMPARE(settings.status(), QSettings::NoError);
+        }
+        QFile file(path);
+        QVERIFY(file.open(QIODevice::ReadOnly));
+        const auto fromGui = decodeMacroBackup(file.readAll());
+        QCOMPARE(fromGui.status, MacroBackupStatus::Ok);
+        QCOMPARE(fromGui.entries.size(), entries.size());
+        QCOMPARE(fromGui.entries.first(), entries.first());
+        QCOMPARE(fromGui.entries.last(), entries.last());
+        if (entries.size() > 1) QVERIFY(fromGui.entries.at(1).toMap().isEmpty());
+
+        const auto document = encodeMacroBackup(entries);
+        QVERIFY(!document.isEmpty());
+        const auto fromMcp = decodeMacroBackup(document);
+        QCOMPARE(fromMcp.status, MacroBackupStatus::Ok);
+        QCOMPARE(fromMcp.entries, entries);
+
+        const auto mcpPath = files.filePath(QStringLiteral("mcp-%1.ini").arg(i));
+        QFile output(mcpPath);
+        QVERIFY(output.open(QIODevice::WriteOnly));
+        QCOMPARE(output.write(document), qint64(document.size()));
+        output.close();
+        QSettings readback(mcpPath, QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(readback);
+        QCOMPARE(readback.value(QLatin1String(MACROLIST_EXPORT)).toList(), entries);
+    }
+}
+
+void McpControlTest::macroBackupChecksLimitsAndFormat()
+{
+    QVariantList entries;
+    for (int i = 0; i < MaxMacroBackupEntries; ++i) entries.append(QVariantMap{});
+    const auto document = encodeMacroBackup(entries);
+    QCOMPARE(decodeMacroBackup(document).status, MacroBackupStatus::Ok);
+    QCOMPARE(decodeMacroBackup("\xef\xbb\xbf; backup\r\n" + document).status, MacroBackupStatus::Ok);
+    QCOMPARE(decodeMacroBackup(document + document).status, MacroBackupStatus::InvalidFormat);
+    QCOMPARE(decodeMacroBackup(document.left(document.size() - 4)).status, MacroBackupStatus::InvalidFormat);
+    QCOMPARE(decodeMacroBackup("[Other]\nMacroList_Export=hello\n").status, MacroBackupStatus::MissingList);
+    QCOMPARE(decodeMacroBackup("[General]\nMacroList_Export=hello\n").status, MacroBackupStatus::InvalidFormat);
+    QCOMPARE(decodeMacroBackup(QByteArray(MaxMacroBackupBytes + 1, 'x')).status, MacroBackupStatus::TooLarge);
+    entries.append(QVariantMap{});
+    QCOMPARE(decodeMacroBackup(encodeMacroBackup(entries)).status, MacroBackupStatus::TooManyEntries);
+    QCOMPARE(decodeMacroBackup(encodeMacroBackup({QDateTime::currentDateTimeUtc()})).status, MacroBackupStatus::InvalidFormat);
 }
 
 void McpControlTest::mappingChangeArguments()
