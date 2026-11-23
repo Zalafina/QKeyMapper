@@ -21335,48 +21335,13 @@ void QKeyMapper::importSelectedGroups(const QString &sourceIni, const QStringLis
         }
     }
 
-    // Perform import (copy selected groups)
-    int copied = 0;
-    const bool importGeneralGroup = groups.contains(CONFIG_FILE_TOPLEVEL_GROUPNAME);
-    const bool sourceHasOrderKey = src.contains(SETTINGSELECT_ORDER_LIST);
-    for (const QString &g : groups) {
-        if (g == CONFIG_FILE_TOPLEVEL_GROUPNAME) {
-            // Import top-level keys into destination top-level
-            QStringList keyList = src.childKeys();
-            for (const QString &key : std::as_const(keyList)) {
-                dst.setValue(key, src.value(key));
-            }
-            ++copied;
-        } else {
-            if (!srcGroups.contains(g)) continue;
-            src.beginGroup(g);
-            dst.beginGroup(g);
-            QStringList keyList = src.childKeys();
-            for (const QString &key : std::as_const(keyList)) {
-                dst.setValue(key, src.value(key));
-            }
-            src.endGroup();
-            dst.endGroup();
-            ++copied;
-        }
+    const auto values = collectConfigurationBackupValues(src, groups);
+    if (src.status() != QSettings::NoError || values.isEmpty()) {
+        showFailurePopup(tr("No valid setting found."));
+        return;
     }
-    dst.sync();
-
-    if (copied == 0) {
-        QString message = tr("No valid setting found.");
-        showFailurePopup(message);
-
-    if (importGeneralGroup && sourceHasOrderKey) {
-        writeSettingSelectOrder(dst, dst.value(SETTINGSELECT_ORDER_LIST).toStringList());
-    }
-    else {
-        for (const QString &groupName : groups) {
-            if (groupName != CONFIG_FILE_TOPLEVEL_GROUPNAME && groupName != GROUPNAME_GLOBALSETTING) {
-                appendSettingSelectOrderIfMissing(dst, groupName);
-            }
-        }
-    }
-
+    if (!writeIniBackupValues(dst, values)) {
+        showFailurePopup(tr("Save failure : ") + QFileInfo(dst.fileName()).fileName());
         return;
     }
 
