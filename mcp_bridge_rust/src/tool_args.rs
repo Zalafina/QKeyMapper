@@ -269,6 +269,14 @@ struct MacroPreview<T> {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct TableInsertMode {
+    action: String,
+    source_tab_ref: String,
+    table_insert_mode: u8,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct Preview {
     #[serde(default)]
     action: Action,
@@ -596,6 +604,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
             match arguments.get("action").and_then(Value::as_str) {
+                Some("general.set_table_insert_mode") => {
+                    return typed(arguments, |v: &TableInsertMode| {
+                        tab_ref(&v.source_tab_ref) && v.table_insert_mode <= 1
+                    });
+                }
                 Some("macro.upsert") => {
                     return typed(arguments, |v: &MacroPreview<MacroUpsert>| {
                         revision(&v.data.catalog_revision)

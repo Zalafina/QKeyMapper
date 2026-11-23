@@ -906,8 +906,24 @@ void McpControlTest::mappingChangeArguments()
     invalidImport = importFields;
     invalidImport.insert(QStringLiteral("document_base64"), QStringLiteral("invalid?"));
     QVERIFY(!importRequest(invalidImport).ok());
-    QCOMPARE(capabilities.size(), 62);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 60);
+    const auto validateInsertMode = [&](const QJsonValue &mode) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("general.set_table_insert_mode")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("table_insert_mode"), mode}});
+    };
+    for (const int mode : {0, 1}) {
+        const auto parsed = validateInsertMode(mode);
+        QVERIFY(parsed.ok() && parsed.action == MappingChangeAction::UpdateMapping);
+        QVERIFY(parsed.update.tableInsertMode.has_value());
+        QCOMPARE(*parsed.update.tableInsertMode, mode);
+    }
+    for (const auto &mode : {QJsonValue(-1), QJsonValue(2), QJsonValue(0.5), QJsonValue(true), QJsonValue(QStringLiteral("1"))})
+        QVERIFY(!validateInsertMode(mode).ok());
+    QCOMPARE(capabilities.size(), 64);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 62);
+    QCOMPARE(capabilities.at(61).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_insert_mode.preview"));
+    QCOMPARE(capabilities.at(62).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_insert_mode.apply"));
     QCOMPARE(capabilities.at(59).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.import.preview"));
     QCOMPARE(capabilities.at(60).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.import.apply"));
     QCOMPARE(capabilities.at(57).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.delete.preview"));
