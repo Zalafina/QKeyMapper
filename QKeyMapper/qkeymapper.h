@@ -2198,8 +2198,8 @@ public:
     static void saveUniversalMacroListToINI(void);
     static void loadUniversalMacroListFromINI(void);
     static QVariantList serializeMappingMacros(const OrderedMap<QString, MappingMacroData> &macros);
-    static void deserializeMappingMacros(const QVariantList &macroList,
-                                         OrderedMap<QString, MappingMacroData> &macros);
+    static int deserializeMappingMacros(const QVariantList &macroList,
+                                        OrderedMap<QString, MappingMacroData> &macros);
 private:
     static QVariantList serializeIgnoreRules(const OrderedMap<QString, IgnoreWindowInfo> &rules);
     static QVariantList serializeSyncGroupNotes(const QHash<int, QString> &notes);

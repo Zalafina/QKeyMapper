@@ -122,7 +122,9 @@ async def check_contract(exe):
             macro_fields = previews["properties"]["macro"]
             assert not macro_fields["additionalProperties"]
             assert macro_fields["required"] == ["catalog_revision", "scope"]
-            assert macro_rule["properties"]["macro"] == {"required": ["name", "content"], "not": {"required": ["names"]}}
+            assert macro_rule["properties"]["macro"] == {"required": ["name", "content"],
+                "propertyNames": {"enum": ["catalog_revision", "scope", "name", "content", "category", "note",
+                                           "insert_at", "segment_comments"]}}
             delete_macro_rule, = (rule for rule in previews["oneOf"]
                                   if rule["properties"]["action"].get("const") == "macro.delete")
             delete_names = macro_fields["properties"]["names"]
@@ -130,6 +132,17 @@ async def check_contract(exe):
                                     "items": {"type": "string", "minLength": 1, "maxLength": 32767}}
             assert delete_macro_rule["properties"]["macro"] == {"required": ["names"],
                 "propertyNames": {"enum": ["catalog_revision", "scope", "names"]}}
+            import_rule, = (rule for rule in previews["oneOf"]
+                            if rule["properties"]["action"].get("const") == "macro.import")
+            assert import_rule["required"] == ["action", "macro"]
+            assert import_rule["properties"]["macro"] == {"required": ["file_name", "on_conflict"],
+                "propertyNames": {"enum": ["catalog_revision", "scope", "file_name", "on_conflict"]}}
+            assert macro_fields["properties"]["on_conflict"] == {"enum": ["keep", "overwrite"]}
+            import_args = {"catalog_revision": revision, "scope": "universal",
+                           "file_name": "宏 示例.ini", "on_conflict": "keep"}
+            import_request = {"action": "macro.import", "macro": import_args}
+            unavailable = await client.call_tool("qkm_preview_changes", import_request)
+            assert unavailable.is_error and unavailable.structured_content["error"] == "backup_directory_unavailable"
             removal = {"catalog_revision": "c" * 64, "scope": "universal", "names": ["Shared", "Other"]}
             remove = {"action": "macro.delete", "macro": removal}
             expect_not_connected(await client.call_tool("qkm_preview_changes", remove))
@@ -596,6 +609,14 @@ async def check_contract(exe):
                 request = {"catalog_revision": revision, "scope": "universal", "file_name": "宏 示例.ini"}
                 expect_not_connected(await client.call_tool(EXPORT, request))
                 expect_not_connected(await client.call_tool(EXPORT, request | {"names": ["Z", "共享"]}))
+                expect_not_connected(await client.call_tool("qkm_preview_changes", import_request))
+                expect_not_connected(await client.call_tool("qkm_preview_changes",
+                                      import_request | {"macro": import_args | {"on_conflict": "overwrite"}}))
+                for fields in (request, import_args | {"file_name": "../escape.ini"},
+                               import_args | {"on_conflict": "replace"}, import_args | {"document_base64": "AAAA"},
+                               import_args | {"names": ["Z"]}, import_args | {"catalog_revision": "stale"}):
+                    denied = await client.call_tool("qkm_preview_changes", import_request | {"macro": fields})
+                    assert denied.is_error is True and denied.structured_content is None, fields
                 invalid = ({"names": []}, {"names": None}, {"names": ["A", "A"]}, {"overwrite": 1},
                            {"file_name": "../escape.ini"}, {"file_name": r"C:\escape.ini"},
                            {"file_name": "A.ini:other"}, {"file_name": "NUL.ini"}, {"file_name": "example.txt"},
@@ -604,7 +625,7 @@ async def check_contract(exe):
                     denied = await client.call_tool(EXPORT, request | extra)
                     assert denied.is_error is True and denied.structured_content is None, extra
             assert not list(Path(directory).iterdir())
-        print("PASS", mode, "opt-in macro export schema and missing connection")
+        print("PASS", mode, "opt-in macro transfer schema and missing connection")
 
     parameters = config(exe, "--enable-demo-mapping")
     rejected = subprocess.run([parameters.command, *parameters.args], capture_output=True, timeout=5)

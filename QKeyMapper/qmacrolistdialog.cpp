@@ -1046,14 +1046,7 @@ void QMacroListDialog::importMacroListFromFile()
         return;
     }
 
-    // Check for duplicate macro names
-    QStringList duplicateNames;
-    for (auto it = importMacroList.begin(); it != importMacroList.end(); ++it) {
-        if (macroDataList->contains(it.key())) {
-            duplicateNames.append(it.key());
-        }
-    }
-
+    const auto duplicateNames = macroImportConflicts(*macroDataList, importMacroList);
     bool overwriteDuplicates = false;
     if (!duplicateNames.isEmpty()) {
         // Ask user whether to overwrite duplicates
@@ -1074,29 +1067,7 @@ void QMacroListDialog::importMacroListFromFile()
         overwriteDuplicates = (reply == QMessageBox::Yes);
     }
 
-    // Record the starting row for new items (for selection after import)
-    // int originalRowCount = macroDataList->size();
-    int importedCount = 0;
-
-    // Import macro data
-    for (auto it = importMacroList.begin(); it != importMacroList.end(); ++it) {
-        const QString &macroName = it.key();
-        const MappingMacroData &macroData = it.value();
-
-        if (macroDataList->contains(macroName)) {
-            if (overwriteDuplicates) {
-                // Use insert() to move existing key to end and update value
-                macroDataList->insert(macroName, macroData);
-                ++importedCount;
-            }
-            // If not overwriting, skip this macro
-        }
-        else {
-            // New macro, insert at end
-            macroDataList->insert(macroName, macroData);
-            ++importedCount;
-        }
-    }
+    const int importedCount = int(appendImportedMacros(*macroDataList, importMacroList, overwriteDuplicates).size());
 
     if (importedCount == 0) {
         QString popupMessage = tr("No new macro data was imported.");
@@ -1106,13 +1077,7 @@ void QMacroListDialog::importMacroListFromFile()
         return;
     }
 
-    // Refresh the table display
-    if (ui->macroListTabWidget->currentWidget() == ui->macrolist) {
-        refreshMacroListTabWidget(ui->macrolistTable, QKeyMapper::s_MappingMacroList);
-    }
-    else {
-        refreshMacroListTabWidget(ui->universalmacrolistTable, QKeyMapper::s_UniversalMappingMacroList);
-    }
+    refreshMacroListTabWidget(macroDataTable, *macroDataList);
 
     // Calculate the new row range for imported items
     int newRowCount = macroDataList->size();
@@ -1142,6 +1107,29 @@ void QMacroListDialog::importMacroListFromFile()
 #ifdef DEBUG_LOGOUT_ON
     qDebug().nospace() << "[importMacroListFromFile] Imported " << importedCount << " macros, selection range: " << importStartRow << " - " << importEndRow;
 #endif
+}
+
+QStringList QMacroListDialog::macroImportConflicts(const OrderedMap<QString, MappingMacroData> &list,
+                                                  const OrderedMap<QString, MappingMacroData> &incoming)
+{
+    QStringList names;
+    for (auto it = incoming.begin(); it != incoming.end(); ++it) {
+        if (list.contains(it.key())) names.append(it.key());
+    }
+    return names;
+}
+
+QStringList QMacroListDialog::appendImportedMacros(OrderedMap<QString, MappingMacroData> &list,
+                                                  const OrderedMap<QString, MappingMacroData> &incoming, bool overwrite)
+{
+    QStringList names;
+    for (auto it = incoming.begin(); it != incoming.end(); ++it) {
+        if (!overwrite && list.contains(it.key())) continue;
+        // insert() moves an overwritten entry to the end with the other imported entries.
+        list.insert(it.key(), it.value());
+        names.append(it.key());
+    }
+    return names;
 }
 
 void QMacroListDialog::addMacroToList()

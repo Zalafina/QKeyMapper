@@ -90,10 +90,12 @@ struct MacroChangeArguments {
     QString anchorName;
     bool insertBelow = false;
     std::optional<QStringList> segmentComments;
+    QByteArray importDocument;
+    bool overwriteImportDuplicates = false;
 };
 
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };
-enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences, UpsertMacro, DeleteMacro };
+enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences, UpsertMacro, DeleteMacro, ImportMacro };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
     MappingChangeAction action = MappingChangeAction::AddMapping;

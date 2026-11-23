@@ -101,6 +101,10 @@ public:
     static ValidationResult validateMacroInput(const QString &name, QString &content);
     static QStringList reconcileMacroComments(const MappingMacroData &previous, const QString &content);
     static void removeMacros(OrderedMap<QString, MappingMacroData> &list, const QStringList &names);
+    static QStringList macroImportConflicts(const OrderedMap<QString, MappingMacroData> &list,
+                                            const OrderedMap<QString, MappingMacroData> &incoming);
+    static QStringList appendImportedMacros(OrderedMap<QString, MappingMacroData> &list,
+                                            const OrderedMap<QString, MappingMacroData> &incoming, bool overwrite);
     static QString getEditingMacroText(void);
     static int getEditingMacroCursorPosition(void);
     static void setEditingMacroText(const QString &new_macrotext);

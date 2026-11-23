@@ -20960,9 +20960,10 @@ QVariantList QKeyMapper::serializeMappingMacros(const OrderedMap<QString, Mappin
     return macroList;
 }
 
-void QKeyMapper::deserializeMappingMacros(const QVariantList &macroList,
-                                         OrderedMap<QString, MappingMacroData> &macros)
+int QKeyMapper::deserializeMappingMacros(const QVariantList &macroList,
+                                        OrderedMap<QString, MappingMacroData> &macros)
 {
+    int accepted = 0;
     for (const QVariant &entry : macroList) {
         const QVariantMap macro = entry.toMap();
         const QString name = macro.value(MACROLIST_FIELD_MACRONAME).toString();
@@ -20979,7 +20980,9 @@ void QKeyMapper::deserializeMappingMacros(const QVariantList &macroList,
                         macro.value(MACROLIST_FIELD_MACROCATEGORY).toString(),
                         macro.value(MACROLIST_FIELD_MACRONOTE).toString(),
                         comments};
+        ++accepted;
     }
+    return accepted;
 }
 
 void QKeyMapper::saveMacroListToINI(const QString &setting_groupname)
@@ -38369,7 +38372,7 @@ static QJsonObject automationMacroRow(const QString &scope, const QString &name,
         {QStringLiteral("segment_comments"), QJsonArray::fromStringList(macro.MacroComments)}};
 }
 
-static bool addAutomationMacroCatalog(QJsonObject &catalog)
+static bool addAutomationMacroCatalog(QJsonObject &catalog, qsizetype *encodedBytes = nullptr)
 {
     QJsonArray macros;
     qsizetype bytes = 0;
@@ -38384,6 +38387,7 @@ static bool addAutomationMacroCatalog(QJsonObject &catalog)
     };
     if (!append(QKeyMapper::s_MappingMacroList, QStringLiteral("configuration"))
         || !append(QKeyMapper::s_UniversalMappingMacroList, QStringLiteral("universal"))) return false;
+    if (encodedBytes) *encodedBytes = bytes;
     catalog.insert(QStringLiteral("macros"), macros);
     return true;
 }
@@ -38842,10 +38846,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         reject(QStringLiteral("stale_preview"), QStringLiteral("IbInput preferences changed after preview; obtain a fresh preview."));
         return;
     }
-    if ((!applying && (validation.action == MappingChangeAction::UpsertMacro || validation.action == MappingChangeAction::DeleteMacro))
+    if ((!applying && (validation.action == MappingChangeAction::UpsertMacro || validation.action == MappingChangeAction::DeleteMacro
+                       || validation.action == MappingChangeAction::ImportMacro))
         || (applyingPreview && applyingPreview->macro.has_value())) {
         const auto &macro = applying ? *applyingPreview->macro : validation.macro;
         const bool deleting = !macro.namesToDelete.isEmpty();
+        const bool importing = !macro.importDocument.isEmpty();
         if (validation.confirmConflicts || validation.confirmScope
             || (deleting ? validation.confirmOverwrite : validation.confirmDelete)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("The confirmation flags must match the macro change."));
@@ -38856,13 +38862,35 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("context_busy"), QStringLiteral("Macro edits require the current idle source and closed editors."));
             return;
         }
+        OrderedMap<QString, MappingMacroData> incoming;
+        int ignoredEntries = 0;
+        int coalescedEntries = 0;
+        if (importing) {
+            const auto backup = decodeMacroBackup(macro.importDocument);
+            if (backup.status == MacroBackupStatus::TooManyEntries || backup.status == MacroBackupStatus::TooLarge) {
+                reject(QStringLiteral("backup_too_large"), QStringLiteral("Import up to 100 entries and 128 KiB at a time."));
+                return;
+            }
+            if (backup.status != MacroBackupStatus::Ok) {
+                reject(QStringLiteral("invalid_macro_backup"), QStringLiteral("The file must contain a valid MacroList_Export backup."));
+                return;
+            }
+            const int accepted = deserializeMappingMacros(backup.entries, incoming);
+            ignoredEntries = int(backup.entries.size()) - accepted;
+            coalescedEntries = accepted - incoming.size();
+            if (incoming.isEmpty()) {
+                reject(QStringLiteral("empty_macro_import"), QStringLiteral("The file has no named macro entries."));
+                return;
+            }
+        }
         QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
         auto catalog = collectAutomationCatalog();
         if (automationSourceReadBasis().isEmpty() || catalog.isEmpty() || !server.isRequestCurrent(request)) {
             reject(QStringLiteral("context_busy"), QStringLiteral("The macro context is not available."));
             return;
         }
-        if (!addAutomationMacroCatalog(catalog)) {
+        qsizetype macroCatalogBytes = 0;
+        if (!addAutomationMacroCatalog(catalog, importing ? &macroCatalogBytes : nullptr)) {
             reject(QStringLiteral("result_too_large"), QStringLiteral("Macro catalog exceeds its bounded size."));
             return;
         }
@@ -38876,6 +38904,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonObject target{{QStringLiteral("instance_id"), owner.instance}, {QStringLiteral("catalog_revision"), revision},
             {QStringLiteral("scope"), macro.scope}};
         QJsonArray changes;
+        OrderedMap<QString, MappingMacroData> importDraft;
+        QStringList keptNames;
         QString name;
         MappingMacroData after;
         int insertionIndex = -1;
@@ -38899,6 +38929,57 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 return;
             }
             target.insert(QStringLiteral("names"), names);
+        } else if (importing) {
+            target.insert(QStringLiteral("on_conflict"), macro.overwriteImportDuplicates
+                ? QStringLiteral("overwrite") : QStringLiteral("keep"));
+            target.insert(QStringLiteral("runtime_revision"),
+                QString::number(QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision()));
+            if (!macro.overwriteImportDuplicates)
+                keptNames = QMacroListDialog::macroImportConflicts(list, incoming);
+            const auto oldNames = list.keys();
+            importDraft = list;
+            const auto importedNames = QMacroListDialog::appendImportedMacros(importDraft, incoming, macro.overwriteImportDuplicates);
+            int index = importDraft.size() - int(importedNames.size());
+            for (const auto &importedName : importedNames) {
+                const auto imported = incoming.value(importedName);
+                QString checkedContent = QMacroListDialog::normalizedMacroText(imported.MappingMacro);
+                if (importedName.trimmed().isEmpty() || importedName.contains(QChar::Null)
+                    || checkedContent.isEmpty() || checkedContent.contains(QChar::Null)) {
+                    reject(QStringLiteral("invalid_mapping"), QStringLiteral("Imported macros need a valid name and non-empty content."));
+                    return;
+                }
+                const auto steps = checkedContent.split(QString::fromUtf8(SEPARATOR_NEXTARROW));
+                if (!std::all_of(steps.cbegin(), steps.cend(), [](const QString &step) {
+                    return isBasicMappingKey(step.trimmed());
+                })) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("Macro imports support sequences of ordinary letter or digit keys."));
+                    return;
+                }
+                const auto checked = QMacroListDialog::validateMacroInput(importedName, checkedContent);
+                if (!checked.isValid) {
+                    reject(QStringLiteral("invalid_mapping"), checked.errorMessage);
+                    return;
+                }
+                const int oldIndex = int(oldNames.indexOf(importedName));
+                const bool exists = oldIndex >= 0;
+                QJsonValue before(QJsonValue::Null);
+                if (exists) {
+                    replacing = true;
+                    const auto row = automationMacroRow(macro.scope, importedName, list.value(importedName));
+                    macroCatalogBytes -= QJsonDocument(row).toJson(QJsonDocument::Compact).size() + 1;
+                    before = row;
+                }
+                const auto row = automationMacroRow(macro.scope, importedName, imported);
+                macroCatalogBytes += QJsonDocument(row).toJson(QJsonDocument::Compact).size() + 1;
+                changes.append(QJsonObject{{QStringLiteral("kind"), exists ? QStringLiteral("replace_macro") : QStringLiteral("add_macro")},
+                    {QStringLiteral("old_index"), exists ? QJsonValue(oldIndex) : QJsonValue(QJsonValue::Null)},
+                    {QStringLiteral("index"), index++}, {QStringLiteral("before"), before}, {QStringLiteral("after"), row}});
+            }
+            if (macroCatalogBytes > MaxSourceSnapshotBytes) {
+                reject(QStringLiteral("result_too_large"), QStringLiteral("The resulting macro catalog exceeds its bounded size."));
+                return;
+            }
+            modified = !importedNames.isEmpty();
         } else {
             name = QMacroListDialog::normalizedMacroText(macro.name);
             auto content = QMacroListDialog::normalizedMacroText(macro.content);
@@ -38955,12 +39036,18 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             target.insert(QStringLiteral("name"), name);
             modified = beforeRow != QJsonValue(afterRow);
         }
-        const auto action = deleting ? QStringLiteral("macro.delete") : QStringLiteral("macro.upsert");
+        const auto action = deleting ? QStringLiteral("macro.delete")
+            : importing ? QStringLiteral("macro.import") : QStringLiteral("macro.upsert");
         QJsonObject description{{QStringLiteral("action"), action},
             {QStringLiteral("target"), target}, {QStringLiteral("changes"), changes},
             {QStringLiteral("confirmation_required"), deleting || replacing}, {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
         if (deleting) description.insert(QStringLiteral("reference_policy"), QStringLiteral("existing_references_preserved"));
+        if (importing) {
+            description.insert(QStringLiteral("kept_names"), QJsonArray::fromStringList(keptNames));
+            description.insert(QStringLiteral("ignored_entries"), ignoredEntries);
+            description.insert(QStringLiteral("coalesced_entries"), coalescedEntries);
+        }
         if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
             reject(QStringLiteral("result_too_large"), QStringLiteral("The complete macro change exceeds the response limit."));
             return;
@@ -38992,12 +39079,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         if (replacing != validation.confirmOverwrite) {
             reject(replacing ? QStringLiteral("confirmation_required") : QStringLiteral("invalid_arguments"),
-                replacing ? QStringLiteral("Review the existing macro and confirm the overwrite with a fresh preview.")
-                          : QStringLiteral("An appended macro does not accept overwrite confirmation."));
+                replacing ? QStringLiteral("Review the existing macros and confirm the overwrite with a fresh preview.")
+                          : QStringLiteral("This macro change has no overwrite to confirm."));
             return;
         }
         if (modified) {
             if (deleting) QMacroListDialog::removeMacros(list, macro.namesToDelete);
+            else if (importing) list = std::move(importDraft);
             else if (insertionIndex >= 0) list.insertAt(insertionIndex, name, after);
             else list[name] = after;
             requestSaveSettingDirty();
@@ -39008,6 +39096,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (deleting) {
             result.insert(QStringLiteral("deleted_count"), int(changes.size()));
             result.insert(QStringLiteral("reference_policy"), description.value(QStringLiteral("reference_policy")));
+        }
+        if (importing) {
+            result.insert(QStringLiteral("imported_count"), int(changes.size()));
+            result.insert(QStringLiteral("kept_names"), description.value(QStringLiteral("kept_names")));
+            result.insert(QStringLiteral("ignored_entries"), ignoredEntries);
+            result.insert(QStringLiteral("coalesced_entries"), coalescedEntries);
         }
         store.finish(owner, validation.id, QStringLiteral("applied"), result);
         server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));

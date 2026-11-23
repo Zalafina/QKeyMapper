@@ -883,8 +883,33 @@ void McpControlTest::mappingChangeArguments()
     invalidMacro.insert(QStringLiteral("names"), QJsonArray{QStringLiteral("A"), QStringLiteral("A")});
     macroDelete.insert(QStringLiteral("macro"), invalidMacro);
     QVERIFY(!validateMappingChangeRequest(previewMethod, macroDelete).ok());
-    QCOMPARE(capabilities.size(), 60);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 58);
+    const auto document = encodeMacroBackup({QVariantMap{{QStringLiteral("macroName"), QStringLiteral("Test")}}});
+    QJsonObject importFields{{QStringLiteral("catalog_revision"), revision}, {QStringLiteral("scope"), QStringLiteral("configuration")},
+        {QStringLiteral("on_conflict"), QStringLiteral("keep")},
+        {QStringLiteral("document_base64"), QString::fromLatin1(document.toBase64())}};
+    const auto importRequest = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod, {{QStringLiteral("action"), QStringLiteral("macro.import")},
+            {QStringLiteral("macro"), fields}});
+    };
+    const auto parsedImport = importRequest(importFields);
+    QVERIFY(parsedImport.ok() && parsedImport.action == MappingChangeAction::ImportMacro);
+    QCOMPARE(parsedImport.macro.importDocument, document);
+    QVERIFY(!parsedImport.macro.overwriteImportDuplicates);
+    importFields.insert(QStringLiteral("on_conflict"), QStringLiteral("overwrite"));
+    QVERIFY(importRequest(importFields).macro.overwriteImportDuplicates);
+    auto invalidImport = importFields;
+    invalidImport.insert(QStringLiteral("file_name"), QStringLiteral("file.ini"));
+    QVERIFY(!importRequest(invalidImport).ok());
+    invalidImport = importFields;
+    invalidImport.remove(QStringLiteral("on_conflict"));
+    QVERIFY(!importRequest(invalidImport).ok());
+    invalidImport = importFields;
+    invalidImport.insert(QStringLiteral("document_base64"), QStringLiteral("invalid?"));
+    QVERIFY(!importRequest(invalidImport).ok());
+    QCOMPARE(capabilities.size(), 62);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 60);
+    QCOMPARE(capabilities.at(59).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.import.preview"));
+    QCOMPARE(capabilities.at(60).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.import.apply"));
     QCOMPARE(capabilities.at(57).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.delete.preview"));
     QCOMPARE(capabilities.at(58).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.delete.apply"));
     QCOMPARE(capabilities.at(55).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.upsert.preview"));

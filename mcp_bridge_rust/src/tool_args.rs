@@ -244,6 +244,22 @@ struct MacroDelete {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum MacroConflictPolicy {
+    Keep,
+    Overwrite,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct MacroImport {
+    catalog_revision: String,
+    scope: MacroScope,
+    file_name: String,
+    on_conflict: MacroConflictPolicy,
+}
+
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct MacroPreview<T> {
     action: String,
@@ -612,6 +628,12 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && v.data.names.iter().all(|name| {
                                 !name.is_empty() && macro_text(name, 32767) && seen.insert(name)
                             })
+                    });
+                }
+                Some("macro.import") => {
+                    return typed(arguments, |v: &MacroPreview<MacroImport>| {
+                        revision(&v.data.catalog_revision)
+                            && valid_macro_backup_name(&v.data.file_name)
                     });
                 }
                 _ => {}

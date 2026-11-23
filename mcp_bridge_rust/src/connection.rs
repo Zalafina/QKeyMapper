@@ -203,6 +203,21 @@ impl Handler {
             let overwrite = arguments.remove("overwrite") == Some(Value::Bool(true));
             self.bridge
                 .export_macros(arguments, directory.clone(), name, overwrite)
+        } else if method == "qkm_preview_changes"
+            && arguments.get("action").and_then(Value::as_str) == Some("macro.import")
+        {
+            let Some(directory) = self.macro_backup.as_ref() else {
+                return json!({"ok":false, "error":"backup_directory_unavailable"});
+            };
+            let Some(Value::String(name)) = arguments
+                .get_mut("macro")
+                .and_then(Value::as_object_mut)
+                .and_then(|fields| fields.remove("file_name"))
+            else {
+                return json!({"ok":false, "error":"invalid_arguments"});
+            };
+            self.bridge
+                .preview_macro_import(arguments, directory.clone(), name)
         } else {
             self.bridge.request(method, arguments)
         };
@@ -218,12 +233,27 @@ impl Handler {
                 job.reply.await
             }
         };
-        result
+        let mut value = result
             .unwrap_or(Err(NativeError {
                 code: "internal_error",
                 win32: None,
             }))
-            .unwrap_or_else(|error| json!({"ok": false, "error": error.code}))
+            .unwrap_or_else(|error| json!({"ok": false, "error": error.code}));
+        if method == "qkm_get_capabilities"
+            && self.macro_backup.is_none()
+            && let Some(capabilities) = value
+                .get_mut("result")
+                .and_then(|result| result.get_mut("business_capabilities"))
+                .and_then(Value::as_array_mut)
+        {
+            capabilities.retain(|capability| {
+                !matches!(
+                    capability["id"].as_str(),
+                    Some("macro.import.preview" | "macro.import.apply")
+                )
+            });
+        }
+        value
     }
 }
 

@@ -1,5 +1,6 @@
 #include "qkm_mapping_changes.h"
 #include "qkm_auth_proof.h"
+#include "qkm_macro_backup.h"
 #include "qkm_pair_store.h"
 #include "qkm_source_snapshot.h"
 #include "../qkeymapper_constants.h"
@@ -95,12 +96,15 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : query ? MappingChangeMethod::Operation : MappingChangeMethod::Cancel;
     const auto action = arguments.value(QStringLiteral("action"));
     const bool macroDelete = action == QLatin1String("macro.delete");
-    if (preview && (macroDelete || action == QLatin1String("macro.upsert"))) {
+    const bool macroImport = action == QLatin1String("macro.import");
+    if (preview && (macroDelete || macroImport || action == QLatin1String("macro.upsert"))) {
         const auto value = arguments.value(QStringLiteral("macro"));
         if (arguments.size() != 2 || !value.isObject()) return fail("Macro changes require only action and macro.");
         const auto fields = value.toObject();
         const auto allowed = macroDelete
             ? QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("names")}
+            : macroImport ? QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"),
+                QStringLiteral("on_conflict"), QStringLiteral("document_base64")}
             : QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("name"),
                 QStringLiteral("content"), QStringLiteral("category"), QStringLiteral("note"), QStringLiteral("insert_at"),
                 QStringLiteral("segment_comments")};
@@ -113,6 +117,25 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         if (!isLowerHex(macro.catalogRevision, 64)
             || (macro.scope != QLatin1String("configuration") && macro.scope != QLatin1String("universal"))) {
             return fail("Provide the current macro catalog revision and an explicit scope.");
+        }
+        if (macroImport) {
+            const auto policy = fields.value(QStringLiteral("on_conflict"));
+            const auto encoded = fields.value(QStringLiteral("document_base64")).toString();
+            constexpr int encodedLimit = ((MaxMacroBackupBytes + 2) / 3) * 4;
+            if ((policy != QLatin1String("keep") && policy != QLatin1String("overwrite"))
+                || encoded.isEmpty() || encoded.size() > encodedLimit) {
+                return fail("Macro import requires keep or overwrite and a bounded backup document.");
+            }
+            const auto bytes = encoded.toLatin1();
+            auto decoded = QByteArray::fromBase64Encoding(bytes, QByteArray::AbortOnBase64DecodingErrors);
+            if (!decoded || decoded.decoded.isEmpty() || decoded.decoded.size() > MaxMacroBackupBytes
+                || decoded.decoded.toBase64() != bytes) {
+                return fail("Provide a valid bounded base64 document.");
+            }
+            macro.importDocument = std::move(decoded.decoded);
+            macro.overwriteImportDuplicates = policy == QLatin1String("overwrite");
+            result.action = MappingChangeAction::ImportMacro;
+            return result;
         }
         if (macroDelete) {
             const auto names = fields.value(QStringLiteral("names")).toArray();
@@ -1094,6 +1117,27 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     capabilities.append(macroDeletePreview);
     capabilities.append(macroDeleteApply);
+    const auto importMacroFields = schema({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("scope"), macroFields.value(QStringLiteral("properties")).toObject().value(QStringLiteral("scope"))},
+        {QStringLiteral("file_name"), string(QStringLiteral("^[^<>:\"/\\\\|?*]+\\.[iI][nN][iI]$"), 255)},
+        {QStringLiteral("on_conflict"), QJsonObject{{QStringLiteral("enum"),
+            QJsonArray{QStringLiteral("keep"), QStringLiteral("overwrite")}}}}},
+        {QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("file_name"), QStringLiteral("on_conflict")});
+    auto macroImportPreview = capability("macro.import.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("macro.import")}}},
+            {QStringLiteral("macro"), importMacroFields}}, {QStringLiteral("action"), QStringLiteral("macro")}));
+    auto macroImportApply = capability("macro.import.apply", "qkm_apply_changes", Read | Configure, false, macroApplySchema);
+    for (auto *item : {&macroImportPreview, &macroImportApply}) {
+        item->insert(QStringLiteral("max_macros"), MaxMacroBackupEntries);
+        item->insert(QStringLiteral("max_document_bytes"), MaxMacroBackupBytes);
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("sidecar_local_backup_directory"),
+            QStringLiteral("current_loaded_macro_catalog"), QStringLiteral("one_scope_per_import"),
+            QStringLiteral("basic_letter_or_digit_sequence_only"), QStringLiteral("confirm_overwrite_for_existing_name"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    capabilities.append(macroImportPreview);
+    capabilities.append(macroImportApply);
     capabilities.append(operation);
     return capabilities;
 }

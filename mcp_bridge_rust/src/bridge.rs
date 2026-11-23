@@ -4,6 +4,7 @@ use std::{
     thread::{self, JoinHandle},
 };
 
+use base64::{Engine, engine::general_purpose::STANDARD};
 use serde_json::{Value, json};
 use tokio::sync::oneshot;
 
@@ -25,6 +26,11 @@ enum Operation {
         directory: Arc<MacroBackupDirectory>,
         name: String,
         overwrite: bool,
+    },
+    PreviewMacroImport {
+        arguments: Object,
+        directory: Arc<MacroBackupDirectory>,
+        name: String,
     },
 }
 
@@ -176,6 +182,19 @@ impl Bridge {
         })
     }
 
+    pub fn preview_macro_import(
+        &self,
+        arguments: Object,
+        directory: Arc<MacroBackupDirectory>,
+        name: String,
+    ) -> Result<Pending> {
+        self.submit(Operation::PreviewMacroImport {
+            arguments,
+            directory,
+            name,
+        })
+    }
+
     pub fn disconnect(&self) -> Value {
         self.close(false);
         json!({"accepted": true, "status": "disconnecting"})
@@ -306,6 +325,31 @@ fn perform(
                 }
                 Err(error) => Ok(json!({"ok":false, "error":error.code})),
             }
+        }
+        Operation::PreviewMacroImport {
+            mut arguments,
+            directory,
+            name,
+        } => {
+            let session = session
+                .as_mut()
+                .ok_or_else(|| NativeError::new("not_connected"))?;
+            const READ_CONFIGURE: u16 = 1 | 2;
+            if session.scopes() & READ_CONFIGURE != READ_CONFIGURE {
+                return Ok(json!({"ok":false, "error":"permission_denied"}));
+            }
+            let bytes = match directory.read(&name, cancel) {
+                Ok(bytes) => bytes,
+                Err(error) if error.code == "cancelled" => return Err(error),
+                Err(error) => return Ok(json!({"ok":false, "error":error.code})),
+            };
+            let Some(macro_args) = arguments.get_mut("macro").and_then(Value::as_object_mut) else {
+                return Ok(json!({"ok":false, "error":"invalid_arguments"}));
+            };
+            macro_args.insert("document_base64".to_owned(), STANDARD.encode(bytes).into());
+            let response = session.call("qkm_preview_changes", arguments, cancel)?;
+            state.lock().unwrap().status = session.info();
+            Ok(response)
         }
         Operation::Request(method, arguments) => {
             let session = session

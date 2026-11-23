@@ -1,6 +1,6 @@
 use std::{
     fs::{self, File, OpenOptions},
-    io::{self, Write},
+    io::{self, Read, Write},
     os::windows::fs::{MetadataExt, OpenOptionsExt},
     path::{Component, Path, PathBuf, Prefix},
 };
@@ -181,6 +181,40 @@ impl MacroBackupDirectory {
         }
         result
     }
+
+    pub(crate) fn read(&self, name: &str, cancel: &Cancel) -> Result<Vec<u8>> {
+        if !valid_macro_backup_name(name) {
+            return Err(NativeError::new("invalid_arguments"));
+        }
+        cancel.wait(0)?;
+        local_directory(&self.path)?;
+        let failed = || NativeError::new("backup_read_failed");
+        let file = OpenOptions::new()
+            .read(true)
+            .share_mode(FILE_SHARE_READ)
+            .custom_flags(FILE_FLAG_BACKUP_SEMANTICS | FILE_FLAG_OPEN_REPARSE_POINT)
+            .open(self.path.join(name))
+            .map_err(|_| failed())?;
+        let info = file.metadata().map_err(|_| failed())?;
+        if !info.is_file() || info.file_attributes() & FILE_ATTRIBUTE_REPARSE_POINT != 0 {
+            return Err(NativeError::new("unsafe_backup_source"));
+        }
+        if info.len() > MAX_BACKUP_BYTES as u64 {
+            return Err(NativeError::new("backup_too_large"));
+        }
+        let mut bytes = Vec::with_capacity(info.len() as usize);
+        file.take(MAX_BACKUP_BYTES as u64 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|_| failed())?;
+        cancel.wait(0)?;
+        if bytes.len() > MAX_BACKUP_BYTES {
+            return Err(NativeError::new("backup_too_large"));
+        }
+        if bytes.is_empty() {
+            return Err(NativeError::new("invalid_macro_backup"));
+        }
+        Ok(bytes)
+    }
 }
 
 pub(crate) fn backup_bytes(
@@ -308,6 +342,62 @@ mod tests {
         assert_eq!(fs::read_dir(&root).unwrap().count(), 1);
         drop(directory);
         fs::remove_file(path).unwrap();
+        fs::remove_dir(root).unwrap();
+    }
+
+    #[test]
+    fn import_reads_only_bounded_local_files() {
+        let mut nonce = [0; 16];
+        getrandom::fill(&mut nonce).unwrap();
+        let root = std::env::temp_dir().join(format!("qkm-backup-read-{}", lower_hex(&nonce)));
+        fs::create_dir(&root).unwrap();
+        let directory = MacroBackupDirectory::open(root.clone()).unwrap();
+        let cancel = Cancel::new().unwrap();
+        let name = "导入 例.ini";
+        let path = root.join(name);
+        let bytes = vec![b'x'; MAX_BACKUP_BYTES];
+        fs::write(&path, &bytes).unwrap();
+        assert_eq!(directory.read(name, &cancel).unwrap(), bytes);
+        let writer = OpenOptions::new()
+            .write(true)
+            .share_mode(FILE_SHARE_READ | FILE_SHARE_WRITE)
+            .open(&path)
+            .unwrap();
+        assert_eq!(
+            directory.read(name, &cancel).unwrap_err().code,
+            "backup_read_failed"
+        );
+        drop(writer);
+        OpenOptions::new()
+            .write(true)
+            .open(&path)
+            .unwrap()
+            .set_len(MAX_BACKUP_BYTES as u64 + 1)
+            .unwrap();
+        assert_eq!(
+            directory.read(name, &cancel).unwrap_err().code,
+            "backup_too_large"
+        );
+        fs::write(&path, b"").unwrap();
+        assert_eq!(
+            directory.read(name, &cancel).unwrap_err().code,
+            "invalid_macro_backup"
+        );
+        assert_eq!(
+            directory.read("../escape.ini", &cancel).unwrap_err().code,
+            "invalid_arguments"
+        );
+        let subdirectory = root.join("dir.ini");
+        fs::create_dir(&subdirectory).unwrap();
+        assert_eq!(
+            directory.read("dir.ini", &cancel).unwrap_err().code,
+            "unsafe_backup_source"
+        );
+        cancel.signal().unwrap();
+        assert_eq!(directory.read(name, &cancel).unwrap_err().code, "cancelled");
+        drop(directory);
+        fs::remove_file(path).unwrap();
+        fs::remove_dir(subdirectory).unwrap();
         fs::remove_dir(root).unwrap();
     }
 }
