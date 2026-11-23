@@ -3832,6 +3832,11 @@ void QMacroListDialog::selectedMacroItemsMoveToBottom()
 #endif
 }
 
+void QMacroListDialog::removeMacros(OrderedMap<QString, MappingMacroData> &list, const QStringList &names)
+{
+    for (const auto &name : names) list.remove(name);
+}
+
 void QMacroListDialog::deleteMacroSelectedItems()
 {
     MacroListDataTableWidget *macroDataTable = getCurrentMacroDataTable();
@@ -3859,7 +3864,7 @@ void QMacroListDialog::deleteMacroSelectedItems()
 #endif
 
     // Collect macro names to delete
-    QList<QString> macroNamesToDelete;
+    QStringList macroNamesToDelete;
     for (int row = topRow; row <= bottomRow; ++row) {
         QTableWidgetItem *nameItem = macroDataTable->item(row, MACRO_NAME_COLUMN);
         if (nameItem) {
@@ -3868,9 +3873,7 @@ void QMacroListDialog::deleteMacroSelectedItems()
     }
 
     // Remove from data list
-    for (const QString &macroName : std::as_const(macroNamesToDelete)) {
-        macroDataList->remove(macroName);
-    }
+    removeMacros(*macroDataList, macroNamesToDelete);
 
     // Refresh the display
     refreshMacroListTabWidget(macroDataTable, *macroDataList);

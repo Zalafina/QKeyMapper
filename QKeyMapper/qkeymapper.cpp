@@ -38794,11 +38794,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         reject(QStringLiteral("stale_preview"), QStringLiteral("IbInput preferences changed after preview; obtain a fresh preview."));
         return;
     }
-    if ((!applying && validation.action == MappingChangeAction::UpsertMacro)
+    if ((!applying && (validation.action == MappingChangeAction::UpsertMacro || validation.action == MappingChangeAction::DeleteMacro))
         || (applyingPreview && applyingPreview->macro.has_value())) {
         const auto &macro = applying ? *applyingPreview->macro : validation.macro;
-        if (validation.confirmConflicts || validation.confirmScope || validation.confirmDelete) {
-            reject(QStringLiteral("invalid_arguments"), QStringLiteral("Only the macro overwrite confirmation is supported."));
+        const bool deleting = !macro.namesToDelete.isEmpty();
+        if (validation.confirmConflicts || validation.confirmScope
+            || (deleting ? validation.confirmOverwrite : validation.confirmDelete)) {
+            reject(QStringLiteral("invalid_arguments"), QStringLiteral("The confirmation flags must match the macro change."));
             return;
         }
         if (!mappingAdditionAllowed(s_KeyMappingTabWidgetCurrentIndex) || hasOpenMappingEditor()
@@ -38822,40 +38824,69 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 QStringLiteral("Macro catalog changed; query the current macro list again."));
             return;
         }
-        const auto name = QMacroListDialog::normalizedMacroText(macro.name);
-        auto content = QMacroListDialog::normalizedMacroText(macro.content);
-        if (content.isEmpty()) {
-            reject(QStringLiteral("invalid_mapping"), QStringLiteral("Macro content must not be empty."));
-            return;
-        }
-        const auto checked = QMacroListDialog::validateMacroInput(name, content);
-        if (!checked.isValid) {
-            reject(QStringLiteral("invalid_mapping"), checked.errorMessage);
-            return;
-        }
-        // Nested macro references can resolve to existing Run actions.
-        const auto steps = content.split(QString::fromUtf8(SEPARATOR_NEXTARROW));
-        if (!std::all_of(steps.cbegin(), steps.cend(), isBasicMappingKey)) {
-            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Macro edits support sequences of ordinary letter or digit keys."));
-            return;
-        }
         auto &list = macro.scope == QLatin1String("universal") ? s_UniversalMappingMacroList : s_MappingMacroList;
-        const bool replacing = list.contains(name);
-        const auto before = list.value(name);
-        MappingMacroData after{content, macro.category ? QMacroListDialog::normalizedMacroText(*macro.category) : before.Category,
-            macro.note ? QMacroListDialog::normalizedMacroText(*macro.note) : before.Note, {}};
-        if (replacing) after.MacroComments = QMacroListDialog::reconcileMacroComments(before, content);
-        const auto beforeRow = replacing ? QJsonValue(automationMacroRow(macro.scope, name, before)) : QJsonValue(QJsonValue::Null);
-        const auto afterRow = automationMacroRow(macro.scope, name, after);
-        const QJsonObject target{{QStringLiteral("instance_id"), owner.instance}, {QStringLiteral("catalog_revision"), revision},
-            {QStringLiteral("scope"), macro.scope}, {QStringLiteral("name"), name}};
-        const QJsonObject change{{QStringLiteral("kind"), replacing ? QStringLiteral("replace_macro") : QStringLiteral("add_macro")},
-            {QStringLiteral("index"), replacing ? int(list.keys().indexOf(name)) : list.size()},
-            {QStringLiteral("before"), beforeRow}, {QStringLiteral("after"), afterRow}};
-        const QJsonObject description{{QStringLiteral("action"), QStringLiteral("macro.upsert")},
-            {QStringLiteral("target"), target}, {QStringLiteral("changes"), QJsonArray{change}},
-            {QStringLiteral("confirmation_required"), replacing}, {QStringLiteral("modified"), false},
+        QJsonObject target{{QStringLiteral("instance_id"), owner.instance}, {QStringLiteral("catalog_revision"), revision},
+            {QStringLiteral("scope"), macro.scope}};
+        QJsonArray changes;
+        QString name;
+        MappingMacroData after;
+        bool replacing = false;
+        bool modified = true;
+        if (deleting) {
+            const QSet<QString> selected(macro.namesToDelete.cbegin(), macro.namesToDelete.cend());
+            QJsonArray names;
+            int index = 0;
+            const auto &current = std::as_const(list);
+            for (auto it = current.begin(); it != current.end(); ++it, ++index) {
+                if (!selected.contains(it.key())) continue;
+                const auto before = automationMacroRow(macro.scope, it.key(), it.value());
+                changes.append(QJsonObject{{QStringLiteral("kind"), QStringLiteral("delete_macro")},
+                    {QStringLiteral("index"), index}, {QStringLiteral("before"), before},
+                    {QStringLiteral("after"), QJsonValue(QJsonValue::Null)}});
+                names.append(it.key());
+            }
+            if (names.size() != macro.namesToDelete.size()) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("All requested names must exist in this macro scope."));
+                return;
+            }
+            target.insert(QStringLiteral("names"), names);
+        } else {
+            name = QMacroListDialog::normalizedMacroText(macro.name);
+            auto content = QMacroListDialog::normalizedMacroText(macro.content);
+            if (content.isEmpty()) {
+                reject(QStringLiteral("invalid_mapping"), QStringLiteral("Macro content must not be empty."));
+                return;
+            }
+            const auto checked = QMacroListDialog::validateMacroInput(name, content);
+            if (!checked.isValid) {
+                reject(QStringLiteral("invalid_mapping"), checked.errorMessage);
+                return;
+            }
+            // Nested macro references can resolve to existing Run actions.
+            const auto steps = content.split(QString::fromUtf8(SEPARATOR_NEXTARROW));
+            if (!std::all_of(steps.cbegin(), steps.cend(), isBasicMappingKey)) {
+                reject(QStringLiteral("unsupported_capability"), QStringLiteral("Macro edits support sequences of ordinary letter or digit keys."));
+                return;
+            }
+            replacing = list.contains(name);
+            const auto before = list.value(name);
+            after = {content, macro.category ? QMacroListDialog::normalizedMacroText(*macro.category) : before.Category,
+                macro.note ? QMacroListDialog::normalizedMacroText(*macro.note) : before.Note, {}};
+            if (replacing) after.MacroComments = QMacroListDialog::reconcileMacroComments(before, content);
+            const auto beforeRow = replacing ? QJsonValue(automationMacroRow(macro.scope, name, before)) : QJsonValue(QJsonValue::Null);
+            const auto afterRow = automationMacroRow(macro.scope, name, after);
+            changes.append(QJsonObject{{QStringLiteral("kind"), replacing ? QStringLiteral("replace_macro") : QStringLiteral("add_macro")},
+                {QStringLiteral("index"), replacing ? int(list.keys().indexOf(name)) : list.size()},
+                {QStringLiteral("before"), beforeRow}, {QStringLiteral("after"), afterRow}});
+            target.insert(QStringLiteral("name"), name);
+            modified = beforeRow != QJsonValue(afterRow);
+        }
+        const auto action = deleting ? QStringLiteral("macro.delete") : QStringLiteral("macro.upsert");
+        QJsonObject description{{QStringLiteral("action"), action},
+            {QStringLiteral("target"), target}, {QStringLiteral("changes"), changes},
+            {QStringLiteral("confirmation_required"), deleting || replacing}, {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+        if (deleting) description.insert(QStringLiteral("reference_policy"), QStringLiteral("existing_references_preserved"));
         if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
             reject(QStringLiteral("result_too_large"), QStringLiteral("The complete macro change exceeds the response limit."));
             return;
@@ -38881,20 +38912,29 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("stale_preview"), QStringLiteral("The macro change no longer matches the preview."));
             return;
         }
+        if (deleting && !validation.confirmDelete) {
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the macro names and confirm their deletion with a fresh preview."));
+            return;
+        }
         if (replacing != validation.confirmOverwrite) {
             reject(replacing ? QStringLiteral("confirmation_required") : QStringLiteral("invalid_arguments"),
                 replacing ? QStringLiteral("Review the existing macro and confirm the overwrite with a fresh preview.")
                           : QStringLiteral("An appended macro does not accept overwrite confirmation."));
             return;
         }
-        const bool modified = beforeRow != QJsonValue(afterRow);
         if (modified) {
-            list[name] = after;
+            if (deleting) QMacroListDialog::removeMacros(list, macro.namesToDelete);
+            else list[name] = after;
             requestSaveSettingDirty();
         }
-        store.finish(owner, validation.id, QStringLiteral("applied"), {{QStringLiteral("action"), QStringLiteral("macro.upsert")},
-            {QStringLiteral("target"), target}, {QStringLiteral("modified"), modified}, {QStringLiteral("saved"), false},
-            {QStringLiteral("started_by_operation"), false}, {QStringLiteral("query_catalog_again"), modified}});
+        QJsonObject result{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
+            {QStringLiteral("modified"), modified}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false},
+            {QStringLiteral("query_catalog_again"), modified}};
+        if (deleting) {
+            result.insert(QStringLiteral("deleted_count"), int(changes.size()));
+            result.insert(QStringLiteral("reference_policy"), description.value(QStringLiteral("reference_policy")));
+        }
+        store.finish(owner, validation.id, QStringLiteral("applied"), result);
         server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
         return;
     }

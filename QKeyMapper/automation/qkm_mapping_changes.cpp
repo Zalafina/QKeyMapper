@@ -94,18 +94,39 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     result.method = preview ? MappingChangeMethod::Preview : apply ? MappingChangeMethod::Apply
         : query ? MappingChangeMethod::Operation : MappingChangeMethod::Cancel;
     const auto action = arguments.value(QStringLiteral("action"));
-    if (preview && action == QLatin1String("macro.upsert")) {
+    const bool macroDelete = action == QLatin1String("macro.delete");
+    if (preview && (macroDelete || action == QLatin1String("macro.upsert"))) {
         const auto value = arguments.value(QStringLiteral("macro"));
-        if (arguments.size() != 2 || !value.isObject()) return fail("Macro upsert requires only action and macro.");
+        if (arguments.size() != 2 || !value.isObject()) return fail("Macro changes require only action and macro.");
         const auto fields = value.toObject();
-        const QSet<QString> allowed{QStringLiteral("catalog_revision"), QStringLiteral("scope"),
-            QStringLiteral("name"), QStringLiteral("content"), QStringLiteral("category"), QStringLiteral("note")};
+        const auto allowed = macroDelete
+            ? QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("names")}
+            : QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("name"),
+                QStringLiteral("content"), QStringLiteral("category"), QStringLiteral("note")};
         for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
             if (!allowed.contains(it.key())) return fail("Unknown macro argument.");
         }
         auto &macro = result.macro;
         macro.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
         macro.scope = fields.value(QStringLiteral("scope")).toString();
+        if (!isLowerHex(macro.catalogRevision, 64)
+            || (macro.scope != QLatin1String("configuration") && macro.scope != QLatin1String("universal"))) {
+            return fail("Provide the current macro catalog revision and an explicit scope.");
+        }
+        if (macroDelete) {
+            const auto names = fields.value(QStringLiteral("names")).toArray();
+            if (names.isEmpty() || names.size() > 100) return fail("Provide one to 100 macro names to delete.");
+            QSet<QString> distinct;
+            for (const auto &value : names) {
+                const auto name = value.toString();
+                if (name.isEmpty() || name.size() > 32767 || name.contains(QChar::Null) || distinct.contains(name))
+                    return fail("Macro names must be distinct, non-empty strings.");
+                distinct.insert(name);
+                macro.namesToDelete.append(name);
+            }
+            result.action = MappingChangeAction::DeleteMacro;
+            return result;
+        }
         macro.name = fields.value(QStringLiteral("name")).toString();
         macro.content = fields.value(QStringLiteral("content")).toString();
         const auto optionalText = [&](const QString &key, std::optional<QString> &output) {
@@ -115,9 +136,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             output = text.toString();
             return true;
         };
-        if (!isLowerHex(macro.catalogRevision, 64)
-            || (macro.scope != QLatin1String("configuration") && macro.scope != QLatin1String("universal"))
-            || macro.name.isEmpty() || macro.name.size() > 32767 || macro.name.contains(QChar::Null)
+        if (macro.name.isEmpty() || macro.name.size() > 32767 || macro.name.contains(QChar::Null)
             || macro.content.isEmpty() || macro.content.size() > QKeyMapperConstants::MAPPINGKEY_LINE_EDIT_MAX_LENGTH
             || macro.content.contains(QChar::Null)
             || !optionalText(QStringLiteral("category"), macro.category) || !optionalText(QStringLiteral("note"), macro.note)) {
@@ -1020,6 +1039,25 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     capabilities.append(macroPreview);
     capabilities.append(macroApply);
+    const auto deleteMacroFields = schema({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("scope"), macroFields.value(QStringLiteral("properties")).toObject().value(QStringLiteral("scope"))},
+        {QStringLiteral("names"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
+            {QStringLiteral("minItems"), 1}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("uniqueItems"), true},
+            {QStringLiteral("items"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                {QStringLiteral("minLength"), 1}, {QStringLiteral("maxLength"), 32767}}}}}},
+        {QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("names")});
+    auto macroDeletePreview = capability("macro.delete.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("macro.delete")}}},
+            {QStringLiteral("macro"), deleteMacroFields}}, {QStringLiteral("action"), QStringLiteral("macro")}));
+    auto macroDeleteApply = capability("macro.delete.apply", "qkm_apply_changes", Read | Configure, false, deleteApplySchema);
+    for (auto *item : {&macroDeletePreview, &macroDeleteApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_macro_catalog"),
+            QStringLiteral("one_scope_exact_distinct_names"), QStringLiteral("existing_references_preserved"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    capabilities.append(macroDeletePreview);
+    capabilities.append(macroDeleteApply);
     capabilities.append(operation);
     return capabilities;
 }

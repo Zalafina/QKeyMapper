@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QList>
+#include <QStringList>
 #include <optional>
 
 namespace QkmAutomation {
@@ -85,10 +86,11 @@ struct MacroChangeArguments {
     QString content;
     std::optional<QString> category;
     std::optional<QString> note;
+    QStringList namesToDelete;
 };
 
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };
-enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences, UpsertMacro };
+enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences, UpsertMacro, DeleteMacro };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
     MappingChangeAction action = MappingChangeAction::AddMapping;

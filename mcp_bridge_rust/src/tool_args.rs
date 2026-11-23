@@ -206,10 +206,18 @@ struct MacroUpsert {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct MacroPreview {
+struct MacroDelete {
+    catalog_revision: String,
+    scope: MacroScope,
+    names: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct MacroPreview<T> {
     action: String,
     #[serde(rename = "macro")]
-    data: MacroUpsert,
+    data: T,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -248,6 +256,10 @@ struct Preview {
     include_common: Option<bool>,
     common_collapsed: Option<bool>,
     common_feature_enabled: Option<bool>,
+}
+
+fn macro_text(value: &str, max: usize) -> bool {
+    !value.contains('\0') && value.encode_utf16().count() <= max
 }
 
 fn single_line(value: &str) -> bool {
@@ -520,25 +532,35 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }),
         "qkm_wait_state" => typed(arguments, StateWait::valid),
         "qkm_preview_changes" => {
-            if arguments.get("action").and_then(Value::as_str) == Some("macro.upsert") {
-                return typed(arguments, |v: &MacroPreview| {
-                    let text = |value: &str, max| {
-                        !value.contains('\0') && value.encode_utf16().count() <= max
-                    };
-                    revision(&v.data.catalog_revision)
-                        && !v.data.name.is_empty()
-                        && text(&v.data.name, 32767)
-                        && !v.data.content.is_empty()
-                        && text(&v.data.content, 1_000_000)
-                        && v.data
-                            .category
-                            .as_deref()
-                            .is_none_or(|value| text(value, 32767))
-                        && v.data
-                            .note
-                            .as_deref()
-                            .is_none_or(|value| text(value, 32767))
-                });
+            match arguments.get("action").and_then(Value::as_str) {
+                Some("macro.upsert") => {
+                    return typed(arguments, |v: &MacroPreview<MacroUpsert>| {
+                        revision(&v.data.catalog_revision)
+                            && !v.data.name.is_empty()
+                            && macro_text(&v.data.name, 32767)
+                            && !v.data.content.is_empty()
+                            && macro_text(&v.data.content, 1_000_000)
+                            && v.data
+                                .category
+                                .as_deref()
+                                .is_none_or(|value| macro_text(value, 32767))
+                            && v.data
+                                .note
+                                .as_deref()
+                                .is_none_or(|value| macro_text(value, 32767))
+                    });
+                }
+                Some("macro.delete") => {
+                    return typed(arguments, |v: &MacroPreview<MacroDelete>| {
+                        let mut seen = std::collections::HashSet::new();
+                        revision(&v.data.catalog_revision)
+                            && (1..=100).contains(&v.data.names.len())
+                            && v.data.names.iter().all(|name| {
+                                !name.is_empty() && macro_text(name, 32767) && seen.insert(name)
+                            })
+                    });
+                }
+                _ => {}
             }
             let duplicate =
                 arguments.get("action").and_then(Value::as_str) == Some("mapping.duplicate");

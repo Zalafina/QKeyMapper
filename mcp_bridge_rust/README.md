@@ -194,6 +194,14 @@ by `»`. An existing name in that list keeps its position
 and requires `confirm_overwrite=true` after review. Replacing the content
 aligns existing segment comments with the new sequence. Save separately.
 
+## Deleting macros
+
+Preview `macro.delete` with a `macro` object containing the latest
+`catalog_revision`, the `scope` and 1–100 distinct exact `names` in that
+list. Review the records and apply with `confirm_delete=true`. Existing
+mapping and macro references stay in place and may no longer resolve. Save
+separately.
+
 ## Editing a mapping note
 
 Use `mapping.update` with the current visible row's `source_ref` and

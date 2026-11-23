@@ -119,7 +119,22 @@ async def check_contract(exe):
             assert macro_rule["propertyNames"] == {"enum": ["action", "macro"]}
             macro_fields = previews["properties"]["macro"]
             assert not macro_fields["additionalProperties"]
-            assert macro_fields["required"] == ["catalog_revision", "scope", "name", "content"]
+            assert macro_fields["required"] == ["catalog_revision", "scope"]
+            assert macro_rule["properties"]["macro"] == {"required": ["name", "content"], "not": {"required": ["names"]}}
+            delete_macro_rule, = (rule for rule in previews["oneOf"]
+                                  if rule["properties"]["action"].get("const") == "macro.delete")
+            delete_names = macro_fields["properties"]["names"]
+            assert delete_names == {"type": "array", "minItems": 1, "maxItems": 100, "uniqueItems": True,
+                                    "items": {"type": "string", "minLength": 1, "maxLength": 32767}}
+            assert delete_macro_rule["properties"]["macro"] == {"required": ["names"],
+                "propertyNames": {"enum": ["catalog_revision", "scope", "names"]}}
+            removal = {"catalog_revision": "c" * 64, "scope": "universal", "names": ["Shared", "Other"]}
+            remove = {"action": "macro.delete", "macro": removal}
+            expect_not_connected(await client.call_tool("qkm_preview_changes", remove))
+            for invalid in (removal | {"names": []}, removal | {"names": ["X", "X"]},
+                            removal | {"names": ["M"] * 101}, removal | {"content": "A"}):
+                denied = await client.call_tool("qkm_preview_changes", remove | {"macro": invalid})
+                assert denied.is_error is True and denied.structured_content is None
             assert macro_fields["properties"]["scope"]["enum"] == ["configuration", "universal"]
             macro = {"catalog_revision": "b" * 64, "scope": "configuration", "name": "New", "content": "A»B"}
             upsert = {"action": "macro.upsert", "macro": macro}

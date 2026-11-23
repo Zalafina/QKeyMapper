@@ -100,6 +100,7 @@ public:
     static QString normalizedMacroText(QString text);
     static ValidationResult validateMacroInput(const QString &name, QString &content);
     static QStringList reconcileMacroComments(const MappingMacroData &previous, const QString &content);
+    static void removeMacros(OrderedMap<QString, MappingMacroData> &list, const QStringList &names);
     static QString getEditingMacroText(void);
     static int getEditingMacroCursorPosition(void);
     static void setEditingMacroText(const QString &new_macrotext);
