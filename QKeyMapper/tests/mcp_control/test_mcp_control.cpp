@@ -1212,8 +1212,36 @@ void McpControlTest::mappingChangeArguments()
     for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
         QVERIFY(!validateSaveSplitterPosition(value).ok());
 
-    QCOMPARE(capabilities.size(), 74);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 72);
+    const auto validateStartupPosition = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("startup_position"), fields}});
+    };
+    const QJsonObject point{{QStringLiteral("x"), -50000}, {QStringLiteral("y"), 50000}};
+    for (int mode : {0, 1, 2}) {
+        const auto request = validateStartupPosition({{QStringLiteral("mode"), mode}});
+        QVERIFY(request.ok() && request.update.startupPositionMode.has_value());
+        QCOMPARE(*request.update.startupPositionMode, mode);
+        QVERIFY(!request.update.startupPositionPoint.has_value());
+    }
+    const auto startup = validateStartupPosition({{QStringLiteral("mode"), 2}, {QStringLiteral("point"), point}});
+    QVERIFY(startup.ok() && startup.update.startupPositionPoint.has_value());
+    QCOMPARE(*startup.update.startupPositionPoint, QPoint(-50000, 50000));
+    QVERIFY(validateStartupPosition({{QStringLiteral("point"), point}}).ok());
+    QVERIFY(!validateStartupPosition({}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), true}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), 0.5}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), 3}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), 1}, {QStringLiteral("point"), point}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0}}}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
+        {QStringLiteral("y"), -50001}}}}).ok());
+
+    QCOMPARE(capabilities.size(), 76);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 74);
+    QCOMPARE(capabilities.at(73).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_startup_position.preview"));
+    QCOMPARE(capabilities.at(74).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_startup_position.apply"));
     QCOMPARE(capabilities.at(71).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_splitter_position.preview"));
     QCOMPARE(capabilities.at(72).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_splitter_position.apply"));
     QCOMPARE(capabilities.at(69).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_window_size.preview"));

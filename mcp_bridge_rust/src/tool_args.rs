@@ -336,6 +336,30 @@ struct SaveSplitterPosition {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct StartupPoint {
+    x: i32,
+    y: i32,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct StartupPositionFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mode: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    point: Option<StartupPoint>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct StartupPosition {
+    action: String,
+    source_tab_ref: String,
+    startup_position: StartupPositionFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct Preview {
     #[serde(default)]
     action: Action,
@@ -696,6 +720,26 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 Some("general.set_save_splitter_position") => {
                     return typed(arguments, |v: &SaveSplitterPosition| {
                         tab_ref(&v.source_tab_ref)
+                    });
+                }
+                Some("general.set_startup_position") => {
+                    if arguments
+                        .get("startup_position")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &StartupPosition| {
+                        let fields = &v.startup_position;
+                        tab_ref(&v.source_tab_ref)
+                            && (fields.mode.is_some() || fields.point.is_some())
+                            && fields.mode.is_none_or(|mode| mode <= 2)
+                            && fields.point.as_ref().is_none_or(|point| {
+                                fields.mode.unwrap_or(2) == 2
+                                    && (-50000..=50000).contains(&point.x)
+                                    && (-50000..=50000).contains(&point.y)
+                            })
                     });
                 }
                 Some("table.import") => {

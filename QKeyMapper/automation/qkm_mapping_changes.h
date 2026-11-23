@@ -8,6 +8,7 @@
 #include <QJsonObject>
 #include <QJsonArray>
 #include <QList>
+#include <QPoint>
 #include <QStringList>
 #include <optional>
 
@@ -64,6 +65,8 @@ struct MappingUpdateArguments {
     std::optional<int> windowDisplayMode;
     std::optional<bool> saveWindowSize;
     std::optional<bool> saveSplitterPosition;
+    std::optional<int> startupPositionMode;
+    std::optional<QPoint> startupPositionPoint;
     QByteArray tableImportDocument;
     QString tabNotificationFontColor;
     QString tabNotificationBackgroundColor;

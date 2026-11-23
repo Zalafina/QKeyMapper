@@ -188,6 +188,19 @@ async def check_contract(exe):
                     denied = await client.call_tool("qkm_preview_changes", args)
                     assert denied.is_error is True and denied.structured_content is None
                 assert not validator.is_valid(move | {field: 1})
+            startup = {"action": "general.set_startup_position", "source_tab_ref": tab}
+            point = {"x": -50000, "y": 50000}
+            for fields in ({"mode": 0}, {"mode": 1}, {"mode": 2}, {"point": point}, {"mode": 2, "point": point}):
+                request = startup | {"startup_position": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for fields in ({}, {"mode": True}, {"mode": 3}, {"mode": None, "point": point},
+                           {"mode": 1, "point": point}, {"point": {"x": 30}}, {"point": {"x": 30, "y": 50001}},
+                           {"point": point | {"extra": 1}}, {"mode": 2, "point": None}):
+                request = startup | {"startup_position": fields}
+                assert not validator.is_valid(request)
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             expect_not_connected(await client.call_tool("qkm_preview_changes", upsert))
             assert macro_fields["properties"]["segment_comments"] == {"type": ["array", "null"], "minItems": 1,
                                                                       "items": {"type": "string", "maxLength": 32767}}
@@ -214,7 +227,7 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
-                "save_window_size", "save_splitter_position"}
+                "save_window_size", "save_splitter_position", "startup_position"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
             assert move_rule["required"] == ["action"]

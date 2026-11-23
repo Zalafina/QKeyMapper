@@ -38004,6 +38004,12 @@ QString QKeyMapper::automationIbInputPreferencesRevision() const
     return QString::fromLatin1(QCryptographicHash::hash(binding, QCryptographicHash::Sha256).toHex());
 }
 
+static QJsonObject automationStartupPosition(int mode, const QPoint &point)
+{
+    return {{QStringLiteral("mode"), mode}, {QStringLiteral("point"),
+        QJsonObject{{QStringLiteral("x"), point.x()}, {QStringLiteral("y"), point.y()}}}};
+}
+
 QJsonObject QKeyMapper::automationMappingDisplay() const
 {
     return {{QStringLiteral("category_column"), m_ShowCategory},
@@ -38070,6 +38076,10 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     result.insert(QStringLiteral("window_display_mode"), ui->checkDisplayModeComboBox->currentIndex());
     result.insert(QStringLiteral("save_window_size"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveWindowSize());
     result.insert(QStringLiteral("save_splitter_position"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveSplitterPosition());
+    if (m_GeneralAdvancedDialog) {
+        result.insert(QStringLiteral("startup_position"), automationStartupPosition(m_GeneralAdvancedDialog->getStartupPosition(),
+            m_GeneralAdvancedDialog->getSpecifyStartupPosition()));
+    }
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
         {QStringLiteral("available"), m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()},
@@ -39470,7 +39480,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingSaveWindowSize = updating && update.saveWindowSize.has_value();
         const bool changingSaveSplitterPosition = updating && update.saveSplitterPosition.has_value();
         const bool changingLayoutRestore = changingSaveWindowSize || changingSaveSplitterPosition;
-        const bool changingGeneralPreference = changingGeneralTablePreference || changingLayoutRestore;
+        const bool changingStartupPosition = updating && (update.startupPositionMode || update.startupPositionPoint);
+        const bool changingGeneralPreference = changingGeneralTablePreference || changingLayoutRestore || changingStartupPosition;
         const bool changingWindowDisplayMode = updating && update.windowDisplayMode.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
@@ -39846,6 +39857,20 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), changingSaveWindowSize ? QStringLiteral("set_save_window_size")
                     : QStringLiteral("set_save_splitter_position")},
                     {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
+            } else if (changingStartupPosition) {
+                const int beforeMode = m_GeneralAdvancedDialog->getStartupPosition();
+                const QPoint beforePoint = m_GeneralAdvancedDialog->getSpecifyStartupPosition();
+                const int afterMode = update.startupPositionMode.value_or(beforeMode);
+                const QPoint afterPoint = update.startupPositionPoint.value_or(beforePoint);
+                if (update.startupPositionPoint && afterMode != STARTUP_POSITION_SPECIFY) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("Coordinates require the specified startup position mode."));
+                    return;
+                }
+                modified = beforeMode != afterMode || beforePoint != afterPoint;
+                target.insert(QStringLiteral("scope"), QStringLiteral("application_preferences"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_startup_position")},
+                    {QStringLiteral("before"), automationStartupPosition(beforeMode, beforePoint)},
+                    {QStringLiteral("after"), automationStartupPosition(afterMode, afterPoint)}};
             } else if (changingMappingDisplay) {
                 const auto before = automationMappingDisplay();
                 mappingDisplayAfter = before;
@@ -40285,6 +40310,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingTableInsertMode ? QStringLiteral("general.set_table_insert_mode")
             : changingSaveWindowSize ? QStringLiteral("general.set_save_window_size")
             : changingSaveSplitterPosition ? QStringLiteral("general.set_save_splitter_position")
+            : changingStartupPosition ? QStringLiteral("general.set_startup_position")
             : changingWindowDisplayMode ? QStringLiteral("configuration.set_window_display_mode")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
@@ -40350,6 +40376,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 m_GeneralAdvancedDialog->setSaveWindowSize(*update.saveWindowSize);
             } else if (changingSaveSplitterPosition) {
                 m_GeneralAdvancedDialog->setSaveSplitterPosition(*update.saveSplitterPosition);
+            } else if (changingStartupPosition) {
+                if (update.startupPositionMode) m_GeneralAdvancedDialog->setStartupPosition(*update.startupPositionMode);
+                if (update.startupPositionPoint) m_GeneralAdvancedDialog->setSpecifyStartupPosition(*update.startupPositionPoint);
             } else if (changingWindowDisplayMode) {
                 ui->checkDisplayModeComboBox->setCurrentIndex(*update.windowDisplayMode);
             } else if (changingMappingDisplay) {

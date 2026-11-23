@@ -239,6 +239,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool windowDisplayModePreview = preview && action == QLatin1String("configuration.set_window_display_mode");
     const bool saveWindowSizePreview = preview && action == QLatin1String("general.set_save_window_size");
     const bool saveSplitterPositionPreview = preview && action == QLatin1String("general.set_save_splitter_position");
+    const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
     const bool deleteTabPreview = preview && action == QLatin1String("tab.delete");
@@ -252,7 +253,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
-        || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview;
+        || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -269,6 +270,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : windowDisplayModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_display_mode")}
         : saveWindowSizePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_window_size")}
         : saveSplitterPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_splitter_position")}
+        : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
         : tabNotificationColorsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"),
@@ -362,6 +364,31 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             const auto value = arguments.value(QStringLiteral("save_splitter_position"));
             if (!value.isBool()) return fail("Provide an explicit boolean save_splitter_position.");
             result.update.saveSplitterPosition = value.toBool();
+        }
+        if (startupPositionPreview) {
+            using namespace QKeyMapperConstants;
+            const auto fields = arguments.value(QStringLiteral("startup_position")).toObject();
+            const auto mode = fields.value(QStringLiteral("mode"));
+            const auto point = fields.value(QStringLiteral("point"));
+            if (fields.isEmpty() || fields.size() != int(!mode.isUndefined()) + int(!point.isUndefined()))
+                return fail("Provide at least one startup position field, mode or point.");
+            if (!mode.isUndefined()) {
+                const int index = mode.toInt(-1);
+                if (index < STARTUP_POSITION_MIN || index > STARTUP_POSITION_MAX)
+                    return fail("Startup position mode must be 0 (default), 1 (last saved), or 2 (specified).");
+                result.update.startupPositionMode = index;
+            }
+            if (!point.isUndefined()) {
+                const auto coordinates = point.toObject();
+                const int x = coordinates.value(QStringLiteral("x")).toInt(STARTUP_SPECIFY_POSITION_MIN_X - 1);
+                const int y = coordinates.value(QStringLiteral("y")).toInt(STARTUP_SPECIFY_POSITION_MIN_Y - 1);
+                if (coordinates.size() != 2 || x < STARTUP_SPECIFY_POSITION_MIN_X || x > STARTUP_SPECIFY_POSITION_MAX_X
+                    || y < STARTUP_SPECIFY_POSITION_MIN_Y || y > STARTUP_SPECIFY_POSITION_MAX_Y)
+                    return fail("Provide both integer coordinates within -50000 to 50000.");
+                if (result.update.startupPositionMode.value_or(STARTUP_POSITION_SPECIFY) != STARTUP_POSITION_SPECIFY)
+                    return fail("Coordinates require the specified startup position mode.");
+                result.update.startupPositionPoint = QPoint(x, y);
+            }
         }
         if (tabHotkeyPreview) {
             const auto hotkey = arguments.value(QStringLiteral("tab_hotkey"));
@@ -1292,6 +1319,34 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     capabilities.append(splitterPreview);
     capabilities.append(splitterApply);
+    const auto boundedInteger = [](int minimum, int maximum) {
+        return QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+            {QStringLiteral("minimum"), minimum}, {QStringLiteral("maximum"), maximum}};
+    };
+    using namespace QKeyMapperConstants;
+    const auto point = schema({{QStringLiteral("x"), boundedInteger(STARTUP_SPECIFY_POSITION_MIN_X, STARTUP_SPECIFY_POSITION_MAX_X)},
+        {QStringLiteral("y"), boundedInteger(STARTUP_SPECIFY_POSITION_MIN_Y, STARTUP_SPECIFY_POSITION_MAX_Y)}},
+        {QStringLiteral("x"), QStringLiteral("y")});
+    auto startupPosition = schema({{QStringLiteral("mode"), boundedInteger(STARTUP_POSITION_MIN, STARTUP_POSITION_MAX)},
+        {QStringLiteral("point"), point}}, {});
+    startupPosition.insert(QStringLiteral("minProperties"), 1);
+    startupPosition.insert(QStringLiteral("if"), QJsonObject{{QStringLiteral("required"),
+        QJsonArray{QStringLiteral("mode"), QStringLiteral("point")}}});
+    startupPosition.insert(QStringLiteral("then"), QJsonObject{{QStringLiteral("properties"),
+        QJsonObject{{QStringLiteral("mode"), QJsonObject{{QStringLiteral("const"), STARTUP_POSITION_SPECIFY}}}}}});
+    auto startupPreview = capability("general.set_startup_position.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_startup_position")}}},
+            {QStringLiteral("source_tab_ref"), reference}, {QStringLiteral("startup_position"), startupPosition}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}));
+    auto startupApply = capability("general.set_startup_position.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&startupPreview, &startupApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
+            QStringLiteral("point_editable_in_specified_mode"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_move")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    capabilities.append(startupPreview);
+    capabilities.append(startupApply);
     capabilities.append(operation);
     return capabilities;
 }
