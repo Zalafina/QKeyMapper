@@ -13606,25 +13606,22 @@ bool QKeyMapper::exportKeyMappingDataToFile(int tabindex, const QString &filenam
     return false;
 }
 
-bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filename, MappingDataInsertSummary *insertSummary)
+static const QStringList &mappingTableBackupFieldNames()
 {
-    if (insertSummary) {
-        insertSummary->clear();
-    }
+    static const QStringList fields(collectMappingTableExportValues({}).keys());
+    return fields;
+}
 
-    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
-        return false;
-    }
+struct MappingTableImportRows
+{
+    QList<MAP_KEYDATA> rows;
+    int inputCount = 0;
+    int keyUpFallbackCount = 0;
+};
 
-    if (!QFileInfo::exists(filename)) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[importKeyMappingDataFromFile]" << " QFileInfo::exists(" << filename << ") = false";
-#endif
-        return false;
-    }
-
-    QSettings keyMappingDataFile(filename, QSettings::IniFormat);
-    QKeyMapperQtCompat::setIniCodecUtf8(keyMappingDataFile);
+static MappingTableImportRows decodeMappingTableRows(const QVariantMap &keyMappingDataFile)
+{
+    MappingTableImportRows decoded;
     QStringList original_keys;
     QStringList mapping_keys;
     QStringList mappingkeys_keyup;
@@ -13765,7 +13762,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
     QList<int> floatingbutton_y_offsetList;
     QList<bool> floatingbutton_dragtomoveList;
     QList<int> floatingbutton_syncgroupidList;
-    QList<MAP_KEYDATA> loadkeymapdata;
+    auto &loadkeymapdata = decoded.rows;
     bool hasLegacyFloatingButtonOpacity = false;
 
     if ((true == keyMappingDataFile.contains(KEYMAPDATA_ORIGINALKEYS))
@@ -13774,7 +13771,8 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         mapping_keys    = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYS).toStringList();
         mappingkeys_keyup = keyMappingDataFile.value(KEYMAPDATA_MAPPINGKEYS_KEYUP).toStringList();
 
-        if (mappingkeys_keyup.size() != mapping_keys.size()) {
+        const bool replaceKeyUpList = mappingkeys_keyup.size() != mapping_keys.size();
+        if (replaceKeyUpList) {
             mappingkeys_keyup = mapping_keys;
         }
 
@@ -14178,6 +14176,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
 
         if (original_keys.size() == mapping_keys.size() && original_keys.size() > 0) {
+            decoded.inputCount = int(original_keys.size());
 
             if (notesList.size() < original_keys.size()) {
                 int diff = original_keys.size() - notesList.size();
@@ -14781,19 +14780,23 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
                     ori_key.remove(0, 1);
                 }
 
-                bool checkoriginalstr = checkOriginalkeyStr(ori_key);
-                bool checkmappingstr = checkMappingkeyStr(mapping_keys[loadindex]);
+                bool checkoriginalstr = QKeyMapper::checkOriginalkeyStr(ori_key);
+                bool checkmappingstr = QKeyMapper::checkMappingkeyStr(mapping_keys[loadindex]);
+                bool keyUpFallback = replaceKeyUpList;
 
                 if (mappingkeys_keyup[loadindex].isEmpty()) {
                     mappingkeys_keyup[loadindex] = mapping_keys[loadindex];
+                    keyUpFallback = true;
                 }
-                bool checkmapping_keyupstr = checkMappingkeyStr(mappingkeys_keyup[loadindex]);
+                bool checkmapping_keyupstr = QKeyMapper::checkMappingkeyStr(mappingkeys_keyup[loadindex]);
                 if (!checkmapping_keyupstr) {
                     mappingkeys_keyup[loadindex] = mapping_keys[loadindex];
+                    keyUpFallback = true;
                 }
 
                 if (true == checkoriginalstr
                     && true == checkmappingstr) {
+                    if (keyUpFallback) ++decoded.keyUpFallbackCount;
                     loadkeymapdata.append(MAP_KEYDATA(ori_key,
                                                       mapping_keys.at(loadindex),
                                                       mappingkeys_keyup.at(loadindex),
@@ -14883,7 +14886,34 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
         }
     }
 
-    if (loadkeymapdata.isEmpty()) {
+    return decoded;
+}
+
+bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filename, MappingDataInsertSummary *insertSummary)
+{
+    if (insertSummary) {
+        insertSummary->clear();
+    }
+
+    if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+
+    if (!QFileInfo::exists(filename)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[importKeyMappingDataFromFile]" << " QFileInfo::exists(" << filename << ") = false";
+#endif
+        return false;
+    }
+
+    QSettings file(filename, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(file);
+    QVariantMap tableValues;
+    for (const auto &key : mappingTableBackupFieldNames()) {
+        if (file.contains(key)) tableValues.insert(key, file.value(key));
+    }
+    const auto decoded = decodeMappingTableRows(tableValues);
+    if (decoded.rows.isEmpty()) {
         return false;
     }
 
@@ -14900,7 +14930,7 @@ bool QKeyMapper::importKeyMappingDataFromFile(int tabindex, const QString &filen
 
     QList<MAP_KEYDATA> insertMappingDataList;
     MappingDataInsertSummary preparedSummary = keymapper->prepareMappingDataForInsertion(tabindex,
-                                                                                         loadkeymapdata,
+                                                                                         decoded.rows,
                                                                                          &insertMappingDataList);
     if (insertSummary) {
         *insertSummary = preparedSummary;
@@ -41057,7 +41087,8 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                 {QStringLiteral("method"), QStringLiteral("qkm_export_mapping_table")},
                 {QStringLiteral("required_scopes"), int(QkmAutomation::Read)},
                 {QStringLiteral("read_only"), true},
-                {QStringLiteral("max_rows"), MaxTableBackupRows}, {QStringLiteral("max_document_bytes"), MaxTableBackupBytes},
+                {QStringLiteral("max_rows"), QkmAutomation::MaxTableBackupRows},
+                {QStringLiteral("max_document_bytes"), QkmAutomation::MaxTableBackupBytes},
                 {QStringLiteral("limitations"), QJsonArray{QStringLiteral("attached_idle_source"),
                     QStringLiteral("document_only"), QStringLiteral("macro_references_preserved_definitions_excluded")}}},
             QJsonObject{{QStringLiteral("id"), QStringLiteral("source.read")},
