@@ -20,7 +20,7 @@ import uuid
 from cache_core import (CHINA, DEFAULT_SECONDS, CacheError, Window, build_job,
                         parse_command, require, seconds_ok, validate_scope)
 from cache_history import HEARTBEAT_SECONDS, History, environment
-from cache_actions import Actions, action_command, TICKS_TO_FILETIME, file_hash
+from cache_actions import Actions, REGISTRATION_LIMIT, action_command, TICKS_TO_FILETIME, file_hash
 
 SCRIPT = Path(__file__).resolve()
 ROOT = next(p for p in SCRIPT.parents if (p / "QKeyMapper/QKeyMapper.pro").is_file())
@@ -251,6 +251,8 @@ class Controller:
             "deadline": self.window.until, "remaining_seconds": round(self.window.remaining(self.tick()), 2),
             "generation": self.window.generation, "default_seconds": DEFAULT_SECONDS,
             "scope": self.scope, "registered_targets": sorted(self.actions.definitions),
+            "registered_target_count": len(self.actions.definitions), "registered_target_limit": REGISTRATION_LIMIT,
+            "releasable_targets": self.actions.releasable_targets(),
             "owned_targets": [{"pid": pid, "target_id": item["definition"]["id"]} for pid, item in self.actions.owned.items()],
             "unresolved_starts": sorted(self.actions.unknown_starts),
             "current_action": self.actions.pending["request"]["Action"] if self.actions.pending else None,
@@ -322,13 +324,14 @@ class Controller:
         if self.window.expire(self.tick(), self.window.generation):
             self.closing, self.close_reason = True, self.close_reason or "deadline_expired"
         operation = request.get("op")
-        history_op = operation if type(operation) is str and operation in ("status", "off", "set", "authorize", "run", "register", "test_action") else "invalid"
+        fields = {"status": set(), "off": set(), "set": {"deadline", "restore", "remaining_cap"},
+            "authorize": {"scope"}, "run": {"kind", "arguments"}, "register": {"definition"},
+            "mark_releasable": {"target"}, "unregister": {"target"}, "test_action": {"request", "job_token"}}
+        history_op = operation if type(operation) is str and operation in fields else "invalid"
         if history_op != "status":
             self.record("request", request_id=request_id, operation=history_op,
                 requested_deadline=request.get("deadline"), restore=request.get("restore") is True)
         try:
-            fields = {"status": set(), "off": set(), "set": {"deadline", "restore", "remaining_cap"},
-                "authorize": {"scope"}, "run": {"kind", "arguments"}, "register": {"definition"}, "test_action": {"request", "job_token"}}
             require(type(operation) is str and operation in fields and set(request) <= {"id", "instance", "op", "actor"} | fields[operation], "请求字段不合法。")
             require("restore" not in request or type(request["restore"]) is bool, "恢复标志须为布尔值。")
             require(request.get("instance") == self.instance, "请求属于其他或已经结束的控制器。", "stale_controller")
@@ -339,12 +342,23 @@ class Controller:
             elif operation == "authorize":
                 require(not self.closing, "控制器正在关闭。", "busy")
                 self.scope = validate_scope(request.get("scope"))
+                self.actions.authorization_changed()
                 self.answer(request_id, {**self.snapshot(), "action": "scope_registered"}, "authorize")
             elif operation == "register":
                 require(not self.job and not self.pending and not self.actions.pending and not self.closing, "测试或调整执行中不能变更定义。", "busy")
                 self.backend.verify_actor(request.get("actor"))
-                target = self.actions.register(request.get("definition"), self.scope.get("test_actions", {}).get("definitions", []))
-                self.answer(request_id, {"ok": True, "action": "target_registered", "target_id": target}, "register")
+                target = self.actions.register(request.get("definition"), self.actions.approved_definitions())
+                self.answer(request_id, {"ok": True, "action": "target_registered", "target_id": target,
+                    "registration_reference": self.actions.registration_reference(target)}, "register")
+            elif operation == "mark_releasable":
+                self.backend.verify_actor(request.get("actor"))
+                reference = self.actions.mark_releasable(request.get("target"), request_id)
+                self.answer(request_id, {"ok": True, "action": "target_release_marked", "target_id": reference["target_id"],
+                    "release_reference": reference}, operation)
+            elif operation == "unregister":
+                self.backend.verify_actor(request.get("actor"))
+                target = self.actions.unregister(request.get("target"), request_id)
+                self.answer(request_id, {"ok": True, "action": "target_unregistered", "target_id": target}, operation)
             elif operation == "test_action":
                 self.backend.verify_actor(request.get("actor"))
                 raw = request.get("request")
@@ -599,7 +613,8 @@ def upgrade_controller():
     observed = time.monotonic()
     state = send(state, {"op": "status"}, timeout=10)
     require(state.get("ok") and state.get("status") == "active" and not any(state.get(key) for key in
-        ("current_job", "current_action", "pending_request", "owned_targets")), "控制器须先完成作业和自有进程清理。", "busy")
+        ("current_job", "current_action", "pending_request", "owned_targets", "unresolved_starts")),
+        "控制器须先完成作业、进程清理和未定启动核查。", "busy")
     old_pid, deadline, scope = state["identity"]["pid"], state["deadline"], state["scope"]
     remaining = state["remaining_seconds"]
     require(remaining > 15, "旧窗口即将到期，未自动续期。", "insufficient_window")
@@ -622,10 +637,12 @@ def upgrade_controller():
     return {**result, "previous_controller_pid": old_pid, "previous_deadline": deadline, "upgrade": True}
 
 
-def client(words, scope_file=None, job_file=None, request_id=None, definition_file=None, action_file=None):
+def client(words, scope_file=None, job_file=None, request_id=None, definition_file=None, action_file=None, target_file=None):
     require(token_info() == {"elevated": False, "integrity": 8192}, "客户端必须是普通 Medium 权限。", "integrity_rejected")
     runtime_safe()
     text = " ".join(words)
+    release_ops = {"mark-releasable": "mark_releasable", "unregister": "unregister"}
+    require(target_file is None or text in release_ops, "--target-file 仅用于显式释放登记。")
     if words and words[0] == "result":
         require(len(words) == 2 and HEX_ID.fullmatch(words[1]) is not None, "须提供完整请求 ID。")
         path = RUNTIME / "results" / (words[1] + ".json")
@@ -633,6 +650,12 @@ def client(words, scope_file=None, job_file=None, request_id=None, definition_fi
         return {**read_json(path), "historical_result": True}
     if text == "upgrade":
         return upgrade_controller()
+    if text in release_ops:
+        require(target_file is not None, "须提供 --target-file 指定目标登记。")
+        state = verified_controller()
+        require(state is not None, "没有受管控制器。", "controller_absent")
+        require("releasable_targets" in state, "现有控制器需经授权在空闲时升级。", "controller_upgrade_required")
+        return send(state, {"op": release_ops[text], "target": read_json(target_file, 2048)}, timeout=10, request_id=request_id)
     if text in ("register", "test-action"):
         state = verified_controller()
         require(state is not None, "没有受管控制器；先设置缓存或明确选择不缓存 UAC 验收。", "controller_absent")
@@ -692,6 +715,7 @@ def main():
     parser.add_argument("--request-id")
     parser.add_argument("--definition-file", type=Path)
     parser.add_argument("--action-file", type=Path)
+    parser.add_argument("--target-file", type=Path)
     parser.add_argument("--serve", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--identity-probe", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
@@ -704,7 +728,8 @@ def main():
         serve()
         return 0
     try:
-        value = public(client(args.command, args.scope_file, args.job_file, args.request_id, args.definition_file, args.action_file))
+        value = public(client(args.command, args.scope_file, args.job_file, args.request_id, args.definition_file, args.action_file,
+            args.target_file))
     except Exception as error:
         value = error_result(error)
     print(json.dumps(value, ensure_ascii=False, indent=2))

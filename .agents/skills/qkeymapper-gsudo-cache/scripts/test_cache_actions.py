@@ -8,8 +8,9 @@ import unittest
 import uuid
 
 import cache_control as app
-from cache_actions import digest, file_hash, helper_hashes, action_command, TICKS_TO_FILETIME
-from cache_core import CacheError
+from cache_actions import REGISTRATION_LIMIT, digest, file_hash, helper_hashes, action_command, TICKS_TO_FILETIME
+from cache_core import CacheError, validate_scope
+from cache_history import FILE_BYTES
 from test_cache_control import ControllerFixture, FakeProcess
 
 
@@ -41,6 +42,21 @@ class ActionTests(ControllerFixture):
         self.controller.scope['test_actions'] = {'reason': 'explicit test scope', 'definitions': [digest(target)]}
         request = self.request('register', definition=target, actor=self.actor)
         self.assertTrue(self.result(request)['ok'], self.result(request))
+        return self.result(request)['registration_reference']
+
+    def authorize(self, fingerprints=()):
+        scope = {'test_actions': {'reason': 'explicit test scope', 'definitions': list(fingerprints)}} if fingerprints else {}
+        result = self.result(self.request('authorize', scope=scope))
+        self.assertTrue(result['ok'], result)
+
+    def release_request(self, operation, target, error=None):
+        result = self.result(self.request(operation, target=target, actor=self.actor))
+        if error:
+            self.assertFalse(result['ok'])
+            self.assertEqual(result['error'], error)
+        else:
+            self.assertTrue(result['ok'], result)
+        return result
 
     def start_action(self, payload, path, log, pins):
         self.backend.spawned.append((payload, pins))
@@ -300,7 +316,10 @@ class ActionTests(ControllerFixture):
         self.assertEqual(result['os_errno'], 13)
         self.assertEqual(result['error'], 'internal_error')
         self.assertEqual(result['response_state'], 'unavailable')
-        self.assertNotIn('999', json.dumps(self.action_rows(request)))
+        rows = self.action_rows(request)
+        record = next(row for row in rows if row['event'] == 'request_result')
+        self.assertEqual((record['os_error_code'], record['os_errno']), (5, 13))
+        self.assertNotIn('PRIVATE claims error 999', json.dumps(rows))
 
     def test_timeout_reports_missing_exit_without_terminating_or_replaying(self):
         request = self.action(self.start_request())
@@ -350,6 +369,144 @@ class ActionTests(ControllerFixture):
         self.assertFalse(self.controller.actions.owned)
         self.assertIsNone(self.controller.actions.pending)
 
+    def test_full_registry_requires_explicit_unregistration_and_keeps_records_bounded(self):
+        actions = self.controller.actions
+        first = actions.registration_reference(self.target['id'])
+        references = [first]
+        for index in range(1, 128):
+            name = f'target-{index:03d}' + 'x' * 54
+            references.append(self.register(dict(self.target, id=name)))
+        self.assertEqual(len(actions.definitions), 128)
+        extra = dict(self.target, id='next-target')
+        self.authorize([digest(extra)])
+        denied = self.result(self.request('register', definition=extra, actor=self.actor))
+        self.assertEqual(denied['error'], 'request_limit')
+        self.assertIn('128', denied['message'])
+        self.assertIn('没有可释放登记', denied['message'])
+        self.assertEqual(actions.releasable_targets(), [])
+
+        marks = [self.release_request('mark_releasable', reference)['release_reference'] for reference in references]
+        unrelated = [f'{index:064x}' for index in range(32)]
+        self.authorize(unrelated)
+        status_request = self.request('status')
+        status = self.result(status_request)
+        self.assertEqual((status['registered_target_count'], status['registered_target_limit']), (128, REGISTRATION_LIMIT))
+        self.assertEqual(status['registered_targets'], status['releasable_targets'])
+        self.assertEqual(len(status['scope']['test_actions']['definitions']), 32)
+        self.assertLessEqual(len(self.controller.results), 64)
+        for file in (self.controller.runtime / 'state.json',
+                     self.controller.runtime / 'results' / (status_request['id'] + '.json')):
+            self.assertLessEqual(file.stat().st_size, 65536)
+            self.assertEqual(app.read_json(file)['registered_target_count'], 128)
+
+        self.authorize([digest(extra)])
+        denied = self.result(self.request('register', definition=extra, actor=self.actor))
+        self.assertEqual(denied['error'], 'request_limit')
+        self.assertIn('显式注销', denied['message'])
+        self.assertEqual(len(actions.definitions), 128)
+        test_artifact = self.root / 'out/test/existing-result.json'
+        test_artifact.write_text('{"preserved": true}', encoding='utf-8')
+        history = {path: path.read_bytes() for path in (self.controller.runtime / 'history').glob('events-*.jsonl')}
+        self.assertTrue(history)
+        self.release_request('unregister', marks[0])
+        self.assertEqual(len(actions.definitions), 127)
+        self.assertNotIn(first['target_id'], actions.definitions)
+        self.assertEqual(self.exe.read_bytes(), b'MZ fixed native fixture')
+        self.assertEqual(test_artifact.read_text(encoding='utf-8'), '{"preserved": true}')
+        for path, contents in history.items():
+            current = path.read_bytes()
+            self.assertTrue(current.startswith(contents))
+            self.assertLessEqual(len(current), FILE_BYTES)
+            self.assertNotIn(marks[0]['release_token'].encode(), current)
+        rows = [json.loads(line) for path in history for line in path.read_text(encoding='utf-8').splitlines()]
+        for event in ('target_release_marked', 'target_unregistered'):
+            self.assertTrue(any(row['event'] == event and row.get('target_id') == first['target_id']
+                and row.get('definition_hash') == first['definition_hash'] and len(row.get('request_id', '')) == 32 for row in rows))
+        self.register(extra)
+        self.assertEqual(len(actions.definitions), 128)
+        self.assertIn(extra['id'], actions.definitions)
+        updated = self.register(dict(extra, maximum_seconds=91))
+        self.assertNotEqual(updated['definition_hash'], digest(extra))
+        self.assertEqual(len(actions.definitions), 128)
+
+    def test_release_rechecks_authorization_and_live_dependencies(self):
+        actions = self.controller.actions
+        target_id = self.target['id']
+        reference = actions.registration_reference(target_id)
+        self.release_request('mark_releasable', reference, 'target_authorized')
+        self.authorize()
+        self.release_request('unregister', dict(reference, release_token='0' * 32), 'stale_release_reference')
+        mark = self.release_request('mark_releasable', reference)['release_reference']
+        with patch.object(self.controller, 'scope', {'test_actions': {'definitions': [reference['definition_hash']]}}):
+            self.release_request('unregister', mark, 'target_authorized')
+            self.assertNotIn(target_id, self.controller.snapshot()['releasable_targets'])
+
+        self.backend.live[601] = True
+        cases = (
+            (actions, 'owned', {601: {'identity': {'pid': 601}, 'definition': self.target}}),
+            (actions, 'pending', {'id': 'a' * 32, 'request': {'Action': 'Start'}, 'definition': self.target}),
+            (self.controller, 'job', {'id': 'b' * 32, 'kind': 'product'}),
+            (actions, 'unknown_starts', {'c' * 32: target_id}),
+            (actions, 'unknown_starts', {'d' * 32: None}),
+        )
+        actions.job_definitions.add(target_id)
+        for owner, field, dependency in cases:
+            with self.subTest(field=field, dependency=dependency), patch.object(owner, field, dependency):
+                self.release_request('mark_releasable', reference, 'target_in_use')
+                self.release_request('unregister', mark, 'target_in_use')
+                self.assertIn(target_id, actions.definitions)
+                self.assertNotIn(target_id, self.controller.snapshot()['releasable_targets'])
+        with patch.object(actions, 'unknown_starts', {'e' * 32: 'known-unrelated-target'}):
+            self.release_request('unregister', mark)
+        self.assertNotIn(target_id, actions.definitions)
+
+    def test_stale_release_reference_cannot_remove_reauthorized_or_reregistered_target(self):
+        actions = self.controller.actions
+        reference = actions.registration_reference(self.target['id'])
+        self.authorize()
+        denied = self.result(self.request('mark_releasable', target=reference, actor={}))
+        self.assertEqual(denied['error'], 'identity_rejected')
+        self.release_request('mark_releasable', dict(reference, instance='0' * 32), 'stale_controller')
+        self.release_request('mark_releasable', dict(reference, definition_hash='0' * 64), 'stale_registration')
+        original = self.release_request('mark_releasable', reference)['release_reference']
+        self.assertEqual(self.release_request('mark_releasable', reference)['release_reference'], original)
+        self.authorize([reference['definition_hash']])
+        self.assertEqual(actions.releasable_targets(), [])
+        self.release_request('unregister', original, 'stale_release_reference')
+        self.authorize()
+        refreshed = self.release_request('mark_releasable', reference)['release_reference']
+        self.assertNotEqual(original['release_token'], refreshed['release_token'])
+        self.release_request('unregister', original, 'stale_release_reference')
+        self.release_request('unregister', dict(refreshed, instance='0' * 32), 'stale_controller')
+        self.release_request('unregister', dict(refreshed, definition_hash='0' * 64), 'stale_registration')
+        actions.register(self.target, [reference['definition_hash']])
+        self.assertEqual(actions.releasable_targets(), [])
+        current = self.release_request('mark_releasable', reference)['release_reference']
+        self.release_request('unregister', refreshed, 'stale_release_reference')
+        self.release_request('unregister', current)
+        updated = self.register(dict(self.target, maximum_seconds=91))
+        self.authorize()
+        self.release_request('unregister', current, 'stale_registration')
+        self.assertEqual(actions.registration_reference(self.target['id']), updated)
+
+    def test_scope_and_owned_capacity_stay_at_32_and_same_target_can_run_repeatedly(self):
+        with self.assertRaises(CacheError):
+            validate_scope({'test_actions': {'reason': 'scope limit', 'definitions': [f'{n:064x}' for n in range(33)]}})
+        actions = self.controller.actions
+        for _ in range(2):
+            self.start_owned()
+            closing = self.action(self.close_request())
+            self.finish_action({'Success': True, 'ExitCode': 0})
+            self.assertTrue(self.result(closing)['ok'])
+            self.assertFalse(actions.owned)
+        for pid in range(601, 633):
+            self.backend.live[pid] = True
+            actions.owned[pid] = {'definition': self.target, 'identity': {'pid': pid}}
+        request = self.action(self.start_request())
+        self.assertEqual(self.result(request)['error'], 'request_limit')
+        self.assertIn('自有测试进程', self.result(request)['message'])
+        self.assertEqual(len(actions.owned), 32)
+
     def test_gui_diagnostics_use_the_actual_result_path(self):
         self.start_owned()
         for index, content in enumerate((None, '{PRIVATE broken')):
@@ -369,7 +526,7 @@ class ActionTests(ControllerFixture):
         request = self.action(self.start_request())
         pending = self.controller.actions.pending
         self.addCleanup(pending['log'].close)
-        self.controller.actions.unknown_starts.add('a' * 32)
+        self.controller.actions.unknown_starts['a' * 32] = None
         with patch.object(self.controller, 'advance', side_effect=CacheError('test_interruption', 'PRIVATE')):
             with self.assertRaises(CacheError):
                 self.controller.serve()
@@ -396,6 +553,31 @@ class ActionTests(ControllerFixture):
             send.assert_not_called()
             create.assert_not_called()
 
+    def test_release_cli_passes_explicit_reference_and_never_replaces_an_old_controller(self):
+        target_file = self.root / 'release-reference.json'
+        reference = {'instance': self.controller.instance, 'target_id': self.target['id'],
+            'definition_hash': digest(self.target)}
+        app.write_json(target_file, reference)
+        state = self.controller.snapshot()
+        with patch.object(app, 'token_info', return_value={'elevated': False, 'integrity': 8192}), \
+                patch.object(app, 'runtime_safe'), patch.object(app, 'send') as send, \
+                patch.object(app, 'ensure_controller') as create:
+            with patch.object(app, 'verified_controller', return_value=state):
+                app.client(['mark-releasable'], target_file=target_file)
+                send.assert_called_once_with(state, {'op': 'mark_releasable', 'target': reference}, timeout=10, request_id=None)
+                send.reset_mock()
+                release = dict(reference, release_token='f' * 32)
+                app.write_json(target_file, release)
+                app.client(['unregister'], target_file=target_file)
+                send.assert_called_once_with(state, {'op': 'unregister', 'target': release}, timeout=10, request_id=None)
+                send.reset_mock()
+            for old in (None, {'format_version': 2}):
+                with patch.object(app, 'verified_controller', return_value=old):
+                    with self.assertRaises(CacheError):
+                        app.client(['unregister'], target_file=target_file)
+                    send.assert_not_called()
+            create.assert_not_called()
+
     def test_upgrade_keeps_previous_cutoff_and_refuses_active_job(self):
         old = {'ok': True, 'status': 'active', 'identity': {'pid': 42}, 'instance': 'a' * 32,
             'deadline': '2026-10-25T21:07:50+08:00', 'remaining_seconds': 300, 'scope': {}}
@@ -414,6 +596,13 @@ class ActionTests(ControllerFixture):
                 patch.object(app, 'ensure_controller') as create:
             with self.assertRaises(CacheError):
                 app.upgrade_controller()
+            create.assert_not_called()
+        with patch.object(app, 'verified_controller', return_value=old), \
+                patch.object(app, 'send', return_value=dict(old, unresolved_starts=['a' * 32])) as send, \
+                patch.object(app, 'ensure_controller') as create:
+            with self.assertRaises(CacheError):
+                app.upgrade_controller()
+            send.assert_called_once_with(old, {'op': 'status'}, timeout=10)
             create.assert_not_called()
 
 

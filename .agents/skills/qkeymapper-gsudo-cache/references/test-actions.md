@@ -97,6 +97,16 @@ Python普通脚本可导入repo/scripts/managed_test.py并调用perform，Start�
 
 Close只操作登记且仍由当前控制器拥有的同一进程，核对PID、创建时间、EXE及桌面。Qt产品优先关闭已知主窗口，其他原生夹具才回退本进程的caption窗口；不强杀其他进程。自退出目标应由普通测试持有Win32 QUERY_LIMITED_INFORMATION／SYNCHRONIZE句柄核对原生退出码；PowerShell包装器ExitCode为空不能记为0。
 
+## 显式释放登记
+
+status 保留 `registered_targets`，返回 `registered_target_count`、`registered_target_limit` 及当前可释放的 `releasable_targets` ID 列表。容量 128 只用于登记。32 个授权摘要与 32 个自有测试进程的上限独立生效。
+
+1. 负责该定义的测试流程确认后续暂时无需该目标，再用 `authorize` 撤出该定义的摘要并保留其他范围。确认没有依赖它的自有进程、固定动作、整套作业或未定启动。无法归属的未定启动会保留可能涉及的登记。
+2. 把 `register` 成功结果里的 `registration_reference` 对象写入本地 UTF-8 JSON，内容包括 `instance`、`target_id` 和 `definition_hash`。整套作业自动登记的定义可从同实例的 `target_registered` 记录核对这三个字段。运行 `mark-releasable --target-file <JSON>`，保留返回的 `release_reference`。登记仍占用该槽。
+3. 通过 status 选择实际要注销的 ID，把它对应的完整 `release_reference` 写入 JSON，运行 `unregister --target-file <JSON>`。控制器核对当前实例、ID、摘要、释放令牌与现有依赖。成功后释放一个内存登记槽，历史及测试原件保留。再次使用该目标时，重新走完整范围授权和定义登记。
+
+原 ID 重新登记或本定义重新获得授权后，之前的释放令牌失效。登记满额返回 `request_limit`，消息指明 128 项上限及当前是否存在可释放登记。未知结果先查询原请求。旧控制器缺少释放接口时返回 `controller_upgrade_required`，升级需单独授权。
+
 ## 并发、更新和失败
 
 - 控制器同一时间仅执行一个必要提权动作。整套run继续运行时，其普通内部请求使用本次作业归属令牌进入动作队列，不等待run完成。该令牌不产生测试授权；实际gsudo仍由缓存控制器发起，调用方实际Medium及同登录身份另行核对。

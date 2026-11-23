@@ -6,7 +6,7 @@ from pathlib import Path
 import re
 import uuid
 
-from cache_core import require
+from cache_core import CacheError, require
 
 PRIVATE_ACTIONS = {"OpenAdvanced", "OpenMcp", "Enable", "ApproveRead", "ApproveConfigure", "Revoke", "Disable",
     "CloseMcp", "ReadMapping", "ReadTab1", "ReadTab2", "ReadCommon", "MoveSecondUp", "RestoreFirstRows",
@@ -15,6 +15,8 @@ DEFAULT_ACTIONS = (PRIVATE_ACTIONS - {"AddBasicMapping"}) | {"ClearBasicMapping"
     "OpenFloatingSetup", "CloseFloatingSetup", "SyncGroupOne", "SyncGroupZero", "StartMapping", "StopMapping"}
 HELPERS = ("scripts/test_process.ps1", "QKeyMapper/tests/mcp_control/product_ui_actions.ps1")
 TICKS_TO_FILETIME = 504911232000000000
+REGISTRATION_LIMIT = 128
+TARGET_ID = re.compile(r"[a-zA-Z][a-zA-Z0-9_-]{0,63}")
 
 
 def helper_hashes(root):
@@ -42,7 +44,7 @@ def under_out(root, value, suffix=None):
 def definition(root, value):
     require(type(value) is dict and set(value) == {"id", "executable", "sha256", "cases", "desktop",
         "output_root", "maximum_seconds", "gui_actions", "client_executable", "helpers"}, "测试定义字段不合法。")
-    require(type(value["id"]) is str and re.fullmatch(r"[a-zA-Z][a-zA-Z0-9_-]{0,63}", value["id"]), "测试定义 ID 不合法。")
+    require(type(value["id"]) is str and TARGET_ID.fullmatch(value["id"]), "测试定义 ID 不合法。")
     exe = under_out(root, value["executable"], ".exe")
     require(exe.is_file(), "目标文件不存在。", "unsafe_target")
     with exe.open("rb") as source:
@@ -76,20 +78,90 @@ class Actions:
     def __init__(self, controller):
         self.c = controller
         self.definitions = {}
+        self.release_marks = {}
         self.owned = {}
         self.pending = None
         self.job_token = None
         self.job_definitions = set()
-        self.unknown_starts = set()
+        self.unknown_starts = {}
+
+    def check_capacity(self, target_ids):
+        if len(self.definitions) + len(set(target_ids) - self.definitions.keys()) > REGISTRATION_LIMIT:
+            choice = "请从 status 选择并显式注销可释放登记。" if self.releasable_targets() else "当前没有可释放登记。"
+            raise CacheError("request_limit", f"测试目标登记已达 {REGISTRATION_LIMIT} 项。{choice}")
 
     def register(self, value, approved):
         value = definition(self.c.root, value)
-        require(digest(value) in approved, "测试定义未经本次已有授权登记；元数据本身不是授权。", "scope_not_authorized")
-        require(len(self.definitions) < 32 or value["id"] in self.definitions, "测试定义数量已满。", "request_limit")
-        require(not any(x["definition"]["id"] == value["id"] for x in self.owned.values()), "该定义仍有自有进程，请先清理。", "busy")
-        self.definitions[value["id"]] = value
-        self.c.record("target_registered", target_id=value["id"], definition_hash=digest(value))
-        return value["id"]
+        target_id, fingerprint = value["id"], digest(value)
+        require(fingerprint in approved, "测试定义未经本次已有授权登记；元数据本身不是授权。", "scope_not_authorized")
+        self.check_capacity((target_id,))
+        if target_id in self.definitions:
+            self.refresh_owned()
+            require(not self.in_use(target_id), "该定义仍关联进程、动作、作业或未定启动。", "busy")
+        self.definitions[target_id] = value
+        self.release_marks.pop(target_id, None)
+        self.c.record("target_registered", target_id=target_id, definition_hash=fingerprint)
+        return target_id
+
+    def registration_reference(self, target_id):
+        return {"instance": self.c.instance, "target_id": target_id, "definition_hash": digest(self.definitions[target_id])}
+
+    def in_use(self, target_id):
+        pending = bool(self.pending) and (self.pending.get("definition") or {}).get("id") in (None, target_id)
+        job = bool(self.c.job) and (target_id in self.job_definitions
+            or not self.job_definitions and self.c.job.get("kind") != "identity_probe")
+        return (pending or job or any(item["definition"]["id"] == target_id for item in self.owned.values())
+            or any(unknown in (None, target_id) for unknown in self.unknown_starts.values()))
+
+    def approved_definitions(self):
+        return self.c.scope.get("test_actions", {}).get("definitions", [])
+
+    def authorization_changed(self):
+        approved = set(self.approved_definitions())
+        self.release_marks = {key: value for key, value in self.release_marks.items() if value[0] not in approved}
+
+    def releasable_targets(self):
+        if self.c.closing:
+            return []
+        approved = set(self.approved_definitions())
+        return sorted(target_id for target_id, (fingerprint, _) in self.release_marks.items()
+            if fingerprint not in approved and not self.in_use(target_id))
+
+    def check_reference(self, reference, unregister=False):
+        fields = {"instance", "target_id", "definition_hash"}
+        if unregister:
+            fields.add("release_token")
+        require(type(reference) is dict and set(reference) == fields
+            and all(type(value) is str for value in reference.values()), "登记引用字段不合法。")
+        require(reference["instance"] == self.c.instance, "登记引用属于其他或已结束的控制器。", "stale_controller")
+        target_id, fingerprint = reference["target_id"], reference["definition_hash"]
+        target = self.definitions.get(target_id)
+        require(target is not None and digest(target) == fingerprint, "登记已变化或已注销，请核对最新登记。", "stale_registration")
+        return target_id, fingerprint
+
+    def require_releasable(self, target_id, fingerprint):
+        require(not self.c.closing, "控制器正在关闭。", "busy")
+        require(fingerprint not in self.approved_definitions(), "该定义仍有授权，先撤出本定义的授权摘要。", "target_authorized")
+        self.refresh_owned()
+        require(not self.in_use(target_id), "该定义仍关联进程、动作、作业或未定启动。", "target_in_use")
+
+    def mark_releasable(self, reference, request_id):
+        target_id, fingerprint = self.check_reference(reference)
+        self.require_releasable(target_id, fingerprint)
+        if target_id not in self.release_marks:
+            self.release_marks[target_id] = (fingerprint, uuid.uuid4().hex)
+            self.c.record("target_release_marked", request_id=request_id, target_id=target_id, definition_hash=fingerprint)
+        return {**reference, "release_token": self.release_marks[target_id][1]}
+
+    def unregister(self, reference, request_id):
+        target_id, fingerprint = self.check_reference(reference, unregister=True)
+        require(self.release_marks.get(target_id) == (fingerprint, reference["release_token"]),
+            "释放标记已失效，请核对当前登记状态。", "stale_release_reference")
+        self.require_releasable(target_id, fingerprint)
+        del self.release_marks[target_id]
+        del self.definitions[target_id]
+        self.c.record("target_unregistered", request_id=request_id, target_id=target_id, definition_hash=fingerprint)
+        return target_id
 
     def register_job(self, kind, args):
         self.job_token = uuid.uuid4().hex
@@ -97,6 +169,7 @@ class Actions:
         if kind not in ("product", "source", "input_regression"):
             return
         names = ("baseline", "current") if kind == "input_regression" else ("executable",)
+        self.check_capacity("run_" + name for name in names)
         for name in names:
             exe = Path(args[name]).resolve()
             value = {"id": "run_" + name, "executable": str(exe), "sha256": file_hash(exe),
@@ -110,7 +183,7 @@ class Actions:
 
     def allowed(self, target, job_token):
         c = self.c
-        return digest(target) in c.scope.get("test_actions", {}).get("definitions", []) or bool(c.job
+        return digest(target) in self.approved_definitions() or bool(c.job
             and c.job["kind"] in c.scope and job_token == self.job_token and target["id"] in self.job_definitions)
 
     def refresh_owned(self):
@@ -219,7 +292,7 @@ class Actions:
             if self.c.tick() - p["started"] > 70 and not p["timed_out"]:
                 p["timed_out"] = True
                 if p["request"]["Action"] == "Start":
-                    self.unknown_starts.add(p["id"])
+                    self.unknown_starts[p["id"]] = p["definition"]["id"]
                 self.c.closing, self.c.close_reason = True, "action_result_unknown"
                 self.c.answer(p["id"], {"ok": False, "error": "result_unknown", "message": "固定动作超时；未重试或启动替代进程。",
                     **self.diagnostics(p, code, "await_exit")}, "test_action")
@@ -249,7 +322,7 @@ class Actions:
                 stage = "identity_check"
                 actual = self.c.backend.started_identity(response)
                 require(Path(actual["executable"]).resolve() == Path(p["definition"]["executable"]).resolve(), "启动结果身份不符。", "identity_rejected")
-                self.unknown_starts.discard(p["id"])
+                self.unknown_starts.pop(p["id"], None)
                 self.owned[actual["pid"]] = {"identity": actual, "definition": p["definition"],
                     "desktop": p["request"]["DesktopName"], "cleanup_at": min(self.c.tick() + p["definition"]["maximum_seconds"] - 20,
                         self.c.window.deadline - 20)}
@@ -262,7 +335,7 @@ class Actions:
             result = error_result(error)
             self.c.last_error = result
             if p["request"]["Action"] == "Start":
-                self.unknown_starts.add(p["id"])
+                self.unknown_starts[p["id"]] = None if stage == "identity_check" else p["definition"]["id"]
                 self.c.closing, self.c.close_reason = True, "start_result_unknown"
         result.update(self.diagnostics(p, code, stage if failure else None, response_state, observed, failure))
         self.c.answer(p["id"], result, "test_action")

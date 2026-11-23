@@ -34,7 +34,7 @@
 
 参见[公共测试接入示例](test-actions.md)。必要提权经受管控制器派发，普通公共Start／Close、Product GUI及SDK高权限夹具已接入；旧 `--gsudo-cache` 不再创建自己的控制器。新目标与用例通过已审核的结构化定义登记，不用每次修改技能核心。定义不创造授权，任意脚本／shell及无限制参数不接收。
 
-如果提示controller_upgrade_required，先完成现有作业和清理，使用内部upgrade；旧缓存核实关闭后才申请新PID缓存，并保留原截止。若UAC取消或结果未知，先查原因和原请求；不要再开一套临时控制器。当前status中的registered_targets／owned_targets／current_action／unresolved_starts分别是登记、归属、执行及未定启动；均不能替代实际结果。
+如果提示 controller_upgrade_required，核对窗口、作业、动作、自有进程及未定启动。经单独授权后执行内部 upgrade；旧缓存核实关闭后才申请新 PID 缓存，并保留原截止。需要 UAC 时由用户确认。若 UAC 取消或结果未知，先查原因和原请求。status 保留 registered_targets／owned_targets／current_action／unresolved_starts，并用 registered_target_count、registered_target_limit、releasable_targets 显示登记容量和可选释放对象。显式操作见[释放登记](test-actions.md#显式释放登记)。
 
 ## 日志在哪里、何时记录
 
@@ -93,7 +93,7 @@ out/gsudo_cache/
 
 客户端在参数解析阶段拒绝、未送达Agent的文本、客户端等待超时及UAC弹窗次数不由这份控制器摘要完整观测；需要时结合原请求ID、CLI结果和已有证据。摘要不是授权来源、去重数据库或自动补执行依据。
 
-新增target_registered、test_action_request／start和request_result按request_id关联；entry_type区分启动／关闭／GUI，控制器instance／pid确定缓存归属，definition_hash定位精确定义版本。未登记、越权、busy、失效和结果未知分别记录错误码；仍必须连同native_checked_at理解缓存可用性，不推断弹窗次数。定义摘要不含原文参数；定义／请求材料只留本机out，禁止凭据或私人配置进入其中。控制器code_version只在启动时取样，助手更新由新definition_hash反映。
+target_registered、target_release_marked、target_unregistered 记录目标 ID 和定义摘要。test_action_request／start 和 request_result 按 request_id 关联，entry_type 区分启动／关闭／GUI。用控制器 instance／pid 核对归属，连同 native_checked_at 判断缓存可用性。释放令牌只用于本机请求和结果。历史沿用体积上限和字段白名单，省略完整定义、参数、令牌、凭据和私人配置。控制器 code_version 在启动时取样，助手更新由新 definition_hash 反映。
 
 固定动作失败仍保留原error／message，同时在结果及白名单历史补充已取得的诊断；派发异常另记test_action_diagnostic，沿instance／generation／request_id关联。原生详细输出仍只在本机既有logs/<request_id>-action.log，不把异常原文、响应内容、命令或路径复制到摘要。最终controller_finish／cleanup_failed附数量，pending_request可指向当前缓存调整、动作或作业。诊断写入失败不阻止清理，不改变准入、超时、硬截止、成功失败判定、关闭或重试策略；网络因素仍待结合已有材料关联，不新增联网探测、事件日志采集或常驻监控。
 
