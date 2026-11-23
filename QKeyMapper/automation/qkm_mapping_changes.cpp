@@ -216,6 +216,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool disabledVisibilityPreview = preview && action == QLatin1String("configuration.set_show_disabled_rows");
     const bool mappingDisplayPreview = preview && action == QLatin1String("configuration.set_mapping_display");
     const bool insertModePreview = preview && action == QLatin1String("general.set_table_insert_mode");
+    const bool editTriggerPreview = preview && action == QLatin1String("general.set_table_edit_trigger");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
     const bool deleteTabPreview = preview && action == QLatin1String("tab.delete");
@@ -228,7 +229,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool tabActionPreview = addBlankTabPreview || copyTabPreview || deleteTabPreview
         || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
-        || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview;
+        || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -241,6 +242,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : tabNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_mode")}
         : mappingDisplayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("mapping_display")}
         : insertModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_insert_mode")}
+        : editTriggerPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_edit_trigger")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
         : tabNotificationColorsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"),
@@ -308,6 +310,14 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 return fail("Table insert mode must be 0 (above) or 1 (below).");
             }
             result.update.tableInsertMode = mode;
+        }
+        if (editTriggerPreview) {
+            const int trigger = arguments.value(QStringLiteral("table_edit_trigger")).toInt(-1);
+            if (trigger != QKeyMapperConstants::EDITMODE_RIGHT_DOUBLECLICK
+                && trigger != QKeyMapperConstants::EDITMODE_LEFT_DOUBLECLICK) {
+                return fail("Table edit trigger must be 0 (right double-click) or 1 (left double-click).");
+            }
+            result.update.tableEditTrigger = trigger;
         }
         if (tabHotkeyPreview) {
             const auto hotkey = arguments.value(QStringLiteral("tab_hotkey"));
@@ -1163,6 +1173,21 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     }
     capabilities.append(insertModePreview);
     capabilities.append(insertModeApply);
+    auto editTriggerPreview = capability("general.set_table_edit_trigger.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_table_edit_trigger")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("table_edit_trigger"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("enum"), QJsonArray{0, 1}}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_edit_trigger")}));
+    auto editTriggerApply = capability("general.set_table_edit_trigger.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&editTriggerPreview, &editTriggerApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
+            QStringLiteral("current_source_guard"), QStringLiteral("gui_inline_edit_trigger"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+    }
+    capabilities.append(editTriggerPreview);
+    capabilities.append(editTriggerApply);
     capabilities.append(operation);
     return capabilities;
 }

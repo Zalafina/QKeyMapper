@@ -277,6 +277,14 @@ struct TableInsertMode {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct TableEditTrigger {
+    action: String,
+    source_tab_ref: String,
+    table_edit_trigger: u8,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct Preview {
     #[serde(default)]
     action: Action,
@@ -607,6 +615,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 Some("general.set_table_insert_mode") => {
                     return typed(arguments, |v: &TableInsertMode| {
                         tab_ref(&v.source_tab_ref) && v.table_insert_mode <= 1
+                    });
+                }
+                Some("general.set_table_edit_trigger") => {
+                    return typed(arguments, |v: &TableEditTrigger| {
+                        tab_ref(&v.source_tab_ref) && v.table_edit_trigger <= 1
                     });
                 }
                 Some("macro.upsert") => {

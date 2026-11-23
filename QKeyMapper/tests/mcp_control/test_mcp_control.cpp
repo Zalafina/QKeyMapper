@@ -906,22 +906,32 @@ void McpControlTest::mappingChangeArguments()
     invalidImport = importFields;
     invalidImport.insert(QStringLiteral("document_base64"), QStringLiteral("invalid?"));
     QVERIFY(!importRequest(invalidImport).ok());
-    const auto validateInsertMode = [&](const QJsonValue &mode) {
+    const auto validateTablePreference = [&](const QString &field, const QJsonValue &mode) {
         return validateMappingChangeRequest(previewMethod,
-            {{QStringLiteral("action"), QStringLiteral("general.set_table_insert_mode")},
+            {{QStringLiteral("action"), QStringLiteral("general.set_") + field},
                 {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-                {QStringLiteral("table_insert_mode"), mode}});
+                {field, mode}});
     };
     for (const int mode : {0, 1}) {
-        const auto parsed = validateInsertMode(mode);
+        const auto parsed = validateTablePreference(QStringLiteral("table_insert_mode"), mode);
         QVERIFY(parsed.ok() && parsed.action == MappingChangeAction::UpdateMapping);
         QVERIFY(parsed.update.tableInsertMode.has_value());
         QCOMPARE(*parsed.update.tableInsertMode, mode);
+        QVERIFY(!parsed.update.tableEditTrigger.has_value());
+        const auto trigger = validateTablePreference(QStringLiteral("table_edit_trigger"), mode);
+        QVERIFY(trigger.ok() && trigger.action == MappingChangeAction::UpdateMapping);
+        QVERIFY(trigger.update.tableEditTrigger.has_value());
+        QCOMPARE(*trigger.update.tableEditTrigger, mode);
+        QVERIFY(!trigger.update.tableInsertMode.has_value());
     }
-    for (const auto &mode : {QJsonValue(-1), QJsonValue(2), QJsonValue(0.5), QJsonValue(true), QJsonValue(QStringLiteral("1"))})
-        QVERIFY(!validateInsertMode(mode).ok());
-    QCOMPARE(capabilities.size(), 64);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 62);
+    for (const auto &mode : {QJsonValue(-1), QJsonValue(2), QJsonValue(0.5), QJsonValue(true), QJsonValue(QStringLiteral("1"))}) {
+        QVERIFY(!validateTablePreference(QStringLiteral("table_insert_mode"), mode).ok());
+        QVERIFY(!validateTablePreference(QStringLiteral("table_edit_trigger"), mode).ok());
+    }
+    QCOMPARE(capabilities.size(), 66);
+    QCOMPARE(mappingChangeCapabilities(false).size(), 64);
+    QCOMPARE(capabilities.at(63).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_edit_trigger.preview"));
+    QCOMPARE(capabilities.at(64).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_edit_trigger.apply"));
     QCOMPARE(capabilities.at(61).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_insert_mode.preview"));
     QCOMPARE(capabilities.at(62).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_insert_mode.apply"));
     QCOMPARE(capabilities.at(59).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.import.preview"));

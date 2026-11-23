@@ -157,17 +157,18 @@ async def check_contract(exe):
             validator = Draft202012Validator(previews)
             for request in (upsert, remove, import_request):
                 validator.validate(request)
-            insert_mode = {"action": "general.set_table_insert_mode", "source_tab_ref": tab, "table_insert_mode": 0}
-            for mode_value in (0, 1):
-                args = insert_mode | {"table_insert_mode": mode_value}
-                validator.validate(args)
-                expect_not_connected(await client.call_tool("qkm_preview_changes", args))
-            for fields in ({"table_insert_mode": 2}, {"table_insert_mode": None},
-                           {"table_insert_mode": True}, {"table_insert_mode": -1}, {"mapping_key": "A"}):
-                args = insert_mode | fields
-                assert not validator.is_valid(args)
-                denied = await client.call_tool("qkm_preview_changes", args)
-                assert denied.is_error is True and denied.structured_content is None
+            for field in ("table_insert_mode", "table_edit_trigger"):
+                request = {"action": f"general.set_{field}", "source_tab_ref": tab, field: 0}
+                for mode_value in (0, 1):
+                    args = request | {field: mode_value}
+                    validator.validate(args)
+                    expect_not_connected(await client.call_tool("qkm_preview_changes", args))
+                for fields in ({field: 2}, {field: None}, {field: True}, {field: -1}, {"mapping_key": "A"}):
+                    args = request | fields
+                    assert not validator.is_valid(args)
+                    denied = await client.call_tool("qkm_preview_changes", args)
+                    assert denied.is_error is True and denied.structured_content is None
+                assert not validator.is_valid(move | {field: 1})
             expect_not_connected(await client.call_tool("qkm_preview_changes", upsert))
             assert macro_fields["properties"]["segment_comments"] == {"type": ["array", "null"], "minItems": 1,
                                                                       "items": {"type": "string", "maxLength": 32767}}
@@ -192,8 +193,8 @@ async def check_contract(exe):
                             upsert | {"macro": macro | {"extra": True}}):
                 denied = await client.call_tool("qkm_preview_changes", invalid)
                 assert denied.is_error is True and denied.structured_content is None
-            legacy_preview_fields = set(previews["properties"]) - {"copy_to", "macro", "table_insert_mode"}
-            assert not validator.is_valid(move | {"table_insert_mode": 1})
+            legacy_preview_fields = set(previews["properties"]) - {
+                "copy_to", "macro", "table_insert_mode", "table_edit_trigger"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
             assert move_rule["required"] == ["action"]

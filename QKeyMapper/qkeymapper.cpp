@@ -38055,6 +38055,7 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     result.insert(QStringLiteral("show_disabled_rows"), !m_HideDisabled);
     result.insert(QStringLiteral("mapping_display"), automationMappingDisplay());
     result.insert(QStringLiteral("table_insert_mode"), getTableInsertModeIndex());
+    result.insert(QStringLiteral("table_edit_trigger"), getTableEditModeTriggerIndex());
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
         {QStringLiteral("available"), m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()},
@@ -39121,6 +39122,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool settingDisabledVisibility = updating && update.showDisabledRows.has_value();
         const bool changingMappingDisplay = updating && !update.mappingDisplay.isEmpty();
         const bool changingTableInsertMode = updating && update.tableInsertMode.has_value();
+        const bool changingTableEditTrigger = updating && update.tableEditTrigger.has_value();
+        const bool changingGeneralTablePreference = changingTableInsertMode || changingTableEditTrigger;
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -39135,7 +39138,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
-            || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingTableInsertMode;
+            || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralTablePreference;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
@@ -39149,12 +39152,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const int sourceTab = updating ? update.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt() : s_KeyMappingTabWidgetCurrentIndex;
         const int tab = update.copyTargetTabRef.isEmpty() ? sourceTab : update.copyTargetTabRef.section(QLatin1Char(':'), 2, 2).toInt();
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
-            || m_KeyMappingDataTable->hasActiveEditor() || (changingTableInsertMode && !m_GeneralAdvancedDialog)) {
+            || m_KeyMappingDataTable->hasActiveEditor() || (changingGeneralTablePreference && !m_GeneralAdvancedDialog)) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
-            && !settingDisabledVisibility && !changingMappingDisplay && !changingTableInsertMode && isCommonMappingTabIndex(tab)) {
+            && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralTablePreference && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
@@ -39459,12 +39462,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("local_row_count"), 0},
                     {QStringLiteral("include_common"), MAPPINGTABLE_INCLUDE_COMMON_DEFAULT},
                     {QStringLiteral("activate_new_tab"), true}};
-            } else if (changingTableInsertMode) {
-                const int before = m_GeneralAdvancedDialog->getTableInsertMode();
-                const int after = *update.tableInsertMode;
+            } else if (changingGeneralTablePreference) {
+                const int before = changingTableEditTrigger ? m_GeneralAdvancedDialog->getTableEditModeTrigger()
+                    : m_GeneralAdvancedDialog->getTableInsertMode();
+                const int after = changingTableEditTrigger ? *update.tableEditTrigger : *update.tableInsertMode;
                 modified = before != after;
                 target.insert(QStringLiteral("scope"), QStringLiteral("application_preferences"));
-                change = {{QStringLiteral("kind"), QStringLiteral("set_table_insert_mode")},
+                change = {{QStringLiteral("kind"), changingTableEditTrigger
+                        ? QStringLiteral("set_table_edit_trigger") : QStringLiteral("set_table_insert_mode")},
                     {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
             } else if (changingMappingDisplay) {
                 const auto before = automationMappingDisplay();
@@ -39901,6 +39906,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : deletingTab ? QStringLiteral("tab.delete")
             : copyingTab ? QStringLiteral("tab.copy")
             : addingBlankTab ? QStringLiteral("tab.add_blank")
+            : changingTableEditTrigger ? QStringLiteral("general.set_table_edit_trigger")
             : changingTableInsertMode ? QStringLiteral("general.set_table_insert_mode")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
@@ -39958,6 +39964,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             if (filteringCategories) {
                 m_KeyMappingDataTable->setCategoryFilters(pendingCategoryFilter);
                 updateCategoryFilterHeaderAppearance();
+            } else if (changingTableEditTrigger) {
+                m_GeneralAdvancedDialog->setTableEditModeTrigger(*update.tableEditTrigger);
             } else if (changingTableInsertMode) {
                 m_GeneralAdvancedDialog->setTableInsertMode(*update.tableInsertMode);
             } else if (changingMappingDisplay) {
@@ -40105,7 +40113,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 reject(QStringLiteral("context_busy"), QStringLiteral("The IbInput client no longer admits preference changes.")); return;
             }
             if (modified && !triggerUpdate && !duplicatingRow && !categoryUpdate && !settingDisabledVisibility
-                && !changingMappingDisplay && !changingTableInsertMode) requestSaveSettingDirty();
+                && !changingMappingDisplay && !changingGeneralTablePreference) requestSaveSettingDirty();
             if (preferencesUpdate) refreshIbInputUi();
         }
         QJsonObject result{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
