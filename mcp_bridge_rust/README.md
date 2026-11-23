@@ -190,7 +190,9 @@ Preview `macro.upsert` with a `macro` object containing the latest
 `universal`), `name` and `content`. Optional `category` and `note` preserve
 their values when omitted. Use an empty string to clear either. New macros
 append to the selected list. Supported content uses A–Z or 0–9 keys joined
-by `»`. An existing name in that list keeps its position
+by `»`. For a new macro, optionally pass `insert_at` with `position`
+(`above` or `below`) and an exact `anchor_name` in the selected list. An
+existing name in that list keeps its position
 and requires `confirm_overwrite=true` after review. Replacing the content
 aligns existing segment comments with the new sequence. Save separately.
 

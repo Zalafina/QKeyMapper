@@ -87,6 +87,8 @@ struct MacroChangeArguments {
     std::optional<QString> category;
     std::optional<QString> note;
     QStringList namesToDelete;
+    QString anchorName;
+    bool insertBelow = false;
 };
 
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };

@@ -102,7 +102,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         const auto allowed = macroDelete
             ? QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("names")}
             : QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("name"),
-                QStringLiteral("content"), QStringLiteral("category"), QStringLiteral("note")};
+                QStringLiteral("content"), QStringLiteral("category"), QStringLiteral("note"), QStringLiteral("insert_at")};
         for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
             if (!allowed.contains(it.key())) return fail("Unknown macro argument.");
         }
@@ -141,6 +141,17 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             || macro.content.contains(QChar::Null)
             || !optionalText(QStringLiteral("category"), macro.category) || !optionalText(QStringLiteral("note"), macro.note)) {
             return fail("Provide the macro catalog revision, scope, name and content. Category and note are optional strings.");
+        }
+        const auto placement = fields.value(QStringLiteral("insert_at"));
+        if (!placement.isUndefined() && !placement.isNull()) {
+            const auto object = placement.toObject();
+            const auto position = object.value(QStringLiteral("position")).toString();
+            macro.anchorName = object.value(QStringLiteral("anchor_name")).toString();
+            if (object.size() != 2 || (position != QLatin1String("above") && position != QLatin1String("below"))
+                || macro.anchorName.isEmpty() || macro.anchorName.size() > 32767 || macro.anchorName.contains(QChar::Null)) {
+                return fail("Macro insertion needs above or below and an exact anchor name.");
+            }
+            macro.insertBelow = position == QLatin1String("below");
         }
         result.action = MappingChangeAction::UpsertMacro;
         return result;
@@ -1016,11 +1027,18 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     capabilities.append(duplicateApply);
     const QJsonObject macroText{{QStringLiteral("type"), QJsonArray{QStringLiteral("string"), QStringLiteral("null")}},
         {QStringLiteral("maxLength"), 32767}};
+    const auto macroPlacement = schema({{QStringLiteral("position"), QJsonObject{{QStringLiteral("enum"),
+        QJsonArray{QStringLiteral("above"), QStringLiteral("below")}}}},
+        {QStringLiteral("anchor_name"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+            {QStringLiteral("minLength"), 1}, {QStringLiteral("maxLength"), 32767}}}},
+        {QStringLiteral("position"), QStringLiteral("anchor_name")});
     const auto macroFields = schema({{QStringLiteral("catalog_revision"), revision},
         {QStringLiteral("scope"), QJsonObject{{QStringLiteral("enum"), QJsonArray{QStringLiteral("configuration"), QStringLiteral("universal")}}}},
         {QStringLiteral("name"), string(QStringLiteral("^[\\s\\S]+$"), 32767)},
         {QStringLiteral("content"), string(QStringLiteral("^[\\s\\S]+$"), QKeyMapperConstants::MAPPINGKEY_LINE_EDIT_MAX_LENGTH)},
-        {QStringLiteral("category"), macroText}, {QStringLiteral("note"), macroText}},
+        {QStringLiteral("category"), macroText}, {QStringLiteral("note"), macroText},
+        {QStringLiteral("insert_at"), QJsonObject{{QStringLiteral("anyOf"), QJsonArray{macroPlacement,
+            QJsonObject{{QStringLiteral("type"), QStringLiteral("null")}}}}}}},
         {QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("name"), QStringLiteral("content")});
     auto macroPreview = capability("macro.upsert.preview", "qkm_preview_changes", Read | Configure, true,
         schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("macro.upsert")}}},
@@ -1032,7 +1050,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
     auto macroApply = capability("macro.upsert.apply", "qkm_apply_changes", Read | Configure, false, macroApplySchema);
     for (auto *item : {&macroPreview, &macroApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_macro_catalog"),
-            QStringLiteral("append_or_replace_in_original_order"), QStringLiteral("confirm_overwrite_for_existing_name"),
+            QStringLiteral("insert_at_named_anchor_or_append_replace_in_place"), QStringLiteral("confirm_overwrite_for_existing_name"),
             QStringLiteral("basic_letter_or_digit_sequence_only"),
             QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);

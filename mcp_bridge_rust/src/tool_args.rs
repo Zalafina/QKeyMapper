@@ -192,6 +192,20 @@ enum MacroScope {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(rename_all = "snake_case")]
+enum MacroInsertPosition {
+    Above,
+    Below,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct MacroInsertAt {
+    position: MacroInsertPosition,
+    anchor_name: String,
+}
+
+#[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
 struct MacroUpsert {
     catalog_revision: String,
@@ -202,6 +216,8 @@ struct MacroUpsert {
     category: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     note: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    insert_at: Option<MacroInsertAt>,
 }
 
 #[derive(Deserialize, Serialize)]
@@ -548,6 +564,9 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                 .note
                                 .as_deref()
                                 .is_none_or(|value| macro_text(value, 32767))
+                            && v.data.insert_at.as_ref().is_none_or(|at| {
+                                !at.anchor_name.is_empty() && macro_text(&at.anchor_name, 32767)
+                            })
                     });
                 }
                 Some("macro.delete") => {

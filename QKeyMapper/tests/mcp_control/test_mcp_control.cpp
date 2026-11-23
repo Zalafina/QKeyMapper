@@ -765,6 +765,17 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(macroRequest.ok() && macroRequest.action == MappingChangeAction::UpsertMacro);
     QCOMPARE(macroRequest.macro.scope, QStringLiteral("universal"));
     QVERIFY(!macroRequest.macro.category && macroRequest.macro.note && macroRequest.macro.note->isEmpty());
+    auto relativeMacro = macroFields;
+    relativeMacro.insert(QStringLiteral("insert_at"), QJsonObject{{QStringLiteral("position"), QStringLiteral("below")},
+        {QStringLiteral("anchor_name"), QStringLiteral("Existing macro")}});
+    changed = macroUpsert;
+    changed.insert(QStringLiteral("macro"), relativeMacro);
+    const auto insertion = validateMappingChangeRequest(previewMethod, changed);
+    QVERIFY(insertion.ok() && insertion.macro.insertBelow);
+    QCOMPARE(insertion.macro.anchorName, QStringLiteral("Existing macro"));
+    relativeMacro.insert(QStringLiteral("insert_at"), QJsonObject{{QStringLiteral("position"), QStringLiteral("append")}});
+    changed.insert(QStringLiteral("macro"), relativeMacro);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     changed = macroUpsert;
     changed.insert(QStringLiteral("source_ref"), sourceRef);
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());

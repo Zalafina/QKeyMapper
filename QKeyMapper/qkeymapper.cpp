@@ -38830,6 +38830,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonArray changes;
         QString name;
         MappingMacroData after;
+        int insertionIndex = -1;
         bool replacing = false;
         bool modified = true;
         if (deleting) {
@@ -38869,14 +38870,30 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 return;
             }
             replacing = list.contains(name);
+            if (!macro.anchorName.isEmpty()) {
+                if (replacing) {
+                    reject(QStringLiteral("invalid_arguments"), QStringLiteral("A replacement keeps its existing macro position."));
+                    return;
+                }
+                const int anchor = int(list.keys().indexOf(macro.anchorName));
+                if (anchor < 0) {
+                    reject(QStringLiteral("invalid_target"), QStringLiteral("The anchor must exist in the selected macro scope."));
+                    return;
+                }
+                insertionIndex = anchor + (macro.insertBelow ? 1 : 0);
+                target.insert(QStringLiteral("insert_at"), QJsonObject{{QStringLiteral("anchor_name"), macro.anchorName},
+                    {QStringLiteral("position"), macro.insertBelow ? QStringLiteral("below") : QStringLiteral("above")}});
+            }
             const auto before = list.value(name);
             after = {content, macro.category ? QMacroListDialog::normalizedMacroText(*macro.category) : before.Category,
                 macro.note ? QMacroListDialog::normalizedMacroText(*macro.note) : before.Note, {}};
             if (replacing) after.MacroComments = QMacroListDialog::reconcileMacroComments(before, content);
             const auto beforeRow = replacing ? QJsonValue(automationMacroRow(macro.scope, name, before)) : QJsonValue(QJsonValue::Null);
             const auto afterRow = automationMacroRow(macro.scope, name, after);
+            int index = insertionIndex >= 0 ? insertionIndex : list.size();
+            if (replacing) index = int(list.keys().indexOf(name));
             changes.append(QJsonObject{{QStringLiteral("kind"), replacing ? QStringLiteral("replace_macro") : QStringLiteral("add_macro")},
-                {QStringLiteral("index"), replacing ? int(list.keys().indexOf(name)) : list.size()},
+                {QStringLiteral("index"), index},
                 {QStringLiteral("before"), beforeRow}, {QStringLiteral("after"), afterRow}});
             target.insert(QStringLiteral("name"), name);
             modified = beforeRow != QJsonValue(afterRow);
@@ -38924,6 +38941,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         if (modified) {
             if (deleting) QMacroListDialog::removeMacros(list, macro.namesToDelete);
+            else if (insertionIndex >= 0) list.insertAt(insertionIndex, name, after);
             else list[name] = after;
             requestSaveSettingDirty();
         }
