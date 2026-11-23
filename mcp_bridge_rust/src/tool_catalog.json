@@ -44,6 +44,10 @@
       "映射表备份未通过来源、大小或格式校验。",
       "核对当前源表与备份内容，必要时从 QKeyMapper 重新导出。"
     ],
+    "invalid_configuration_backup": [
+      "配置组备份未通过来源、大小或格式校验。",
+      "查询已连接产品的配置目录，重新核对需要导出的已保存组。"
+    ],
     "no_valid_mapping_rows": [
       "备份中没有可导入的映射行。",
       "检查备份内的原始键和主映射键。"
@@ -346,6 +350,55 @@
         }
       },
       "name": "qkm_export_mapping_table",
+      "outputSchema": {
+        "additionalProperties": true,
+        "type": "object"
+      }
+    },
+    {
+      "annotations": {
+        "destructiveHint": true,
+        "idempotentHint": false,
+        "openWorldHint": false,
+        "readOnlyHint": false
+      },
+      "description": "从 qkm_query configurations 取得当前 catalog_revision 与精确组名，导出指定顺序的已保存普通配置。需要产品 Read 和完成清理的空闲状态。最多 100 组及 128 KiB。内容取自配置 INI 的已保存组，排除内存草稿、General 和全局配置。Rust 在启动时配置的 --macro-backup-directory 中发布一个 .ini，覆盖整份目标文件须 overwrite=true。",
+      "inputSchema": {
+        "additionalProperties": false,
+        "type": "object",
+        "required": ["catalog_revision", "groups", "file_name"],
+        "properties": {
+          "catalog_revision": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "groups": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 100,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32767,
+              "not": {
+                "pattern": "[\\u0000\\r\\n]"
+              }
+            }
+          },
+          "file_name": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 255,
+            "pattern": "^[^<>:\"/\\\\|?*\\u0000-\\u001F]+\\.[iI][nN][iI]$"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "default": false
+          }
+        }
+      },
+      "name": "qkm_export_configurations",
       "outputSchema": {
         "additionalProperties": true,
         "type": "object"

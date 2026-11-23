@@ -206,6 +206,7 @@ private slots:
     void macroBackupChecksLimitsAndFormat();
     void mappingTableBackupDecodesQtExports();
     void mappingTableBackupChecksLimitsAndShape();
+    void configurationBackupEscapesIniIdentifiers();
     void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
@@ -487,6 +488,26 @@ void McpControlTest::mappingTableBackupChecksLimitsAndShape()
     QVERIFY(appendBackupIniValue(wrongType, KEYMAPDATA_ORIGINALKEYS, 42, MaxTableBackupBytes));
     wrongType.append("KeyMapData_MappingKeys=B\n");
     QCOMPARE(read(wrongType), BackupDecodeStatus::InvalidFormat);
+}
+
+void McpControlTest::configurationBackupEscapesIniIdentifiers()
+{
+    const auto group = QStringLiteral("配置甲[01]%");
+    const auto key = QStringLiteral("附注.é %");
+    const auto text = QStringLiteral("已保存的内容");
+    QByteArray document = '[' + encodeBackupIniIdentifier(group) + "]\n";
+    QVERIFY(appendBackupIniValue(document, encodeBackupIniIdentifier(key), text, 128 * 1024));
+    QTemporaryDir files;
+    QVERIFY(files.isValid());
+    QFile file(files.filePath(QStringLiteral("configuration-backup.ini")));
+    QVERIFY(file.open(QIODevice::WriteOnly));
+    QCOMPARE(file.write(document), qint64(document.size()));
+    file.close();
+    QSettings readback(file.fileName(), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(readback);
+    QCOMPARE(readback.childGroups(), QStringList{group});
+    QCOMPARE(readback.value(group + QLatin1Char('/') + key).toString(), text);
+    QCOMPARE(readback.status(), QSettings::NoError);
 }
 
 void McpControlTest::mappingChangeArguments()

@@ -25,6 +25,7 @@ struct MappingTableBackupDocument {
 
 QByteArray encodeMacroBackup(const QVariantList &macros);
 bool appendBackupIniValue(QByteArray &document, const QByteArray &key, const QVariant &value, int maxBytes);
+QByteArray encodeBackupIniIdentifier(const QString &identifier);
 MacroBackupDocument decodeMacroBackup(const QByteArray &document);
 MappingTableBackupDocument decodeMappingTableBackup(const QByteArray &document, const QStringList &fieldNames);
 

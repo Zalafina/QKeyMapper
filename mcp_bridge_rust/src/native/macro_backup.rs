@@ -263,6 +263,30 @@ pub(crate) fn table_backup_bytes(
     Ok(bytes)
 }
 
+pub(crate) fn configuration_backup_bytes(
+    result: &Value,
+    instance: &str,
+    revision: &Value,
+    groups: &Value,
+) -> Result<Vec<u8>> {
+    let invalid = || NativeError::new("invalid_configuration_backup");
+    if result["instance"] != instance
+        || result["format"] != "qkeymapper_configuration_ini_v1"
+        || &result["catalog_revision"] != revision
+        || &result["groups"] != groups
+        || !result["groups"]
+            .as_array()
+            .is_some_and(|names| (1..=100).contains(&names.len()))
+    {
+        return Err(invalid());
+    }
+    let bytes = bounded_document(result, "invalid_configuration_backup")?;
+    if !bytes.starts_with(b"[") || !bytes.ends_with(b"\n") {
+        return Err(invalid());
+    }
+    Ok(bytes)
+}
+
 fn bounded_document(result: &Value, code: &'static str) -> Result<Vec<u8>> {
     let invalid = || NativeError::new(code);
     let text = result["document_base64"].as_str().ok_or_else(invalid)?;
@@ -344,6 +368,33 @@ mod tests {
             let mut bad = result.clone();
             bad[key] = value;
             assert!(table_backup_bytes(&bad, "owned", &source).is_err());
+        }
+    }
+
+    #[test]
+    fn configuration_export_requires_the_bound_catalog_and_group_order() {
+        let document = b"[Second]\nKey=Saved\n[First]\nKey=Saved\n";
+        let revision = json!("current-catalog");
+        let groups = json!(["Second", "First"]);
+        let result = json!({
+            "instance": "owned", "format": "qkeymapper_configuration_ini_v1",
+            "catalog_revision": revision, "groups": groups,
+            "bytes": document.len(), "document_base64": STANDARD.encode(document)
+        });
+        assert_eq!(
+            configuration_backup_bytes(&result, "owned", &revision, &groups).unwrap(),
+            document
+        );
+        for (key, value) in [
+            ("instance", json!("other")),
+            ("catalog_revision", json!("old")),
+            ("groups", json!(["First", "Second"])),
+            ("bytes", json!(1)),
+            ("document_base64", json!("%")),
+        ] {
+            let mut bad = result.clone();
+            bad[key] = value;
+            assert!(configuration_backup_bytes(&bad, "owned", &revision, &groups).is_err());
         }
     }
 

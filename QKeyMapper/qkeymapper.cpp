@@ -38607,6 +38607,103 @@ void QKeyMapper::handleAutomationMappingTableExport(const QkmAutomation::Automat
         {QStringLiteral("document_base64"), QString::fromLatin1(document.toBase64())}});
 }
 
+static constexpr int MaxConfigurationBackupGroups = 100;
+static constexpr int MaxConfigurationBackupBytes = 128 * 1024;
+
+void QKeyMapper::handleAutomationConfigurationExport(const QkmAutomation::AutomationRequest &request)
+{
+    using namespace QkmAutomation;
+    auto &server = m_McpControlDialog->server();
+    const auto fail = [&](const QString &code, const QString &message) {
+        server.replyError(request.connectionId, request.requestId, code, message);
+    };
+    const auto revision = request.arguments.value(QStringLiteral("catalog_revision")).toString();
+    const auto requested = request.arguments.value(QStringLiteral("groups")).toArray();
+    if (request.arguments.size() != 2 || !isLowerHex(revision, 64) || requested.isEmpty()
+        || requested.size() > MaxConfigurationBackupGroups) {
+        fail(QStringLiteral("invalid_arguments"), QStringLiteral("Provide a current catalog revision and one to 100 saved group names."));
+        return;
+    }
+    QStringList groups;
+    QSet<QString> distinct;
+    for (const auto &entry : requested) {
+        const auto group = entry.toString();
+        if (group.isEmpty() || group.size() > 32767 || distinct.contains(group) || group.contains(QLatin1Char('\0'))
+            || group.contains(QLatin1Char('\r')) || group.contains(QLatin1Char('\n'))) {
+            fail(QStringLiteral("invalid_arguments"), QStringLiteral("Provide distinct, nonempty single-line group names."));
+            return;
+        }
+        groups.append(group);
+        distinct.insert(group);
+    }
+    const auto ready = [&] {
+        return mappingAdditionAllowed(s_KeyMappingTabWidgetCurrentIndex) && ui->backupSettingButton->isEnabled()
+            && !hasOpenMappingEditor() && !QApplication::activePopupWidget() && !m_KeyMappingDataTable->hasActiveEditor();
+    };
+    if (!ready()) {
+        fail(QStringLiteral("context_busy"), QStringLiteral("Configuration exports require an idle source and completed cleanup."));
+        return;
+    }
+    const auto catalog = collectAutomationCatalog();
+    if (catalog.isEmpty()) {
+        fail(QStringLiteral("context_busy"), QStringLiteral("The saved configuration catalog is unavailable."));
+        return;
+    }
+    if (automationCatalogRevision(catalog, {server.instanceId(), request.pairId, request.permissionEpoch}) != revision) {
+        fail(QStringLiteral("stale_catalog"), QStringLiteral("Query the current configuration catalog before exporting."));
+        return;
+    }
+    QSet<QString> savedProfiles;
+    const auto configurations = catalog.value(QStringLiteral("configurations")).toArray();
+    for (const auto &entry : configurations) {
+        const auto config = entry.toObject();
+        if (config.value(QStringLiteral("kind")) == QLatin1String("saved_profile"))
+            savedProfiles.insert(config.value(QStringLiteral("group")).toString());
+    }
+    for (const auto &group : std::as_const(groups)) {
+        if (!savedProfiles.contains(group) || group.compare(QLatin1String(CONFIG_FILE_TOPLEVEL_GROUPNAME), Qt::CaseInsensitive) == 0) {
+            fail(QStringLiteral("invalid_target"), QStringLiteral("Select ordinary saved groups from the current configuration catalog."));
+            return;
+        }
+    }
+
+    QSettings source(CONFIG_FILENAME, QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(source);
+    const auto values = collectConfigurationBackupValues(source, groups);
+    if (source.status() != QSettings::NoError) {
+        fail(QStringLiteral("invalid_source_data"), QStringLiteral("The saved configuration could not be read."));
+        return;
+    }
+    QByteArray document;
+    QStringList exported;
+    for (auto it = values.begin(); it != values.end(); ++it) {
+        const auto slash = it.key().indexOf(QLatin1Char('/'));
+        const auto group = it.key().left(slash);
+        if (exported.isEmpty() || exported.last() != group) {
+            const auto section = '[' + encodeBackupIniIdentifier(group) + "]\n";
+            if (document.size() + section.size() > MaxConfigurationBackupBytes) {
+                fail(QStringLiteral("result_too_large"), QStringLiteral("The configuration backup exceeds 128 KiB."));
+                return;
+            }
+            document.append(section);
+            exported.append(group);
+        }
+        if (!appendBackupIniValue(document, encodeBackupIniIdentifier(it.key().mid(slash + 1)), it.value(), MaxConfigurationBackupBytes)) {
+            fail(QStringLiteral("result_too_large"), QStringLiteral("The configuration backup exceeds 128 KiB."));
+            return;
+        }
+    }
+    if (exported != groups) {
+        fail(QStringLiteral("invalid_target"), QStringLiteral("Each requested group must have saved configuration fields."));
+        return;
+    }
+    if (!server.isRequestCurrent(request)) return;
+    server.reply(request.connectionId, request.requestId, {{QStringLiteral("instance"), server.instanceId()},
+        {QStringLiteral("catalog_revision"), revision}, {QStringLiteral("groups"), QJsonArray::fromStringList(exported)},
+        {QStringLiteral("format"), QStringLiteral("qkeymapper_configuration_ini_v1")},
+        {QStringLiteral("bytes"), int(document.size())}, {QStringLiteral("document_base64"), QString::fromLatin1(document.toBase64())}});
+}
+
 void QKeyMapper::handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request)
 {
     Q_ASSERT(QThread::currentThread() == thread());
@@ -41194,6 +41291,10 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
         handleAutomationMappingTableExport(request);
         return;
     }
+    if (request.method == QStringLiteral("qkm_export_configurations")) {
+        handleAutomationConfigurationExport(request);
+        return;
+    }
     if (request.method == QStringLiteral("qkm_query")) {
         const QString entity = request.arguments.value(QStringLiteral("entity")).toString();
         if (entity == QStringLiteral("windows")) {
@@ -41270,6 +41371,13 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
                 {QStringLiteral("max_document_bytes"), QkmAutomation::MaxTableBackupBytes},
                 {QStringLiteral("limitations"), QJsonArray{QStringLiteral("attached_idle_source"),
                     QStringLiteral("document_only"), QStringLiteral("macro_references_preserved_definitions_excluded")}}},
+            QJsonObject{{QStringLiteral("id"), QStringLiteral("configuration.backup.read")},
+                {QStringLiteral("method"), QStringLiteral("qkm_export_configurations")},
+                {QStringLiteral("required_scopes"), int(QkmAutomation::Read)}, {QStringLiteral("read_only"), true},
+                {QStringLiteral("max_groups"), MaxConfigurationBackupGroups},
+                {QStringLiteral("max_document_bytes"), MaxConfigurationBackupBytes},
+                {QStringLiteral("limitations"), QJsonArray{QStringLiteral("saved_profiles_only"),
+                    QStringLiteral("current_idle_configuration_catalog"), QStringLiteral("document_only")}}},
             QJsonObject{{QStringLiteral("id"), QStringLiteral("source.read")},
                 {QStringLiteral("method"), QStringLiteral("qkm_query")},
                 {QStringLiteral("required_scopes"), int(QkmAutomation::Read)}, {QStringLiteral("read_only"), true},

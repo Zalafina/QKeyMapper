@@ -18,6 +18,7 @@ DEMO_STATE = "qkm_get_demo_state"
 DEMO_MAPPING = "qkm_demo_mapping"
 EXPORT = "qkm_export_macros"
 EXPORT_TABLE = "qkm_export_mapping_table"
+EXPORT_CONFIGURATIONS = "qkm_export_configurations"
 RECORD = ROOT / "out/rust_sidecar/catalog-only/creation.json"
 TOOLS = {
     "qkm_get_connection_state", "qkm_connect", "qkm_request_pairing", "qkm_disconnect",
@@ -54,7 +55,8 @@ def expect_not_connected(result):
 
 async def check_contract(exe):
     catalog = json.loads(CATALOG.read_text(encoding="utf-8"))
-    assert {tool["name"] for tool in catalog["tools"]} == TOOLS | {DEMO_STATE, DEMO_MAPPING, EXPORT, EXPORT_TABLE}
+    assert {tool["name"] for tool in catalog["tools"]} == TOOLS | {
+        DEMO_STATE, DEMO_MAPPING, EXPORT, EXPORT_TABLE, EXPORT_CONFIGURATIONS}
     revision = "a" * 64
     tab = revision + ":source:0"
     row = revision + ":row:0:0"
@@ -619,7 +621,7 @@ async def check_contract(exe):
             async with Client(config(exe, *flags), mode=mode, cache=None) as client:
                 enabled = "--enable-demo-mapping" in flags
                 assert metadata((await client.list_tools()).tools) == [
-                    tool for tool in catalog["tools"] if tool["name"] not in {EXPORT, EXPORT_TABLE}
+                    tool for tool in catalog["tools"] if tool["name"] not in {EXPORT, EXPORT_TABLE, EXPORT_CONFIGURATIONS}
                     and (tool["name"] != DEMO_MAPPING or enabled)]
                 expect_not_connected(await client.call_tool(DEMO_STATE))
                 if enabled:
@@ -633,7 +635,7 @@ async def check_contract(exe):
         with tempfile.TemporaryDirectory(prefix="qkm-backup-contract-", dir=ROOT / "out") as directory:
             async with Client(config(exe, "--macro-backup-directory", directory), mode=mode, cache=None) as client:
                 tools = (await client.list_tools()).tools
-                assert {tool.name for tool in tools} == TOOLS | {EXPORT, EXPORT_TABLE}
+                assert {tool.name for tool in tools} == TOOLS | {EXPORT, EXPORT_TABLE, EXPORT_CONFIGURATIONS}
                 transfer, = (tool for tool in tools if tool.name == EXPORT)
                 assert transfer.annotations.read_only_hint is False and transfer.annotations.destructive_hint is True
                 schema = transfer.input_schema
@@ -657,6 +659,19 @@ async def check_contract(exe):
                               {"overwrite": 1}, {"catalog_revision": revision}):
                     denied = await client.call_tool(EXPORT_TABLE, table_request | extra)
                     assert denied.is_error is True and denied.structured_content is None, extra
+                configuration, = (tool for tool in tools if tool.name == EXPORT_CONFIGURATIONS)
+                configuration_request = {"catalog_revision": revision, "groups": ["已保存", "Other"],
+                    "file_name": "配置 备份.ini"}
+                assert configuration.annotations.read_only_hint is False and configuration.annotations.destructive_hint is True
+                assert set(configuration.input_schema["required"]) == set(configuration_request)
+                Draft202012Validator(configuration.input_schema).validate(configuration_request)
+                expect_not_connected(await client.call_tool(EXPORT_CONFIGURATIONS, configuration_request))
+                expect_not_connected(await client.call_tool(EXPORT_CONFIGURATIONS, configuration_request | {"overwrite": True}))
+                for extra in ({"groups": []}, {"groups": ["A", "A"]}, {"groups": [""]}, {"groups": ["A\n"]},
+                              {"groups": list(map(str, range(101)))}, {"file_name": "../other.ini"},
+                              {"file_name": "NUL.ini"}, {"overwrite": 1}, {"source_tab_ref": tab}):
+                    denied = await client.call_tool(EXPORT_CONFIGURATIONS, configuration_request | extra)
+                    assert denied.is_error is True and denied.structured_content is None, extra
                 expect_not_connected(await client.call_tool("qkm_preview_changes", import_request))
                 expect_not_connected(await client.call_tool("qkm_preview_changes",
                                       import_request | {"macro": import_args | {"on_conflict": "overwrite"}}))
@@ -678,7 +693,7 @@ async def check_contract(exe):
                     denied = await client.call_tool(EXPORT, request | extra)
                     assert denied.is_error is True and denied.structured_content is None, extra
             assert not list(Path(directory).iterdir())
-        print("PASS", mode, "opt-in macro and mapping table transfers")
+        print("PASS", mode, "opt-in backup contracts")
 
     parameters = config(exe, "--enable-demo-mapping")
     rejected = subprocess.run([parameters.command, *parameters.args], capture_output=True, timeout=5)

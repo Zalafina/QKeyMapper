@@ -215,6 +215,16 @@ struct TableExport {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct ConfigurationExport {
+    catalog_revision: String,
+    groups: Vec<String>,
+    file_name: String,
+    #[serde(default)]
+    overwrite: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct TableImport {
     action: String,
     source_tab_ref: String,
@@ -634,6 +644,15 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
         }
         "qkm_export_mapping_table" => typed(arguments, |v: &TableExport| {
             tab_ref(&v.source_tab_ref) && valid_macro_backup_name(&v.file_name)
+        }),
+        "qkm_export_configurations" => typed(arguments, |v: &ConfigurationExport| {
+            let mut seen = std::collections::HashSet::new();
+            revision(&v.catalog_revision)
+                && (1..=100).contains(&v.groups.len())
+                && v.groups
+                    .iter()
+                    .all(|name| !name.is_empty() && single_line(name) && seen.insert(name))
+                && valid_macro_backup_name(&v.file_name)
         }),
         "qkm_get_operation" => typed(arguments, |v: &Operation| id(&v.operation_id)),
         "qkm_stop_mapping" => typed(arguments, |v: &Stop| id(&v.instance) && id(&v.request_id)),

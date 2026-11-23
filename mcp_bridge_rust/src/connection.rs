@@ -140,6 +140,10 @@ impl ServerHandler for Handler {
                 self.request("qkm_export_mapping_table", arguments, context)
                     .await
             }
+            "qkm_export_configurations" if self.macro_backup.is_some() => {
+                self.request("qkm_export_configurations", arguments, context)
+                    .await
+            }
             "qkm_get_operation" => self.request("qkm_get_operation", arguments, context).await,
             "qkm_stop_mapping" => self.request("qkm_stop_mapping", arguments, context).await,
             "qkm_start_mapping" => self.request("qkm_start_mapping", arguments, context).await,
@@ -201,7 +205,10 @@ impl Handler {
             ("qkm_preview_changes", Some("table.import")) => Some(BackupImportKind::MappingTable),
             _ => None,
         };
-        let admitted = if matches!(method, "qkm_export_macros" | "qkm_export_mapping_table") {
+        let admitted = if matches!(
+            method,
+            "qkm_export_macros" | "qkm_export_mapping_table" | "qkm_export_configurations"
+        ) {
             let directory = self
                 .macro_backup
                 .as_ref()
@@ -259,6 +266,7 @@ impl Handler {
                         "macro.import.preview"
                             | "macro.import.apply"
                             | "mapping.table.backup.read"
+                            | "configuration.backup.read"
                             | "table.import.preview"
                             | "table.import.apply"
                     )
@@ -337,7 +345,9 @@ pub fn run(
     contracts.tools.retain(|tool| match tool.name.as_ref() {
         "qkm_get_demo_state" => demo_configured,
         "qkm_demo_mapping" => demo_mapping,
-        "qkm_export_macros" | "qkm_export_mapping_table" => macro_backup.is_some(),
+        "qkm_export_macros" | "qkm_export_mapping_table" | "qkm_export_configurations" => {
+            macro_backup.is_some()
+        }
         _ => true,
     });
     let worker = Worker::start(target, demo).map_err(|_| "Could not start the IPC worker")?;

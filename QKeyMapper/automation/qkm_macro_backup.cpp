@@ -244,6 +244,22 @@ Status decodeTableComments(const QStringList &tokens, QVariant &value)
 
 } // namespace
 
+QByteArray encodeBackupIniIdentifier(const QString &identifier)
+{
+    QByteArray encoded;
+    for (const auto character : identifier) {
+        const auto code = character.unicode();
+        if ((code >= 'A' && code <= 'Z') || (code >= 'a' && code <= 'z') || (code >= '0' && code <= '9')
+            || code == '_' || code == '-' || code == '.') {
+            encoded.append(char(code));
+        } else {
+            encoded.append(code > 0xff ? "%U" : "%");
+            encoded.append(QByteArray::number(uint(code), 16).toUpper().rightJustified(code > 0xff ? 4 : 2, '0'));
+        }
+    }
+    return encoded;
+}
+
 bool appendBackupIniValue(QByteArray &document, const QByteArray &key, const QVariant &value, int maxBytes)
 {
     const QByteArray prefix("=\"@Variant(");

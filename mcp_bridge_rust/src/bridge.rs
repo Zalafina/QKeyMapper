@@ -11,7 +11,7 @@ use tokio::sync::oneshot;
 use crate::demo_scene::DemoSession;
 use crate::native::{
     Cancel, Connection, DemoOptions, MacroBackupDirectory, NativeError, Result, Target,
-    backup_bytes, require_pristine_thread, table_backup_bytes,
+    backup_bytes, configuration_backup_bytes, require_pristine_thread, table_backup_bytes,
 };
 use crate::state_wait::StateWait;
 use crate::wire::Object;
@@ -192,7 +192,10 @@ impl Bridge {
         name: String,
         overwrite: bool,
     ) -> Result<Pending> {
-        if !matches!(method, "qkm_export_macros" | "qkm_export_mapping_table") {
+        if !matches!(
+            method,
+            "qkm_export_macros" | "qkm_export_mapping_table" | "qkm_export_configurations"
+        ) {
             return Err(NativeError::new("unsupported_method"));
         }
         self.submit(Operation::ExportBackup {
@@ -341,15 +344,23 @@ fn perform(
             }
             let result = &mut response["result"];
             let instance = session.instance();
-            let bytes = if method == "qkm_export_macros" {
-                backup_bytes(
+            let bytes = match method {
+                "qkm_export_macros" => backup_bytes(
                     result,
                     &instance,
                     &expected["catalog_revision"],
                     &expected["scope"],
-                )?
-            } else {
-                table_backup_bytes(result, &instance, &expected["source_tab_ref"])?
+                )?,
+                "qkm_export_mapping_table" => {
+                    table_backup_bytes(result, &instance, &expected["source_tab_ref"])?
+                }
+                "qkm_export_configurations" => configuration_backup_bytes(
+                    result,
+                    &instance,
+                    &expected["catalog_revision"],
+                    &expected["groups"],
+                )?,
+                _ => return Err(NativeError::new("unsupported_method")),
             };
             match directory.write(&name, overwrite, &bytes, cancel) {
                 Ok(path) => {
