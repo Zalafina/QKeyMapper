@@ -1,9 +1,14 @@
 #include "qkm_macro_backup.h"
 #include "../qkeymapper_constants.h"
 
+#include <QColor>
 #include <QDataStream>
 #include <QHash>
 #include <QIODevice>
+#include <QPoint>
+#include <QSet>
+#include <QSize>
+#include <algorithm>
 #include <utility>
 
 namespace QkmAutomation {
@@ -13,6 +18,7 @@ using Status = BackupDecodeStatus;
 constexpr char VariantPrefix[] = "@Variant(";
 constexpr int VariantPrefixLength = sizeof(VariantPrefix) - 1;
 constexpr quint32 NullDataLength = 0xffffffffU;
+constexpr quint32 Qt4VariantColorType = 67;
 
 int hexDigit(ushort ch)
 {
@@ -94,23 +100,35 @@ Status splitIniValue(const QByteArray &bytes, QStringList &tokens, int maxEntrie
 }
 
 template<typename FieldReader>
-Status readRootIniFields(const QByteArray &document, FieldReader &&readField)
+Status readBackupIniFields(const QByteArray &document, FieldReader &&readField, bool strict = false)
 {
-    bool general = true;
+    QByteArray section("General");
     for (auto line : document.split('\n')) {
         if (line.startsWith("\xef\xbb\xbf")) line.remove(0, 3);
         line = line.trimmed();
         if (line.startsWith('[')) {
             const auto end = line.indexOf(']');
-            general = end >= 0 && line.mid(1, end - 1).trimmed().compare("General", Qt::CaseInsensitive) == 0;
-        } else if (general && !line.startsWith(';') && !line.startsWith('#')) {
+            section = end >= 0 ? line.mid(1, end - 1).trimmed() : QByteArray();
+            if (strict && section.isEmpty()) return Status::InvalidFormat;
+        } else if (!section.isEmpty() && !line.startsWith(';') && !line.startsWith('#')) {
             const auto equals = line.indexOf('=');
-            if (equals < 0) continue;
-            if (const auto status = readField(line.left(equals).trimmed(), line.mid(equals + 1)); status != Status::Ok)
+            if (equals < 0) {
+                if (strict && !line.isEmpty()) return Status::InvalidFormat;
+                continue;
+            }
+            if (const auto status = readField(section, line.left(equals).trimmed(), line.mid(equals + 1)); status != Status::Ok)
                 return status;
         }
     }
     return Status::Ok;
+}
+
+template<typename FieldReader>
+Status readRootIniFields(const QByteArray &document, FieldReader &&readField)
+{
+    return readBackupIniFields(document, [&](const QByteArray &section, const QByteArray &key, const QByteArray &value) {
+        return section.compare("General", Qt::CaseInsensitive) == 0 ? readField(key, value) : Status::Ok;
+    });
 }
 
 bool skipBytes(QDataStream &stream, quint32 size)
@@ -127,7 +145,7 @@ bool skipSizedValue(QDataStream &stream, bool utf16)
 }
 
 // Check Qt 4.0 types and lengths before QVariant is allowed to construct them.
-Status checkVariant(QDataStream &stream, int depth, bool listDocument, int maxRootEntries)
+Status checkVariant(QDataStream &stream, int depth, bool listDocument, int maxRootEntries, bool profileValues)
 {
     if (depth > 3) return Status::InvalidFormat;
     quint32 type = 0;
@@ -147,6 +165,16 @@ Status checkVariant(QDataStream &stream, int depth, bool listDocument, int maxRo
         return skipBytes(stream, 4) ? Status::Ok : Status::InvalidFormat;
     case QMetaType::LongLong: case QMetaType::ULongLong: case QMetaType::Double:
         return skipBytes(stream, 8) ? Status::Ok : Status::InvalidFormat;
+    case QMetaType::QPoint: case QMetaType::QSize:
+        return profileValues && skipBytes(stream, 8) ? Status::Ok : Status::InvalidFormat;
+    case Qt4VariantColorType: {
+        if (!profileValues) return Status::InvalidFormat;
+        qint8 spec = 0;
+        stream >> spec;
+        // Common rows store the RGB colors from the pickers or an invalid color.
+        return stream.status() == QDataStream::Ok && (spec == QColor::Invalid || spec == QColor::Rgb)
+            && skipBytes(stream, 5 * sizeof(quint16)) ? Status::Ok : Status::InvalidFormat;
+    }
     case QMetaType::QVariantMap: case QMetaType::QVariantList: case QMetaType::QStringList:
         break;
     default:
@@ -161,13 +189,13 @@ Status checkVariant(QDataStream &stream, int depth, bool listDocument, int maxRo
     if (count > quint64(stream.device()->bytesAvailable()) / (map ? 8 : 4)) return Status::InvalidFormat;
     for (quint32 i = 0; i < count; ++i) {
         if ((map || type == QMetaType::QStringList) && !skipSizedValue(stream, true)) return Status::InvalidFormat;
-        if (type != QMetaType::QStringList && checkVariant(stream, depth + 1, false, 0) != Status::Ok)
+        if (type != QMetaType::QStringList && checkVariant(stream, depth + 1, false, 0, profileValues) != Status::Ok)
             return Status::InvalidFormat;
     }
     return Status::Ok;
 }
 
-Status decodeVariant(const QString &token, bool listDocument, int maxRootEntries, QVariant &value)
+Status decodeVariant(const QString &token, bool listDocument, int maxRootEntries, QVariant &value, bool profileValues = false)
 {
     if (!token.startsWith(QLatin1String(VariantPrefix))) return listDocument ? Status::InvalidFormat : Status::Ok;
     if (!token.endsWith(QLatin1Char(')'))) return Status::InvalidFormat;
@@ -178,7 +206,7 @@ Status decodeVariant(const QString &token, bool listDocument, int maxRootEntries
     const auto payload = text.toLatin1();
     QDataStream checked(payload);
     checked.setVersion(QDataStream::Qt_4_0);
-    const auto status = checkVariant(checked, 0, listDocument, maxRootEntries);
+    const auto status = checkVariant(checked, 0, listDocument, maxRootEntries, profileValues);
     if (status != Status::Ok) return status;
     if (!checked.atEnd()) return Status::InvalidFormat;
 
@@ -239,6 +267,97 @@ Status decodeTableComments(const QStringList &tokens, QVariant &value)
         }
     }
     value = rows;
+    return Status::Ok;
+}
+
+QString decodeIniIdentifier(const QByteArray &bytes)
+{
+    const auto token = QString::fromUtf8(bytes.constData(), bytes.size());
+    if (token.toUtf8() != bytes) return {};
+    QString name;
+    for (qsizetype i = 0; i < token.size(); ++i) {
+        if (token.at(i) != QLatin1Char('%')) {
+            name.append(token.at(i));
+            continue;
+        }
+        const bool wide = i + 1 < token.size() && token.at(i + 1) == QLatin1Char('U');
+        const qsizetype start = i + (wide ? 2 : 1);
+        const int digits = wide ? 4 : 2;
+        if (start + digits > token.size()) return {};
+        int code = 0;
+        for (int j = 0; j < digits; ++j) {
+            const int digit = hexDigit(token.at(start + j).unicode());
+            if (digit < 0) return {};
+            code = code * 16 + digit;
+        }
+        name.append(QChar(ushort(code)));
+        i = start + digits - 1;
+    }
+    if (name.contains(QLatin1Char('/')) || name.contains(QLatin1Char('\\')) || name.contains(QLatin1Char('\0'))
+        || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n'))) return {};
+    return name;
+}
+
+Status decodeIniGeometry(const QString &token, QVariant &value)
+{
+    if (!token.endsWith(QLatin1Char(')'))) return Status::InvalidFormat;
+    const auto start = token.indexOf(QLatin1Char('(')) + 1;
+    const auto parts = token.mid(start, token.size() - start - 1).split(QLatin1Char(' '));
+    if (parts.size() != 2) return Status::InvalidFormat;
+    bool firstOk = false, secondOk = false;
+    const int first = parts.at(0).toInt(&firstOk), second = parts.at(1).toInt(&secondOk);
+    if (!firstOk || !secondOk) return Status::InvalidFormat;
+    if (token.startsWith(QLatin1String("@Point("))) value = QPoint(first, second);
+    else value = QSize(first, second);
+    return Status::Ok;
+}
+
+Status decodeConfigurationToken(const QString &token, QVariant &value)
+{
+    if (token.startsWith(QLatin1String(VariantPrefix))) return decodeVariant(token, false, 0, value, true);
+    if (token == QLatin1String("@Invalid()")) return Status::Ok;
+    if (token.startsWith(QLatin1String("@DateTime(")) || token.startsWith(QLatin1String("@Rect("))) return Status::InvalidFormat;
+    if (token.startsWith(QLatin1String("@Point(")) || token.startsWith(QLatin1String("@Size("))) return decodeIniGeometry(token, value);
+    if (token.startsWith(QLatin1String("@ByteArray("))) {
+        if (!token.endsWith(QLatin1Char(')'))) return Status::InvalidFormat;
+        const auto content = token.mid(11, token.size() - 12);
+        const auto bytes = content.toLatin1();
+        if (QString::fromLatin1(bytes.constData(), bytes.size()) != content) return Status::InvalidFormat;
+        value = bytes;
+    } else if (token.startsWith(QLatin1String("@String(")) && token.endsWith(QLatin1Char(')'))) {
+        value = token.mid(8, token.size() - 9);
+    } else {
+        value = token.startsWith(QLatin1String("@@")) ? token.mid(1) : token;
+    }
+    return Status::Ok;
+}
+
+Status decodeConfigurationField(const QByteArray &raw, QVariant &value)
+{
+    QStringList tokens;
+    const auto split = splitIniValue(raw, tokens, MaxConfigurationBackupBytes / 4);
+    if (split != Status::Ok) return split;
+    if (tokens.size() == 1) return decodeConfigurationToken(tokens.first(), value);
+
+    const bool typedList = std::any_of(tokens.cbegin(), tokens.cend(), [](const QString &token) {
+        return token.startsWith(QLatin1Char('@')) && !token.startsWith(QLatin1String("@@"));
+    });
+    if (!typedList) {
+        for (auto &token : tokens) {
+            if (token.startsWith(QLatin1String("@@"))) token.remove(0, 1);
+        }
+        value = tokens;
+        return Status::Ok;
+    }
+    QVariantList entries;
+    entries.reserve(tokens.size());
+    for (const auto &token : std::as_const(tokens)) {
+        QVariant entry;
+        const auto status = decodeConfigurationToken(token, entry);
+        if (status != Status::Ok) return status;
+        entries.append(entry);
+    }
+    value = entries;
     return Status::Ok;
 }
 
@@ -358,6 +477,47 @@ MappingTableBackupDocument decodeMappingTableBackup(const QByteArray &document, 
     if (count == 0 || count != values.value(mappingKeys).toStringList().size())
         return {Status::InvalidFormat, {}};
     return {Status::Ok, values};
+}
+
+ConfigurationBackupDocument decodeConfigurationBackup(const QByteArray &document)
+{
+    if (document.size() > MaxConfigurationBackupBytes) return {Status::TooLarge, {}};
+    QList<ConfigurationBackupGroup> groups;
+    QList<QSet<QString>> fieldNames;
+    QHash<QString, int> indexByName;
+    const auto status = readBackupIniFields(document, [&](const QByteArray &section, const QByteArray &rawKey, const QByteArray &rawValue) {
+        if (section.compare("General", Qt::CaseInsensitive) == 0
+            || section.compare("%General", Qt::CaseInsensitive) == 0) return Status::Ok;
+        const auto name = decodeIniIdentifier(section);
+        if (name.isEmpty()) return Status::InvalidFormat;
+        if (name.compare(QLatin1String(QKeyMapperConstants::CONFIG_FILE_TOPLEVEL_GROUPNAME), Qt::CaseInsensitive) == 0
+            || name.compare(QLatin1String(QKeyMapperConstants::GROUPNAME_GLOBALSETTING), Qt::CaseInsensitive) == 0) return Status::Ok;
+
+        const auto foldedName = name.toCaseFolded();
+        int index = indexByName.value(foldedName, -1);
+        if (index < 0) {
+            if (groups.size() >= MaxConfigurationBackupGroups) return Status::TooManyEntries;
+            index = int(groups.size());
+            indexByName.insert(foldedName, index);
+            groups.append(ConfigurationBackupGroup{name, {}});
+            fieldNames.append(QSet<QString>());
+        } else if (groups.at(index).name != name) {
+            return Status::InvalidFormat;
+        }
+        const auto key = decodeIniIdentifier(rawKey);
+        const auto foldedKey = key.toCaseFolded();
+        if (key.isEmpty() || fieldNames.at(index).contains(foldedKey)) return Status::InvalidFormat;
+        QVariant value;
+        const auto decoded = decodeConfigurationField(rawValue, value);
+        if (decoded == Status::Ok) {
+            groups[index].values.insert(key, value);
+            fieldNames[index].insert(foldedKey);
+        }
+        return decoded;
+    }, true);
+    if (status != Status::Ok) return {status, {}};
+    if (groups.isEmpty()) return {Status::MissingRequiredField, {}};
+    return {Status::Ok, groups};
 }
 
 }

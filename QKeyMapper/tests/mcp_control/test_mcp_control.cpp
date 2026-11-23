@@ -207,6 +207,8 @@ private slots:
     void mappingTableBackupDecodesQtExports();
     void mappingTableBackupChecksLimitsAndShape();
     void configurationBackupEscapesIniIdentifiers();
+    void configurationBackupDecodesQtProfiles();
+    void configurationBackupChecksBoundsAndScope();
     void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
@@ -508,6 +510,104 @@ void McpControlTest::configurationBackupEscapesIniIdentifiers()
     QCOMPARE(readback.childGroups(), QStringList{group});
     QCOMPARE(readback.value(group + QLatin1Char('/') + key).toString(), text);
     QCOMPARE(readback.status(), QSettings::NoError);
+}
+
+void McpControlTest::configurationBackupDecodesQtProfiles()
+{
+    const QString first = QStringLiteral("配置甲[1]%");
+    const QString second = QStringLiteral("Other");
+    const QVariantList notes{QStringLiteral("段一"), QStringLiteral("段二")};
+    const QVariantList macros{QVariantMap{{QStringLiteral("notes"), notes}}};
+    const QVariantList common{QVariantMap{{QStringLiteral("color"), QColor(17, 34, 51, 68)}},
+        QVariantMap{{QStringLiteral("color"), QColor()}}};
+    const QVariantMap previous{{QStringLiteral("label"), QStringLiteral(" \t中文,; \" \\ \n")},
+        {QStringLiteral("keys"), QStringList{QStringLiteral("A"), QStringLiteral("@B"), QStringLiteral("C")}},
+        {QStringLiteral("position"), QPoint(-20, 300)}, {QStringLiteral("size"), QSize(1050, 722)},
+        {QStringLiteral("mixed"), QVariantList{QStringLiteral("first"), QPoint(1, -2), QByteArray("b\0", 2)}},
+        {QStringLiteral("macros"), macros}, {QStringLiteral("common"), common}, {QStringLiteral("blank"), QVariant()}};
+    QTemporaryDir files;
+    QVERIFY(files.isValid());
+    const auto sourcePath = files.filePath(QStringLiteral("legacy.ini"));
+    {
+        QSettings file(sourcePath, QSettings::IniFormat);
+        QKeyMapperQtCompat::setIniCodecUtf8(file);
+        file.beginGroup(first);
+        for (auto it = previous.cbegin(); it != previous.cend(); ++it) file.setValue(it.key(), it.value());
+        file.endGroup();
+        file.setValue(second + QStringLiteral("/KeyMapData_OriginalKeys"), QStringLiteral("A"));
+        file.setValue(QStringLiteral("QKeyMapperGlobalSetting/Ignored"), QDateTime::currentDateTimeUtc());
+        file.setValue(QStringLiteral("Ignored"), QDateTime::currentDateTimeUtc());
+        file.sync();
+        QCOMPARE(file.status(), QSettings::NoError);
+    }
+    QFile file(sourcePath);
+    QVERIFY(file.open(QIODevice::ReadOnly));
+    const auto bytes = file.readAll();
+    const auto legacy = decodeConfigurationBackup(bytes);
+    QCOMPARE(legacy.status, BackupDecodeStatus::Ok);
+    QCOMPARE(legacy.groups.size(), 2);
+    QVERIFY(QFile::copy(sourcePath, files.filePath(QStringLiteral("reference.ini"))));
+    QSettings reference(files.filePath(QStringLiteral("reference.ini")), QSettings::IniFormat);
+    QKeyMapperQtCompat::setIniCodecUtf8(reference);
+    for (const auto &group : legacy.groups) {
+        QVERIFY(group.name == first || group.name == second);
+        reference.beginGroup(group.name);
+        QCOMPARE(group.values.keys(), reference.childKeys());
+        for (auto it = group.values.cbegin(); it != group.values.cend(); ++it) {
+            QCOMPARE(it.value().userType(), reference.value(it.key()).userType());
+            QCOMPARE(it.value(), reference.value(it.key()));
+        }
+        reference.endGroup();
+    }
+
+    QByteArray mcp;
+    for (const auto &name : {second, first}) {
+        mcp.append('[').append(encodeBackupIniIdentifier(name)).append("]\n");
+        reference.beginGroup(name);
+        const auto keys = reference.childKeys();
+        for (const auto &key : keys)
+            QVERIFY(appendBackupIniValue(mcp, encodeBackupIniIdentifier(key), reference.value(key), MaxConfigurationBackupBytes));
+        reference.endGroup();
+    }
+    const auto current = decodeConfigurationBackup(mcp);
+    QCOMPARE(current.status, BackupDecodeStatus::Ok);
+    QCOMPARE(current.groups.size(), 2);
+    QCOMPARE(current.groups.at(0).name, second);
+    QCOMPARE(current.groups.at(1).name, first);
+    QCOMPARE(current.groups.at(1).values.value(QStringLiteral("position")).toPoint(), QPoint(-20, 300));
+    QCOMPARE(current.groups.at(1).values.value(QStringLiteral("size")).toSize(), QSize(1050, 722));
+    for (const auto &group : legacy.groups) {
+        const auto &decoded = current.groups.at(group.name == second ? 0 : 1);
+        QCOMPARE(decoded.values, group.values);
+    }
+}
+
+void McpControlTest::configurationBackupChecksBoundsAndScope()
+{
+    const auto status = [](const QByteArray &bytes) { return decodeConfigurationBackup(bytes).status; };
+    QCOMPARE(status("[General]\nLanguageIndex=1\n[QKeyMapperGlobalSetting]\nKey=A\n"), BackupDecodeStatus::MissingRequiredField);
+    QCOMPARE(status("[Primary]\nValue=A\nValue=B\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(status("[Primary]\nValue=A\nvalue=B\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(status("[Primary]\nValue=A\n[primary]\nOther=B\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(status("[Primary%2FChild]\nValue=A\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(status("[Primary]\nBad%U=Q\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(status("[Primary]\nValue=@Point(1 unknowable)\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(status("[Primary]\nValue=\"unterminated\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(status("[Primary]\nValue=A\n[Broken\nOther=B\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(status("[Primary]\nValue=A\nBroken field\n"), BackupDecodeStatus::InvalidFormat);
+    QCOMPARE(status(QByteArray(MaxConfigurationBackupBytes + 1, 'x')), BackupDecodeStatus::TooLarge);
+    QByteArray groups;
+    for (int index = 0; index < MaxConfigurationBackupGroups; ++index)
+        groups.append("[Profile-").append(QByteArray::number(index)).append("]\nValue=A\n");
+    QCOMPARE(status(groups), BackupDecodeStatus::Ok);
+    QCOMPARE(status(groups + "[Overflow]\nValue=Z\n"), BackupDecodeStatus::TooManyEntries);
+
+    QByteArray unsupported("[Profile]\n");
+    QVERIFY(appendBackupIniValue(unsupported, "Value", QRect(0, 0, 2, 2), MaxConfigurationBackupBytes));
+    QCOMPARE(status(unsupported), BackupDecodeStatus::InvalidFormat);
+    QByteArray unknownColorModel("[Profile]\n");
+    QVERIFY(appendBackupIniValue(unknownColorModel, "Value", QColor::fromHsv(0, 255, 255), MaxConfigurationBackupBytes));
+    QCOMPARE(status(unknownColorModel), BackupDecodeStatus::InvalidFormat);
 }
 
 void McpControlTest::mappingChangeArguments()

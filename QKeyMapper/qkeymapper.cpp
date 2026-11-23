@@ -38573,9 +38573,6 @@ void QKeyMapper::handleAutomationMappingTableExport(const QkmAutomation::Automat
         {QStringLiteral("document_base64"), QString::fromLatin1(document.toBase64())}});
 }
 
-static constexpr int MaxConfigurationBackupGroups = 100;
-static constexpr int MaxConfigurationBackupBytes = 128 * 1024;
-
 void QKeyMapper::handleAutomationConfigurationExport(const QkmAutomation::AutomationRequest &request)
 {
     using namespace QkmAutomation;
@@ -41347,8 +41344,8 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
             QJsonObject{{QStringLiteral("id"), QStringLiteral("configuration.backup.read")},
                 {QStringLiteral("method"), QStringLiteral("qkm_export_configurations")},
                 {QStringLiteral("required_scopes"), int(QkmAutomation::Read)}, {QStringLiteral("read_only"), true},
-                {QStringLiteral("max_groups"), MaxConfigurationBackupGroups},
-                {QStringLiteral("max_document_bytes"), MaxConfigurationBackupBytes},
+                {QStringLiteral("max_groups"), QkmAutomation::MaxConfigurationBackupGroups},
+                {QStringLiteral("max_document_bytes"), QkmAutomation::MaxConfigurationBackupBytes},
                 {QStringLiteral("limitations"), QJsonArray{QStringLiteral("saved_profiles_only"),
                     QStringLiteral("current_idle_configuration_catalog"), QStringLiteral("document_only")}}},
             QJsonObject{{QStringLiteral("id"), QStringLiteral("source.read")},
