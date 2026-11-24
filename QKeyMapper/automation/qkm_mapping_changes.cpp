@@ -18,6 +18,9 @@ namespace {
 constexpr MappingRowMove RowMoves[] = {MappingRowMove::Up, MappingRowMove::Down, MappingRowMove::Top, MappingRowMove::Bottom};
 constexpr int CustomNotificationPositionMin = QKeyMapperConstants::NOTIFICATION_POSITION_NONE;
 constexpr int CustomNotificationPositionMax = QKeyMapperConstants::NOTIFICATION_POSITION_BOTTOM_RIGHT;
+constexpr int WindowMatchModeMin = QKeyMapperConstants::WINDOWINFO_MATCH_INDEX_MIN;
+constexpr int WindowMatchModeMax = QKeyMapperConstants::WINDOWINFO_MATCH_INDEX_MAX;
+constexpr int WindowMatchTextMaxLength = 1024;
 
 QString sampleTime() { return QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs); }
 bool operationPending(const QJsonObject &operation)
@@ -309,6 +312,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
+    const bool windowMatchCriteriaPreview = preview && action == QLatin1String("configuration.set_window_match_criteria");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -325,7 +329,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || processIconTrayPreview
-        || pointDisplayKeysPreview || customNotificationPreview || startupPositionPreview;
+        || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -349,6 +353,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
         : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
+        : windowMatchCriteriaPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_match_criteria")}
         : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
@@ -566,6 +571,48 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             if (result.update.customNotificationEnabled && !*result.update.customNotificationEnabled
                 && result.update.customNotificationPosition)
                 return fail("custom_notification position cannot be set while disabling custom notification.");
+        }
+        if (windowMatchCriteriaPreview) {
+            const auto raw = arguments.value(QStringLiteral("window_match_criteria"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return fail("Provide at least one window match criteria field.");
+            const QSet<QString> allowedKeys{
+                QStringLiteral("process_name"), QStringLiteral("process_match_mode"),
+                QStringLiteral("window_title"), QStringLiteral("window_title_match_mode"),
+                QStringLiteral("class_name"), QStringLiteral("class_name_match_mode")};
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (!allowedKeys.contains(it.key()))
+                    return fail("Unknown window_match_criteria field.");
+            }
+            const auto parseMatchText = [](const QJsonObject &obj, const QString &key, std::optional<QString> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                const QString text = val.toString();
+                if (!val.isString() || text.size() > WindowMatchTextMaxLength || text.contains(QLatin1Char('\0'))
+                    || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n')))
+                    return false;
+                target = text;
+                return true;
+            };
+            const auto parseMatchMode = [](const QJsonObject &obj, const QString &key, std::optional<int> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                const int parsed = val.toInt(WindowMatchModeMin - 1);
+                if (!val.isDouble() || val.toDouble() != parsed
+                    || parsed < WindowMatchModeMin || parsed > WindowMatchModeMax)
+                    return false;
+                target = parsed;
+                return true;
+            };
+            if (!parseMatchText(fields, QStringLiteral("process_name"), result.update.windowProcessName)
+                || !parseMatchText(fields, QStringLiteral("window_title"), result.update.windowTitleText)
+                || !parseMatchText(fields, QStringLiteral("class_name"), result.update.windowClassName))
+                return fail("Window match text fields must be single-line strings of at most 1024 UTF-16 code units.");
+            if (!parseMatchMode(fields, QStringLiteral("process_match_mode"), result.update.windowProcessMatchMode)
+                || !parseMatchMode(fields, QStringLiteral("window_title_match_mode"), result.update.windowTitleMatchMode)
+                || !parseMatchMode(fields, QStringLiteral("class_name_match_mode"), result.update.windowClassMatchMode))
+                return fail("Window match mode fields must be integers between 0 and 5.");
         }
         if (startupPositionPreview) {
             using namespace QKeyMapperConstants;
@@ -1745,6 +1792,39 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
             QStringLiteral("position_requires_enabled_and_0_to_6"), QStringLiteral("first_enable_initializes_from_global_style"),
             QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject matchTextSchema{
+        {QStringLiteral("type"), QStringLiteral("string")},
+        {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
+        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*$")}};
+    const QJsonObject matchModeSchema{
+        {QStringLiteral("type"), QStringLiteral("integer")},
+        {QStringLiteral("minimum"), WindowMatchModeMin},
+        {QStringLiteral("maximum"), WindowMatchModeMax}};
+    const QJsonObject windowMatchCriteriaSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("process_name"), matchTextSchema},
+            {QStringLiteral("process_match_mode"), matchModeSchema},
+            {QStringLiteral("window_title"), matchTextSchema},
+            {QStringLiteral("window_title_match_mode"), matchModeSchema},
+            {QStringLiteral("class_name"), matchTextSchema},
+            {QStringLiteral("class_name_match_mode"), matchModeSchema}}}};
+    auto windowMatchCriteriaPreviewCap = capability("configuration.set_window_match_criteria.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_window_match_criteria")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("window_match_criteria"), windowMatchCriteriaSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_match_criteria")}));
+    auto windowMatchCriteriaApply = capability("configuration.set_window_match_criteria.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&windowMatchCriteriaPreviewCap, &windowMatchCriteriaApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("ordinary_or_blank_profile_only"), QStringLiteral("case_sensitive_and_regex_validated"),
+            QStringLiteral("cache_updates_on_save_or_load"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }

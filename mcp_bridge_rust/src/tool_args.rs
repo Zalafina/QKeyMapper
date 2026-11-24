@@ -478,6 +478,31 @@ struct CustomNotification {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct WindowMatchCriteriaFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    process_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    process_match_mode: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    window_title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    window_title_match_mode: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    class_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    class_name_match_mode: Option<u8>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct WindowMatchCriteria {
+    action: String,
+    source_tab_ref: String,
+    window_match_criteria: WindowMatchCriteriaFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct StartupPoint {
     x: i32,
     y: i32,
@@ -957,6 +982,35 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && (fields.enabled.is_some() || fields.position.is_some())
                             && fields.position.is_none_or(|position| position <= 6)
                             && !(fields.enabled == Some(false) && fields.position.is_some())
+                    });
+                }
+                Some("configuration.set_window_match_criteria") => {
+                    if arguments
+                        .get("window_match_criteria")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    let valid_text = |text: &str| {
+                        text.encode_utf16().count() <= 1024
+                            && !text.chars().any(|c| matches!(c, '\0' | '\r' | '\n'))
+                    };
+                    return typed(arguments, |v: &WindowMatchCriteria| {
+                        let fields = &v.window_match_criteria;
+                        tab_ref(&v.source_tab_ref)
+                            && (fields.process_name.is_some()
+                                || fields.process_match_mode.is_some()
+                                || fields.window_title.is_some()
+                                || fields.window_title_match_mode.is_some()
+                                || fields.class_name.is_some()
+                                || fields.class_name_match_mode.is_some())
+                            && fields.process_name.as_deref().is_none_or(valid_text)
+                            && fields.window_title.as_deref().is_none_or(valid_text)
+                            && fields.class_name.as_deref().is_none_or(valid_text)
+                            && fields.process_match_mode.is_none_or(|mode| mode <= 5)
+                            && fields.window_title_match_mode.is_none_or(|mode| mode <= 5)
+                            && fields.class_name_match_mode.is_none_or(|mode| mode <= 5)
                     });
                 }
                 Some("general.set_startup_position") => {
@@ -1574,6 +1628,47 @@ mod tests {
             assert!(preview(&json!({"action":"configuration.set_custom_notification", "source_tab_ref":tab, "custom_notification":bad})).is_err());
         }
         assert!(preview(&json!({"action":"configuration.set_custom_notification", "source_tab_ref":tab, "custom_notification":{"enabled":true}, "extra":1})).is_err());
+    }
+
+    #[test]
+    fn configuration_window_match_criteria_checks_constraints() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for fields in [
+            json!({"process_name": "DemoApp.exe"}),
+            json!({"process_name": "", "process_match_mode": 0}),
+            json!({"window_title": "^MyWindow-[0-9]+$", "window_title_match_mode": 5}),
+            json!({"class_name": "A".repeat(1024), "class_name_match_mode": 3}),
+            json!({
+                "process_name": "DemoApp.exe",
+                "process_match_mode": 1,
+                "window_title": "Title",
+                "window_title_match_mode": 2,
+                "class_name": "Class",
+                "class_name_match_mode": 4
+            }),
+        ] {
+            let valid = json!({"action":"configuration.set_window_match_criteria", "source_tab_ref":tab, "window_match_criteria":fields});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!({}),
+            json!({"process_name": "A".repeat(1025)}),
+            json!({"window_title": "line1\nline2"}),
+            json!({"class_name": "line1\rline2"}),
+            json!({"process_name": "a\u{0000}b"}),
+            json!({"process_name": 123}),
+            json!({"process_name": null}),
+            json!({"process_match_mode": true}),
+            json!({"window_title_match_mode": 1.5}),
+            json!({"class_name_match_mode": -1}),
+            json!({"process_match_mode": 6}),
+            json!({"process_name": "a.exe", "extra": 1}),
+        ] {
+            assert!(preview(&json!({"action":"configuration.set_window_match_criteria", "source_tab_ref":tab, "window_match_criteria":bad})).is_err());
+        }
+        assert!(preview(&json!({"action":"configuration.set_window_match_criteria", "source_tab_ref":tab, "window_match_criteria":{"process_name":"a.exe"}, "extra":1})).is_err());
     }
 
     #[test]

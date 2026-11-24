@@ -300,6 +300,26 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            win_criteria = {"action": "configuration.set_window_match_criteria", "source_tab_ref": tab}
+            for fields in ({"process_name": "DemoApp.exe"},
+                           {"process_name": "", "process_match_mode": 0},
+                           {"window_title": "^MyWindow-[0-9]+$", "window_title_match_mode": 5},
+                           {"class_name": "A" * 1024, "class_name_match_mode": 3},
+                           {"process_name": "DemoApp.exe", "process_match_mode": 1,
+                            "window_title": "Title", "window_title_match_mode": 2,
+                            "class_name": "Class", "class_name_match_mode": 4}):
+                request = win_criteria | {"window_match_criteria": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for fields in ({}, {"process_name": "A" * 1025}, {"window_title": "A\nB"},
+                           {"class_name": "A\rB"}, {"process_name": "A\0B"}, {"process_name": None},
+                           {"process_match_mode": True}, {"window_title_match_mode": 1.5},
+                           {"class_name_match_mode": -1}, {"process_match_mode": 6},
+                           {"process_name": "DemoApp.exe", "extra": 1}):
+                request = win_criteria | {"window_match_criteria": fields}
+                assert not validator.is_valid(request), fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             startup = {"action": "general.set_startup_position", "source_tab_ref": tab}
             point = {"x": -50000, "y": 50000}
             for fields in ({"mode": 0}, {"mode": 1}, {"mode": 2}, {"point": point}, {"mode": 2, "point": point}):
@@ -341,7 +361,7 @@ async def check_contract(exe):
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
                 "fullscreen_global_mapping", "key2mouse", "process_icon_as_tray_icon", "point_display_keys",
-                "custom_notification", "startup_position",
+                "custom_notification", "window_match_criteria", "startup_position",
                 "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)

@@ -1634,6 +1634,39 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), false}, {QStringLiteral("position"), 3}}).ok());
     QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), true}, {QStringLiteral("extra"), 1}}).ok());
 
+    const auto validateWindowMatchCriteria = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_window_match_criteria")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("window_match_criteria"), fields}});
+    };
+    const auto winMatchAll = validateWindowMatchCriteria({
+        {QStringLiteral("process_name"), QStringLiteral("DemoApp.exe")},
+        {QStringLiteral("process_match_mode"), 1},
+        {QStringLiteral("window_title"), QString()},
+        {QStringLiteral("window_title_match_mode"), 5},
+        {QStringLiteral("class_name"), QStringLiteral("Qt6QWindow")},
+        {QStringLiteral("class_name_match_mode"), 3}});
+    QVERIFY(winMatchAll.ok()
+        && winMatchAll.update.windowProcessName == std::optional<QString>(QStringLiteral("DemoApp.exe"))
+        && winMatchAll.update.windowProcessMatchMode == std::optional<int>(1)
+        && winMatchAll.update.windowTitleText == std::optional<QString>(QString())
+        && winMatchAll.update.windowTitleMatchMode == std::optional<int>(5)
+        && winMatchAll.update.windowClassName == std::optional<QString>(QStringLiteral("Qt6QWindow"))
+        && winMatchAll.update.windowClassMatchMode == std::optional<int>(3));
+    QVERIFY(validateWindowMatchCriteria({{QStringLiteral("process_name"), QString(1024, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QString(1025, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("window_title"), QStringLiteral("A\nB")}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("class_name"), QStringLiteral("A\rB")}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QStringLiteral("A") + QChar(0)}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), 123}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_match_mode"), true}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("window_title_match_mode"), 0.5}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("class_name_match_mode"), -1}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_match_mode"), 6}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QStringLiteral("a")}, {QStringLiteral("extra"), 1}}).ok());
+
     const auto validateStartupPosition = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
@@ -1660,9 +1693,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 104);
+    QCOMPARE(capabilities.size(), 106);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 98);
+    QCOMPARE(demoCapabilities.size(), 100);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1677,6 +1710,8 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(96).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_point_display_keys.apply"));
     QCOMPARE(capabilities.at(97).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification.preview"));
     QCOMPARE(capabilities.at(98).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification.apply"));
+    QCOMPARE(capabilities.at(99).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_match_criteria.preview"));
+    QCOMPARE(capabilities.at(100).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_match_criteria.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
     }));
@@ -1694,6 +1729,9 @@ void McpControlTest::mappingChangeArguments()
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_custom_notification.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_window_match_criteria.apply");
     }));
     for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
             QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply")}) {

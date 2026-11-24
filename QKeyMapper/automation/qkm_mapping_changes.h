@@ -77,6 +77,12 @@ struct MappingUpdateArguments {
     std::optional<QString> showScreenPointKey;
     std::optional<bool> customNotificationEnabled;
     std::optional<int> customNotificationPosition;
+    std::optional<QString> windowProcessName;
+    std::optional<int> windowProcessMatchMode;
+    std::optional<QString> windowTitleText;
+    std::optional<int> windowTitleMatchMode;
+    std::optional<QString> windowClassName;
+    std::optional<int> windowClassMatchMode;
     std::optional<int> startupPositionMode;
     std::optional<QPoint> startupPositionPoint;
     QByteArray tableImportDocument;

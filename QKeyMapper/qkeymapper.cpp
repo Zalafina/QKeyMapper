@@ -38098,6 +38098,31 @@ static QJsonObject automationCustomNotification(bool enabled, int position, bool
         {QStringLiteral("style_initialized"), styleInitialized}};
 }
 
+static QJsonObject automationWindowMatchCriteriaFields(const QString &processName, int processMode,
+    const QString &windowTitle, int titleMode, const QString &className, int classMode)
+{
+    return {{QStringLiteral("process_name"), processName},
+        {QStringLiteral("process_match_mode"), processMode},
+        {QStringLiteral("window_title"), windowTitle},
+        {QStringLiteral("window_title_match_mode"), titleMode},
+        {QStringLiteral("class_name"), className},
+        {QStringLiteral("class_name_match_mode"), classMode}};
+}
+
+static QJsonObject automationWindowMatchCriteria(bool editable, const QString &processName, int processMode,
+    const QString &windowTitle, int titleMode, const QString &className, int classMode,
+    const QString &cachedProcess, const QString &cachedTitle, const QString &cachedClass)
+{
+    QJsonObject result = automationWindowMatchCriteriaFields(
+        processName, processMode, windowTitle, titleMode, className, classMode);
+    result.insert(QStringLiteral("editable"), editable);
+    result.insert(QStringLiteral("cached"), QJsonObject{
+        {QStringLiteral("file_name"), cachedProcess},
+        {QStringLiteral("window_title"), cachedTitle},
+        {QStringLiteral("class_name"), cachedClass}});
+    return result;
+}
+
 QJsonObject QKeyMapper::automationMappingDisplay() const
 {
     return {{QStringLiteral("category_column"), m_ShowCategory},
@@ -38162,6 +38187,18 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     result.insert(QStringLiteral("table_insert_mode"), getTableInsertModeIndex());
     result.insert(QStringLiteral("table_edit_trigger"), getTableEditModeTriggerIndex());
     result.insert(QStringLiteral("window_display_mode"), ui->checkDisplayModeComboBox->currentIndex());
+    const bool windowCriteriaEditable = ui->processLineEdit->isEnabled()
+        && ui->windowTitleLineEdit->isEnabled()
+        && ui->classNameLineEdit->isEnabled()
+        && ui->checkProcessComboBox->isEnabled()
+        && ui->checkWindowTitleComboBox->isEnabled()
+        && ui->checkClassNameComboBox->isEnabled();
+    result.insert(QStringLiteral("window_match_criteria"), automationWindowMatchCriteria(
+        windowCriteriaEditable,
+        ui->processLineEdit->text(), ui->checkProcessComboBox->currentIndex(),
+        ui->windowTitleLineEdit->text(), ui->checkWindowTitleComboBox->currentIndex(),
+        ui->classNameLineEdit->text(), ui->checkClassNameComboBox->currentIndex(),
+        m_MapProcessInfo.FileName, m_MapProcessInfo.WindowTitle, m_MapProcessInfo.ClassName));
     result.insert(QStringLiteral("save_window_size"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveWindowSize());
     result.insert(QStringLiteral("save_splitter_position"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveSplitterPosition());
     result.insert(QStringLiteral("play_sound_effect"), isSoundEffectEnabled());
@@ -40125,6 +40162,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && (update.showWindowPointKey.has_value() || update.showScreenPointKey.has_value());
         const bool changingCustomNotification = updating
             && (update.customNotificationEnabled.has_value() || update.customNotificationPosition.has_value());
+        const bool changingWindowMatchCriteria = updating
+            && (update.windowProcessName.has_value() || update.windowProcessMatchMode.has_value()
+                || update.windowTitleText.has_value() || update.windowTitleMatchMode.has_value()
+                || update.windowClassName.has_value() || update.windowClassMatchMode.has_value());
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -40141,7 +40182,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys
-            || changingCustomNotification;
+            || changingCustomNotification || changingWindowMatchCriteria;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
@@ -40164,19 +40205,26 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
             && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon
-            && !changingPointDisplayKeys && !changingCustomNotification
+            && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
         if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon
-                || changingPointDisplayKeys || changingCustomNotification)
+                || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
             return;
         }
         if (changingWindowDisplayMode && !ui->checkDisplayModeComboBox->isEnabled()) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("The window display condition is disabled for the loaded configuration."));
+            return;
+        }
+        if (changingWindowMatchCriteria
+            && !(ui->processLineEdit->isEnabled() && ui->windowTitleLineEdit->isEnabled() && ui->classNameLineEdit->isEnabled()
+                && ui->checkProcessComboBox->isEnabled() && ui->checkWindowTitleComboBox->isEnabled()
+                && ui->checkClassNameComboBox->isEnabled())) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Window match criteria are disabled for the loaded configuration."));
             return;
         }
         if (changingProcessIconAsTrayIcon && !m_MappingAdvancedDialog->isProcessIconAsTrayIconEnabled()) {
@@ -40556,6 +40604,43 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("before"), automationCustomNotification(beforeEnabled, beforePosition, beforeStyleInitialized)},
                     {QStringLiteral("after"), automationCustomNotification(afterEnabled, afterPosition, afterStyleInitialized)},
                     {QStringLiteral("initializes_from_global_style"), willInitFromGlobal},
+                    {QStringLiteral("persisted"), false}};
+            } else if (changingWindowMatchCriteria) {
+                const QString beforeProcess = ui->processLineEdit->text();
+                const int beforeProcessMode = ui->checkProcessComboBox->currentIndex();
+                const QString beforeTitle = ui->windowTitleLineEdit->text();
+                const int beforeTitleMode = ui->checkWindowTitleComboBox->currentIndex();
+                const QString beforeClass = ui->classNameLineEdit->text();
+                const int beforeClassMode = ui->checkClassNameComboBox->currentIndex();
+                const QString afterProcess = update.windowProcessName.value_or(beforeProcess);
+                const int afterProcessMode = update.windowProcessMatchMode.value_or(beforeProcessMode);
+                const QString afterTitle = update.windowTitleText.value_or(beforeTitle);
+                const int afterTitleMode = update.windowTitleMatchMode.value_or(beforeTitleMode);
+                const QString afterClass = update.windowClassName.value_or(beforeClass);
+                const int afterClassMode = update.windowClassMatchMode.value_or(beforeClassMode);
+                const auto isValidMatchRegex = [](const QString &pattern, int mode) {
+                    return mode != WINDOWINFO_MATCH_INDEX_REGEXMATCH
+                        || pattern.isEmpty()
+                        || QRegularExpression(pattern).isValid();
+                };
+                if (!isValidMatchRegex(afterProcess, afterProcessMode)
+                    || !isValidMatchRegex(afterTitle, afterTitleMode)
+                    || !isValidMatchRegex(afterClass, afterClassMode)) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("RegexMatch pattern must be empty or a valid regular expression."));
+                    return;
+                }
+                modified = (afterProcess != beforeProcess) || (afterProcessMode != beforeProcessMode)
+                    || (afterTitle != beforeTitle) || (afterTitleMode != beforeTitleMode)
+                    || (afterClass != beforeClass) || (afterClassMode != beforeClassMode);
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_window_match_criteria")},
+                    {QStringLiteral("before"), automationWindowMatchCriteriaFields(
+                        beforeProcess, beforeProcessMode, beforeTitle, beforeTitleMode, beforeClass, beforeClassMode)},
+                    {QStringLiteral("after"), automationWindowMatchCriteriaFields(
+                        afterProcess, afterProcessMode, afterTitle, afterTitleMode, afterClass, afterClassMode)},
+                    {QStringLiteral("updates_cached_process_info_immediately"), false},
                     {QStringLiteral("persisted"), false}};
             } else if (changingGeneralTablePreference) {
                 const int before = changingTableEditTrigger ? m_GeneralAdvancedDialog->getTableEditModeTrigger()
@@ -41065,6 +41150,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
+            : changingWindowMatchCriteria ? QStringLiteral("configuration.set_window_match_criteria")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
@@ -41159,6 +41245,25 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 if (update.customNotificationPosition) {
                     m_MappingAdvancedDialog->setCustomNotificationPosition(*update.customNotificationPosition);
+                }
+            } else if (changingWindowMatchCriteria) {
+                const auto applyCriteriaText = [this](QLineEdit *edit, const std::optional<QString> &value) {
+                    if (value && edit->text() != *value) {
+                        edit->setText(*value);
+                        markSaveSettingDirty();
+                    }
+                };
+                applyCriteriaText(ui->processLineEdit, update.windowProcessName);
+                applyCriteriaText(ui->windowTitleLineEdit, update.windowTitleText);
+                applyCriteriaText(ui->classNameLineEdit, update.windowClassName);
+                if (update.windowProcessMatchMode) {
+                    ui->checkProcessComboBox->setCurrentIndex(*update.windowProcessMatchMode);
+                }
+                if (update.windowTitleMatchMode) {
+                    ui->checkWindowTitleComboBox->setCurrentIndex(*update.windowTitleMatchMode);
+                }
+                if (update.windowClassMatchMode) {
+                    ui->checkClassNameComboBox->setCurrentIndex(*update.windowClassMatchMode);
                 }
             } else if (changingMappingDisplay) {
                 const bool notes = mappingDisplayAfter.value(QStringLiteral("notes")).toBool();

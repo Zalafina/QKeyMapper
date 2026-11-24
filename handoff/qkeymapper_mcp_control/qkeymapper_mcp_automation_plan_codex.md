@@ -14,16 +14,25 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | ADV-NOTIFY-248 [Gemini] `configuration.set_custom_notification`（配置专属提示信息开关与位置及首次样式初始化，收尾 `QMappingAdvancedDialog` M2-B 全部 7 项），本机选验完成，待 Codex 复核（继续推进 249） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (本提交，源码基线 205afd0e) |
+| 当前切片 | WIN-CRITERIA-249 [Gemini] `configuration.set_window_match_criteria`（主窗进程／标题／类名匹配文本、0..5 模式与全局禁改／缓存延迟刷新守卫），本机选验完成，待 Codex 复核 |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (本提交，源码基线 57238d01) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～248（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾） |
-| 当前验证／证据 | 248 Qt6 Release `EB81F143` 零警告；Rust 23+12 单测（`1B90ABC4`）与双协议契约 6 组通过；双 Qt 定向组件 `3E536DE8`/`4F48D111` 各 4 passed；隔离产品 `7BE70E23`（禁用 FakerInput 分配与连接）＋正式 Rust `1B90ABC4` 完成 GUI 探针与对话框截图、只读拦截、禁用态改位置拒绝、首次预览取消不初始化、保存基线、启用+`position=5`、禁用保留、再启用 keeps style、0..6、冷启动、双 Qt 读回（`Enabled=true`, `Position=5`, `changed_other_keys=0`）及演示模式，全退出 0 |
-| 当前控制器 | 11-24 PID 6448 活跃（剩余约 1h43m，有效至 19:02）。248 进程、配对、凭据、授权与登记已清零 |
-| 下一项动作 | 推进 `WIN-CRITERIA-249 [Gemini]`（`configuration.set_window_match_criteria`），随后继续 `WIN-AUTOSTART-250`、`WIN-SAME-WINDOWS-251` 与 `IGNORE-*` |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～249（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾） |
+| 当前验证／证据 | 249 Qt6 Release `649498A0` 零警告；Rust 23+13 单测（`C072833F`）与双协议契约 6 组通过；双 Qt 定向组件 `97E3AF25`/`E34E9AE1` 各 4 passed；新建可复用双 Qt 读回器 `25D21FE6`/`9B2A787D`；隔离产品 `D1876E96`（禁用 FakerInput 分配与连接）＋正式 Rust `C072833F` 完成 GUI 探针、只读拦截、正则拦截、纯文本 clean->dirty 且缓存延迟、全局禁用拦截、冷启动、双 Qt 读回（`changed_other_keys=0`）及演示模式，全退出 0 |
+| 当前控制器 | 11-24 PID 6448 活跃（剩余约 1h25m，有效至 19:02）。249 进程、配对、凭据、授权与登记已清零 |
+| 下一项动作 | 明日从 `WIN-AUTOSTART-250 [Gemini]`（`configuration.set_auto_match_foreground`，可复用 `249` 的 `read_window_match.exe`）接续，随后推进 `WIN-SAME-WINDOWS-251` 与 `IGNORE-*` |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### WIN-CRITERIA-249 [Gemini]：窗口匹配条件文本与模式 `configuration.set_window_match_criteria`
+
+- **源码基线**：`57238d01`。
+- **变更范围**：`automation/qkm_mapping_changes.h/.cpp` 新增 6 个 `MappingUpdateArguments` 窗口匹配字段、`configuration.set_window_match_criteria` 严格校验（至少一项、单行 0..1024 文本允许空串、模式 0..5 整数）及标准/演示双模式能力（106 标准 / 100 演示）；`QKeyMapper/qkeymapper.cpp` 新增 `automationWindowMatchCriteriaFields` 与 `automationWindowMatchCriteria`，在 `collectAutomationState` 输出 `window_match_criteria`（含 `editable` 与 `cached.{file_name,window_title,class_name}`），在 `handleAutomationMappingChange` 处理 `changingWindowMatchCriteria`（核对 6 控件全部启用以拦截全局配置 `unsupported_capability`、校验 `RegexMatch` 且非空规则但不弹失败窗、显式允许 Common Tab 下修改已加载普通组条件；应用期对文本采用 `setText` ＋ `markSaveSettingDirty()` 弥补 `textEdited` 不触发的 dirty 语义，对模式调用 `setCurrentIndex`，且不提前改写 `m_MapProcessInfo` 缓存，交由 `configuration.save` 写盘并经 `loadKeyMapSetting` 重载）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json` 与 `test_tool_contract.py`。
+- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`649498A0`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`C072833F`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`97E3AF25`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`E34E9AE1`）；新建可复用双 Qt 窗口匹配读回器 `out/mcp_win_criteria_249_20261124/{qt6,qt5}-reader/release/read_window_match.exe`（`25D21FE6` / `9B2A787D`，含 `AutoStartMappingChecked` 与 `SendToSameWindowsChecked` 字段供 250/251 复用）；隔离产品 `out/mcp_product/win_criteria_249_20261124/runtime/QKeyMapperMcpAcceptance_WinCriteria.exe`（`D1876E96`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/win_criteria_249_20261124/run2/`（含 `gui-probe-result.json`、`baseline_saved.ini`、`saved.ini` 与 `readback-{qt6,qt5}.json`）。
+- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+13 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；双 Qt 读回器零警告／Qt5 仅 `qtmain` LNK4099；私有桌面真实 GUI 探针验证 6 控件可用、空白默认模式 `2/2/0`、`QTest::keyClicks` 置 dirty、0..5 切换且 INI 不变；正式 Rust 隔离产品 `run2` 覆盖只读 `permission_denied`、Schema 非法参数（空对象、1025 超长、换行/\0、非串、布尔/浮点/越界模式、null、未知键）、先存清洁 `baseline_saved.ini` 后单改 `process_name="Notepad.exe"` 验证 `clean->dirty` 且 `cached.file_name` 仍为空、非法正则 `[unclosed`＋`5` 拒绝、字面 `[unclosed`＋`2` 接受后单切模式 `5` 拒绝、空串＋`5` 接受、预览取消、全 6 项设值（`DemoApp.exe`/1、`^MyWindow-[0-9]+$`/5、`Qt6QWindow`/3）与无操作、显式保存后 `cached` 随重载更新、切换 `QKeyMapperGlobalSetting` 实测 `editable=false` 与 `unsupported_capability` 拦截再切回 `McpSaved`、冷启动恢复 6 项与 `cached`、双 Qt 6.8.3／5.15.2 读回（6 项 `ProcessInfo_*` 精确一致且排除后 `unchanged_other_keys=256`、`changed_other_keys=0`）以及 `--demo-configuration-only` 不写盘。全部自有产品退出 0，控制器 PID `6448` 已清零。
+- **失败重试轮次**：`run1` 因测试脚本 `verify_win_criteria.py` 误将空白配置进程/标题默认匹配模式断言为 `0`（产品 `loadKeyMapSetting` 源码实际按 `WINDOWINFO_MATCH_INDEX_DEFAULT=2` 对进程/标题置 `2`、类名置 `0`）中断；修正测试脚本断言后（未改产品代码）`run2` 一次性全绿通过。
+- **明确未验范围**：**开启 FakerInput 连接的运行**、6 种匹配模式相对真实前台／目标窗口标题大小写与正则运行时实际匹配行为、`Default` 桌面前台切换、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
 
 ### ADV-NOTIFY-248 [Gemini]：配置专属提示信息开关与位置 `configuration.set_custom_notification`
 
