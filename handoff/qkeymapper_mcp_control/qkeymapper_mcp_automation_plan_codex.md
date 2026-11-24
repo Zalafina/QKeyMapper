@@ -14,15 +14,25 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | CFG-LOAD-238 正式 Rust 加载普通配置组，本机选验完成，按用户要求收尾 |
+| 当前切片 | CFG-REMOVE-STARTUP-239 [Gemini] 已保存启动组删除与独立冷读，本机选验完成，待 Codex 复核（继续推进 240） |
+| 待 Codex 验收（Gemini 切片） | 239 (本提交，源码基线 d0342f70) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～238 |
-| 当前验证／证据 | 238 Qt6 Release 零警告，真实 GUI、正式 Rust 私有选验及独立产品冷读完成。运行副本禁用 FakerInput 分配与连接 |
-| 当前控制器 | 11-24 PID 24780 收尾关闭，已确认缓存不可用。本片进程、配对、凭据、授权和登记已清理 |
-| 下一项动作 | 按用户要求在 238 本地提交后停止。恢复时可接续保存的启动组删除与独立冷读，现有夹具原件保留，产品验证待执行 |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～239 |
+| 当前验证／证据 | 239 复用 238 隔离产品与正式 Rust 在私有桌面完成 23 次 MCP 调用，验证启动组删除、锁失败恢复及独立冷读，双 Qt 读回 75 字段保持；运行副本禁用 FakerInput 分配与连接 |
+| 当前控制器 | 11-24 PID 36024 活跃（剩余约 4h50m，有效至 19:00）。239 进程、配对、凭据、授权与登记已清零 |
+| 下一项动作 | 推进 CFG-EMPTY-240 [Gemini]（正式加载空白草稿配置 `configuration.load_empty`） |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### CFG-REMOVE-STARTUP-239 [Gemini]：已保存启动组删除与独立冷读验证
+
+- **源码基线**：`d0342f70`。
+- **变更范围**：无产品 C++/Rust 源码改动；仅将本机夹具 `out/mcp_product/configuration_remove_startup_239_20261124/verify_startup_remove.py` 的控制器 PID 断言更新为当前活跃控制器 `36024`。
+- **产物与关键摘要**：隔离产品副本 `out/mcp_product/configuration_remove_startup_239_20261124/runtime/QKeyMapperMcpAcceptance_ConfigLoad.exe`（`8e325d23`，运行副本禁用 FakerInput 分配与连接）、正式 Rust `qkeymapper-mcp-rust.exe`（`6077e6d8`）、独立读回 `out/mcp_configuration_remove_startup_239_20261124/qt6-reader/release/read_startup_remove.exe`（`419fc899`）与 `qt5-reader/release/read_startup_remove.exe`（`ad6bf242`），原始证据 `out/mcp_product/configuration_remove_startup_239_20261124/run1/`。
+- **真实产品／双 Qt 覆盖**：在私有桌面（`QkmProduct_e105d1ed...`、`QkmProduct_84f09a1e...`，`input_desktop=Default`）执行 23 次调用，覆盖启动组 `McpSaved` 冷启 → `configuration.load` 切至 `McpSecond` → `configuration.remove` 预览确认 `clears_startup_selection=true` → 锁文件触发 `save_write_failed` 保留原文件、启动选择与当前源 → 正式删除并确认仅移除 `[McpSaved]` 与根 `SettingSelect` → 独立冷启产品不再加载已删启动组且目录移除 `McpSaved`。双 Qt 6.8.3／5.15.2 独立 Core 读回均通过（其余 75 个字段不变）。两份自有产品退出 0，FilterKeys 前后一致，控制器授权与登记已清零。
+- **失败重试轮次**：产品验证 0 轮失败；双 Qt 读回首次因未将 Qt bin 加入 PATH 报 `-1073741515`，临时注入 PATH 后一次性通过。
+- **明确未验范围**：开启 FakerInput 连接的运行、当前组删除、GUI 右键、监视中删除、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
 
 ### CFG-LOAD-238：正式加载普通配置组
 
