@@ -23854,6 +23854,34 @@ void QKeyMapper::setCurrentSettingSelectByGroupName(const QString &settingName)
     ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
 }
 
+static bool resetStoredSettingSelectOrder(QSettings &settingFile)
+{
+    const QString key = QString::fromLatin1(SETTINGSELECT_ORDER_LIST);
+    if (!settingFile.contains(key)) return settingFile.status() == QSettings::NoError;
+    const QVariant previousOrder = settingFile.value(key);
+
+    // QSettings::remove also removes descendants; preserve any configuration with the same name.
+    const QString groupPrefix = key + QLatin1Char('/');
+    QVariantMap nestedValues;
+    const QStringList keys = settingFile.allKeys();
+    for (const auto &existingKey : keys) {
+        if (existingKey.startsWith(groupPrefix, Qt::CaseInsensitive)) {
+            nestedValues.insert(existingKey, settingFile.value(existingKey));
+        }
+    }
+    if (settingFile.status() != QSettings::NoError) return false;
+
+    settingFile.remove(key);
+    for (auto it = nestedValues.cbegin(); it != nestedValues.cend(); ++it) {
+        settingFile.setValue(it.key(), it.value());
+    }
+    settingFile.sync();
+    if (settingFile.status() == QSettings::NoError) return true;
+
+    settingFile.setValue(key, previousOrder);
+    return false;
+}
+
 bool QKeyMapper::moveSettingSelectOrderEntry(const QString &settingName, int targetUserIndex)
 {
     if (m_KeyMapStatus != KEYMAP_IDLE
@@ -48708,18 +48736,22 @@ void SettingSelectComboBoxPopup::onReorderButtonClicked(void)
         showForComboBox();
     }
 
-    if (reply != QMessageBox::Yes) {
+    if (reply != QMessageBox::Yes || keyMapper->m_KeyMapStatus != QKeyMapper::KEYMAP_IDLE) {
         refreshMoveButtons();
         return;
     }
 
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
+    if (!resetStoredSettingSelectOrder(settingFile)) {
+        keyMapper->showFailurePopup(QKeyMapper::tr("Save failure : ") + QFileInfo(settingFile.fileName()).fileName());
+        refreshMoveButtons();
+        return;
+    }
 
     const QString currentSettingName = keyMapper->currentSettingSelectGroupName();
     {
         QSignalBlocker blocker(keyMapper->ui->settingselectComboBox);
-        settingFile.remove(SETTINGSELECT_ORDER_LIST);
         keyMapper->rebuildSettingSelectComboBox(settingFile);
         keyMapper->setCurrentSettingSelectByGroupName(currentSettingName);
     }
