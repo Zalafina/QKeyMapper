@@ -14,16 +14,25 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | GEN-GLOBAL-SWITCH-243 [Gemini] `general.set_global_switch_timeout` 全局配置自动切换等待时间设置与双 Qt 读回，本机选验完成，待 Codex 复核（继续推进 244） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (本提交，源码基线 f4ce85fc) |
+| 当前切片 | GEN-FULLSCREEN-244 [Gemini] `general.set_fullscreen_global_mapping` 全屏禁用全局映射与白名单（收齐 `QGeneralAdvancedDialog` 11/11），本机选验完成，待 Codex 复核（继续推进 245） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (本提交，源码基线 fa5536cd) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～243 |
-| 当前验证／证据 | 243 Qt6 Release `2FFAD5FD` 零警告；Rust 23+7 单测与双协议契约通过；双 Qt 定向组件 `D03E77A4`/`02CEDC56` 各 4 passed；隔离产品 `20BB9BAF`（禁用 FakerInput 分配与连接）＋正式 Rust `138952DD` 完成 GUI 探针、只读拦截、边界 `0`/`999999999`/`4500`、草稿/无操作/显式保存/冷读、双 Qt `GlobalSettingSwitchTimeout` (`0` 和 `4500`) 读回及演示模式，全退出 0 |
-| 当前控制器 | 11-24 PID 36024 活跃（剩余约 3h19m，有效至 19:00）。243 进程、配对、凭据、授权与登记已清零 |
-| 下一项动作 | 推进 GEN-FULLSCREEN-244 [Gemini]（`general.set_fullscreen_global_mapping`） |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～244（`QGeneralAdvancedDialog` 11/11 收齐） |
+| 当前验证／证据 | 244 Qt6 Release `BE942A43` 零警告；Rust 23+8 单测与双协议契约通过；双 Qt 定向组件 `4AF031D6`/`1827D2AC` 各 4 passed；隔离产品 `4EF641B7`（禁用 FakerInput 分配与连接）＋正式 Rust `6F240514` 完成 GUI 探针、只读拦截、禁止禁用态改白名单、`has_unsaved_changes=false` 后单改 `allowed_processes` 置 dirty、保留文本、清空、冷读、双 Qt 读回（`true` + `"notepad.exe;demo_app.exe"`）及演示模式，全退出 0 |
+| 当前控制器 | 11-24 PID 6448 活跃（剩余约 2h49m，有效至 19:02）。244 进程、配对、凭据、授权与登记已清零 |
+| 下一项动作 | 推进 ADV-MOUSE-245 [Gemini]（`configuration.set_key2mouse_settings`）与 ADV-PROCESS-TRAY-246 [Gemini] |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### GEN-FULLSCREEN-244 [Gemini]：全屏禁用全局映射与白名单 `general.set_fullscreen_global_mapping`
+
+- **源码基线**：`fa5536cd`。
+- **变更范围**：`QGeneralAdvancedDialog` 保持 `setGlobalMappingFullscreenAllowedProcesses` 加载期无 dirty 语义，新增 `editGlobalMappingFullscreenAllowedProcesses`（文本变化时 `setText` 并触发 `textEdited -> notifyDirty()`）；`automation/qkm_mapping_changes.h/.cpp` 新增 `disableGlobalMappingInFullscreen`/`fullscreenAllowedProcesses`、`general.set_fullscreen_global_mapping` 单行非空/UTF-16（`<=32767`）/禁止 `disable_in_fullscreen=false` 与 `allowed_processes` 并发的校验及标准/演示双模式能力（96 标准 / 90 演示）；`QKeyMapper/qkeymapper.cpp` 新增 `automationFullscreenGlobalMapping`、`collectAutomationState` 输出 `fullscreen_global_mapping`、预览守卫禁止开关关闭时单独提交 `allowed_processes`（`unsupported_capability`）、先更新开关再更新白名单并接入动作三目分支；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json` 与 `test_tool_contract.py`。（至此 `QGeneralAdvancedDialog` 全部 11/11 控件均已完成 MCP 接入。）
+- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`BE942A43`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`6F240514`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`4AF031D6`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`1827D2AC`）；复用双 Qt INI 读回器 `out/mcp_general_sound_242_20261124/{qt6,qt5}-reader/release/read_general_settings.exe`（`CD20249C` / `0BA21CB4`）；隔离产品 `out/mcp_product/general_fullscreen_244_20261124/runtime/QKeyMapperMcpAcceptance_GeneralFullscreen.exe`（`4EF641B7`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/general_fullscreen_244_20261124/run3/`（含 `gui-probe-result.json` 与 `readback-{qt6,qt5}.json`）。
+- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+8 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证勾选/取消 `disableGlobalMappingInFullscreenCheckBox` 与 `fullscreenGlobalMappingProcessLineEdit` 联动启用禁用、键入 `"demo.exe"` 保留及 dirty 置位且 INI 不变；正式 Rust 隔离产品 `run3` 覆盖只读 `permission_denied`、非法参数拒绝（空对象、`false+allowed_processes`、`\n`/`\r`/32768/额外键）、禁用状态单传 `allowed_processes` 拒为 `unsupported_capability`、预览取消、组合开启并写白名单、保存清干净（`has_unsaved_changes=false`）后单改 `allowed_processes` 正确置 dirty、单关开关保留白名单、空串清空白名单、显式保存、冷启动恢复及双 Qt 6.8.3／5.15.2 读回（`GlobalMappingDisableInFullscreen=true`、`GlobalMappingFullscreenAllowedProcesses="notepad.exe;demo_app.exe"`、其余未触及基线键 84 项不变）与 `--demo-configuration-only` 不写盘。全部自有产品退出 0，FilterKeys 一致，控制器 PID `6448` 已清零。
+- **失败重试轮次**：`run1` 因隔离部署脚本漏拷 5 个第三方 DLL，导致启动即退并触发旧控制器 PID `36024` 按 `start_result_unknown` 安全停机；补齐全部 DLL 并通过 `dumpbin /dependents` 核验后在用户重建的新控制器 PID `6448` 下跑出 `run2`，其中 `gui_baseline`/`readonly`/`standard` 全过，仅 `cold_read` `Enable` 瞬间命中 `state.json` 并发读写竞态（`controller_absent`），复跑 `run3` 一次性全绿通过。
+- **明确未验范围**：**开启 FakerInput 连接的运行**、实际全屏前台窗口进入退出与白名单进程运行时拦截放行效果（仅验配置/控件与持久等价）、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
 
 ### GEN-GLOBAL-SWITCH-243 [Gemini]：全局配置自动切换等待时间 `general.set_global_switch_timeout`
 

@@ -1523,6 +1523,35 @@ void McpControlTest::mappingChangeArguments()
             QJsonValue(QStringLiteral("2000")), QJsonValue(true), QJsonValue(QJsonValue::Null)})
         QVERIFY(!validateGlobalSwitchTimeout(value).ok());
 
+    const auto validateFullscreenGlobalMapping = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("general.set_fullscreen_global_mapping")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("fullscreen_global_mapping"), fields}});
+    };
+    const auto fullscreenBoth = validateFullscreenGlobalMapping({{QStringLiteral("disable_in_fullscreen"), true},
+        {QStringLiteral("allowed_processes"), QStringLiteral("demo.exe;notepad.exe")}});
+    QVERIFY(fullscreenBoth.ok() && fullscreenBoth.update.disableGlobalMappingInFullscreen == true
+        && fullscreenBoth.update.fullscreenAllowedProcesses == QStringLiteral("demo.exe;notepad.exe"));
+    const auto fullscreenDisableOnly = validateFullscreenGlobalMapping({{QStringLiteral("disable_in_fullscreen"), false}});
+    QVERIFY(fullscreenDisableOnly.ok() && fullscreenDisableOnly.update.disableGlobalMappingInFullscreen == false
+        && !fullscreenDisableOnly.update.fullscreenAllowedProcesses.has_value());
+    const auto fullscreenClearOnly = validateFullscreenGlobalMapping({{QStringLiteral("allowed_processes"), QStringLiteral("")}});
+    QVERIFY(fullscreenClearOnly.ok() && !fullscreenClearOnly.update.disableGlobalMappingInFullscreen.has_value()
+        && fullscreenClearOnly.update.fullscreenAllowedProcesses == QStringLiteral(""));
+    QVERIFY(validateFullscreenGlobalMapping({{QStringLiteral("allowed_processes"), QString(32767, QLatin1Char('a'))}}).ok());
+    QVERIFY(!validateFullscreenGlobalMapping({}).ok());
+    QVERIFY(!validateFullscreenGlobalMapping({{QStringLiteral("disable_in_fullscreen"), false},
+        {QStringLiteral("allowed_processes"), QStringLiteral("x.exe")}}).ok());
+    QVERIFY(!validateFullscreenGlobalMapping({{QStringLiteral("disable_in_fullscreen"), 1}}).ok());
+    QVERIFY(!validateFullscreenGlobalMapping({{QStringLiteral("allowed_processes"), 123}}).ok());
+    QVERIFY(!validateFullscreenGlobalMapping({{QStringLiteral("allowed_processes"), QStringLiteral("a\nb")}}).ok());
+    QVERIFY(!validateFullscreenGlobalMapping({{QStringLiteral("allowed_processes"), QStringLiteral("a\rb")}}).ok());
+    QVERIFY(!validateFullscreenGlobalMapping({{QStringLiteral("allowed_processes"), QStringLiteral("a") + QChar(0)}}).ok());
+    QVERIFY(!validateFullscreenGlobalMapping({{QStringLiteral("allowed_processes"), QString(32768, QLatin1Char('a'))}}).ok());
+    QVERIFY(!validateFullscreenGlobalMapping({{QStringLiteral("disable_in_fullscreen"), true},
+        {QStringLiteral("extra"), true}}).ok());
+
     const auto validateStartupPosition = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
@@ -1549,15 +1578,20 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 94);
+    QCOMPARE(capabilities.size(), 96);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 88);
+    QCOMPARE(demoCapabilities.size(), 90);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
     QCOMPARE(capabilities.at(88).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.apply"));
+    QCOMPARE(capabilities.at(89).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_fullscreen_global_mapping.preview"));
+    QCOMPARE(capabilities.at(90).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_fullscreen_global_mapping.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_fullscreen_global_mapping.apply");
     }));
     for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
             QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply")}) {

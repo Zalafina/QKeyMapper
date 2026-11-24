@@ -240,6 +240,23 @@ async def check_contract(exe):
                 assert not validator.is_valid(args)
                 denied = await client.call_tool("qkm_preview_changes", args)
                 assert denied.is_error is True and denied.structured_content is None
+            fullscreen = {"action": "general.set_fullscreen_global_mapping", "source_tab_ref": tab}
+            for fields in ({"disable_in_fullscreen": True}, {"disable_in_fullscreen": False},
+                           {"allowed_processes": ""}, {"allowed_processes": "demo.exe;notepad.exe"},
+                           {"disable_in_fullscreen": True, "allowed_processes": "demo.exe"}):
+                request = fullscreen | {"fullscreen_global_mapping": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for fields in ({}, {"disable_in_fullscreen": False, "allowed_processes": "demo.exe"},
+                           {"disable_in_fullscreen": 1}, {"disable_in_fullscreen": None},
+                           {"allowed_processes": None}, {"allowed_processes": 123},
+                           {"allowed_processes": "a\nb"}, {"allowed_processes": "a\rb"},
+                           {"allowed_processes": "a\0b"}, {"allowed_processes": "a" * 32768},
+                           {"disable_in_fullscreen": True, "extra": 1}):
+                request = fullscreen | {"fullscreen_global_mapping": fields}
+                assert not validator.is_valid(request), fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             startup = {"action": "general.set_startup_position", "source_tab_ref": tab}
             point = {"x": -50000, "y": 50000}
             for fields in ({"mode": 0}, {"mode": 1}, {"mode": 2}, {"point": point}, {"mode": 2, "point": point}):
@@ -279,7 +296,8 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
-                "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms", "startup_position",
+                "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
+                "fullscreen_global_mapping", "startup_position",
                 "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)

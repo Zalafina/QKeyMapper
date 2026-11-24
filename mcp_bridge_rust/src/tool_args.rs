@@ -400,6 +400,23 @@ struct GlobalSwitchTimeout {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct FullscreenGlobalMappingFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disable_in_fullscreen: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    allowed_processes: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct FullscreenGlobalMapping {
+    action: String,
+    source_tab_ref: String,
+    fullscreen_global_mapping: FullscreenGlobalMappingFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct StartupPoint {
     x: i32,
     y: i32,
@@ -796,6 +813,27 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 Some("general.set_global_switch_timeout") => {
                     return typed(arguments, |v: &GlobalSwitchTimeout| {
                         tab_ref(&v.source_tab_ref) && v.timeout_ms <= 999_999_999
+                    });
+                }
+                Some("general.set_fullscreen_global_mapping") => {
+                    if arguments
+                        .get("fullscreen_global_mapping")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &FullscreenGlobalMapping| {
+                        let fields = &v.fullscreen_global_mapping;
+                        tab_ref(&v.source_tab_ref)
+                            && (fields.disable_in_fullscreen.is_some()
+                                || fields.allowed_processes.is_some())
+                            && !(fields.disable_in_fullscreen == Some(false)
+                                && fields.allowed_processes.is_some())
+                            && fields.allowed_processes.as_ref().is_none_or(|processes| {
+                                processes.encode_utf16().count() <= 32_767
+                                    && !processes.chars().any(|c| matches!(c, '\0' | '\r' | '\n'))
+                            })
                     });
                 }
                 Some("general.set_startup_position") => {
@@ -1272,6 +1310,40 @@ mod tests {
             assert!(preview(&json!({"action":"general.set_global_switch_timeout", "source_tab_ref":tab, "timeout_ms":bad})).is_err());
         }
         assert!(preview(&json!({"action":"general.set_global_switch_timeout", "source_tab_ref":tab, "timeout_ms":0, "extra":1})).is_err());
+    }
+
+    #[test]
+    fn general_fullscreen_global_mapping_checks_constraints() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for fields in [
+            json!({"disable_in_fullscreen": true}),
+            json!({"disable_in_fullscreen": false}),
+            json!({"allowed_processes": ""}),
+            json!({"allowed_processes": "demo.exe;notepad.exe"}),
+            json!({"disable_in_fullscreen": true, "allowed_processes": "demo.exe"}),
+            json!({"allowed_processes": "a".repeat(32_767)}),
+        ] {
+            let valid = json!({"action":"general.set_fullscreen_global_mapping", "source_tab_ref":tab, "fullscreen_global_mapping":fields});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!({}),
+            json!({"disable_in_fullscreen": false, "allowed_processes": "demo.exe"}),
+            json!({"disable_in_fullscreen": 1}),
+            json!({"disable_in_fullscreen": null}),
+            json!({"allowed_processes": null}),
+            json!({"allowed_processes": 123}),
+            json!({"allowed_processes": "a\nb"}),
+            json!({"allowed_processes": "a\rb"}),
+            json!({"allowed_processes": "a\u{0000}b"}),
+            json!({"allowed_processes": "a".repeat(32_768)}),
+            json!({"disable_in_fullscreen": true, "extra": 1}),
+        ] {
+            assert!(preview(&json!({"action":"general.set_fullscreen_global_mapping", "source_tab_ref":tab, "fullscreen_global_mapping":bad})).is_err());
+        }
+        assert!(preview(&json!({"action":"general.set_fullscreen_global_mapping", "source_tab_ref":tab, "fullscreen_global_mapping":{"disable_in_fullscreen":true}, "extra":1})).is_err());
     }
 
     #[test]

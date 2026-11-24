@@ -302,6 +302,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool saveSplitterPositionPreview = preview && action == QLatin1String("general.set_save_splitter_position");
     const bool playSoundEffectPreview = preview && action == QLatin1String("general.set_sound_effect");
     const bool globalSwitchTimeoutPreview = preview && action == QLatin1String("general.set_global_switch_timeout");
+    const bool fullscreenGlobalMappingPreview = preview && action == QLatin1String("general.set_fullscreen_global_mapping");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -317,7 +318,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || startupPositionPreview;
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -336,6 +337,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : saveSplitterPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_splitter_position")}
         : playSoundEffectPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("play_sound_effect")}
         : globalSwitchTimeoutPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("timeout_ms")}
+        : fullscreenGlobalMappingPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}
         : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
@@ -444,6 +446,33 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 || timeout < GLOBALSETTING_SWITCH_TIMEOUT_MIN || timeout > GLOBALSETTING_SWITCH_TIMEOUT_MAX)
                 return fail("Global setting switch timeout must be an integer between 0 and 999999999 milliseconds.");
             result.update.globalSwitchTimeoutMs = timeout;
+        }
+        if (fullscreenGlobalMappingPreview) {
+            const auto raw = arguments.value(QStringLiteral("fullscreen_global_mapping"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return fail("Provide at least one fullscreen global mapping field.");
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (it.key() != QStringLiteral("disable_in_fullscreen")
+                    && it.key() != QStringLiteral("allowed_processes"))
+                    return fail("Only disable_in_fullscreen and allowed_processes are allowed.");
+            }
+            if (fields.contains(QStringLiteral("disable_in_fullscreen"))) {
+                const auto value = fields.value(QStringLiteral("disable_in_fullscreen"));
+                if (!value.isBool())
+                    return fail("Provide an explicit boolean disable_in_fullscreen.");
+                result.update.disableGlobalMappingInFullscreen = value.toBool();
+            }
+            if (fields.contains(QStringLiteral("allowed_processes"))) {
+                const auto value = fields.value(QStringLiteral("allowed_processes"));
+                const QString processes = value.toString();
+                if (!value.isString() || processes.size() > 32767 || processes.contains(QLatin1Char('\0'))
+                    || processes.contains(QLatin1Char('\r')) || processes.contains(QLatin1Char('\n')))
+                    return fail("A single-line allowed_processes string of at most 32767 UTF-16 code units is required.");
+                if (result.update.disableGlobalMappingInFullscreen == false)
+                    return fail("Allowed processes require disabling global mapping in fullscreen.");
+                result.update.fullscreenAllowedProcesses = processes;
+            }
         }
         if (startupPositionPreview) {
             using namespace QKeyMapperConstants;
@@ -1512,6 +1541,32 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
     for (auto *item : {&globalSwitchPreview, &globalSwitchApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
             QStringLiteral("global_setting_switch_timeout_ms"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject fullscreenSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("disable_in_fullscreen"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("allowed_processes"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                {QStringLiteral("maxLength"), 32767},
+                {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*$")}}}}},
+        {QStringLiteral("if"), QJsonObject{{QStringLiteral("required"), QJsonArray{
+            QStringLiteral("disable_in_fullscreen"), QStringLiteral("allowed_processes")}}}},
+        {QStringLiteral("then"), QJsonObject{{QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("disable_in_fullscreen"), QJsonObject{{QStringLiteral("const"), true}}}}}}}};
+    auto fullscreenPreview = capability("general.set_fullscreen_global_mapping.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_fullscreen_global_mapping")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("fullscreen_global_mapping"), fullscreenSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}));
+    auto fullscreenApply = capability("general.set_fullscreen_global_mapping.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&fullscreenPreview, &fullscreenApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
+            QStringLiteral("fullscreen_global_mapping_policy"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);

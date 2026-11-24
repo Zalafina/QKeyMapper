@@ -38073,6 +38073,12 @@ static QJsonObject automationStartupPosition(int mode, const QPoint &point)
         QJsonObject{{QStringLiteral("x"), point.x()}, {QStringLiteral("y"), point.y()}}}};
 }
 
+static QJsonObject automationFullscreenGlobalMapping(bool disableInFullscreen, const QString &allowedProcesses)
+{
+    return {{QStringLiteral("disable_in_fullscreen"), disableInFullscreen},
+        {QStringLiteral("allowed_processes"), allowedProcesses}};
+}
+
 QJsonObject QKeyMapper::automationMappingDisplay() const
 {
     return {{QStringLiteral("category_column"), m_ShowCategory},
@@ -38142,6 +38148,9 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     result.insert(QStringLiteral("play_sound_effect"), isSoundEffectEnabled());
     result.insert(QStringLiteral("global_switch_timeout_ms"), int(getGeneralAdvancedSwitchTimeout()));
     if (m_GeneralAdvancedDialog) {
+        result.insert(QStringLiteral("fullscreen_global_mapping"), automationFullscreenGlobalMapping(
+            m_GeneralAdvancedDialog->getDisableGlobalMappingInFullscreen(),
+            m_GeneralAdvancedDialog->getGlobalMappingFullscreenAllowedProcesses()));
         result.insert(QStringLiteral("startup_position"), automationStartupPosition(m_GeneralAdvancedDialog->getStartupPosition(),
             m_GeneralAdvancedDialog->getSpecifyStartupPosition()));
     }
@@ -40066,10 +40075,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingSaveSplitterPosition = updating && update.saveSplitterPosition.has_value();
         const bool changingPlaySoundEffect = updating && update.playSoundEffect.has_value();
         const bool changingGlobalSwitchTimeout = updating && update.globalSwitchTimeoutMs.has_value();
+        const bool changingFullscreenGlobalMapping = updating
+            && (update.disableGlobalMappingInFullscreen.has_value() || update.fullscreenAllowedProcesses.has_value());
         const bool changingLayoutRestore = changingSaveWindowSize || changingSaveSplitterPosition;
         const bool changingStartupPosition = updating && (update.startupPositionMode || update.startupPositionPoint);
         const bool changingGeneralPreference = changingGeneralTablePreference || changingLayoutRestore
-            || changingPlaySoundEffect || changingGlobalSwitchTimeout || changingStartupPosition;
+            || changingPlaySoundEffect || changingGlobalSwitchTimeout || changingFullscreenGlobalMapping
+            || changingStartupPosition;
         const bool changingWindowDisplayMode = updating && update.windowDisplayMode.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
@@ -40459,6 +40471,20 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 target.insert(QStringLiteral("scope"), QStringLiteral("application_preferences"));
                 change = {{QStringLiteral("kind"), QStringLiteral("set_global_switch_timeout")},
                     {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
+            } else if (changingFullscreenGlobalMapping) {
+                const bool beforeDisable = m_GeneralAdvancedDialog->getDisableGlobalMappingInFullscreen();
+                const QString beforeAllowed = m_GeneralAdvancedDialog->getGlobalMappingFullscreenAllowedProcesses();
+                const bool afterDisable = update.disableGlobalMappingInFullscreen.value_or(beforeDisable);
+                const QString afterAllowed = update.fullscreenAllowedProcesses.value_or(beforeAllowed);
+                if (update.fullscreenAllowedProcesses && !afterDisable) {
+                    reject(QStringLiteral("unsupported_capability"), QStringLiteral("Allowed processes require disabling global mapping in fullscreen."));
+                    return;
+                }
+                modified = beforeDisable != afterDisable || beforeAllowed != afterAllowed;
+                target.insert(QStringLiteral("scope"), QStringLiteral("application_preferences"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_fullscreen_global_mapping")},
+                    {QStringLiteral("before"), automationFullscreenGlobalMapping(beforeDisable, beforeAllowed)},
+                    {QStringLiteral("after"), automationFullscreenGlobalMapping(afterDisable, afterAllowed)}};
             } else if (changingStartupPosition) {
                 const int beforeMode = m_GeneralAdvancedDialog->getStartupPosition();
                 const QPoint beforePoint = m_GeneralAdvancedDialog->getSpecifyStartupPosition();
@@ -40914,6 +40940,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingSaveSplitterPosition ? QStringLiteral("general.set_save_splitter_position")
             : changingPlaySoundEffect ? QStringLiteral("general.set_sound_effect")
             : changingGlobalSwitchTimeout ? QStringLiteral("general.set_global_switch_timeout")
+            : changingFullscreenGlobalMapping ? QStringLiteral("general.set_fullscreen_global_mapping")
             : changingStartupPosition ? QStringLiteral("general.set_startup_position")
             : changingWindowDisplayMode ? QStringLiteral("configuration.set_window_display_mode")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
@@ -40985,6 +41012,11 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (changingGlobalSwitchTimeout) {
                 m_GeneralAdvancedDialog->setGlobalSettingSwitchTimeout(static_cast<unsigned int>(*update.globalSwitchTimeoutMs));
                 m_CheckGlobalSettingSwitchTimer.setInterval(*update.globalSwitchTimeoutMs);
+            } else if (changingFullscreenGlobalMapping) {
+                if (update.disableGlobalMappingInFullscreen)
+                    m_GeneralAdvancedDialog->setDisableGlobalMappingInFullscreen(*update.disableGlobalMappingInFullscreen);
+                if (update.fullscreenAllowedProcesses)
+                    m_GeneralAdvancedDialog->editGlobalMappingFullscreenAllowedProcesses(*update.fullscreenAllowedProcesses);
             } else if (changingStartupPosition) {
                 if (update.startupPositionMode) m_GeneralAdvancedDialog->setStartupPosition(*update.startupPositionMode);
                 if (update.startupPositionPoint) m_GeneralAdvancedDialog->setSpecifyStartupPosition(*update.startupPositionPoint);

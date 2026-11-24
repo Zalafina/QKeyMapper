@@ -40,6 +40,7 @@ public:
     void setGlobalSettingSwitchTimeout(unsigned int timeout);
     void setDisableGlobalMappingInFullscreen(bool enabled);
     void setGlobalMappingFullscreenAllowedProcesses(const QString &processes);
+    void editGlobalMappingFullscreenAllowedProcesses(const QString &processes);
     bool getSaveWindowSize(void) const;
     void setSaveWindowSize(bool save);
     bool getSaveSplitterPosition(void) const;

@@ -255,6 +255,15 @@ void QGeneralAdvancedDialog::setGlobalMappingFullscreenAllowedProcesses(const QS
     ui->fullscreenGlobalMappingProcessLineEdit->setText(processes);
 }
 
+void QGeneralAdvancedDialog::editGlobalMappingFullscreenAllowedProcesses(const QString &processes)
+{
+    if (ui->fullscreenGlobalMappingProcessLineEdit->text() == processes) {
+        return;
+    }
+    ui->fullscreenGlobalMappingProcessLineEdit->setText(processes);
+    emit ui->fullscreenGlobalMappingProcessLineEdit->textEdited(ui->fullscreenGlobalMappingProcessLineEdit->text());
+}
+
 bool QGeneralAdvancedDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {
