@@ -38982,7 +38982,7 @@ void QKeyMapper::handleAutomationConfigurationImport(const QkmAutomation::Automa
     server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
 }
 
-void QKeyMapper::handleAutomationConfigurationOrder(const QkmAutomation::AutomationRequest &request,
+void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::AutomationRequest &request,
     const QkmAutomation::MappingChangeRequest &validation, const QkmAutomation::MappingChangeOwner &owner,
     const QkmAutomation::MappingChangePreview *applying)
 {
@@ -38991,6 +38991,8 @@ void QKeyMapper::handleAutomationConfigurationOrder(const QkmAutomation::Automat
     Q_ASSERT(QThread::currentThread() == thread());
     auto &server = m_McpControlDialog->server();
     auto &store = *m_AutomationMappingChanges;
+    const auto &binding = applying ? *applying->configurationList : validation.configurationList;
+    const bool removing = binding.removesGroup();
     const auto reject = [&](const QString &code, const QString &message) {
         if (applying) store.finish(owner, validation.id, QStringLiteral("rejected"),
             {{QStringLiteral("modified"), false}, {QStringLiteral("saved"), false}}, code, message);
@@ -39001,23 +39003,23 @@ void QKeyMapper::handleAutomationConfigurationOrder(const QkmAutomation::Automat
             && !QApplication::activePopupWidget() && !QApplication::activeModalWidget()
             && !m_KeyMappingDataTable->hasActiveEditor() && currentSettingSelectGroupName() == m_LoadedMappingSettingGroup;
     };
-    if (validation.confirmConflicts || validation.confirmDelete || validation.confirmOverwrite) {
-        reject(QStringLiteral("invalid_arguments"), QStringLiteral("Configuration ordering accepts only scope confirmation."));
+    if (validation.confirmConflicts || validation.confirmOverwrite
+        || (removing ? validation.confirmScope : validation.confirmDelete)) {
+        reject(QStringLiteral("invalid_arguments"), QStringLiteral("Provide only the confirmation required by the reviewed configuration change."));
         return;
     }
     if (!ready() || !m_AutomationSettingsReader || (request.scopes & (Read | Configure)) != (Read | Configure)
         || !server.isRequestCurrent(request)) {
-        reject(QStringLiteral("context_busy"), QStringLiteral("Configuration ordering requires current authorization and an idle source after cleanup."));
+        reject(QStringLiteral("context_busy"), QStringLiteral("Configuration list changes require current authorization and an idle source after cleanup."));
         return;
     }
     QElapsedTimer budget;
     budget.start();
     const quint64 runtime = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
-    const auto &binding = applying ? *applying->configurationOrder : validation.configurationOrder;
     const auto catalog = collectAutomationCatalog();
     if (catalog.isEmpty() || automationCatalogRevision(catalog, owner) != binding.catalogRevision) {
         reject(applying ? QStringLiteral("stale_preview") : QStringLiteral("stale_catalog"),
-            QStringLiteral("Query the current configuration catalog and review the order again."));
+            QStringLiteral("Query the current configuration catalog and review the change again."));
         return;
     }
     SettingSavePreparation snapshot;
@@ -39046,31 +39048,44 @@ void QKeyMapper::handleAutomationConfigurationOrder(const QkmAutomation::Automat
     const bool reset = binding.reset();
     QStringList after = before;
     int destination = -1;
+    QString action = QStringLiteral("configuration.move");
     if (reset) {
+        action = QStringLiteral("configuration.reset_order");
         after = settingSelectUserGroupsFromChildGroups(cache.childGroups());
     } else {
         const int source = int(before.indexOf(binding.group));
-        destination = int(before.indexOf(binding.targetGroup));
-        if (source < 0 || destination < 0) {
-            reject(QStringLiteral("invalid_target"), QStringLiteral("Only exact ordinary groups in the current catalog can be moved or targeted."));
+        if (source < 0) {
+            reject(QStringLiteral("invalid_target"), QStringLiteral("Provide an exact ordinary group in the current catalog."));
             return;
         }
-        if (source != destination) after.move(source, destination);
+        if (removing) {
+            if (binding.group == m_LoadedMappingSettingGroup) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("Only a non-current ordinary group can be removed."));
+                return;
+            }
+            action = QStringLiteral("configuration.remove");
+            after.removeAt(source);
+        } else {
+            destination = int(before.indexOf(binding.targetGroup));
+            if (destination < 0) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("Provide an exact ordinary destination group in the current catalog."));
+                return;
+            }
+            if (source != destination) after.move(source, destination);
+        }
     }
-    const bool changesOrder = reset ? cache.contains(SETTINGSELECT_ORDER_LIST) : after != before;
-    const QString action = reset ? QStringLiteral("configuration.reset_order") : QStringLiteral("configuration.move");
+    const bool willWrite = reset ? cache.contains(SETTINGSELECT_ORDER_LIST) : after != before;
     QJsonObject target{{QStringLiteral("instance_id"), owner.instance}, {QStringLiteral("catalog_revision"), binding.catalogRevision},
         {QStringLiteral("order_revision"), snapshot.revision}};
-    if (!reset) {
-        target.insert(QStringLiteral("group"), binding.group);
-        target.insert(QStringLiteral("target_group"), binding.targetGroup);
-    }
+    if (!reset) target.insert(QStringLiteral("group"), binding.group);
+    if (!reset && !removing) target.insert(QStringLiteral("target_group"), binding.targetGroup);
     auto result = QJsonObject{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
         {QStringLiteral("before_order"), QJsonArray::fromStringList(before)}, {QStringLiteral("after_order"), QJsonArray::fromStringList(after)},
-        {QStringLiteral("confirmation_required"), true}, {QStringLiteral("will_write"), changesOrder},
+        {QStringLiteral("confirmation_required"), true}, {QStringLiteral("will_write"), willWrite},
         {QStringLiteral("modified"), false}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+    if (removing) result.insert(QStringLiteral("clears_startup_selection"), cache.value(SETTINGSELECT).toString() == binding.group);
     if (QJsonDocument(result).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
-        reject(QStringLiteral("result_too_large"), QStringLiteral("The configuration order exceeds the preview response limit."));
+        reject(QStringLiteral("result_too_large"), QStringLiteral("The configuration list exceeds the preview response limit."));
         return;
     }
     QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
@@ -39082,9 +39097,9 @@ void QKeyMapper::handleAutomationConfigurationOrder(const QkmAutomation::Automat
     if (!applying) {
         auto reviewed = binding;
         reviewed.contextRevision = snapshot.revision;
-        const auto preview = store.createConfigurationOrder(owner, reviewed, result, automationIbInputPreferencesRevision());
+        const auto preview = store.createConfigurationList(owner, reviewed, result, automationIbInputPreferencesRevision());
         if (!preview) {
-            reject(QStringLiteral("preview_limit"), QStringLiteral("The configuration order preview slot is unavailable."));
+            reject(QStringLiteral("preview_limit"), QStringLiteral("The configuration list preview slot is unavailable."));
             return;
         }
         server.reply(request.connectionId, request.requestId, {{QStringLiteral("preview_id"), preview->id},
@@ -39093,11 +39108,13 @@ void QKeyMapper::handleAutomationConfigurationOrder(const QkmAutomation::Automat
         return;
     }
     if (store.expired(*applying)) {
-        reject(QStringLiteral("preview_expired"), QStringLiteral("The configuration order preview expired."));
+        reject(QStringLiteral("preview_expired"), QStringLiteral("The configuration list preview expired."));
         return;
     }
-    if (!validation.confirmScope) {
-        reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the entire order and confirm its immediate write."));
+    if (!(removing ? validation.confirmDelete : validation.confirmScope)) {
+        reject(QStringLiteral("confirmation_required"), removing
+            ? QStringLiteral("Review the exact configuration group and confirm its permanent removal.")
+            : QStringLiteral("Review the entire order and confirm its immediate write."));
         return;
     }
     QByteArray currentFile;
@@ -39107,7 +39124,7 @@ void QKeyMapper::handleAutomationConfigurationOrder(const QkmAutomation::Automat
         reject(QStringLiteral("stale_preview"), QStringLiteral("The fixed configuration file or authorization changed before writing."));
         return;
     }
-    if (changesOrder) {
+    if (willWrite) {
         const QString selection = currentSettingSelectGroupName();
         bool saved = false;
         if (reset) {
@@ -39115,13 +39132,15 @@ void QKeyMapper::handleAutomationConfigurationOrder(const QkmAutomation::Automat
             QKeyMapperQtCompat::setIniCodecUtf8(file);
             saved = resetStoredSettingSelectOrder(file);
             if (saved) refreshSettingSelectOrder(file);
+        } else if (removing) {
+            saved = removeSettingByIndex(findSettingSelectIndexByGroupName(binding.group), false);
         } else {
             saved = moveSettingSelectOrderEntry(binding.group, destination, false);
         }
         if (!saved) {
             result.insert(QStringLiteral("modified"), QJsonValue(QJsonValue::Null));
             const auto code = QStringLiteral("save_write_failed");
-            const auto message = QStringLiteral("Writing the fixed configuration order failed.");
+            const auto message = QStringLiteral("Writing the fixed configuration list failed.");
             store.finish(owner, validation.id, QStringLiteral("failed"), result, code, message);
             server.replyError(request.connectionId, request.requestId, code, message);
             return;
@@ -39130,7 +39149,7 @@ void QKeyMapper::handleAutomationConfigurationOrder(const QkmAutomation::Automat
         result.insert(QStringLiteral("modified"), true);
         if (currentSettingSelectUserGroups() != after || currentSettingSelectGroupName() != selection) {
             const auto code = QStringLiteral("save_catalog_refresh_failed");
-            const auto message = QStringLiteral("The order was saved but the visible catalog could not be verified.");
+            const auto message = QStringLiteral("The change was saved but the visible catalog could not be verified.");
             store.finish(owner, validation.id, QStringLiteral("failed"), result, code, message);
             server.replyError(request.connectionId, request.requestId, code, message);
             return;
@@ -39508,9 +39527,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         handleAutomationConfigurationImport(request, validation, owner, applyingPreview ? &*applyingPreview : nullptr);
         return;
     }
-    if ((!applying && validation.action == MappingChangeAction::OrderConfiguration)
-        || (applyingPreview && applyingPreview->configurationOrder)) {
-        handleAutomationConfigurationOrder(request, validation, owner, applyingPreview ? &*applyingPreview : nullptr);
+    if ((!applying && validation.action == MappingChangeAction::ChangeConfigurationList)
+        || (applyingPreview && applyingPreview->configurationList)) {
+        handleAutomationConfigurationList(request, validation, owner, applyingPreview ? &*applyingPreview : nullptr);
         return;
     }
     const auto *tableImport = applying
@@ -50810,6 +50829,11 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
 
 bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
 {
+    return removeSettingByIndex(targetSettingIndex, true);
+}
+
+bool QKeyMapper::removeSettingByIndex(int targetSettingIndex, bool interactive)
+{
     if (targetSettingIndex == 0 || targetSettingIndex == GLOBALSETTING_INDEX) {
         return false;
     }
@@ -50835,13 +50859,13 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
     QStringList groups = settingFile.childGroups();
     if (groups.contains(settingSelectStr)) {
 
-        QString message = tr("Are you sure you want to remove the setting \"%1\"?").arg(settingSelectStr);
-        QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
-                                                                   QMessageBox::Yes | QMessageBox::No,
-                                                                   QMessageBox::No);
-        if (reply != QMessageBox::Yes || m_KeyMapStatus != KEYMAP_IDLE) {
-            return false;
+        if (interactive) {
+            const QString message = tr("Are you sure you want to remove the setting \"%1\"?").arg(settingSelectStr);
+            const auto reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
+                QMessageBox::Yes | QMessageBox::No, QMessageBox::No);
+            if (reply != QMessageBox::Yes) return false;
         }
+        if (m_KeyMapStatus != KEYMAP_IDLE) return false;
         targetSettingIndex = findSettingSelectIndexByGroupName(settingSelectStr);
         if (targetSettingIndex <= GLOBALSETTING_INDEX || !settingFile.childGroups().contains(settingSelectStr)) {
             return false;
@@ -50849,6 +50873,7 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
 
         const QString selection = currentSettingSelectGroupName();
         const bool removesSelection = selection == settingSelectStr;
+        if (!interactive && removesSelection) return false;
         const QString orderKey = QString::fromLatin1(SETTINGSELECT_ORDER_LIST);
         const QString startupKey = QString::fromLatin1(SETTINGSELECT);
         const bool hadOrder = settingFile.contains(orderKey);
@@ -50862,7 +50887,7 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
         });
         const QVariant sameNameValue = sameNameKey != rootKeys.cend() ? settingFile.value(*sameNameKey) : QVariant();
         if (settingFile.status() != QSettings::NoError || savedGroup.isEmpty()) {
-            showFailurePopup(tr("Save failure : ") + settingSelectStr);
+            if (interactive) showFailurePopup(tr("Save failure : ") + settingSelectStr);
             return false;
         }
 
@@ -50885,7 +50910,7 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
                 removeIniScalarPreservingGroup(settingFile, orderKey, orderGroup);
             }
             if (removesStartup) settingFile.setValue(startupKey, oldStartup);
-            showFailurePopup(tr("Save failure : ") + settingSelectStr);
+            if (interactive) showFailurePopup(tr("Save failure : ") + settingSelectStr);
             return false;
         }
 

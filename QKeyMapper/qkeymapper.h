@@ -2148,7 +2148,7 @@ private:
     void handleAutomationConfigurationImport(const QkmAutomation::AutomationRequest &request,
         const QkmAutomation::MappingChangeRequest &validation, const QkmAutomation::MappingChangeOwner &owner,
         const QkmAutomation::MappingChangePreview *applying);
-    void handleAutomationConfigurationOrder(const QkmAutomation::AutomationRequest &request,
+    void handleAutomationConfigurationList(const QkmAutomation::AutomationRequest &request,
         const QkmAutomation::MappingChangeRequest &validation, const QkmAutomation::MappingChangeOwner &owner,
         const QkmAutomation::MappingChangePreview *applying);
     void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
@@ -2227,6 +2227,7 @@ private:
     void refreshSettingSelectOrder(QSettings &settingFile);
     bool moveSettingSelectOrderEntry(const QString &settingName, int targetUserIndex, bool showWriteFailure = true);
     bool removeSettingByName(const QString &settingName);
+    bool removeSettingByIndex(int targetSettingIndex, bool interactive);
     struct SettingSaveResult {
         enum class Failure { None, StateRejected, InvalidTarget, OverwriteCancelled,
             ConfigurationUnavailable, WriteFailed, ReloadFailed };

@@ -272,6 +272,14 @@ struct ConfigurationResetOrder {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct ConfigurationRemove {
+    action: String,
+    catalog_revision: String,
+    group: String,
+}
+
+#[derive(Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum MacroInsertPosition {
     Above,
@@ -819,6 +827,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                         revision(&v.catalog_revision)
                     });
                 }
+                Some("configuration.remove") => {
+                    return typed(arguments, |v: &ConfigurationRemove| {
+                        revision(&v.catalog_revision) && configuration_group_name(&v.group)
+                    });
+                }
                 Some("macro.upsert") => {
                     return typed(arguments, |v: &MacroPreview<MacroUpsert>| {
                         revision(&v.data.catalog_revision)
@@ -1161,9 +1174,11 @@ mod tests {
         let move_group = json!({"action":"configuration.move", "catalog_revision":revision,
             "group":"配置甲", "target_group":"Second"});
         let reset = json!({"action":"configuration.reset_order", "catalog_revision":revision});
+        let remove =
+            json!({"action":"configuration.remove", "catalog_revision":revision, "group":"Other"});
         let preview =
             |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
-        for valid in [&move_group, &reset] {
+        for valid in [&move_group, &reset, &remove] {
             assert_eq!(preview(valid).unwrap(), *valid.as_object().unwrap());
         }
         for field in ["group", "target_group", "catalog_revision"] {
@@ -1179,6 +1194,9 @@ mod tests {
         assert!(preview(&multiline).is_err());
         let mut extra = reset;
         extra["group"] = "配置甲".into();
+        assert!(preview(&extra).is_err());
+        let mut extra = remove;
+        extra["target_group"] = "Other".into();
         assert!(preview(&extra).is_err());
     }
 

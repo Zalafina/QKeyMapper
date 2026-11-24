@@ -213,7 +213,7 @@ private slots:
     void configurationImportPreservesScope();
     void configurationImportDraftLifecycle();
     void configurationImportArguments();
-    void configurationOrderArgumentsAndOwnership();
+    void configurationListArgumentsAndOwnership();
     void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
@@ -804,7 +804,7 @@ void McpControlTest::configurationImportArguments()
         {QStringLiteral("import_draft_id"), draft.toUpper()}}).ok());
 }
 
-void McpControlTest::configurationOrderArgumentsAndOwnership()
+void McpControlTest::configurationListArgumentsAndOwnership()
 {
     const QString revision(64, QLatin1Char('a'));
     const QString method = QStringLiteral("qkm_preview_changes");
@@ -813,10 +813,10 @@ void McpControlTest::configurationOrderArgumentsAndOwnership()
         {QStringLiteral("target_group"), QStringLiteral("Second")}};
     const auto parsed = validateMappingChangeRequest(method, move);
     QVERIFY(parsed.ok());
-    QCOMPARE(parsed.action, MappingChangeAction::OrderConfiguration);
-    QCOMPARE(parsed.configurationOrder.group, QStringLiteral("配置甲"));
-    QCOMPARE(parsed.configurationOrder.targetGroup, QStringLiteral("Second"));
-    QVERIFY(!parsed.configurationOrder.reset());
+    QCOMPARE(parsed.action, MappingChangeAction::ChangeConfigurationList);
+    QCOMPARE(parsed.configurationList.group, QStringLiteral("配置甲"));
+    QCOMPARE(parsed.configurationList.targetGroup, QStringLiteral("Second"));
+    QVERIFY(!parsed.configurationList.reset());
 
     auto malformed = move;
     malformed.insert(QStringLiteral("group"), QStringLiteral("bad\nname"));
@@ -831,22 +831,33 @@ void McpControlTest::configurationOrderArgumentsAndOwnership()
         {QStringLiteral("catalog_revision"), revision}};
     const auto resetRequest = validateMappingChangeRequest(method, reset);
     QVERIFY(resetRequest.ok());
-    QVERIFY(resetRequest.configurationOrder.reset());
+    QVERIFY(resetRequest.configurationList.reset());
+    QJsonObject remove = move;
+    remove.insert(QStringLiteral("action"), QStringLiteral("configuration.remove"));
+    QVERIFY(!validateMappingChangeRequest(method, remove).ok());
+    remove.remove(QStringLiteral("target_group"));
+    const auto removal = validateMappingChangeRequest(method, remove);
+    QVERIFY(removal.ok());
+    QVERIFY(removal.configurationList.removesGroup());
 
-    auto binding = parsed.configurationOrder;
+    auto binding = parsed.configurationList;
     MappingChangeStore store;
     const MappingChangeOwner owner{QString(32, QLatin1Char('a')), QString(32, QLatin1Char('b')), 1};
-    QVERIFY(!store.createConfigurationOrder(owner, binding, {}, {}));
+    QVERIFY(!store.createConfigurationList(owner, binding, {}, {}));
     binding.contextRevision = QString(64, QLatin1Char('c'));
-    const auto preview = store.createConfigurationOrder(owner, binding, {}, {});
+    const auto preview = store.createConfigurationList(owner, binding, {}, {});
     QVERIFY(preview);
     auto other = owner;
     ++other.permissionEpoch;
     QVERIFY(!store.begin(other, preview->id));
     const auto applying = store.begin(owner, preview->id);
-    QVERIFY(applying && applying->configurationOrder);
-    QCOMPARE(applying->configurationOrder->contextRevision, binding.contextRevision);
+    QVERIFY(applying && applying->configurationList);
+    QCOMPARE(applying->configurationList->contextRevision, binding.contextRevision);
     QVERIFY(!store.begin(owner, preview->id));
+    auto removalBinding = removal.configurationList;
+    removalBinding.contextRevision = binding.contextRevision;
+    const auto removalPreview = store.createConfigurationList(owner, removalBinding, {}, {});
+    QVERIFY(removalPreview && removalPreview->configurationList->removesGroup());
 }
 
 void McpControlTest::mappingChangeArguments()

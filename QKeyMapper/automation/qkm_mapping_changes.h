@@ -112,17 +112,20 @@ struct ConfigurationImportBinding {
     bool overwrite = false;
 };
 
-struct ConfigurationOrderBinding {
+enum class ConfigurationListAction { Move, ResetOrder, Remove };
+struct ConfigurationListBinding {
+    ConfigurationListAction action = ConfigurationListAction::ResetOrder;
     QString catalogRevision;
     QString group;
     QString targetGroup;
     QString contextRevision;
-    bool reset() const { return group.isEmpty(); }
+    bool reset() const { return action == ConfigurationListAction::ResetOrder; }
+    bool removesGroup() const { return action == ConfigurationListAction::Remove; }
 };
 
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };
 enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences,
-    UpsertMacro, DeleteMacro, ImportMacro, ImportConfiguration, SaveConfigurationImport, OrderConfiguration };
+    UpsertMacro, DeleteMacro, ImportMacro, ImportConfiguration, SaveConfigurationImport, ChangeConfigurationList };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
     MappingChangeAction action = MappingChangeAction::AddMapping;
@@ -132,7 +135,7 @@ struct MappingChangeRequest {
     IbInputPreferencesArguments preferences;
     MacroChangeArguments macro;
     ConfigurationImportBinding configurationImport;
-    ConfigurationOrderBinding configurationOrder;
+    ConfigurationListBinding configurationList;
     QString settingName;
     QString id;
     QString instance;
@@ -181,7 +184,7 @@ struct MappingChangePreview {
     std::optional<MacroChangeArguments> macro;
     QString preferencesRevision;
     std::optional<ConfigurationImportBinding> configurationImport;
-    std::optional<ConfigurationOrderBinding> configurationOrder;
+    std::optional<ConfigurationListBinding> configurationList;
 };
 
 // GUI-thread request state only; no source pointers, worker work, persistence or retries.
@@ -205,8 +208,8 @@ public:
         const MacroChangeArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
     std::optional<MappingChangePreview> createConfigurationImport(const MappingChangeOwner &owner,
         const ConfigurationImportBinding &binding, const QJsonObject &description, const QString &preferencesRevision);
-    std::optional<MappingChangePreview> createConfigurationOrder(const MappingChangeOwner &owner,
-        const ConfigurationOrderBinding &binding, const QJsonObject &description, const QString &preferencesRevision);
+    std::optional<MappingChangePreview> createConfigurationList(const MappingChangeOwner &owner,
+        const ConfigurationListBinding &binding, const QJsonObject &description, const QString &preferencesRevision);
     bool stageConfigurationImport(const MappingChangePreview &preview, QJsonObject result);
     std::optional<ConfigurationImportBinding> configurationImportDraft(const MappingChangeOwner &owner, const QString &id);
     void completeConfigurationImportSave(const MappingChangeOwner &owner, const QString &id);

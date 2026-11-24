@@ -181,13 +181,16 @@ async def check_contract(exe):
             move_configuration = {"action": "configuration.move", "catalog_revision": revision,
                                   "group": "合成配置", "target_group": "Other"}
             reset_order = {"action": "configuration.reset_order", "catalog_revision": revision}
-            for request in (move_configuration, reset_order):
+            remove_configuration = {"action": "configuration.remove", "catalog_revision": revision,
+                                    "group": "Other"}
+            for request in (move_configuration, reset_order, remove_configuration):
                 validator.validate(request)
                 expect_not_connected(await client.call_tool("qkm_preview_changes", request))
             for invalid in (move_configuration | {"target_group": None},
                             move_configuration | {"group": "bad\nname"},
                             move_configuration | {"source_tab_ref": tab},
-                            reset_order | {"group": "Other"}, reset_order | {"catalog_revision": "old"}):
+                            reset_order | {"group": "Other"}, reset_order | {"catalog_revision": "old"},
+                            remove_configuration | {"target_group": "Extra"}, remove_configuration | {"group": ""}):
                 assert not validator.is_valid(invalid)
                 denied = await client.call_tool("qkm_preview_changes", invalid)
                 assert denied.is_error is True and denied.structured_content is None
