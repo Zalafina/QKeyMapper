@@ -14,14 +14,14 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | WIN-CRITERIA-249 [Gemini] `configuration.set_window_match_criteria`（主窗进程／标题／类名匹配文本、0..5 模式与全局禁改／缓存延迟刷新守卫），本机选验完成，待 Codex 复核 |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (本提交，源码基线 57238d01) |
+| 当前切片 | WIN-CRITERIA-249 [Gemini] (`9c18d9b5`) `configuration.set_window_match_criteria`，本机选验完成，待 Codex 复核（2026-11-24 今日收尾检查点） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
 | 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～249（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾） |
 | 当前验证／证据 | 249 Qt6 Release `649498A0` 零警告；Rust 23+13 单测（`C072833F`）与双协议契约 6 组通过；双 Qt 定向组件 `97E3AF25`/`E34E9AE1` 各 4 passed；新建可复用双 Qt 读回器 `25D21FE6`/`9B2A787D`；隔离产品 `D1876E96`（禁用 FakerInput 分配与连接）＋正式 Rust `C072833F` 完成 GUI 探针、只读拦截、正则拦截、纯文本 clean->dirty 且缓存延迟、全局禁用拦截、冷启动、双 Qt 读回（`changed_other_keys=0`）及演示模式，全退出 0 |
-| 当前控制器 | 11-24 PID 6448 活跃（剩余约 1h25m，有效至 19:02）。249 进程、配对、凭据、授权与登记已清零 |
+| 当前控制器 | 11-24 PID 6448 当前活跃且已清零（有效至 19:02，scope/registered_targets/unresolved_starts 全空；今日收尾后可在外部终端 `off` 关闭，明日新会话须在外部普通权限终端重新创建外部 gsudo 控制器） |
 | 下一项动作 | 明日从 `WIN-AUTOSTART-250 [Gemini]`（`configuration.set_auto_match_foreground`，可复用 `249` 的 `read_window_match.exe`）接续，随后推进 `WIN-SAME-WINDOWS-251` 与 `IGNORE-*` |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
 
