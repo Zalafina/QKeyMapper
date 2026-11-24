@@ -392,6 +392,7 @@ class ActionTests(ControllerFixture):
         status = self.result(status_request)
         self.assertEqual((status['registered_target_count'], status['registered_target_limit']), (128, REGISTRATION_LIMIT))
         self.assertEqual(status['registered_targets'], status['releasable_targets'])
+        self.assertIs(status['release_reference_supported'], True)
         self.assertEqual(len(status['scope']['test_actions']['definitions']), 32)
         self.assertLessEqual(len(self.controller.results), 64)
         for file in (self.controller.runtime / 'state.json',
@@ -429,6 +430,62 @@ class ActionTests(ControllerFixture):
         self.assertNotEqual(updated['definition_hash'], digest(extra))
         self.assertEqual(len(actions.definitions), 128)
 
+    def test_release_reference_survives_original_result_eviction(self):
+        actions = self.controller.actions
+        target_id = self.target['id']
+        self.authorize()
+        mark = self.release_request('mark_releasable', actions.registration_reference(target_id))
+        runtime = self.controller.runtime
+        old_result = runtime / 'results' / (mark['request_id'] + '.json')
+        self.assertTrue(old_result.is_file())
+        for _ in range(65):
+            status = self.result(self.request('status'))
+        self.assertFalse(old_result.exists())
+        self.assertEqual(len(self.controller.results), 64)
+        self.assertEqual(status['releasable_targets'], [target_id])
+
+        marks = actions.release_marks.copy()
+        window = vars(self.controller.window).copy()
+        state = (runtime / 'state.json').read_bytes()
+        request = self.request('release_reference', target_id=target_id, actor=self.actor)
+        result = app.read_json(runtime / 'results' / (request['id'] + '.json'))
+        self.assertTrue(result['ok'])
+        self.assertEqual(result['action'], 'target_release_reference')
+        self.assertEqual(result['target_id'], target_id)
+        reference = result['release_reference']
+        self.assertEqual(reference, mark['release_reference'])
+        self.assertEqual(result['instance'], status['instance'])
+        self.assertEqual(actions.release_marks, marks)
+        self.assertEqual(vars(self.controller.window), window)
+        self.assertEqual(list(actions.definitions), [target_id])
+        self.assertEqual((runtime / 'state.json').read_bytes(), state)
+        history = b''.join(path.read_bytes() for path in (runtime / 'history').glob('events-*.jsonl'))
+        for published in (state, history):
+            self.assertNotIn(b'"release_token"', published)
+            self.assertNotIn(reference['release_token'].encode(), published)
+        self.release_request('unregister', reference)
+        self.assertNotIn(target_id, actions.definitions)
+
+    def test_release_reference_rejects_invalid_unmarked_or_unavailable_target(self):
+        target_id = self.target['id']
+        self.authorize()
+        for selected, error in ((None, 'invalid_arguments'), ('bad/id', 'invalid_arguments'),
+                                ('missing-target', 'stale_registration'), (target_id, 'not_releasable')):
+            with self.subTest(selected=selected):
+                result = self.result(self.request('release_reference', target_id=selected, actor=self.actor))
+                self.assertEqual(result['error'], error)
+                self.assertNotIn('release_reference', result)
+
+        reference = self.controller.actions.registration_reference(target_id)
+        self.release_request('mark_releasable', reference)
+        with patch.object(self.controller, 'closing', True):
+            result = self.result(self.request('release_reference', target_id=target_id, actor=self.actor))
+            self.assertEqual(result['error'], 'busy')
+        result = self.result(self.request('release_reference', target_id=target_id, actor={}))
+        self.assertEqual(result['error'], 'identity_rejected')
+        result = self.result(self.request('release_reference', target_id=target_id, actor=self.actor, instance='0' * 32))
+        self.assertEqual(result['error'], 'stale_controller')
+
     def test_release_rechecks_authorization_and_live_dependencies(self):
         actions = self.controller.actions
         target_id = self.target['id']
@@ -439,6 +496,8 @@ class ActionTests(ControllerFixture):
         mark = self.release_request('mark_releasable', reference)['release_reference']
         with patch.object(self.controller, 'scope', {'test_actions': {'definitions': [reference['definition_hash']]}}):
             self.release_request('unregister', mark, 'target_authorized')
+            result = self.result(self.request('release_reference', target_id=target_id, actor=self.actor))
+            self.assertEqual(result['error'], 'target_authorized')
             self.assertNotIn(target_id, self.controller.snapshot()['releasable_targets'])
 
         self.backend.live[601] = True
@@ -454,6 +513,10 @@ class ActionTests(ControllerFixture):
             with self.subTest(field=field, dependency=dependency), patch.object(owner, field, dependency):
                 self.release_request('mark_releasable', reference, 'target_in_use')
                 self.release_request('unregister', mark, 'target_in_use')
+                with patch.object(actions, 'refresh_owned') as refresh:
+                    result = self.result(self.request('release_reference', target_id=target_id, actor=self.actor))
+                    self.assertEqual(result['error'], 'target_in_use')
+                    refresh.assert_not_called()
                 self.assertIn(target_id, actions.definitions)
                 self.assertNotIn(target_id, self.controller.snapshot()['releasable_targets'])
         with patch.object(actions, 'unknown_starts', {'e' * 32: 'known-unrelated-target'}):
@@ -462,7 +525,8 @@ class ActionTests(ControllerFixture):
 
     def test_stale_release_reference_cannot_remove_reauthorized_or_reregistered_target(self):
         actions = self.controller.actions
-        reference = actions.registration_reference(self.target['id'])
+        target_id = self.target['id']
+        reference = actions.registration_reference(target_id)
         self.authorize()
         denied = self.result(self.request('mark_releasable', target=reference, actor={}))
         self.assertEqual(denied['error'], 'identity_rejected')
@@ -472,6 +536,8 @@ class ActionTests(ControllerFixture):
         self.assertEqual(self.release_request('mark_releasable', reference)['release_reference'], original)
         self.authorize([reference['definition_hash']])
         self.assertEqual(actions.releasable_targets(), [])
+        result = self.result(self.request('release_reference', target_id=target_id, actor=self.actor))
+        self.assertEqual(result['error'], 'target_authorized')
         self.release_request('unregister', original, 'stale_release_reference')
         self.authorize()
         refreshed = self.release_request('mark_releasable', reference)['release_reference']
@@ -481,7 +547,11 @@ class ActionTests(ControllerFixture):
         self.release_request('unregister', dict(refreshed, definition_hash='0' * 64), 'stale_registration')
         actions.register(self.target, [reference['definition_hash']])
         self.assertEqual(actions.releasable_targets(), [])
+        result = self.result(self.request('release_reference', target_id=target_id, actor=self.actor))
+        self.assertEqual(result['error'], 'not_releasable')
         current = self.release_request('mark_releasable', reference)['release_reference']
+        result = self.result(self.request('release_reference', target_id=target_id, actor=self.actor))
+        self.assertEqual(result['release_reference'], current)
         self.release_request('unregister', refreshed, 'stale_release_reference')
         self.release_request('unregister', current)
         updated = self.register(dict(self.target, maximum_seconds=91))
@@ -577,6 +647,59 @@ class ActionTests(ControllerFixture):
                         app.client(['unregister'], target_file=target_file)
                     send.assert_not_called()
             create.assert_not_called()
+
+    def test_release_reference_cli_checks_capability_and_preserves_legacy_release_commands(self):
+        target_id = self.target['id']
+        state = self.controller.snapshot()
+        legacy = {key: value for key, value in state.items() if key != 'release_reference_supported'}
+        reference = self.controller.actions.registration_reference(target_id)
+        target_file = self.root / 'release-reference.json'
+        with patch.object(app, 'token_info', return_value={'elevated': False, 'integrity': 8192}), \
+                patch.object(app, 'runtime_safe'), patch.object(app, 'verified_controller') as verified, \
+                patch.object(app, 'send') as send, patch.object(app, 'ensure_controller') as create:
+            verified.return_value = state
+            request_id = 'e' * 32
+            app.client(['release-ref', target_id], request_id=request_id)
+            send.assert_called_once_with(state, {'op': 'release_reference', 'target_id': target_id},
+                                         timeout=10, request_id=request_id)
+            send.reset_mock()
+            for old, error in ((legacy, 'controller_upgrade_required'), (None, 'controller_absent')):
+                with self.subTest(error=error):
+                    with self.assertRaises(CacheError) as rejected:
+                        verified.return_value = old
+                        app.client(['release-ref', target_id])
+                    self.assertEqual(rejected.exception.code, error)
+            send.assert_not_called()
+            verified.return_value = legacy
+            for command, operation, value in (
+                    ('mark-releasable', 'mark_releasable', reference),
+                    ('unregister', 'unregister', dict(reference, release_token='f' * 32))):
+                with self.subTest(command=command):
+                    app.write_json(target_file, value)
+                    app.client([command], target_file=target_file)
+                    send.assert_called_once_with(legacy, {'op': operation, 'target': value}, timeout=10, request_id=None)
+                    send.reset_mock()
+            create.assert_not_called()
+
+    def test_release_cli_rejects_conflicting_files_and_invalid_query_arguments(self):
+        target_id = self.target['id']
+        target_file = self.root / 'release-reference.json'
+        with patch.object(app, 'token_info', return_value={'elevated': False, 'integrity': 8192}), \
+                patch.object(app, 'runtime_safe'), patch.object(app, 'verified_controller') as verified:
+            for words, target in ((['release-ref', target_id], None), (['mark-releasable'], target_file),
+                                  (['unregister'], target_file)):
+                for option in ('scope_file', 'job_file', 'definition_file', 'action_file'):
+                    with self.subTest(words=words, option=option):
+                        with self.assertRaises(CacheError) as rejected:
+                            app.client(words, target_file=target, **{option: target_file})
+                        self.assertEqual(rejected.exception.code, 'invalid_arguments')
+            for words, target in ((['release-ref'], None), (['release-ref', 'bad/id'], None),
+                                  (['release-ref', target_id, target_id], None), (['release-ref', target_id], target_file)):
+                with self.subTest(words=words, target=target):
+                    with self.assertRaises(CacheError) as rejected:
+                        app.client(words, target_file=target)
+                    self.assertEqual(rejected.exception.code, 'invalid_arguments')
+            verified.assert_not_called()
 
     def test_upgrade_keeps_previous_cutoff_and_refuses_active_job(self):
         old = {'ok': True, 'status': 'active', 'identity': {'pid': 42}, 'instance': 'a' * 32,

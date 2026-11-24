@@ -139,10 +139,11 @@ class Actions:
         require(target is not None and digest(target) == fingerprint, "登记已变化或已注销，请核对最新登记。", "stale_registration")
         return target_id, fingerprint
 
-    def require_releasable(self, target_id, fingerprint):
+    def require_releasable(self, target_id, fingerprint, *, refresh_owned=True):
         require(not self.c.closing, "控制器正在关闭。", "busy")
         require(fingerprint not in self.approved_definitions(), "该定义仍有授权，先撤出本定义的授权摘要。", "target_authorized")
-        self.refresh_owned()
+        if refresh_owned:
+            self.refresh_owned()
         require(not self.in_use(target_id), "该定义仍关联进程、动作、作业或未定启动。", "target_in_use")
 
     def mark_releasable(self, reference, request_id):
@@ -152,6 +153,16 @@ class Actions:
             self.release_marks[target_id] = (fingerprint, uuid.uuid4().hex)
             self.c.record("target_release_marked", request_id=request_id, target_id=target_id, definition_hash=fingerprint)
         return {**reference, "release_token": self.release_marks[target_id][1]}
+
+    def release_reference(self, target_id):
+        require(type(target_id) is str and TARGET_ID.fullmatch(target_id), "须提供一个合法的目标登记 ID。")
+        require(target_id in self.definitions, "目标登记不存在或已注销。", "stale_registration")
+        reference = self.registration_reference(target_id)
+        fingerprint = reference["definition_hash"]
+        self.require_releasable(target_id, fingerprint, refresh_owned=False)
+        mark = self.release_marks.get(target_id)
+        require(mark is not None and mark[0] == fingerprint, "该目标尚未标记为可释放。", "not_releasable")
+        return {**reference, "release_token": mark[1]}
 
     def unregister(self, reference, request_id):
         target_id, fingerprint = self.check_reference(reference, unregister=True)

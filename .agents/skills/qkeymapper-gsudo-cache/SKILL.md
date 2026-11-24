@@ -52,13 +52,14 @@ description: 在 QKeyMapper 工作区查看、创建或调整普通测试控制�
 
 同一目标增加普通用例只更新cases；同类新目标另登记定义，不改缓存核心。不因新文件名／case ID重问已批准的范围；真正新增输入、驱动、GUI或其他系统副作用仍先说明并获得所需授权。固定GUI动作沿用已有受限助手；新增动作在该助手实现并独立验证，定义绑定实际助手摘要。无自有进程时可重新审核登记助手更新，不重启控制器。
 
-每个控制器可登记 128 项，授权仍最多 32 个定义摘要，自有测试进程仍最多 32 个。测试责任方确认暂时无需再用且撤出该定义的授权后，可以显式标记并注销。注销成功后释放登记容量。使用 status 查看已用容量和可释放 ID，再按[显式释放示例](references/test-actions.md#显式释放登记)选择目标。
+每个控制器可登记 128 项，授权仍最多 32 个定义摘要，自有测试进程仍最多 32 个。一次性目标在收尾确认退出且责任方确认暂不再用后，撤出该定义的授权，再显式标记。跨切片复用同一逻辑目标可使用稳定 ID，重新审核并登记。使用 `status` 查看已用容量和可释放 ID，再按[显式释放示例](references/test-actions.md#显式释放登记)取回同一实例的引用并选择注销。
 
 内部接口：
 
 - `authorize --scope-file <JSON>`：完整替换范围，保留已有允许项。旧product／source／input_regression／identity_probe范围仍有效；test_actions须有reason及最多32个定义摘要。
 - `register --definition-file <JSON>`：登记已获独立范围许可的目标／用例。字段及示例见引用页；活跃目标不能被覆盖。
-- `mark-releasable --target-file <JSON>`／`unregister --target-file <JSON>`：核对实例、定义 ID、摘要及当前依赖，标记后凭返回的释放引用显式注销。重新授权或登记使旧释放引用失效。
+- `mark-releasable --target-file <JSON>`／`unregister --target-file <JSON>`：核对实例、定义 ID、摘要及当前依赖，标记后凭有效释放引用显式注销。重新授权或登记使旧释放引用失效。
+- `release-ref <target_id>` 查询已标记且当前合格的单个目标。原标记回执淘汰后也可以取回释放引用。
 - `test-action --action-file <JSON>`：仅Start／Close／Gui三类结构化动作。关闭及GUI核对本控制器拥有的PID、创建时间、EXE和桌面；PID复用拒绝。
 - `run --job-file <JSON>`：保留整套product／source／input_regression和固定身份探针。控制器从这些既定参数生成受限定义；普通子脚本不加旧的 `--gsudo-cache`。该旧选项现在明确拒绝，不再创建嵌套／临时缓存。
 - `result <request_id>`：查询原结果。超时／结果未知不得通过新ID盲目重放。

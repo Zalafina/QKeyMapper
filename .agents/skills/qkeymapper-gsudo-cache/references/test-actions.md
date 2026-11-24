@@ -66,7 +66,9 @@ scope['test_actions'] = {
     'definitions': sorted(approved),
 }
 assert cache.send(state, {'op': 'authorize', 'scope': scope})['ok']
-assert cache.send(state, {'op': 'register', 'definition': value})['ok']
+registered = cache.send(state, {'op': 'register', 'definition': value})
+assert registered['ok']
+registration_reference = registered.get('registration_reference')
 ```
 
 例中的原生夹具需事先部署匹配Qt DLL，或把实际需要的Qt PATH精确登记到environment。源文件及工具链本身不提权。不要把示例reason当作未经核对的授权模板。
@@ -99,13 +101,21 @@ Close只操作登记且仍由当前控制器拥有的同一进程，核对PID、
 
 ## 显式释放登记
 
-status 保留 `registered_targets`，返回 `registered_target_count`、`registered_target_limit` 及当前可释放的 `releasable_targets` ID 列表。容量 128 只用于登记。32 个授权摘要与 32 个自有测试进程的上限独立生效。
+`status` 保留 `registered_targets`，返回 `registered_target_count`、`registered_target_limit` 及当前可释放的 `releasable_targets` ID 列表。容量 128 只用于登记。32 个授权摘要与 32 个自有测试进程的上限独立生效。
 
-1. 负责该定义的测试流程确认后续暂时无需该目标，再用 `authorize` 撤出该定义的摘要并保留其他范围。确认没有依赖它的自有进程、固定动作、整套作业或未定启动。无法归属的未定启动会保留可能涉及的登记。
-2. 把 `register` 成功结果里的 `registration_reference` 对象写入本地 UTF-8 JSON，内容包括 `instance`、`target_id` 和 `definition_hash`。整套作业自动登记的定义可从同实例的 `target_registered` 记录核对这三个字段。运行 `mark-releasable --target-file <JSON>`，保留返回的 `release_reference`。登记仍占用该槽。
-3. 通过 status 选择实际要注销的 ID，把它对应的完整 `release_reference` 写入 JSON，运行 `unregister --target-file <JSON>`。控制器核对当前实例、ID、摘要、释放令牌与现有依赖。成功后释放一个内存登记槽，历史及测试原件保留。再次使用该目标时，重新走完整范围授权和定义登记。
+1. 一次性目标在测试脚本的 `finally` 中确认自有进程已经退出，且没有依赖该定义的固定动作、整套作业或未定启动。负责该定义的流程确认暂时无需使用时，用 `authorize` 只撤出本定义摘要，保留其他已批准范围。退出未确认或启动结果未定时，查询原请求并保留可能涉及的登记。
+2. 把本次 `register` 返回的 `registration_reference` 对象写入本地 UTF-8 JSON，内容包括 `instance`、`target_id` 和 `definition_hash`。整套作业自动登记的定义可从同实例的 `target_registered` 历史记录核对这三个字段。运行 `mark-releasable --target-file <JSON>`，登记仍占用槽位。该目标确定无需再用时，可凭返回的 `release_reference` 当场显式注销，也可留待后续会话按需释放。
+3. 后续会话从 `status` 选定可释放 ID，用 `release-ref <target_id>` 取回引用，无需找回原标记回执。核对返回的实例与所选 `status` 实例、目标 ID 一致，再把完整的 `release_reference` 对象写入 JSON 并运行 `unregister --target-file <JSON>`。控制器复查实例、ID、摘要、令牌和依赖。成功后释放一个内存槽，历史及测试原件保留。
 
-原 ID 重新登记或本定义重新获得授权后，之前的释放令牌失效。登记满额返回 `request_limit`，消息指明 128 项上限及当前是否存在可释放登记。未知结果先查询原请求。旧控制器缺少释放接口时返回 `controller_upgrade_required`，升级需单独授权。
+例如所选 ID 为 `maintenance-one` 时，在同一普通登录会话查询当前引用。
+
+```powershell
+& out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 .agents/skills/qkeymapper-gsudo-cache/scripts/cache_control.py release-ref maintenance-one
+```
+
+跨切片频繁复用同一逻辑目标时，可用稳定 ID，在原目标空闲且重新完成范围授权和定义审核后更新。原 ID 重新登记或本定义重新获得授权会使此前的释放令牌失效。查询使用新的请求 ID，历史回执仍按原请求语义查询。登记满额返回 `request_limit`，消息指明 128 项上限及当前是否有可释放登记。
+
+`release_reference_supported` 表示控制器支持 `release-ref`。无此能力时查询返回 `controller_upgrade_required`，旧版已有的标记和注销仍可使用。升级需单独授权。
 
 ## 并发、更新和失败
 

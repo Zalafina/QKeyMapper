@@ -20,7 +20,7 @@ import uuid
 from cache_core import (CHINA, DEFAULT_SECONDS, CacheError, Window, build_job,
                         parse_command, require, seconds_ok, validate_scope)
 from cache_history import HEARTBEAT_SECONDS, History, environment
-from cache_actions import Actions, REGISTRATION_LIMIT, action_command, TICKS_TO_FILETIME, file_hash
+from cache_actions import Actions, REGISTRATION_LIMIT, TARGET_ID, action_command, TICKS_TO_FILETIME, file_hash
 
 SCRIPT = Path(__file__).resolve()
 ROOT = next(p for p in SCRIPT.parents if (p / "QKeyMapper/QKeyMapper.pro").is_file())
@@ -252,7 +252,7 @@ class Controller:
             "generation": self.window.generation, "default_seconds": DEFAULT_SECONDS,
             "scope": self.scope, "registered_targets": sorted(self.actions.definitions),
             "registered_target_count": len(self.actions.definitions), "registered_target_limit": REGISTRATION_LIMIT,
-            "releasable_targets": self.actions.releasable_targets(),
+            "releasable_targets": self.actions.releasable_targets(), "release_reference_supported": True,
             "owned_targets": [{"pid": pid, "target_id": item["definition"]["id"]} for pid, item in self.actions.owned.items()],
             "unresolved_starts": sorted(self.actions.unknown_starts),
             "current_action": self.actions.pending["request"]["Action"] if self.actions.pending else None,
@@ -326,7 +326,8 @@ class Controller:
         operation = request.get("op")
         fields = {"status": set(), "off": set(), "set": {"deadline", "restore", "remaining_cap"},
             "authorize": {"scope"}, "run": {"kind", "arguments"}, "register": {"definition"},
-            "mark_releasable": {"target"}, "unregister": {"target"}, "test_action": {"request", "job_token"}}
+            "mark_releasable": {"target"}, "release_reference": {"target_id"}, "unregister": {"target"},
+            "test_action": {"request", "job_token"}}
         history_op = operation if type(operation) is str and operation in fields else "invalid"
         if history_op != "status":
             self.record("request", request_id=request_id, operation=history_op,
@@ -354,6 +355,11 @@ class Controller:
                 self.backend.verify_actor(request.get("actor"))
                 reference = self.actions.mark_releasable(request.get("target"), request_id)
                 self.answer(request_id, {"ok": True, "action": "target_release_marked", "target_id": reference["target_id"],
+                    "release_reference": reference}, operation)
+            elif operation == "release_reference":
+                self.backend.verify_actor(request.get("actor"))
+                reference = self.actions.release_reference(request.get("target_id"))
+                self.answer(request_id, {"ok": True, "action": "target_release_reference", "target_id": reference["target_id"],
                     "release_reference": reference}, operation)
             elif operation == "unregister":
                 self.backend.verify_actor(request.get("actor"))
@@ -642,6 +648,7 @@ def client(words, scope_file=None, job_file=None, request_id=None, definition_fi
     runtime_safe()
     text = " ".join(words)
     release_ops = {"mark-releasable": "mark_releasable", "unregister": "unregister"}
+    release_query = bool(words and words[0] == "release-ref")
     require(target_file is None or text in release_ops, "--target-file 仅用于显式释放登记。")
     if words and words[0] == "result":
         require(len(words) == 2 and HEX_ID.fullmatch(words[1]) is not None, "须提供完整请求 ID。")
@@ -650,10 +657,19 @@ def client(words, scope_file=None, job_file=None, request_id=None, definition_fi
         return {**read_json(path), "historical_result": True}
     if text == "upgrade":
         return upgrade_controller()
-    if text in release_ops:
-        require(target_file is not None, "须提供 --target-file 指定目标登记。")
+    if release_query or text in release_ops:
+        require(all(path is None for path in (scope_file, job_file, definition_file, action_file)),
+            "释放登记命令只接受对应的目标参数。")
+        if release_query:
+            require(len(words) == 2 and TARGET_ID.fullmatch(words[1]), "须提供一个合法的目标登记 ID。")
+        else:
+            require(target_file is not None, "须提供 --target-file 指定目标登记。")
         state = verified_controller()
         require(state is not None, "没有受管控制器。", "controller_absent")
+        if release_query:
+            require(state.get("release_reference_supported") is True, "现有控制器需经授权在空闲时升级。",
+                "controller_upgrade_required")
+            return send(state, {"op": "release_reference", "target_id": words[1]}, timeout=10, request_id=request_id)
         require("releasable_targets" in state, "现有控制器需经授权在空闲时升级。", "controller_upgrade_required")
         return send(state, {"op": release_ops[text], "target": read_json(target_file, 2048)}, timeout=10, request_id=request_id)
     if text in ("register", "test-action"):
