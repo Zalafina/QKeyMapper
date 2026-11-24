@@ -256,6 +256,22 @@ struct SaveConfigurationImport {
 }
 
 #[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct ConfigurationMove {
+    action: String,
+    catalog_revision: String,
+    group: String,
+    target_group: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct ConfigurationResetOrder {
+    action: String,
+    catalog_revision: String,
+}
+
+#[derive(Deserialize, Serialize)]
 #[serde(rename_all = "snake_case")]
 enum MacroInsertPosition {
     Above,
@@ -426,6 +442,10 @@ fn macro_text(value: &str, max: usize) -> bool {
 
 fn single_line(value: &str) -> bool {
     value.encode_utf16().count() <= 32767 && !value.contains(['\0', '\r', '\n'])
+}
+
+fn configuration_group_name(value: &str) -> bool {
+    !value.is_empty() && value.trim() == value && single_line(value)
 }
 
 fn notification_color(value: &str, digits: usize) -> bool {
@@ -776,17 +796,28 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                         let mut seen = std::collections::HashSet::new();
                         revision(&v.catalog_revision)
                             && (1..=100).contains(&v.groups.len())
-                            && v.groups.iter().all(|name| {
-                                !name.is_empty()
-                                    && name.trim() == name
-                                    && single_line(name)
-                                    && seen.insert(name)
-                            })
+                            && v.groups
+                                .iter()
+                                .all(|name| configuration_group_name(name) && seen.insert(name))
                             && valid_macro_backup_name(&v.file_name)
                     });
                 }
                 Some("configuration.save_import") => {
-                    return typed(arguments, |v: &SaveConfigurationImport| id(&v.import_draft_id));
+                    return typed(arguments, |v: &SaveConfigurationImport| {
+                        id(&v.import_draft_id)
+                    });
+                }
+                Some("configuration.move") => {
+                    return typed(arguments, |v: &ConfigurationMove| {
+                        revision(&v.catalog_revision)
+                            && configuration_group_name(&v.group)
+                            && configuration_group_name(&v.target_group)
+                    });
+                }
+                Some("configuration.reset_order") => {
+                    return typed(arguments, |v: &ConfigurationResetOrder| {
+                        revision(&v.catalog_revision)
+                    });
                 }
                 Some("macro.upsert") => {
                     return typed(arguments, |v: &MacroPreview<MacroUpsert>| {
@@ -1122,6 +1153,33 @@ mod tests {
                 *output.as_object().unwrap()
             );
         }
+    }
+
+    #[test]
+    fn configuration_order_requires_current_catalog_and_exact_fields() {
+        let revision = "a".repeat(64);
+        let move_group = json!({"action":"configuration.move", "catalog_revision":revision,
+            "group":"配置甲", "target_group":"Second"});
+        let reset = json!({"action":"configuration.reset_order", "catalog_revision":revision});
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for valid in [&move_group, &reset] {
+            assert_eq!(preview(valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for field in ["group", "target_group", "catalog_revision"] {
+            let mut absent = move_group.clone();
+            absent.as_object_mut().unwrap().remove(field);
+            assert!(preview(&absent).is_err());
+        }
+        let mut padded = move_group.clone();
+        padded["target_group"] = " Second".into();
+        assert!(preview(&padded).is_err());
+        let mut multiline = move_group;
+        multiline["group"] = "bad\nname".into();
+        assert!(preview(&multiline).is_err());
+        let mut extra = reset;
+        extra["group"] = "配置甲".into();
+        assert!(preview(&extra).is_err());
     }
 
     #[test]

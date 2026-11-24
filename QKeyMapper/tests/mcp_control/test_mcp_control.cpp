@@ -213,6 +213,7 @@ private slots:
     void configurationImportPreservesScope();
     void configurationImportDraftLifecycle();
     void configurationImportArguments();
+    void configurationOrderArgumentsAndOwnership();
     void ibInputChangeArguments();
     void savePreviewArguments();
     void mappingRemovalArguments();
@@ -801,6 +802,51 @@ void McpControlTest::configurationImportArguments()
     QCOMPARE(saveRequest.configurationImport.draftId, draft);
     QVERIFY(!validateMappingChangeRequest(method, {{action, QStringLiteral("configuration.save_import")},
         {QStringLiteral("import_draft_id"), draft.toUpper()}}).ok());
+}
+
+void McpControlTest::configurationOrderArgumentsAndOwnership()
+{
+    const QString revision(64, QLatin1Char('a'));
+    const QString method = QStringLiteral("qkm_preview_changes");
+    const QJsonObject move{{QStringLiteral("action"), QStringLiteral("configuration.move")},
+        {QStringLiteral("catalog_revision"), revision}, {QStringLiteral("group"), QStringLiteral("配置甲")},
+        {QStringLiteral("target_group"), QStringLiteral("Second")}};
+    const auto parsed = validateMappingChangeRequest(method, move);
+    QVERIFY(parsed.ok());
+    QCOMPARE(parsed.action, MappingChangeAction::OrderConfiguration);
+    QCOMPARE(parsed.configurationOrder.group, QStringLiteral("配置甲"));
+    QCOMPARE(parsed.configurationOrder.targetGroup, QStringLiteral("Second"));
+    QVERIFY(!parsed.configurationOrder.reset());
+
+    auto malformed = move;
+    malformed.insert(QStringLiteral("group"), QStringLiteral("bad\nname"));
+    QVERIFY(!validateMappingChangeRequest(method, malformed).ok());
+    malformed = move;
+    malformed.remove(QStringLiteral("target_group"));
+    QVERIFY(!validateMappingChangeRequest(method, malformed).ok());
+    malformed = move;
+    malformed.insert(QStringLiteral("save"), false);
+    QVERIFY(!validateMappingChangeRequest(method, malformed).ok());
+    const QJsonObject reset{{QStringLiteral("action"), QStringLiteral("configuration.reset_order")},
+        {QStringLiteral("catalog_revision"), revision}};
+    const auto resetRequest = validateMappingChangeRequest(method, reset);
+    QVERIFY(resetRequest.ok());
+    QVERIFY(resetRequest.configurationOrder.reset());
+
+    auto binding = parsed.configurationOrder;
+    MappingChangeStore store;
+    const MappingChangeOwner owner{QString(32, QLatin1Char('a')), QString(32, QLatin1Char('b')), 1};
+    QVERIFY(!store.createConfigurationOrder(owner, binding, {}, {}));
+    binding.contextRevision = QString(64, QLatin1Char('c'));
+    const auto preview = store.createConfigurationOrder(owner, binding, {}, {});
+    QVERIFY(preview);
+    auto other = owner;
+    ++other.permissionEpoch;
+    QVERIFY(!store.begin(other, preview->id));
+    const auto applying = store.begin(owner, preview->id);
+    QVERIFY(applying && applying->configurationOrder);
+    QCOMPARE(applying->configurationOrder->contextRevision, binding.contextRevision);
+    QVERIFY(!store.begin(owner, preview->id));
 }
 
 void McpControlTest::mappingChangeArguments()

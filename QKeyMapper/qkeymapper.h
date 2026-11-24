@@ -2148,6 +2148,9 @@ private:
     void handleAutomationConfigurationImport(const QkmAutomation::AutomationRequest &request,
         const QkmAutomation::MappingChangeRequest &validation, const QkmAutomation::MappingChangeOwner &owner,
         const QkmAutomation::MappingChangePreview *applying);
+    void handleAutomationConfigurationOrder(const QkmAutomation::AutomationRequest &request,
+        const QkmAutomation::MappingChangeRequest &validation, const QkmAutomation::MappingChangeOwner &owner,
+        const QkmAutomation::MappingChangePreview *applying);
     void handleAutomationRequest(const QkmAutomation::AutomationRequest &request);
     void handleAutomationCatalogQuery(const QkmAutomation::AutomationRequest &request);
     void handleAutomationMacroExport(const QkmAutomation::AutomationRequest &request);
@@ -2221,7 +2224,8 @@ private:
     void appendSettingSelectOrderIfMissing(QSettings &settingFile, const QString &settingName);
     void removeSettingSelectOrderEntry(QSettings &settingFile, const QString &settingName);
     void setCurrentSettingSelectByGroupName(const QString &settingName);
-    bool moveSettingSelectOrderEntry(const QString &settingName, int targetUserIndex);
+    void refreshSettingSelectOrder(QSettings &settingFile);
+    bool moveSettingSelectOrderEntry(const QString &settingName, int targetUserIndex, bool showWriteFailure = true);
     bool removeSettingByName(const QString &settingName);
     struct SettingSaveResult {
         enum class Failure { None, StateRejected, InvalidTarget, OverwriteCancelled,

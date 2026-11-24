@@ -178,6 +178,19 @@ async def check_contract(exe):
                 assert not validator.is_valid(invalid)
                 denied = await client.call_tool("qkm_preview_changes", invalid)
                 assert denied.is_error is True and denied.structured_content is None
+            move_configuration = {"action": "configuration.move", "catalog_revision": revision,
+                                  "group": "合成配置", "target_group": "Other"}
+            reset_order = {"action": "configuration.reset_order", "catalog_revision": revision}
+            for request in (move_configuration, reset_order):
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for invalid in (move_configuration | {"target_group": None},
+                            move_configuration | {"group": "bad\nname"},
+                            move_configuration | {"source_tab_ref": tab},
+                            reset_order | {"group": "Other"}, reset_order | {"catalog_revision": "old"}):
+                assert not validator.is_valid(invalid)
+                denied = await client.call_tool("qkm_preview_changes", invalid)
+                assert denied.is_error is True and denied.structured_content is None
             for extra in ({"document_base64": "QUJD"}, {"file_name": "../escape.ini"}, {"overwrite": True}):
                 assert not validator.is_valid(table_import | extra)
             for field in ("save_window_size", "save_splitter_position"):
@@ -243,7 +256,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "startup_position",
-                "catalog_revision", "groups", "on_conflict", "import_draft_id"}
+                "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
             assert move_rule["required"] == ["action"]

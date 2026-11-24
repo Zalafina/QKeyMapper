@@ -139,6 +139,25 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.action = MappingChangeAction::SaveConfigurationImport;
         return result;
     }
+    if (preview && (action == QLatin1String("configuration.move") || action == QLatin1String("configuration.reset_order"))) {
+        auto &binding = result.configurationOrder;
+        binding.catalogRevision = arguments.value(QStringLiteral("catalog_revision")).toString();
+        const bool reset = action == QLatin1String("configuration.reset_order");
+        if (!isLowerHex(binding.catalogRevision, 64) || arguments.size() != (reset ? 2 : 4))
+            return fail("Provide the current configuration catalog revision and, for a move, two ordinary groups.");
+        if (!reset) {
+            const auto validName = [](const QString &name) {
+                return !name.isEmpty() && name == name.trimmed() && name.size() <= 32767 && !name.contains(QChar::Null)
+                    && !name.contains(QLatin1Char('\r')) && !name.contains(QLatin1Char('\n'));
+            };
+            binding.group = arguments.value(QStringLiteral("group")).toString();
+            binding.targetGroup = arguments.value(QStringLiteral("target_group")).toString();
+            if (!validName(binding.group) || !validName(binding.targetGroup))
+                return fail("Provide the exact single-line source and target group names.");
+        }
+        result.action = MappingChangeAction::OrderConfiguration;
+        return result;
+    }
     if (preview && action == QLatin1String("table.import")) {
         auto &table = result.update;
         table.sourceTabRef = arguments.value(QStringLiteral("source_tab_ref")).toString();
@@ -1412,6 +1431,24 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }
+    const auto groupName = string(QStringLiteral("^[^\\r\\n]+$"), 32767);
+    auto moveOrder = capability("configuration.move.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.move")}}},
+            {QStringLiteral("catalog_revision"), revision}, {QStringLiteral("group"), groupName},
+            {QStringLiteral("target_group"), groupName}},
+            {QStringLiteral("action"), QStringLiteral("catalog_revision"), QStringLiteral("group"), QStringLiteral("target_group")}));
+    auto resetOrder = capability("configuration.reset_order.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.reset_order")}}},
+            {QStringLiteral("catalog_revision"), revision}}, {QStringLiteral("action"), QStringLiteral("catalog_revision")}));
+    auto moveOrderApply = capability("configuration.move.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
+    auto resetOrderApply = capability("configuration.reset_order.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
+    const QJsonArray orderLimits{QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("ordinary_groups_only"),
+        QStringLiteral("write_only_configuration_order"), QStringLiteral("preserve_selected_configuration_and_drafts")};
+    for (auto *item : {&moveOrder, &moveOrderApply, &resetOrder, &resetOrderApply}) {
+        item->insert(QStringLiteral("limitations"), orderLimits);
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
     capabilities.append(operation);
     return capabilities;
 }
@@ -1428,7 +1465,7 @@ bool MappingChangeStore::remember(const MappingChangePreview &preview, const QSt
     QJsonObject value{{QStringLiteral("status"), status}, {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
     if (preview.save) value.insert(QStringLiteral("target"), saveOperationTarget(preview));
     if (preview.removal) value.insert(QStringLiteral("target"), removalOperationTarget(preview));
-    if (preview.update || preview.preferences || preview.macro || preview.configurationImport)
+    if (preview.update || preview.preferences || preview.macro || preview.configurationImport || preview.configurationOrder)
         value.insert(QStringLiteral("target"), preview.description.value(QStringLiteral("target")));
     if (!errorCode.isEmpty()) value.insert(QStringLiteral("error"), QJsonObject{
         {QStringLiteral("code"), errorCode}, {QStringLiteral("message"), message}});
@@ -1623,6 +1660,19 @@ std::optional<MappingChangePreview> MappingChangeStore::createConfigurationImpor
     return preview;
 }
 
+std::optional<MappingChangePreview> MappingChangeStore::createConfigurationOrder(const MappingChangeOwner &owner,
+    const ConfigurationOrderBinding &binding, const QJsonObject &description, const QString &preferencesRevision)
+{
+    if (!isLowerHex(binding.catalogRevision, 64) || !isLowerHex(binding.contextRevision, 64)
+        || binding.group.isEmpty() != binding.targetGroup.isEmpty()) return std::nullopt;
+    auto preview = create(owner, MappingAdditionArguments{}, description, preferencesRevision);
+    if (preview) {
+        preview->configurationOrder = binding;
+        m_previews[preview->id] = *preview;
+    }
+    return preview;
+}
+
 bool MappingChangeStore::stageConfigurationImport(const MappingChangePreview &preview, QJsonObject result)
 {
     if (!preview.configurationImport || !preview.configurationImport->draftId.isEmpty() || expired(preview)) return false;
@@ -1717,7 +1767,7 @@ QJsonObject MappingChangeStore::operation(const MappingChangeOwner &owner, const
             {QStringLiteral("remaining_ms"), double(qMax(qint64(0), remaining))}};
         if (preview->save) value.insert(QStringLiteral("target"), saveOperationTarget(*preview));
         if (preview->removal) value.insert(QStringLiteral("target"), removalOperationTarget(*preview));
-        if (preview->macro || preview->configurationImport)
+        if (preview->macro || preview->configurationImport || preview->configurationOrder)
             value.insert(QStringLiteral("target"), preview->description.value(QStringLiteral("target")));
         return value;
     }
