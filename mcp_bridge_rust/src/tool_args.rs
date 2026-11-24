@@ -436,6 +436,14 @@ struct Key2MouseSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct ProcessIconAsTrayIcon {
+    action: String,
+    source_tab_ref: String,
+    process_icon_as_tray_icon: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct StartupPoint {
     x: i32,
     y: i32,
@@ -872,6 +880,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && fields.x_speed.is_none_or(|x| (1..=99).contains(&x))
                             && fields.y_speed.is_none_or(|y| (1..=99).contains(&y))
                             && fields.polling_interval_ms.is_none_or(|ms| (1..=99).contains(&ms))
+                    });
+                }
+                Some("configuration.set_process_icon_as_tray_icon") => {
+                    return typed(arguments, |v: &ProcessIconAsTrayIcon| {
+                        tab_ref(&v.source_tab_ref)
                     });
                 }
                 Some("general.set_startup_position") => {
@@ -1414,6 +1427,20 @@ mod tests {
             assert!(preview(&json!({"action":"configuration.set_key2mouse_settings", "source_tab_ref":tab, "key2mouse":bad})).is_err());
         }
         assert!(preview(&json!({"action":"configuration.set_key2mouse_settings", "source_tab_ref":tab, "key2mouse":{"x_speed":3}, "extra":1})).is_err());
+    }
+
+    #[test]
+    fn configuration_process_icon_as_tray_icon_requires_tab_and_boolean() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for flag in [true, false] {
+            let valid = json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":flag});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        assert!(preview(&json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":1})).is_err());
+        assert!(preview(&json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":null})).is_err());
+        assert!(preview(&json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":true, "extra":1})).is_err());
     }
 
     #[test]

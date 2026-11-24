@@ -206,7 +206,8 @@ async def check_contract(exe):
                 assert not validator.is_valid(table_import | extra)
             for action_name, field in (("general.set_save_window_size", "save_window_size"),
                                        ("general.set_save_splitter_position", "save_splitter_position"),
-                                       ("general.set_sound_effect", "play_sound_effect")):
+                                       ("general.set_sound_effect", "play_sound_effect"),
+                                       ("configuration.set_process_icon_as_tray_icon", "process_icon_as_tray_icon")):
                 option = {"action": action_name, "source_tab_ref": tab, field: True}
                 for value in (True, False):
                     request = option | {field: value}
@@ -311,7 +312,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "startup_position",
+                "fullscreen_global_mapping", "key2mouse", "process_icon_as_tray_icon", "startup_position",
                 "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)

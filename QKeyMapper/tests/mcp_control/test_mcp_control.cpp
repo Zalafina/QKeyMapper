@@ -1576,6 +1576,20 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateKey2Mouse({{QStringLiteral("polling_interval_ms"), QJsonValue::Null}}).ok());
     QVERIFY(!validateKey2Mouse({{QStringLiteral("x_speed"), 3}, {QStringLiteral("extra"), 1}}).ok());
 
+    const auto validateProcessIconTray = [&](const QJsonValue &value) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_process_icon_as_tray_icon")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("process_icon_as_tray_icon"), value}});
+    };
+    for (bool value : {true, false}) {
+        const auto result = validateProcessIconTray(value);
+        QVERIFY(result.ok() && result.update.processIconAsTrayIcon.has_value());
+        QCOMPARE(*result.update.processIconAsTrayIcon, value);
+    }
+    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
+        QVERIFY(!validateProcessIconTray(value).ok());
+
     const auto validateStartupPosition = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
@@ -1602,9 +1616,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 98);
+    QCOMPARE(capabilities.size(), 100);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 92);
+    QCOMPARE(demoCapabilities.size(), 94);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1613,6 +1627,8 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(90).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_fullscreen_global_mapping.apply"));
     QCOMPARE(capabilities.at(91).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_key2mouse_settings.preview"));
     QCOMPARE(capabilities.at(92).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_key2mouse_settings.apply"));
+    QCOMPARE(capabilities.at(93).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_process_icon_as_tray_icon.preview"));
+    QCOMPARE(capabilities.at(94).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_process_icon_as_tray_icon.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
     }));
@@ -1621,6 +1637,9 @@ void McpControlTest::mappingChangeArguments()
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_key2mouse_settings.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_process_icon_as_tray_icon.apply");
     }));
     for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
             QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply")}) {

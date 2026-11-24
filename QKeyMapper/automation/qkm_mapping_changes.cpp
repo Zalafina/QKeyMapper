@@ -304,6 +304,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool globalSwitchTimeoutPreview = preview && action == QLatin1String("general.set_global_switch_timeout");
     const bool fullscreenGlobalMappingPreview = preview && action == QLatin1String("general.set_fullscreen_global_mapping");
     const bool key2MousePreview = preview && action == QLatin1String("configuration.set_key2mouse_settings");
+    const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -319,7 +320,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || startupPositionPreview;
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || processIconTrayPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -340,6 +341,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : globalSwitchTimeoutPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("timeout_ms")}
         : fullscreenGlobalMappingPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}
         : key2MousePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}
+        : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
@@ -502,6 +504,11 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 return fail("key2mouse x_speed and y_speed must be integers between 1 and 99.");
             if (!parseIntInRange(fields, QStringLiteral("polling_interval_ms"), MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX, result.update.mousePollingIntervalMs))
                 return fail("key2mouse polling_interval_ms must be an integer between 1 and 99 milliseconds.");
+        }
+        if (processIconTrayPreview) {
+            const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
+            if (!value.isBool()) return fail("Provide an explicit boolean process_icon_as_tray_icon.");
+            result.update.processIconAsTrayIcon = value.toBool();
         }
         if (startupPositionPreview) {
             using namespace QKeyMapperConstants;
@@ -1617,6 +1624,19 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
     for (auto *item : {&key2MousePreview, &key2MouseApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
             QStringLiteral("key2mouse_speed_and_polling_interval"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto processIconTrayPreviewCap = capability("configuration.set_process_icon_as_tray_icon.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_process_icon_as_tray_icon")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("process_icon_as_tray_icon"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}));
+    auto processIconTrayApply = capability("configuration.set_process_icon_as_tray_icon.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&processIconTrayPreviewCap, &processIconTrayApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("ordinary_or_blank_profile_only"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);

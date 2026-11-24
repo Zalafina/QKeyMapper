@@ -14,16 +14,25 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | ADV-MOUSE-245 [Gemini] `configuration.set_key2mouse_settings`（Key2Mouse 两轴速度与轮询间隔，覆盖 `ADV-MOUSE-SPEED`＋`ADV-MOUSE-POLL`），本机选验完成，待 Codex 复核（继续推进 246） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (本提交，源码基线 f9e0aa0b) |
+| 当前切片 | ADV-PROCESS-TRAY-246 [Gemini] `configuration.set_process_icon_as_tray_icon`（进程图标作托盘图标与全局配置禁改守卫），本机选验完成，待 Codex 复核（继续推进 247） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (本提交，源码基线 88393171) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～245（`QGeneralAdvancedDialog` 11/11 收齐，映射高级切入 245） |
-| 当前验证／证据 | 245 Qt6 Release `19BC2741` 零警告；Rust 23+9 单测（`66D7CC6E`）与双协议契约通过；双 Qt 定向组件 `318896B2`/`361736F7` 各 4 passed；隔离产品 `46F2B0A7`（禁用 FakerInput 分配与连接）＋正式 Rust `66D7CC6E` 完成 GUI 探针、只读拦截、上下界 `1`/`99`、无操作、清草稿后单改 `polling_interval_ms` 置 dirty、显式保存、冷读、双 Qt 读回（`18`/`42`/`17`）及演示模式，全退出 0 |
-| 当前控制器 | 11-24 PID 6448 活跃（剩余约 2h36m，有效至 19:02）。245 进程、配对、凭据、授权与登记已清零 |
-| 下一项动作 | 推进 ADV-PROCESS-TRAY-246 [Gemini]（`configuration.set_process_icon_as_tray_icon`） |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～246 |
+| 当前验证／证据 | 246 Qt6 Release `49FD0DA4` 零警告；Rust 23+10 单测（`82A4B837`）与双协议契约通过；双 Qt 定向组件 `F4CD39E0`/`892B7A09` 各 4 passed；隔离产品 `C732782C`（禁用 FakerInput 分配与连接）＋正式 Rust `82A4B837` 完成 GUI 探针、只读拦截、`false -> true`、显式保存、切换 `QKeyMapperGlobalSetting` 核验 `editable=false` 与 `unsupported_capability` 拦截、冷读、双 Qt 读回（`true`）及演示模式，全退出 0 |
+| 当前控制器 | 11-24 PID 6448 活跃（剩余约 2h17m，有效至 19:02）。246 进程、配对、凭据、授权与登记已清零 |
+| 下一项动作 | 推进 ADV-POINT-KEYS-247 [Gemini]（`configuration.set_point_display_keys`）与 ADV-NOTIFY-248 [Gemini]（`configuration.set_custom_notification`） |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### ADV-PROCESS-TRAY-246 [Gemini]：映射期间进程图标作为托盘图标 `configuration.set_process_icon_as_tray_icon`
+
+- **源码基线**：`88393171`。
+- **变更范围**：`QMappingAdvancedDialog` 新增只读查询 `isProcessIconAsTrayIconEnabled()`；`automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::processIconAsTrayIcon`、`configuration.set_process_icon_as_tray_icon` 严格布尔校验及标准/演示双模式能力（100 标准 / 94 演示）；`QKeyMapper/qkeymapper.cpp` 在 `collectAutomationState` 输出 `process_icon_as_tray_icon`（`enabled`＋`editable`），在 `handleAutomationMappingChange` 处理 `changingProcessIconAsTrayIcon`（允许 Common Tab、核对组一致性、`!isProcessIconAsTrayIconEnabled()` 时按全局禁用守卫拒绝 `unsupported_capability`，应用调用 `setProcessIconAsTrayIcon` 触发 `toggled -> dirty` 且不直接刷新托盘）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json` 与 `test_tool_contract.py`。
+- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`49FD0DA4`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`82A4B837`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`F4CD39E0`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`892B7A09`）；复用双 Qt 高级读回器 `out/mcp_adv_mouse_245_20261124/{qt6,qt5}-reader/release/read_mapping_advanced.exe`（`0E41D434` / `DE0E99C1`）；隔离产品 `out/mcp_product/adv_process_tray_246_20261124/runtime/QKeyMapperMcpAcceptance_AdvProcessTray.exe`（`C732782C`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/adv_process_tray_246_20261124/run2/`（含 `gui-probe-result.json` 与 `readback-{qt6,qt5}.json`）。
+- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+10 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证普通/空白态 `ProcessIconAsTrayIconCheckBox` 可编辑、点击切换并置 dirty 且 INI 不变；正式 Rust 隔离产品 `run2` 覆盖只读 `permission_denied`、非法参数拒绝（非布尔与额外键）、预览取消、`false -> true`（`modified=true`、dirty 且不写 INI）、`true -> true` 无操作、显式保存 `McpSaved`、干净切换 `QKeyMapperGlobalSetting` 实测 `process_icon_as_tray_icon={enabled:false, editable:false}` 且 `configuration.set_process_icon_as_tray_icon` 拒为 `unsupported_capability`、切回 `McpSaved` 恢复 `{enabled:true, editable:true}`、冷启动恢复、双 Qt 6.8.3／5.15.2 读回（`McpSaved/ProcessIconAsTrayIconChecked=true`、`_raw="true"`，其余未触及基线键 86 项不变）与 `--demo-configuration-only` 不写盘。全部自有产品退出 0，FilterKeys 一致，控制器 PID `6448` 已清零。
+- **失败重试轮次**：`run1` 因测试脚本 `verify_adv_process_tray.py` 误用 `cfg_list["catalog_revision"]` 而非 `cfg_list["catalog"]["revision"]` 中断，修正测试脚本后 `run2` 一次性全绿通过。
+- **明确未验范围**：**开启 FakerInput 连接的运行**、映射开启期间真实 `Default` 桌面系统托盘图标优先级（Tab 图片 vs 进程图标 vs 状态图标）渲染效果、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
 
 ### ADV-MOUSE-245 [Gemini]：Key2Mouse 速度与轮询间隔 `configuration.set_key2mouse_settings`
 

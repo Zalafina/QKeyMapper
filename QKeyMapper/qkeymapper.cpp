@@ -38165,6 +38165,9 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             m_MappingAdvancedDialog->getMouseXSpeed(),
             m_MappingAdvancedDialog->getMouseYSpeed(),
             m_MappingAdvancedDialog->getMousePollingInterval()));
+        result.insert(QStringLiteral("process_icon_as_tray_icon"), QJsonObject{
+            {QStringLiteral("enabled"), m_MappingAdvancedDialog->getProcessIconAsTrayIcon()},
+            {QStringLiteral("editable"), m_MappingAdvancedDialog->isProcessIconAsTrayIconEnabled()}});
     }
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
@@ -40097,6 +40100,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingWindowDisplayMode = updating && update.windowDisplayMode.has_value();
         const bool changingKey2Mouse = updating
             && (update.mouseXSpeed.has_value() || update.mouseYSpeed.has_value() || update.mousePollingIntervalMs.has_value());
+        const bool changingProcessIconAsTrayIcon = updating && update.processIconAsTrayIcon.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -40112,7 +40116,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
-            || changingWindowDisplayMode || changingKey2Mouse;
+            || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
@@ -40128,22 +40132,26 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
             || m_KeyMappingDataTable->hasActiveEditor()
             || (changingGeneralPreference && !m_GeneralAdvancedDialog)
-            || (changingKey2Mouse && !m_MappingAdvancedDialog)) {
+            || ((changingKey2Mouse || changingProcessIconAsTrayIcon) && !m_MappingAdvancedDialog)) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
-            && !changingWindowDisplayMode && !changingKey2Mouse && isCommonMappingTabIndex(tab)) {
+            && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
-        if ((changingWindowDisplayMode || changingKey2Mouse) && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
+        if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon) && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
             return;
         }
         if (changingWindowDisplayMode && !ui->checkDisplayModeComboBox->isEnabled()) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("The window display condition is disabled for the loaded configuration."));
+            return;
+        }
+        if (changingProcessIconAsTrayIcon && !m_MappingAdvancedDialog->isProcessIconAsTrayIconEnabled()) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Process icon as tray icon is disabled for the loaded configuration."));
             return;
         }
         const bool movingRow = update.move != MappingRowMove::None;
@@ -40468,6 +40476,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), QStringLiteral("set_key2mouse_settings")},
                     {QStringLiteral("before"), automationKey2Mouse(beforeX, beforeY, beforePoll)},
                     {QStringLiteral("after"), automationKey2Mouse(afterX, afterY, afterPoll)}};
+            } else if (changingProcessIconAsTrayIcon) {
+                const bool before = m_MappingAdvancedDialog->getProcessIconAsTrayIcon();
+                const bool after = *update.processIconAsTrayIcon;
+                modified = before != after;
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_process_icon_as_tray_icon")},
+                    {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
             } else if (changingGeneralTablePreference) {
                 const int before = changingTableEditTrigger ? m_GeneralAdvancedDialog->getTableEditModeTrigger()
                     : m_GeneralAdvancedDialog->getTableInsertMode();
@@ -40973,6 +40989,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingStartupPosition ? QStringLiteral("general.set_startup_position")
             : changingWindowDisplayMode ? QStringLiteral("configuration.set_window_display_mode")
             : changingKey2Mouse ? QStringLiteral("configuration.set_key2mouse_settings")
+            : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
@@ -41056,6 +41073,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 if (update.mouseXSpeed) m_MappingAdvancedDialog->setMouseXSpeed(*update.mouseXSpeed);
                 if (update.mouseYSpeed) m_MappingAdvancedDialog->setMouseYSpeed(*update.mouseYSpeed);
                 if (update.mousePollingIntervalMs) m_MappingAdvancedDialog->setMousePollingInterval(*update.mousePollingIntervalMs);
+            } else if (changingProcessIconAsTrayIcon) {
+                m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);
             } else if (changingMappingDisplay) {
                 const bool notes = mappingDisplayAfter.value(QStringLiteral("notes")).toBool();
                 const bool category = mappingDisplayAfter.value(QStringLiteral("category_column")).toBool();

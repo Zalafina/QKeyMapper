@@ -31,6 +31,7 @@ public:
     int getMouseYSpeed(void);
     int getMousePollingInterval(void);
     bool getProcessIconAsTrayIcon(void);
+    bool isProcessIconAsTrayIconEnabled(void) const;
     bool getAcceptVirtualGamepadInput(void);
     bool getCommonMappingTableEnabled(void);
     QString getShowWindowPointKey(void);

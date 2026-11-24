@@ -654,6 +654,11 @@ void QMappingAdvancedDialog::setProcessIconAsTrayIconEnabled(bool enabled)
     ui->ProcessIconAsTrayIconCheckBox->setEnabled(enabled);
 }
 
+bool QMappingAdvancedDialog::isProcessIconAsTrayIconEnabled(void) const
+{
+    return ui->ProcessIconAsTrayIconCheckBox->isEnabled();
+}
+
 void QMappingAdvancedDialog::updateCustomNotificationState()
 {
     const bool enabled = ui->customNotificationEnableCheckBox->isChecked();
