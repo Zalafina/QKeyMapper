@@ -65,6 +65,7 @@ struct MappingUpdateArguments {
     std::optional<int> windowDisplayMode;
     std::optional<bool> saveWindowSize;
     std::optional<bool> saveSplitterPosition;
+    std::optional<bool> playSoundEffect;
     std::optional<int> startupPositionMode;
     std::optional<QPoint> startupPositionPoint;
     QByteArray tableImportDocument;

@@ -300,6 +300,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool windowDisplayModePreview = preview && action == QLatin1String("configuration.set_window_display_mode");
     const bool saveWindowSizePreview = preview && action == QLatin1String("general.set_save_window_size");
     const bool saveSplitterPositionPreview = preview && action == QLatin1String("general.set_save_splitter_position");
+    const bool playSoundEffectPreview = preview && action == QLatin1String("general.set_sound_effect");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -314,7 +315,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
-        || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || startupPositionPreview;
+        || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -331,6 +332,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : windowDisplayModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_display_mode")}
         : saveWindowSizePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_window_size")}
         : saveSplitterPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_splitter_position")}
+        : playSoundEffectPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("play_sound_effect")}
         : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
@@ -425,6 +427,11 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             const auto value = arguments.value(QStringLiteral("save_splitter_position"));
             if (!value.isBool()) return fail("Provide an explicit boolean save_splitter_position.");
             result.update.saveSplitterPosition = value.toBool();
+        }
+        if (playSoundEffectPreview) {
+            const auto value = arguments.value(QStringLiteral("play_sound_effect"));
+            if (!value.isBool()) return fail("Provide an explicit boolean play_sound_effect.");
+            result.update.playSoundEffect = value.toBool();
         }
         if (startupPositionPreview) {
             using namespace QKeyMapperConstants;
@@ -1468,6 +1475,19 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
         QStringLiteral("preserve_selected_configuration_and_drafts")};
     for (auto *item : {&removeConfiguration, &removeConfigurationApply}) {
         item->insert(QStringLiteral("limitations"), removeLimits);
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto soundEffectPreview = capability("general.set_sound_effect.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_sound_effect")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("play_sound_effect"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("play_sound_effect")}));
+    auto soundEffectApply = capability("general.set_sound_effect.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&soundEffectPreview, &soundEffectApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
+            QStringLiteral("notification_sound_option"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }

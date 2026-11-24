@@ -384,6 +384,14 @@ struct SaveSplitterPosition {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct PlaySoundEffect {
+    action: String,
+    source_tab_ref: String,
+    play_sound_effect: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct StartupPoint {
     x: i32,
     y: i32,
@@ -773,6 +781,9 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                     return typed(arguments, |v: &SaveSplitterPosition| {
                         tab_ref(&v.source_tab_ref)
                     });
+                }
+                Some("general.set_sound_effect") => {
+                    return typed(arguments, |v: &PlaySoundEffect| tab_ref(&v.source_tab_ref));
                 }
                 Some("general.set_startup_position") => {
                     if arguments
@@ -1214,6 +1225,19 @@ mod tests {
         let mut load_empty_with_group = load_empty;
         load_empty_with_group["group"] = "Other".into();
         assert!(preview(&load_empty_with_group).is_err());
+    }
+
+    #[test]
+    fn general_sound_effect_requires_tab_and_boolean() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for flag in [true, false] {
+            let valid = json!({"action":"general.set_sound_effect", "source_tab_ref":tab, "play_sound_effect":flag});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        assert!(preview(&json!({"action":"general.set_sound_effect", "source_tab_ref":tab, "play_sound_effect":1})).is_err());
+        assert!(preview(&json!({"action":"general.set_sound_effect", "source_tab_ref":tab, "play_sound_effect":true, "extra":1})).is_err());
     }
 
     #[test]

@@ -38139,6 +38139,7 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     result.insert(QStringLiteral("window_display_mode"), ui->checkDisplayModeComboBox->currentIndex());
     result.insert(QStringLiteral("save_window_size"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveWindowSize());
     result.insert(QStringLiteral("save_splitter_position"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveSplitterPosition());
+    result.insert(QStringLiteral("play_sound_effect"), isSoundEffectEnabled());
     if (m_GeneralAdvancedDialog) {
         result.insert(QStringLiteral("startup_position"), automationStartupPosition(m_GeneralAdvancedDialog->getStartupPosition(),
             m_GeneralAdvancedDialog->getSpecifyStartupPosition()));
@@ -40062,9 +40063,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingGeneralTablePreference = changingTableInsertMode || changingTableEditTrigger;
         const bool changingSaveWindowSize = updating && update.saveWindowSize.has_value();
         const bool changingSaveSplitterPosition = updating && update.saveSplitterPosition.has_value();
+        const bool changingPlaySoundEffect = updating && update.playSoundEffect.has_value();
         const bool changingLayoutRestore = changingSaveWindowSize || changingSaveSplitterPosition;
         const bool changingStartupPosition = updating && (update.startupPositionMode || update.startupPositionPoint);
-        const bool changingGeneralPreference = changingGeneralTablePreference || changingLayoutRestore || changingStartupPosition;
+        const bool changingGeneralPreference = changingGeneralTablePreference || changingLayoutRestore || changingPlaySoundEffect || changingStartupPosition;
         const bool changingWindowDisplayMode = updating && update.windowDisplayMode.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
@@ -40439,6 +40441,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 target.insert(QStringLiteral("scope"), QStringLiteral("application_preferences"));
                 change = {{QStringLiteral("kind"), changingSaveWindowSize ? QStringLiteral("set_save_window_size")
                     : QStringLiteral("set_save_splitter_position")},
+                    {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
+            } else if (changingPlaySoundEffect) {
+                const bool before = m_GeneralAdvancedDialog->getPlaySoundEffect();
+                const bool after = *update.playSoundEffect;
+                modified = before != after;
+                target.insert(QStringLiteral("scope"), QStringLiteral("application_preferences"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_play_sound_effect")},
                     {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
             } else if (changingStartupPosition) {
                 const int beforeMode = m_GeneralAdvancedDialog->getStartupPosition();
@@ -40893,6 +40902,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingTableInsertMode ? QStringLiteral("general.set_table_insert_mode")
             : changingSaveWindowSize ? QStringLiteral("general.set_save_window_size")
             : changingSaveSplitterPosition ? QStringLiteral("general.set_save_splitter_position")
+            : changingPlaySoundEffect ? QStringLiteral("general.set_sound_effect")
             : changingStartupPosition ? QStringLiteral("general.set_startup_position")
             : changingWindowDisplayMode ? QStringLiteral("configuration.set_window_display_mode")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
@@ -40959,6 +40969,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 m_GeneralAdvancedDialog->setSaveWindowSize(*update.saveWindowSize);
             } else if (changingSaveSplitterPosition) {
                 m_GeneralAdvancedDialog->setSaveSplitterPosition(*update.saveSplitterPosition);
+            } else if (changingPlaySoundEffect) {
+                m_GeneralAdvancedDialog->setPlaySoundEffect(*update.playSoundEffect);
             } else if (changingStartupPosition) {
                 if (update.startupPositionMode) m_GeneralAdvancedDialog->setStartupPosition(*update.startupPositionMode);
                 if (update.startupPositionPoint) m_GeneralAdvancedDialog->setSpecifyStartupPosition(*update.startupPositionPoint);

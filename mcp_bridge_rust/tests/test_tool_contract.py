@@ -204,8 +204,10 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             for extra in ({"document_base64": "QUJD"}, {"file_name": "../escape.ini"}, {"overwrite": True}):
                 assert not validator.is_valid(table_import | extra)
-            for field in ("save_window_size", "save_splitter_position"):
-                option = {"action": f"general.set_{field}", "source_tab_ref": tab, field: True}
+            for action_name, field in (("general.set_save_window_size", "save_window_size"),
+                                       ("general.set_save_splitter_position", "save_splitter_position"),
+                                       ("general.set_sound_effect", "play_sound_effect")):
+                option = {"action": action_name, "source_tab_ref": tab, field: True}
                 for value in (True, False):
                     request = option | {field: value}
                     validator.validate(request)
@@ -266,7 +268,7 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
-                "save_window_size", "save_splitter_position", "startup_position",
+                "save_window_size", "save_splitter_position", "play_sound_effect", "startup_position",
                 "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
