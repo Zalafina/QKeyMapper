@@ -36,6 +36,8 @@ public:
     bool getCommonMappingTableEnabled(void);
     QString getShowWindowPointKey(void);
     QString getShowScreenPointKey(void);
+    QString getCanonicalShowWindowPointKey(void) const;
+    QString getCanonicalShowScreenPointKey(void) const;
     int getLeftTriggerPressThreshold(void);
     int getLeftTriggerLightPressThreshold(void);
     int getLeftTriggerReleaseThreshold(void);

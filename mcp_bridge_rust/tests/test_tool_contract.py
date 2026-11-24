@@ -272,6 +272,21 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
+            for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
+                           {"window_point_key": "None", "screen_point_key": "F10"},
+                           {"window_point_key": "A" * 64}):
+                request = point_keys | {"point_display_keys": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for fields in ({}, {"window_point_key": ""}, {"screen_point_key": "A" * 65},
+                           {"window_point_key": "F8\nF9"}, {"window_point_key": "F8\rF9"},
+                           {"window_point_key": "F8\0F9"}, {"window_point_key": None},
+                           {"screen_point_key": 123}, {"window_point_key": "F8", "extra": "F9"}):
+                request = point_keys | {"point_display_keys": fields}
+                assert not validator.is_valid(request), fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             startup = {"action": "general.set_startup_position", "source_tab_ref": tab}
             point = {"x": -50000, "y": 50000}
             for fields in ({"mode": 0}, {"mode": 1}, {"mode": 2}, {"point": point}, {"mode": 2, "point": point}):
@@ -312,7 +327,8 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "process_icon_as_tray_icon", "startup_position",
+                "fullscreen_global_mapping", "key2mouse", "process_icon_as_tray_icon", "point_display_keys",
+                "startup_position",
                 "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)

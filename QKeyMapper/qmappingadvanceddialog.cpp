@@ -407,6 +407,22 @@ QString QMappingAdvancedDialog::getShowScreenPointKey()
     return ui->showScreenPointKeyComboBox->currentText();
 }
 
+QString QMappingAdvancedDialog::getCanonicalShowWindowPointKey(void) const
+{
+    if (ui->showWindowPointKeyComboBox->currentIndex() == FUNCTION_KEY_NONE_INDEX) {
+        return QString::fromLatin1(FUNCTION_KEY_NONE);
+    }
+    return ui->showWindowPointKeyComboBox->currentText();
+}
+
+QString QMappingAdvancedDialog::getCanonicalShowScreenPointKey(void) const
+{
+    if (ui->showScreenPointKeyComboBox->currentIndex() == FUNCTION_KEY_NONE_INDEX) {
+        return QString::fromLatin1(FUNCTION_KEY_NONE);
+    }
+    return ui->showScreenPointKeyComboBox->currentText();
+}
+
 int QMappingAdvancedDialog::getLeftTriggerPressThreshold()
 {
     return ui->LT_Threshold_PressSpinBox->value();

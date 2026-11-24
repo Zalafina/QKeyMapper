@@ -444,6 +444,23 @@ struct ProcessIconAsTrayIcon {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct PointDisplayKeysFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    window_point_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    screen_point_key: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct PointDisplayKeys {
+    action: String,
+    source_tab_ref: String,
+    point_display_keys: PointDisplayKeysFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct StartupPoint {
     x: i32,
     y: i32,
@@ -885,6 +902,28 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 Some("configuration.set_process_icon_as_tray_icon") => {
                     return typed(arguments, |v: &ProcessIconAsTrayIcon| {
                         tab_ref(&v.source_tab_ref)
+                    });
+                }
+                Some("configuration.set_point_display_keys") => {
+                    if arguments
+                        .get("point_display_keys")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    let valid_key = |key: &str| {
+                        !key.is_empty()
+                            && key.encode_utf16().count() <= 64
+                            && !key.chars().any(|c| matches!(c, '\0' | '\r' | '\n'))
+                    };
+                    return typed(arguments, |v: &PointDisplayKeys| {
+                        let fields = &v.point_display_keys;
+                        tab_ref(&v.source_tab_ref)
+                            && (fields.window_point_key.is_some()
+                                || fields.screen_point_key.is_some())
+                            && fields.window_point_key.as_deref().is_none_or(valid_key)
+                            && fields.screen_point_key.as_deref().is_none_or(valid_key)
                     });
                 }
                 Some("general.set_startup_position") => {
@@ -1441,6 +1480,36 @@ mod tests {
         assert!(preview(&json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":1})).is_err());
         assert!(preview(&json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":null})).is_err());
         assert!(preview(&json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":true, "extra":1})).is_err());
+    }
+
+    #[test]
+    fn configuration_point_display_keys_checks_constraints() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for fields in [
+            json!({"window_point_key": "None"}),
+            json!({"screen_point_key": "F10"}),
+            json!({"window_point_key": "None", "screen_point_key": "F10"}),
+            json!({"window_point_key": "A".repeat(64)}),
+        ] {
+            let valid = json!({"action":"configuration.set_point_display_keys", "source_tab_ref":tab, "point_display_keys":fields});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!({}),
+            json!({"window_point_key": ""}),
+            json!({"screen_point_key": "A".repeat(65)}),
+            json!({"window_point_key": "F8\nF9"}),
+            json!({"window_point_key": "F8\rF9"}),
+            json!({"window_point_key": "F8\u{0000}F9"}),
+            json!({"window_point_key": null}),
+            json!({"screen_point_key": 123}),
+            json!({"window_point_key": "F8", "extra": "F9"}),
+        ] {
+            assert!(preview(&json!({"action":"configuration.set_point_display_keys", "source_tab_ref":tab, "point_display_keys":bad})).is_err());
+        }
+        assert!(preview(&json!({"action":"configuration.set_point_display_keys", "source_tab_ref":tab, "point_display_keys":{"window_point_key":"F8"}, "extra":1})).is_err());
     }
 
     #[test]

@@ -14,16 +14,25 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | ADV-PROCESS-TRAY-246 [Gemini] `configuration.set_process_icon_as_tray_icon`（进程图标作托盘图标与全局配置禁改守卫），本机选验完成，待 Codex 复核（继续推进 247） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (本提交，源码基线 88393171) |
+| 当前切片 | ADV-POINT-KEYS-247 [Gemini] `configuration.set_point_display_keys`（窗口／屏幕坐标显示快捷键与规范 `"None"`／原生输入键严格校验），本机选验完成，待 Codex 复核（继续推进 248） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (本提交，源码基线 3cae0d65) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～246 |
-| 当前验证／证据 | 246 Qt6 Release `49FD0DA4` 零警告；Rust 23+10 单测（`82A4B837`）与双协议契约通过；双 Qt 定向组件 `F4CD39E0`/`892B7A09` 各 4 passed；隔离产品 `C732782C`（禁用 FakerInput 分配与连接）＋正式 Rust `82A4B837` 完成 GUI 探针、只读拦截、`false -> true`、显式保存、切换 `QKeyMapperGlobalSetting` 核验 `editable=false` 与 `unsupported_capability` 拦截、冷读、双 Qt 读回（`true`）及演示模式，全退出 0 |
-| 当前控制器 | 11-24 PID 6448 活跃（剩余约 2h17m，有效至 19:02）。246 进程、配对、凭据、授权与登记已清零 |
-| 下一项动作 | 推进 ADV-POINT-KEYS-247 [Gemini]（`configuration.set_point_display_keys`）与 ADV-NOTIFY-248 [Gemini]（`configuration.set_custom_notification`） |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～247 |
+| 当前验证／证据 | 247 Qt6 Release `87EF0BDF` 零警告；Rust 23+11 单测（`0190E26F`）与双协议契约 6 组通过；双 Qt 定向组件 `F0D902E4`/`EF9D281A` 各 4 passed；隔离产品 `2A8BAB08`（禁用 FakerInput 分配与连接）＋正式 Rust `0190E26F` 完成 GUI 探针、只读拦截、非法键名／本地化“无”拒绝、双键同设 `F10/F10`、清草稿改 `None/F10`、冷启动、双 Qt 读回（`ShowWindowPointKey="None"`、`ShowScreenPointKey="F10"`，基线 86 键不变）及演示模式，全退出 0 |
+| 当前控制器 | 11-24 PID 6448 活跃（剩余约 2h0m，有效至 19:02）。247 进程、配对、凭据、授权与登记已清零 |
+| 下一项动作 | 推进 ADV-NOTIFY-248 [Gemini]（`configuration.set_custom_notification`，收尾 `QMappingAdvancedDialog` M2-B 项），随后规划 `WIN-CRITERIA-249` 等 |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### ADV-POINT-KEYS-247 [Gemini]：窗口／屏幕坐标显示快捷键 `configuration.set_point_display_keys`
+
+- **源码基线**：`3cae0d65`。
+- **变更范围**：`QMappingAdvancedDialog` 新增规范只读 getter `getCanonicalShowWindowPointKey()`／`getCanonicalShowScreenPointKey()`（索引 `FUNCTION_KEY_NONE_INDEX` 返回规范 `"None"`，避免界面翻译污染公共状态）；`automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::showWindowPointKey`／`showScreenPointKey`、`configuration.set_point_display_keys` 字段校验（`1..64` UTF-16、非空、禁换行与 `\0`）及标准/演示双模式能力（102 标准 / 96 演示）；`QKeyMapper/qkeymapper.cpp` 新增 `automationPointDisplayKeys`、在 `collectAutomationState` 输出 `point_display_keys`，在 `handleAutomationMappingChange` 处理 `changingPointDisplayKeys`（允许 Common Tab、核对组一致性，严格按 `FUNCTION_KEY_NONE` 或 `QKeyMapper_Worker::MultiKeyboardInputList` 校验，拒绝非法串及本地化译名而不沿用旧 setter 的默认键回退；应用调用 `setShowWindowPointKey`/`setShowScreenPointKey` 触发 `currentIndexChanged -> dirty`）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json` 与 `test_tool_contract.py`。
+- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`87EF0BDF`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`0190E26F`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`F0D902E4`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`EF9D281A`）；复用双 Qt 高级读回器 `out/mcp_adv_mouse_245_20261124/{qt6,qt5}-reader/release/read_mapping_advanced.exe`（`0E41D434` / `DE0E99C1`）；隔离产品 `out/mcp_product/adv_point_keys_247_20261124/runtime/QKeyMapperMcpAcceptance_AdvPointKeys.exe`（`2A8BAB08`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/adv_point_keys_247_20261124/run1/`（含 `gui-probe-result.json`、`saved.ini` 与 `readback-{qt6,qt5}.json`）。
+- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+11 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证初值 `F8`/`F9`、切 `None`/`F10` 后索引 `0`/文本 `"F10"` 与 dirty 且 INI 不变；正式 Rust 隔离产品 `run1` 覆盖只读 `permission_denied`、Schema 非法参数（空对象、空串、超长、含换行、非字符串、额外键）、严格 `invalid_arguments` 拒绝 `"InvalidKey999"` 与本地化 `"无"`（不回退 `F8`/`F9`）、预览取消、双键同设 `F10/F10`、无操作、显式保存清干净、单设 `window_point_key="None"` 置 dirty 并保存 `McpSaved`、冷启动恢复 `{"window_point_key":"None","screen_point_key":"F10"}`、双 Qt 6.8.3／5.15.2 读回（`ShowWindowPointKey="None"`、`ShowScreenPointKey="F10"`，相对 `formal-seed.ini` 基线 86 项不变，新增 Saved 组 173 项）及 `--demo-configuration-only` 不写盘。全部自有产品退出 0，控制器 PID `6448` 已清零。
+- **失败重试轮次**：初次 `cargo test` 因 `tool_catalog.json` 第 813 行新增中文描述内 `"None"` 未转义为 `\"None\"` 失败；修正转义并重跑 `scripts/build_qt6.ps1` 更新 qmake 构建目录中的正式 Rust Sidecar 后，全套构建、契约、组件与 `run1` 产品验收均一次性全绿通过。
+- **明确未验范围**：**开启 FakerInput 连接的运行**、三语言下 `None` 译名切换展示与运行时按下窗口/屏幕坐标显示热键叠加层渲染、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
 
 ### ADV-PROCESS-TRAY-246 [Gemini]：映射期间进程图标作为托盘图标 `configuration.set_process_icon_as_tray_icon`
 

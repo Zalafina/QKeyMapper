@@ -38085,6 +38085,12 @@ static QJsonObject automationKey2Mouse(int xSpeed, int ySpeed, int pollingInterv
         {QStringLiteral("polling_interval_ms"), pollingIntervalMs}};
 }
 
+static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QString &screenKey)
+{
+    return {{QStringLiteral("window_point_key"), windowKey},
+        {QStringLiteral("screen_point_key"), screenKey}};
+}
+
 QJsonObject QKeyMapper::automationMappingDisplay() const
 {
     return {{QStringLiteral("category_column"), m_ShowCategory},
@@ -38168,6 +38174,9 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         result.insert(QStringLiteral("process_icon_as_tray_icon"), QJsonObject{
             {QStringLiteral("enabled"), m_MappingAdvancedDialog->getProcessIconAsTrayIcon()},
             {QStringLiteral("editable"), m_MappingAdvancedDialog->isProcessIconAsTrayIconEnabled()}});
+        result.insert(QStringLiteral("point_display_keys"), automationPointDisplayKeys(
+            m_MappingAdvancedDialog->getCanonicalShowWindowPointKey(),
+            m_MappingAdvancedDialog->getCanonicalShowScreenPointKey()));
     }
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
@@ -40101,6 +40110,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingKey2Mouse = updating
             && (update.mouseXSpeed.has_value() || update.mouseYSpeed.has_value() || update.mousePollingIntervalMs.has_value());
         const bool changingProcessIconAsTrayIcon = updating && update.processIconAsTrayIcon.has_value();
+        const bool changingPointDisplayKeys = updating
+            && (update.showWindowPointKey.has_value() || update.showScreenPointKey.has_value());
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -40116,7 +40127,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
-            || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon;
+            || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
@@ -40132,17 +40143,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
             || m_KeyMappingDataTable->hasActiveEditor()
             || (changingGeneralPreference && !m_GeneralAdvancedDialog)
-            || ((changingKey2Mouse || changingProcessIconAsTrayIcon) && !m_MappingAdvancedDialog)) {
+            || ((changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys) && !m_MappingAdvancedDialog)) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
-            && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon && isCommonMappingTabIndex(tab)) {
+            && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon && !changingPointDisplayKeys
+            && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
-        if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon) && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
+        if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys)
+            && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
             return;
         }
@@ -40484,6 +40497,27 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
                 change = {{QStringLiteral("kind"), QStringLiteral("set_process_icon_as_tray_icon")},
                     {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
+            } else if (changingPointDisplayKeys) {
+                const auto isValidPointKey = [](const QString &key) {
+                    return key == QLatin1String(FUNCTION_KEY_NONE)
+                        || QKeyMapper_Worker::MultiKeyboardInputList.contains(key);
+                };
+                if ((update.showWindowPointKey && !isValidPointKey(*update.showWindowPointKey))
+                    || (update.showScreenPointKey && !isValidPointKey(*update.showScreenPointKey))) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("Point display key must be None or a supported keyboard key name."));
+                    return;
+                }
+                const QString beforeWindow = m_MappingAdvancedDialog->getCanonicalShowWindowPointKey();
+                const QString beforeScreen = m_MappingAdvancedDialog->getCanonicalShowScreenPointKey();
+                const QString afterWindow = update.showWindowPointKey.value_or(beforeWindow);
+                const QString afterScreen = update.showScreenPointKey.value_or(beforeScreen);
+                modified = beforeWindow != afterWindow || beforeScreen != afterScreen;
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_point_display_keys")},
+                    {QStringLiteral("before"), automationPointDisplayKeys(beforeWindow, beforeScreen)},
+                    {QStringLiteral("after"), automationPointDisplayKeys(afterWindow, afterScreen)}};
             } else if (changingGeneralTablePreference) {
                 const int before = changingTableEditTrigger ? m_GeneralAdvancedDialog->getTableEditModeTrigger()
                     : m_GeneralAdvancedDialog->getTableInsertMode();
@@ -40990,6 +41024,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingWindowDisplayMode ? QStringLiteral("configuration.set_window_display_mode")
             : changingKey2Mouse ? QStringLiteral("configuration.set_key2mouse_settings")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
+            : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
@@ -41075,6 +41110,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 if (update.mousePollingIntervalMs) m_MappingAdvancedDialog->setMousePollingInterval(*update.mousePollingIntervalMs);
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);
+            } else if (changingPointDisplayKeys) {
+                if (update.showWindowPointKey) m_MappingAdvancedDialog->setShowWindowPointKey(*update.showWindowPointKey);
+                if (update.showScreenPointKey) m_MappingAdvancedDialog->setShowScreenPointKey(*update.showScreenPointKey);
             } else if (changingMappingDisplay) {
                 const bool notes = mappingDisplayAfter.value(QStringLiteral("notes")).toBool();
                 const bool category = mappingDisplayAfter.value(QStringLiteral("category_column")).toBool();

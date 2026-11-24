@@ -1590,6 +1590,29 @@ void McpControlTest::mappingChangeArguments()
     for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
         QVERIFY(!validateProcessIconTray(value).ok());
 
+    const auto validatePointDisplayKeys = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_point_display_keys")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("point_display_keys"), fields}});
+    };
+    const auto pointKeysBoth = validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("None")},
+        {QStringLiteral("screen_point_key"), QStringLiteral("F10")}});
+    QVERIFY(pointKeysBoth.ok() && pointKeysBoth.update.showWindowPointKey == QStringLiteral("None")
+        && pointKeysBoth.update.showScreenPointKey == QStringLiteral("F10"));
+    QVERIFY(validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("F8")}}).ok());
+    QVERIFY(validatePointDisplayKeys({{QStringLiteral("screen_point_key"), QString(64, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validatePointDisplayKeys({}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("")}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("screen_point_key"), QString(65, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("A\nB")}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("A\rB")}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("A") + QChar(0)}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), 123}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QJsonValue::Null}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("F8")},
+        {QStringLiteral("extra"), QStringLiteral("F9")}}).ok());
+
     const auto validateStartupPosition = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
@@ -1616,9 +1639,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 100);
+    QCOMPARE(capabilities.size(), 102);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 94);
+    QCOMPARE(demoCapabilities.size(), 96);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1629,6 +1652,8 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(92).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_key2mouse_settings.apply"));
     QCOMPARE(capabilities.at(93).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_process_icon_as_tray_icon.preview"));
     QCOMPARE(capabilities.at(94).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_process_icon_as_tray_icon.apply"));
+    QCOMPARE(capabilities.at(95).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_point_display_keys.preview"));
+    QCOMPARE(capabilities.at(96).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_point_display_keys.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
     }));
@@ -1640,6 +1665,9 @@ void McpControlTest::mappingChangeArguments()
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_process_icon_as_tray_icon.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_point_display_keys.apply");
     }));
     for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
             QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply")}) {

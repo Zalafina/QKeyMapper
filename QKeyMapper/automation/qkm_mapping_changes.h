@@ -73,6 +73,8 @@ struct MappingUpdateArguments {
     std::optional<int> mouseYSpeed;
     std::optional<int> mousePollingIntervalMs;
     std::optional<bool> processIconAsTrayIcon;
+    std::optional<QString> showWindowPointKey;
+    std::optional<QString> showScreenPointKey;
     std::optional<int> startupPositionMode;
     std::optional<QPoint> startupPositionPoint;
     QByteArray tableImportDocument;

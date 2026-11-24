@@ -305,6 +305,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool fullscreenGlobalMappingPreview = preview && action == QLatin1String("general.set_fullscreen_global_mapping");
     const bool key2MousePreview = preview && action == QLatin1String("configuration.set_key2mouse_settings");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
+    const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -320,7 +321,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || processIconTrayPreview || startupPositionPreview;
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || processIconTrayPreview
+        || pointDisplayKeysPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -342,6 +344,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : fullscreenGlobalMappingPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}
         : key2MousePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
+        : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
         : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
@@ -509,6 +512,30 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
             if (!value.isBool()) return fail("Provide an explicit boolean process_icon_as_tray_icon.");
             result.update.processIconAsTrayIcon = value.toBool();
+        }
+        if (pointDisplayKeysPreview) {
+            const auto raw = arguments.value(QStringLiteral("point_display_keys"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return fail("Provide at least one point display key field.");
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (it.key() != QStringLiteral("window_point_key")
+                    && it.key() != QStringLiteral("screen_point_key"))
+                    return fail("Only window_point_key and screen_point_key are allowed.");
+            }
+            const auto parseKeyName = [](const QJsonObject &obj, const QString &key, std::optional<QString> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                const QString name = val.toString();
+                if (!val.isString() || name.isEmpty() || name.size() > 64 || name.contains(QLatin1Char('\0'))
+                    || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n')))
+                    return false;
+                target = name;
+                return true;
+            };
+            if (!parseKeyName(fields, QStringLiteral("window_point_key"), result.update.showWindowPointKey)
+                || !parseKeyName(fields, QStringLiteral("screen_point_key"), result.update.showScreenPointKey))
+                return fail("Point display keys must be non-empty single-line strings of at most 64 UTF-16 code units.");
         }
         if (startupPositionPreview) {
             using namespace QKeyMapperConstants;
@@ -1637,6 +1664,31 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
     for (auto *item : {&processIconTrayPreviewCap, &processIconTrayApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
             QStringLiteral("ordinary_or_blank_profile_only"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject pointKeySchema{
+        {QStringLiteral("type"), QStringLiteral("string")},
+        {QStringLiteral("minLength"), 1},
+        {QStringLiteral("maxLength"), 64},
+        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]+$")}};
+    const QJsonObject pointDisplayKeysSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("window_point_key"), pointKeySchema},
+            {QStringLiteral("screen_point_key"), pointKeySchema}}}};
+    auto pointDisplayKeysPreviewCap = capability("configuration.set_point_display_keys.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_point_display_keys")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("point_display_keys"), pointDisplayKeysSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}));
+    auto pointDisplayKeysApply = capability("configuration.set_point_display_keys.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&pointDisplayKeysPreviewCap, &pointDisplayKeysApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("canonical_none_or_keyboard_key_name"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
