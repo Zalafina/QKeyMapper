@@ -38994,6 +38994,8 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
     const auto &binding = applying ? *applying->configurationList : validation.configurationList;
     const bool removing = binding.removesGroup();
     const bool selecting = binding.loadsGroup();
+    const bool loadingEmpty = binding.loadsEmpty();
+    const bool switching = selecting || loadingEmpty;
     const auto reject = [&](const QString &code, const QString &message) {
         if (applying) store.finish(owner, validation.id, QStringLiteral("rejected"),
             {{QStringLiteral("modified"), false}, {QStringLiteral("saved"), false}}, code, message);
@@ -39014,11 +39016,11 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
         reject(QStringLiteral("context_busy"), QStringLiteral("Configuration list changes require current authorization and an idle source after cleanup."));
         return;
     }
-    if (selecting && configurationOnlyDemo()) {
+    if (switching && configurationOnlyDemo()) {
         reject(QStringLiteral("unsupported_mode"), QStringLiteral("Configuration loading requires a standard product instance."));
         return;
     }
-    if (selecting && hasUnsavedSettingChanges()) {
+    if (switching && hasUnsavedSettingChanges()) {
         reject(QStringLiteral("unsaved_changes"), QStringLiteral("Resolve the current draft explicitly before loading another configuration."));
         return;
     }
@@ -39043,7 +39045,7 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
         {QStringLiteral("configuration_sha256"), QString::fromLatin1(QCryptographicHash::hash(
             snapshot.configurationData, QCryptographicHash::Sha256).toHex())},
         {QStringLiteral("runtime_revision"), QString::number(runtime)}};
-    if (selecting) {
+    if (switching) {
         context.insert(QStringLiteral("load_generation"), QString::number(m_MappingLoadGeneration));
         context.insert(QStringLiteral("source_epoch"), QString::number(m_AutomationSourceEpoch));
     }
@@ -39067,6 +39069,8 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
     if (reset) {
         action = QStringLiteral("configuration.reset_order");
         after = settingSelectUserGroupsFromChildGroups(cache.childGroups());
+    } else if (loadingEmpty) {
+        action = QStringLiteral("configuration.load_empty");
     } else {
         const int source = int(before.indexOf(binding.group));
         if (source < 0) {
@@ -39099,15 +39103,19 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
     }
     const bool willWrite = reset ? cache.contains(SETTINGSELECT_ORDER_LIST) : after != before;
     QJsonObject target{{QStringLiteral("instance_id"), owner.instance}, {QStringLiteral("catalog_revision"), binding.catalogRevision},
-        {selecting ? QStringLiteral("load_revision") : QStringLiteral("order_revision"), snapshot.revision}};
-    if (!reset) target.insert(QStringLiteral("group"), binding.group);
+        {switching ? QStringLiteral("load_revision") : QStringLiteral("order_revision"), snapshot.revision}};
+    if (!reset && !loadingEmpty) target.insert(QStringLiteral("group"), binding.group);
     if (binding.action == ConfigurationListAction::Move) target.insert(QStringLiteral("target_group"), binding.targetGroup);
     auto result = QJsonObject{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
         {QStringLiteral("confirmation_required"), true}, {QStringLiteral("will_write"), willWrite},
         {QStringLiteral("modified"), false}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
-    if (selecting) {
+    if (switching) {
         result.insert(QStringLiteral("previous_group"), previousGroup);
         result.insert(QStringLiteral("reload"), previousGroup == binding.group);
+        if (loadingEmpty) {
+            result.insert(QStringLiteral("clears_loaded_profile"), true);
+            result.insert(QStringLiteral("preserves_saved_configurations"), true);
+        }
     } else {
         result.insert(QStringLiteral("before_order"), QJsonArray::fromStringList(before));
         result.insert(QStringLiteral("after_order"), QJsonArray::fromStringList(after));
@@ -39142,6 +39150,7 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
     }
     if (!(removing ? validation.confirmDelete : validation.confirmScope)) {
         const auto message = removing ? QStringLiteral("Review the exact configuration group and confirm its permanent removal.")
+            : loadingEmpty ? QStringLiteral("Review the blank draft reset and confirm clearing the active profile.")
             : selecting ? QStringLiteral("Review and confirm the configuration to load.")
                         : QStringLiteral("Review the entire order and confirm its immediate write.");
         reject(QStringLiteral("confirmation_required"), message);
@@ -39154,7 +39163,7 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
         reject(QStringLiteral("stale_preview"), QStringLiteral("The fixed configuration file or authorization changed before applying."));
         return;
     }
-    if (selecting) {
+    if (switching) {
         // The GUI load can rebuild tables and dialogs. Do not hold the worker source lock through it.
         access.unlock();
         if (!ready() || QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() != runtime
@@ -39164,10 +39173,14 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
         }
         const auto generation = m_MappingLoadGeneration;
         const auto load = [&](const QString &group) {
+            if (group.isEmpty()) {
+                return selectEmptySettingGroup() && m_MappingSourceLoadAccepted
+                    && m_LoadedMappingSettingGroup.isEmpty() && currentSettingSelectGroupName().isEmpty();
+            }
             return loadSelectedSettingGroup(group) == group && m_MappingSourceLoadAccepted
                 && m_LoadedMappingSettingGroup == group && currentSettingSelectGroupName() == group;
         };
-        const bool loaded = load(binding.group);
+        const bool loaded = load(loadingEmpty ? QString() : binding.group);
         bool restored = false;
         if (!loaded && previousGroup != binding.group && m_KeyMapStatus == KEYMAP_IDLE
             && QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() == runtime && server.isRequestCurrent(request)
@@ -50840,6 +50853,44 @@ QString QKeyMapper::loadSelectedSettingGroup(const QString &group)
     return loaded;
 }
 
+bool QKeyMapper::selectEmptySettingGroup(void)
+{
+    if (KEYMAP_STOPPING == m_KeyMapStatus || loadSetting_flag || !ui || !ui->settingselectComboBox) {
+        return false;
+    }
+    {
+        const QSignalBlocker blocker(ui->settingselectComboBox);
+        ui->settingselectComboBox->setCurrentIndex(EMPTYSETTING_INDEX);
+        ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
+    }
+    ui->settingNameLineEdit->setEnabled(true);
+    ui->settingNameLineEdit->setReadOnly(false);
+    ui->processLineEdit->setEnabled(true);
+    ui->windowTitleLineEdit->setEnabled(true);
+    ui->classNameLineEdit->setEnabled(true);
+    ui->restoreProcessPathButton->setEnabled(true);
+    ui->selectSettingCustomIconButton->setEnabled(true);
+    ui->processLabel->setEnabled(true);
+    ui->windowTitleLabel->setEnabled(true);
+    ui->classNameLabel->setEnabled(true);
+    ui->checkProcessComboBox->setEnabled(true);
+    ui->checkWindowTitleComboBox->setEnabled(true);
+    ui->checkClassNameComboBox->setEnabled(true);
+    // ui->removeSettingButton->setEnabled(true);
+    ui->displayModeLabel->setEnabled(true);
+    ui->checkDisplayModeComboBox->setEnabled(true);
+    ui->descriptionLineEdit->clear();
+    ui->descriptionLineEdit->setReadOnly(false);
+    ui->descriptionLineEdit->setEnabled(true);
+    ui->descriptionLabel->setEnabled(true);
+    if (m_MappingAdvancedDialog) {
+        m_MappingAdvancedDialog->setProcessIconAsTrayIconEnabled(true);
+    }
+
+    loadEmptyMapSetting();
+    return true;
+}
+
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 void QKeyMapper::on_settingselectComboBox_textActivated(const QString &text)
 #else
@@ -50876,27 +50927,7 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[on_settingselectComboBox_textActivated/textChanged] Select setting text Empty!";
 #endif
-        ui->settingNameLineEdit->setEnabled(true);
-        ui->settingNameLineEdit->setReadOnly(false);
-        ui->processLineEdit->setEnabled(true);
-        ui->windowTitleLineEdit->setEnabled(true);
-        ui->classNameLineEdit->setEnabled(true);
-        ui->restoreProcessPathButton->setEnabled(true);
-        ui->processLabel->setEnabled(true);
-        ui->windowTitleLabel->setEnabled(true);
-        ui->classNameLabel->setEnabled(true);
-        ui->checkProcessComboBox->setEnabled(true);
-        ui->checkWindowTitleComboBox->setEnabled(true);
-        ui->checkClassNameComboBox->setEnabled(true);
-        // ui->removeSettingButton->setEnabled(true);
-        ui->displayModeLabel->setEnabled(true);
-        ui->checkDisplayModeComboBox->setEnabled(true);
-        ui->descriptionLineEdit->clear();
-        ui->descriptionLineEdit->setReadOnly(false);
-        ui->descriptionLineEdit->setEnabled(true);
-        ui->descriptionLabel->setEnabled(true);
-
-        loadEmptyMapSetting();
+        selectEmptySettingGroup();
     }
 }
 

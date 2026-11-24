@@ -14,16 +14,25 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | CFG-REMOVE-STARTUP-239 [Gemini] 已保存启动组删除与独立冷读，本机选验完成，待 Codex 复核（继续推进 240） |
-| 待 Codex 验收（Gemini 切片） | 239 (本提交，源码基线 d0342f70) |
+| 当前切片 | CFG-EMPTY-240 [Gemini] 正式加载空白草稿配置 `configuration.load_empty`，本机选验完成，待 Codex 复核（继续推进 241） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (本提交，源码基线 e4e95fe5) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～239 |
-| 当前验证／证据 | 239 复用 238 隔离产品与正式 Rust 在私有桌面完成 23 次 MCP 调用，验证启动组删除、锁失败恢复及独立冷读，双 Qt 读回 75 字段保持；运行副本禁用 FakerInput 分配与连接 |
-| 当前控制器 | 11-24 PID 36024 活跃（剩余约 4h50m，有效至 19:00）。239 进程、配对、凭据、授权与登记已清零 |
-| 下一项动作 | 推进 CFG-EMPTY-240 [Gemini]（正式加载空白草稿配置 `configuration.load_empty`） |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～240 |
+| 当前验证／证据 | 240 Qt6 Release `62F02619` 零警告；双 Qt 定向组件 `974E3526`/`310E8138` 各 4 passed；隔离产品 `FBFEBDD5`（禁用 FakerInput 分配与连接）＋正式 Rust `2FF00D79` 在私有桌面完成 GUI 探针、只读／确认／脏草稿／陈旧预览／空白切换／冷空白重载／保存空白草稿与演示模式拒绝，全退出 0 |
+| 当前控制器 | 11-24 PID 36024 活跃（剩余约 4h07m，有效至 19:00）。240 进程、配对、凭据、授权与登记已清零 |
+| 下一项动作 | 推进 CFG-LOAD-GLOBAL-241 [Gemini]（扩展 `configuration.load` 支持全局与空白来源） |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### CFG-EMPTY-240 [Gemini]：正式加载空白草稿配置 `configuration.load_empty`
+
+- **源码基线**：`e4e95fe5`。
+- **变更范围**：在 `QKeyMapper.h` / `qkeymapper.cpp` 提取共用 `selectEmptySettingGroup()`（恢复 `selectSettingCustomIconButton`、`ProcessIconAsTrayIconCheckBox` 等控件可编辑状态）并在 `handleAutomationConfigurationList` 接入 `configuration.load_empty`；在 `automation/qkm_mapping_changes.h/.cpp` 新增 `ConfigurationListAction::LoadEmpty`、标准模式 `configuration.load_empty.preview`/`.apply` 能力（90 标准 / 84 演示）并修复 `MappingChangeStore::createConfigurationList` 误拒空 `group` 的条件；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`mcp_bridge_rust/src/tool_catalog.json` 与 `mcp_bridge_rust/tests/test_tool_contract.py`。
+- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`62F02619`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`2FF00D79`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`974E3526`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`310E8138`）；隔离产品 `out/mcp_product/configuration_empty_240_20261124/runtime/QKeyMapperMcpAcceptance_ConfigEmpty.exe`（`FBFEBDD5`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/configuration_empty_240_20261124/run3/`（含 `gui-probe-result.json`）。
+- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+5 passed, 1 ignored）与 `test_tool_contract.py` 双协议通过（随后仅改 C++ Store 校验未再改 Rust）；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针覆盖 `McpSaved → 空白` 与 `QKeyMapperGlobalSetting → 空白` 的控件恢复及 INI 字节不变；正式 Rust 隔离产品 `run3` 覆盖 `permission_denied`、取消、`confirmation_required`、`invalid_arguments`（错用 `confirm_delete`）、`stale_catalog`、`stale_preview`、`unsaved_changes`、`McpSaved → 空白`（`modified=true`、`selected_group=loaded_group=""`、`has_unsaved_changes=true`、旧源 `stale_source`、保留已存组且 INI 不变）、空白态二次加载拒绝、空白草稿保存为 `McpFromEmpty`、无 `SettingSelect` 冷启动干净空白重载（`reload=true`，`has_unsaved_changes=true`）及 `--demo-configuration-only` 隐藏并拒绝 `unsupported_mode`。全部自有产品退出 0，FilterKeys 一致，控制器 PID `36024` 已清零。
+- **失败重试轮次**：Qt6 组件首轮因缺 `QKM_IPC_TEST_EXE` 与 `createConfigurationList` 校验逻辑失败后修复复跑通过；隔离产品探针首编译修正命名空间及私有成员访问；产品测试脚本前两轮修正字段断言（`business_capabilities`、`source_snapshot.revision`、`mapping_load_context.generation`）后 `run3` 一次性通过。
+- **明确未验范围**：开启 FakerInput 连接的运行、映射/监视中加载空白、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
 
 ### CFG-REMOVE-STARTUP-239 [Gemini]：已保存启动组删除与独立冷读验证
 

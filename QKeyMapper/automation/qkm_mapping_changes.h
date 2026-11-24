@@ -112,7 +112,7 @@ struct ConfigurationImportBinding {
     bool overwrite = false;
 };
 
-enum class ConfigurationListAction { Move, ResetOrder, Remove, Load };
+enum class ConfigurationListAction { Move, ResetOrder, Remove, Load, LoadEmpty };
 struct ConfigurationListBinding {
     ConfigurationListAction action = ConfigurationListAction::ResetOrder;
     QString catalogRevision;
@@ -122,6 +122,7 @@ struct ConfigurationListBinding {
     bool reset() const { return action == ConfigurationListAction::ResetOrder; }
     bool removesGroup() const { return action == ConfigurationListAction::Remove; }
     bool loadsGroup() const { return action == ConfigurationListAction::Load; }
+    bool loadsEmpty() const { return action == ConfigurationListAction::LoadEmpty; }
 };
 
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };

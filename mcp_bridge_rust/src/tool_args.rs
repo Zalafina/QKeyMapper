@@ -822,7 +822,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && configuration_group_name(&v.target_group)
                     });
                 }
-                Some("configuration.reset_order") => {
+                Some("configuration.reset_order" | "configuration.load_empty") => {
                     return typed(arguments, |v: &ConfigurationResetOrder| {
                         revision(&v.catalog_revision)
                     });
@@ -1178,9 +1178,11 @@ mod tests {
             json!({"action":"configuration.remove", "catalog_revision":revision, "group":"Other"});
         let load =
             json!({"action":"configuration.load", "catalog_revision":revision, "group":"Other"});
+        let load_empty =
+            json!({"action":"configuration.load_empty", "catalog_revision":revision});
         let preview =
             |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
-        for valid in [&move_group, &reset, &remove, &load] {
+        for valid in [&move_group, &reset, &remove, &load, &load_empty] {
             assert_eq!(preview(valid).unwrap(), *valid.as_object().unwrap());
         }
         for field in ["group", "target_group", "catalog_revision"] {
@@ -1203,6 +1205,9 @@ mod tests {
         let mut load_with_path = load;
         load_with_path["file_name"] = "other.ini".into();
         assert!(preview(&load_with_path).is_err());
+        let mut load_empty_with_group = load_empty;
+        load_empty_with_group["group"] = "Other".into();
+        assert!(preview(&load_empty_with_group).is_err());
     }
 
     #[test]

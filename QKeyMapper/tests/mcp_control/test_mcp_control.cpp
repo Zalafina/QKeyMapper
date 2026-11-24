@@ -846,6 +846,14 @@ void McpControlTest::configurationListArgumentsAndOwnership()
     QVERIFY(selection.configurationList.loadsGroup());
     load.insert(QStringLiteral("file_name"), QStringLiteral("other.ini"));
     QVERIFY(!validateMappingChangeRequest(method, load).ok());
+    QJsonObject loadEmpty = reset;
+    loadEmpty.insert(QStringLiteral("action"), QStringLiteral("configuration.load_empty"));
+    const auto emptyRequest = validateMappingChangeRequest(method, loadEmpty);
+    QVERIFY(emptyRequest.ok());
+    QVERIFY(emptyRequest.configurationList.loadsEmpty());
+    QVERIFY(!emptyRequest.configurationList.loadsGroup());
+    loadEmpty.insert(QStringLiteral("group"), QStringLiteral("Other"));
+    QVERIFY(!validateMappingChangeRequest(method, loadEmpty).ok());
 
     auto binding = parsed.configurationList;
     MappingChangeStore store;
@@ -869,6 +877,10 @@ void McpControlTest::configurationListArgumentsAndOwnership()
     loadBinding.contextRevision = binding.contextRevision;
     const auto loadPreview = store.createConfigurationList(owner, loadBinding, {}, {});
     QVERIFY(loadPreview && loadPreview->configurationList->loadsGroup());
+    auto emptyBinding = emptyRequest.configurationList;
+    emptyBinding.contextRevision = binding.contextRevision;
+    const auto emptyPreview = store.createConfigurationList(owner, emptyBinding, {}, {});
+    QVERIFY(emptyPreview && emptyPreview->configurationList->loadsEmpty());
 }
 
 void McpControlTest::mappingChangeArguments()
@@ -1499,10 +1511,11 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 88);
+    QCOMPARE(capabilities.size(), 90);
     const auto demoCapabilities = mappingChangeCapabilities(false);
     QCOMPARE(demoCapabilities.size(), 84);
-    for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply")}) {
+    for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
+            QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply")}) {
         const auto matches = [&id](const QJsonValue &item) {
             return item.toObject().value(QStringLiteral("id")).toString() == id;
         };

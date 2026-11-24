@@ -185,7 +185,8 @@ async def check_contract(exe):
                                     "group": "Other"}
             load_configuration = {"action": "configuration.load", "catalog_revision": revision,
                                   "group": "Other"}
-            for request in (move_configuration, reset_order, remove_configuration, load_configuration):
+            load_empty = {"action": "configuration.load_empty", "catalog_revision": revision}
+            for request in (move_configuration, reset_order, remove_configuration, load_configuration, load_empty):
                 validator.validate(request)
                 expect_not_connected(await client.call_tool("qkm_preview_changes", request))
             for invalid in (move_configuration | {"target_group": None},
@@ -193,7 +194,8 @@ async def check_contract(exe):
                             move_configuration | {"source_tab_ref": tab},
                             reset_order | {"group": "Other"}, reset_order | {"catalog_revision": "old"},
                             remove_configuration | {"target_group": "Extra"}, remove_configuration | {"group": ""},
-                            load_configuration | {"file_name": "other.ini"}, load_configuration | {"group": None}):
+                            load_configuration | {"file_name": "other.ini"}, load_configuration | {"group": None},
+                            load_empty | {"group": "Other"}, load_empty | {"catalog_revision": "old"}):
                 assert not validator.is_valid(invalid)
                 denied = await client.call_tool("qkm_preview_changes", invalid)
                 assert denied.is_error is True and denied.structured_content is None

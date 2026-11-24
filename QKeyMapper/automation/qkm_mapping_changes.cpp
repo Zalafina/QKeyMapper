@@ -140,18 +140,22 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         return result;
     }
     if (preview && (action == QLatin1String("configuration.move") || action == QLatin1String("configuration.reset_order")
-            || action == QLatin1String("configuration.remove") || action == QLatin1String("configuration.load"))) {
+            || action == QLatin1String("configuration.remove") || action == QLatin1String("configuration.load")
+            || action == QLatin1String("configuration.load_empty"))) {
         auto &binding = result.configurationList;
         binding.catalogRevision = arguments.value(QStringLiteral("catalog_revision")).toString();
         const bool move = action == QLatin1String("configuration.move");
         const bool remove = action == QLatin1String("configuration.remove");
+        const bool loadEmpty = action == QLatin1String("configuration.load_empty");
         if (move) binding.action = ConfigurationListAction::Move;
         else if (remove) binding.action = ConfigurationListAction::Remove;
         else if (action == QLatin1String("configuration.load")) binding.action = ConfigurationListAction::Load;
-        const int expectedFields = move ? 4 : binding.reset() ? 2 : 3;
+        else if (loadEmpty) binding.action = ConfigurationListAction::LoadEmpty;
+        const bool needsGroup = !binding.reset() && !loadEmpty;
+        const int expectedFields = move ? 4 : needsGroup ? 3 : 2;
         if (!isLowerHex(binding.catalogRevision, 64) || arguments.size() != expectedFields)
             return fail("Provide the current configuration catalog revision and the exact groups required by this action.");
-        if (!binding.reset()) {
+        if (needsGroup) {
             const auto validName = [](const QString &name) {
                 return !name.isEmpty() && name == name.trimmed() && name.size() <= 32767 && !name.contains(QChar::Null)
                     && !name.contains(QLatin1Char('\r')) && !name.contains(QLatin1Char('\n'));
@@ -1481,6 +1485,19 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
             item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
             capabilities.append(*item);
         }
+        auto loadEmpty = capability("configuration.load_empty.preview", "qkm_preview_changes", Read | Configure, true,
+            schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load_empty")}}},
+                {QStringLiteral("catalog_revision"), revision}},
+                {QStringLiteral("action"), QStringLiteral("catalog_revision")}));
+        auto applyLoadEmpty = capability("configuration.load_empty.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
+        const QJsonArray loadEmptyLimits{QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("require_clean_loaded_profile"), QStringLiteral("fixed_file_read_only"),
+            QStringLiteral("resets_draft_with_unsaved_changes"), QStringLiteral("reload_invalidates_source_references")};
+        for (auto *item : {&loadEmpty, &applyLoadEmpty}) {
+            item->insert(QStringLiteral("limitations"), loadEmptyLimits);
+            item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+            capabilities.append(*item);
+        }
     }
     capabilities.append(operation);
     return capabilities;
@@ -1698,8 +1715,9 @@ std::optional<MappingChangePreview> MappingChangeStore::createConfigurationList(
 {
     const bool targetMatches = binding.action == ConfigurationListAction::Move
         ? !binding.targetGroup.isEmpty() : binding.targetGroup.isEmpty();
+    const bool needsGroup = !binding.reset() && !binding.loadsEmpty();
     if (!isLowerHex(binding.catalogRevision, 64) || !isLowerHex(binding.contextRevision, 64)
-        || binding.reset() != binding.group.isEmpty() || !targetMatches) return std::nullopt;
+        || needsGroup == binding.group.isEmpty() || !targetMatches) return std::nullopt;
     auto preview = create(owner, MappingAdditionArguments{}, description, preferencesRevision);
     if (preview) {
         preview->configurationList = binding;

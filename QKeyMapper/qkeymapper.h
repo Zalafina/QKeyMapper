@@ -2215,6 +2215,7 @@ private:
     static QVariantList serializeCommonMappingData(const QList<MAP_KEYDATA> &data);
     QString loadKeyMapSetting(const QString &settingtext, bool load_all = false, bool preserveVButtonPanelVisibility = false);
     QString loadSelectedSettingGroup(const QString &group);
+    bool selectEmptySettingGroup(void);
     void loadEmptyMapSetting(void);
     void loadGeneralSetting(void);
     void rebuildSettingSelectComboBox(QSettings &settingFile, QStringList *validGroups = Q_NULLPTR);
