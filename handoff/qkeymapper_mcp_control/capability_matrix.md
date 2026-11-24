@@ -375,7 +375,7 @@ M0.2 按稳定能力 ID 扩充以下信息，不重复主计划的任务进度�
 
 | ID／阶段 | GUI 入口与实际处理 | 状态、持久化及已知边界 | 共用操作及独立验收要求 |
 |---|---|---|---|
-| CFG-LOAD／M2-B | 配置组合框及自定义弹出列表 applyPopupSelection → 设置索引 → on_settingselectComboBox_textActivated → loadSetting_flag → loadKeyMapSetting → 名称／flushPendingCommonPriorityRepairAfterLoad。Qt6.8.3／Qt5.15.2 均使用 textActivated，非旧 currentTextChanged 分支 | 显示描述与实际组名列表／item role 分开；仅 setCurrentIndex 不执行用户加载链路。加载会关闭相关编辑窗、重建 Tab／源表／宏、更新进程缓存及有效设置，可能执行排队界面尾部；load_all 另包含全局项。返回字符串须核对真实目标，失败前可能已改变部分状态，不能假定事务回滚 | 共用明确组名、草稿处理选择、加载作用域、停止／清理守卫及完成报告；GUI 只采集索引。EQ-CFG-LOAD 覆盖描述相同、同组重载、非法数据、未保存草稿、打开编辑窗、源引用失效、保存后的同路径重载及 GUI 尾部 |
+| CFG-LOAD／M2-B | 配置弹出列表 applyPopupSelection → textActivated → loadSelectedSettingGroup → loadKeyMapSetting 及共通优先尾部。Qt6.8.3／Qt5.15.2 均使用 textActivated | 显示描述与实际组名分开。单改索引不会加载。加载会重建 Tab／源表／宏。238 共用 GUI 加载与结束核对，标准角色下限空闲且无未保存变更的普通组，保持 INI 与启动选择 | 238 私有真实 GUI 和正式 Rust `configuration.load` 选验精确组名、同组重载、显式确认、旧引用、坏组恢复、草稿拒绝及独立冷读。空白／全局来源、打开编辑窗、监视中、完整 GUI 尾部及 Win10 待验 |
 | CFG-EMPTY／M2-B | 用户选择空白配置 → 组合框槽的空文本分支 → loadEmptyMapSetting | 清理／重建当前 Tab、宏／同步组备注、MAP_PROCESSINFO 和窗口条件，重置列出的映射参数／快捷键；不是把当前 INI 所有组删除，也不是所有全局设置恢复默认。已有初始参数和后续重置函数覆盖范围需逐项保持 | 共用明确“新建空白草稿”，保护现有草稿意图；EQ-CFG-EMPTY 比较内存源、宏、停止快捷键、共通备份及配置范围，不将其当作软件全量恢复出厂；不借空字符串隐式删除 |
 | CFG-REMOVE／M2-B | 配置弹出列表删除 → removeSettingByName → removeSettingByIndex → 确认 | IDLE，空白／GlobalSetting 受保护。删组、顺序项及必要启动选择后同步，失败恢复待写值。删除非当前组保留加载源与草稿 | 236 私有控件及真实确认框，237 正式 Rust `configuration.remove`。同名组、取消、占用、明确确认、旧引用、草稿保持、相对顺序及独立读回通过。当前组、清除启动选择分支、右键入口及 Win10 待验 |
 | CFG-ORDER／M2-B | 配置弹窗按钮、菜单和快捷键 → moveSettingSelectOrderEntry。复位经确认清除自定义顺序 | IDLE 和普通组，根 SettingSelect_OrderList 同步后刷新，保留选择、草稿及同名配置组 | 232／234 真 GUI 和 235 正式 Rust 的移动／复位、显式确认、占用、旧修订及双 Qt 读回通过。物理拖拽、真实监视和 Win10 待验 |

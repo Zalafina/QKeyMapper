@@ -140,14 +140,15 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         return result;
     }
     if (preview && (action == QLatin1String("configuration.move") || action == QLatin1String("configuration.reset_order")
-            || action == QLatin1String("configuration.remove"))) {
+            || action == QLatin1String("configuration.remove") || action == QLatin1String("configuration.load"))) {
         auto &binding = result.configurationList;
         binding.catalogRevision = arguments.value(QStringLiteral("catalog_revision")).toString();
         const bool move = action == QLatin1String("configuration.move");
         const bool remove = action == QLatin1String("configuration.remove");
         if (move) binding.action = ConfigurationListAction::Move;
         else if (remove) binding.action = ConfigurationListAction::Remove;
-        const int expectedFields = move ? 4 : remove ? 3 : 2;
+        else if (action == QLatin1String("configuration.load")) binding.action = ConfigurationListAction::Load;
+        const int expectedFields = move ? 4 : binding.reset() ? 2 : 3;
         if (!isLowerHex(binding.catalogRevision, 64) || arguments.size() != expectedFields)
             return fail("Provide the current configuration catalog revision and the exact groups required by this action.");
         if (!binding.reset()) {
@@ -781,7 +782,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     return result;
 }
 
-QJsonArray mappingChangeCapabilities(bool allowRunControls)
+QJsonArray mappingChangeCapabilities(bool standardMode)
 {
     const auto string = [](const QString &pattern, int maximum) {
         return QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
@@ -1037,7 +1038,7 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         saveApplyCapability, deleteCapability, deleteApply, updatePreview, updateApply, preferencesPreview, preferencesApply,
         capability("mapping.preview.cancel", "qkm_cancel_changes", Read | Configure, false,
             schema({{QStringLiteral("preview_id"), identifierSchema}}, {QStringLiteral("preview_id")}))};
-    if (allowRunControls) {
+    if (standardMode) {
         auto stop = capability("mapping.stop", "qkm_stop_mapping", Read | RunMapping, false,
             schema({{QStringLiteral("instance"), identifierSchema}, {QStringLiteral("request_id"), identifierSchema}},
                 {QStringLiteral("instance"), QStringLiteral("request_id")}));
@@ -1465,6 +1466,21 @@ QJsonArray mappingChangeCapabilities(bool allowRunControls)
         item->insert(QStringLiteral("limitations"), removeLimits);
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
+    }
+    if (standardMode) {
+        auto load = capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
+            schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},
+                {QStringLiteral("catalog_revision"), revision}, {QStringLiteral("group"), groupName}},
+                {QStringLiteral("action"), QStringLiteral("catalog_revision"), QStringLiteral("group")}));
+        auto applyLoad = capability("configuration.load.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
+        const QJsonArray loadLimits{QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("ordinary_groups_only"),
+            QStringLiteral("require_clean_loaded_profile"), QStringLiteral("fixed_file_read_only"),
+            QStringLiteral("reload_invalidates_source_references")};
+        for (auto *item : {&load, &applyLoad}) {
+            item->insert(QStringLiteral("limitations"), loadLimits);
+            item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+            capabilities.append(*item);
+        }
     }
     capabilities.append(operation);
     return capabilities;

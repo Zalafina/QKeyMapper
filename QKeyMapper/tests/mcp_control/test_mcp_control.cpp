@@ -839,6 +839,13 @@ void McpControlTest::configurationListArgumentsAndOwnership()
     const auto removal = validateMappingChangeRequest(method, remove);
     QVERIFY(removal.ok());
     QVERIFY(removal.configurationList.removesGroup());
+    QJsonObject load = remove;
+    load.insert(QStringLiteral("action"), QStringLiteral("configuration.load"));
+    const auto selection = validateMappingChangeRequest(method, load);
+    QVERIFY(selection.ok());
+    QVERIFY(selection.configurationList.loadsGroup());
+    load.insert(QStringLiteral("file_name"), QStringLiteral("other.ini"));
+    QVERIFY(!validateMappingChangeRequest(method, load).ok());
 
     auto binding = parsed.configurationList;
     MappingChangeStore store;
@@ -858,6 +865,10 @@ void McpControlTest::configurationListArgumentsAndOwnership()
     removalBinding.contextRevision = binding.contextRevision;
     const auto removalPreview = store.createConfigurationList(owner, removalBinding, {}, {});
     QVERIFY(removalPreview && removalPreview->configurationList->removesGroup());
+    auto loadBinding = selection.configurationList;
+    loadBinding.contextRevision = binding.contextRevision;
+    const auto loadPreview = store.createConfigurationList(owner, loadBinding, {}, {});
+    QVERIFY(loadPreview && loadPreview->configurationList->loadsGroup());
 }
 
 void McpControlTest::mappingChangeArguments()
@@ -1488,8 +1499,16 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 80);
-    QCOMPARE(mappingChangeCapabilities(false).size(), 78);
+    QCOMPARE(capabilities.size(), 88);
+    const auto demoCapabilities = mappingChangeCapabilities(false);
+    QCOMPARE(demoCapabilities.size(), 84);
+    for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply")}) {
+        const auto matches = [&id](const QJsonValue &item) {
+            return item.toObject().value(QStringLiteral("id")).toString() == id;
+        };
+        QVERIFY(std::any_of(capabilities.begin(), capabilities.end(), matches));
+        QVERIFY(std::none_of(demoCapabilities.begin(), demoCapabilities.end(), matches));
+    }
     QCOMPARE(capabilities.at(75).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.import.preview"));
     QCOMPARE(capabilities.at(76).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.import.apply"));
     QCOMPARE(capabilities.at(77).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save_import.preview"));

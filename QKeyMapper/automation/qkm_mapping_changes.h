@@ -112,7 +112,7 @@ struct ConfigurationImportBinding {
     bool overwrite = false;
 };
 
-enum class ConfigurationListAction { Move, ResetOrder, Remove };
+enum class ConfigurationListAction { Move, ResetOrder, Remove, Load };
 struct ConfigurationListBinding {
     ConfigurationListAction action = ConfigurationListAction::ResetOrder;
     QString catalogRevision;
@@ -121,6 +121,7 @@ struct ConfigurationListBinding {
     QString contextRevision;
     bool reset() const { return action == ConfigurationListAction::ResetOrder; }
     bool removesGroup() const { return action == ConfigurationListAction::Remove; }
+    bool loadsGroup() const { return action == ConfigurationListAction::Load; }
 };
 
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };
@@ -153,7 +154,7 @@ struct MappingChangeRequest {
 bool isBasicMappingKey(const QString &key);
 bool isMappingChangeMethod(const QString &method);
 MappingChangeRequest validateMappingChangeRequest(const QString &method, const QJsonObject &arguments);
-QJsonArray mappingChangeCapabilities(bool allowRunControls = true);
+QJsonArray mappingChangeCapabilities(bool standardMode = true);
 
 struct MappingChangeOwner {
     QString instance;

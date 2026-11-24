@@ -273,7 +273,7 @@ struct ConfigurationResetOrder {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
-struct ConfigurationRemove {
+struct ConfigurationGroup {
     action: String,
     catalog_revision: String,
     group: String,
@@ -827,8 +827,8 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                         revision(&v.catalog_revision)
                     });
                 }
-                Some("configuration.remove") => {
-                    return typed(arguments, |v: &ConfigurationRemove| {
+                Some("configuration.remove" | "configuration.load") => {
+                    return typed(arguments, |v: &ConfigurationGroup| {
                         revision(&v.catalog_revision) && configuration_group_name(&v.group)
                     });
                 }
@@ -1169,16 +1169,18 @@ mod tests {
     }
 
     #[test]
-    fn configuration_order_requires_current_catalog_and_exact_fields() {
+    fn configuration_list_requires_current_catalog_and_exact_fields() {
         let revision = "a".repeat(64);
         let move_group = json!({"action":"configuration.move", "catalog_revision":revision,
             "group":"配置甲", "target_group":"Second"});
         let reset = json!({"action":"configuration.reset_order", "catalog_revision":revision});
         let remove =
             json!({"action":"configuration.remove", "catalog_revision":revision, "group":"Other"});
+        let load =
+            json!({"action":"configuration.load", "catalog_revision":revision, "group":"Other"});
         let preview =
             |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
-        for valid in [&move_group, &reset, &remove] {
+        for valid in [&move_group, &reset, &remove, &load] {
             assert_eq!(preview(valid).unwrap(), *valid.as_object().unwrap());
         }
         for field in ["group", "target_group", "catalog_revision"] {
@@ -1198,6 +1200,9 @@ mod tests {
         let mut extra = remove;
         extra["target_group"] = "Other".into();
         assert!(preview(&extra).is_err());
+        let mut load_with_path = load;
+        load_with_path["file_name"] = "other.ini".into();
+        assert!(preview(&load_with_path).is_err());
     }
 
     #[test]

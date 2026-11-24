@@ -38993,6 +38993,7 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
     auto &store = *m_AutomationMappingChanges;
     const auto &binding = applying ? *applying->configurationList : validation.configurationList;
     const bool removing = binding.removesGroup();
+    const bool selecting = binding.loadsGroup();
     const auto reject = [&](const QString &code, const QString &message) {
         if (applying) store.finish(owner, validation.id, QStringLiteral("rejected"),
             {{QStringLiteral("modified"), false}, {QStringLiteral("saved"), false}}, code, message);
@@ -39013,6 +39014,14 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
         reject(QStringLiteral("context_busy"), QStringLiteral("Configuration list changes require current authorization and an idle source after cleanup."));
         return;
     }
+    if (selecting && configurationOnlyDemo()) {
+        reject(QStringLiteral("unsupported_mode"), QStringLiteral("Configuration loading requires a standard product instance."));
+        return;
+    }
+    if (selecting && hasUnsavedSettingChanges()) {
+        reject(QStringLiteral("unsaved_changes"), QStringLiteral("Resolve the current draft explicitly before loading another configuration."));
+        return;
+    }
     QElapsedTimer budget;
     budget.start();
     const quint64 runtime = QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision();
@@ -39029,11 +39038,16 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
         reject(QStringLiteral("configuration_unavailable"), QStringLiteral("The fixed configuration file could not be read."));
         return;
     }
-    snapshot.revision = automationCatalogRevision({{QStringLiteral("catalog_revision"), binding.catalogRevision},
+    QJsonObject context{{QStringLiteral("catalog_revision"), binding.catalogRevision},
         {QStringLiteral("configuration_path"), snapshot.configurationPath},
         {QStringLiteral("configuration_sha256"), QString::fromLatin1(QCryptographicHash::hash(
             snapshot.configurationData, QCryptographicHash::Sha256).toHex())},
-        {QStringLiteral("runtime_revision"), QString::number(runtime)}}, owner);
+        {QStringLiteral("runtime_revision"), QString::number(runtime)}};
+    if (selecting) {
+        context.insert(QStringLiteral("load_generation"), QString::number(m_MappingLoadGeneration));
+        context.insert(QStringLiteral("source_epoch"), QString::number(m_AutomationSourceEpoch));
+    }
+    snapshot.revision = automationCatalogRevision(context, owner);
     snapshot.error = ReadError::None;
     if (applying && binding.contextRevision != snapshot.revision) {
         reject(QStringLiteral("stale_preview"), QStringLiteral("The fixed configuration file or source context changed after preview."));
@@ -39046,6 +39060,7 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
         return;
     }
     const bool reset = binding.reset();
+    const QString previousGroup = m_LoadedMappingSettingGroup;
     QStringList after = before;
     int destination = -1;
     QString action = QStringLiteral("configuration.move");
@@ -39058,7 +39073,15 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
             reject(QStringLiteral("invalid_target"), QStringLiteral("Provide an exact ordinary group in the current catalog."));
             return;
         }
-        if (removing) {
+        if (selecting) {
+            const QString prefix = binding.group + QLatin1Char('/');
+            if (!before.contains(previousGroup) || !cache.contains(prefix + QLatin1String(KEYMAPDATA_ORIGINALKEYS))
+                || !cache.contains(prefix + QLatin1String(KEYMAPDATA_MAPPINGKEYS))) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("Loading requires a saved ordinary source and target with stored mapping data."));
+                return;
+            }
+            action = QStringLiteral("configuration.load");
+        } else if (removing) {
             if (binding.group == m_LoadedMappingSettingGroup) {
                 reject(QStringLiteral("invalid_target"), QStringLiteral("Only a non-current ordinary group can be removed."));
                 return;
@@ -39076,13 +39099,19 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
     }
     const bool willWrite = reset ? cache.contains(SETTINGSELECT_ORDER_LIST) : after != before;
     QJsonObject target{{QStringLiteral("instance_id"), owner.instance}, {QStringLiteral("catalog_revision"), binding.catalogRevision},
-        {QStringLiteral("order_revision"), snapshot.revision}};
+        {selecting ? QStringLiteral("load_revision") : QStringLiteral("order_revision"), snapshot.revision}};
     if (!reset) target.insert(QStringLiteral("group"), binding.group);
-    if (!reset && !removing) target.insert(QStringLiteral("target_group"), binding.targetGroup);
+    if (binding.action == ConfigurationListAction::Move) target.insert(QStringLiteral("target_group"), binding.targetGroup);
     auto result = QJsonObject{{QStringLiteral("action"), action}, {QStringLiteral("target"), target},
-        {QStringLiteral("before_order"), QJsonArray::fromStringList(before)}, {QStringLiteral("after_order"), QJsonArray::fromStringList(after)},
         {QStringLiteral("confirmation_required"), true}, {QStringLiteral("will_write"), willWrite},
         {QStringLiteral("modified"), false}, {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
+    if (selecting) {
+        result.insert(QStringLiteral("previous_group"), previousGroup);
+        result.insert(QStringLiteral("reload"), previousGroup == binding.group);
+    } else {
+        result.insert(QStringLiteral("before_order"), QJsonArray::fromStringList(before));
+        result.insert(QStringLiteral("after_order"), QJsonArray::fromStringList(after));
+    }
     if (removing) result.insert(QStringLiteral("clears_startup_selection"), cache.value(SETTINGSELECT).toString() == binding.group);
     if (QJsonDocument(result).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
         reject(QStringLiteral("result_too_large"), QStringLiteral("The configuration list exceeds the preview response limit."));
@@ -39112,16 +39141,57 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
         return;
     }
     if (!(removing ? validation.confirmDelete : validation.confirmScope)) {
-        reject(QStringLiteral("confirmation_required"), removing
-            ? QStringLiteral("Review the exact configuration group and confirm its permanent removal.")
-            : QStringLiteral("Review the entire order and confirm its immediate write."));
+        const auto message = removing ? QStringLiteral("Review the exact configuration group and confirm its permanent removal.")
+            : selecting ? QStringLiteral("Review and confirm the configuration to load.")
+                        : QStringLiteral("Review the entire order and confirm its immediate write.");
+        reject(QStringLiteral("confirmation_required"), message);
         return;
     }
     QByteArray currentFile;
     bool exists = false;
     if (readSettingSaveFile(snapshot.configurationPath, currentFile, exists) != ReadError::None
         || !exists || currentFile != snapshot.configurationData || !server.isRequestCurrent(request)) {
-        reject(QStringLiteral("stale_preview"), QStringLiteral("The fixed configuration file or authorization changed before writing."));
+        reject(QStringLiteral("stale_preview"), QStringLiteral("The fixed configuration file or authorization changed before applying."));
+        return;
+    }
+    if (selecting) {
+        // The GUI load can rebuild tables and dialogs. Do not hold the worker source lock through it.
+        access.unlock();
+        if (!ready() || QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() != runtime
+            || hasUnsavedSettingChanges() || !server.isRequestCurrent(request)) {
+            reject(QStringLiteral("context_busy"), QStringLiteral("The source or authorization changed before loading."));
+            return;
+        }
+        const auto generation = m_MappingLoadGeneration;
+        const auto load = [&](const QString &group) {
+            return loadSelectedSettingGroup(group) == group && m_MappingSourceLoadAccepted
+                && m_LoadedMappingSettingGroup == group && currentSettingSelectGroupName() == group;
+        };
+        const bool loaded = load(binding.group);
+        bool restored = false;
+        if (!loaded && previousGroup != binding.group && m_KeyMapStatus == KEYMAP_IDLE
+            && QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() == runtime && server.isRequestCurrent(request)
+            && readSettingSaveFile(snapshot.configurationPath, currentFile, exists) == ReadError::None
+            && exists && currentFile == snapshot.configurationData) {
+            restored = load(previousGroup);
+        }
+        result.insert(QStringLiteral("modified"), m_MappingLoadGeneration != generation);
+        result.insert(QStringLiteral("loaded"), loaded);
+        result.insert(QStringLiteral("restored_previous_group"), restored);
+        result.insert(QStringLiteral("selected_group"), currentSettingSelectGroupName());
+        result.insert(QStringLiteral("loaded_group"), m_MappingSourceLoadAccepted
+            ? QJsonValue(m_LoadedMappingSettingGroup) : QJsonValue(QJsonValue::Null));
+        result.insert(QStringLiteral("load_generation"), QString::number(m_MappingLoadGeneration));
+        result.insert(QStringLiteral("has_unsaved_changes"), hasUnsavedSettingChanges());
+        if (!loaded) {
+            const auto code = QStringLiteral("configuration_load_failed");
+            const auto message = QStringLiteral("The requested configuration could not be loaded. Query the operation for the resulting group.");
+            store.finish(owner, validation.id, QStringLiteral("failed"), result, code, message);
+            server.replyError(request.connectionId, request.requestId, code, message);
+            return;
+        }
+        store.finish(owner, validation.id, QStringLiteral("applied"), result);
+        server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
         return;
     }
     if (willWrite) {
@@ -50758,6 +50828,18 @@ void KeySequenceEditOnlyOne::keyPressEvent(QKeyEvent* pEvent)
 }
 #endif
 
+QString QKeyMapper::loadSelectedSettingGroup(const QString &group)
+{
+    QString loaded;
+    {
+        QScopedValueRollback<bool> loading(loadSetting_flag, true);
+        loaded = loadKeyMapSetting(group);
+        ui->settingNameLineEdit->setText(loaded == GROUPNAME_GLOBALSETTING ? tr(DISPLAYNAME_GLOBALSETTING) : loaded);
+    }
+    flushPendingCommonPriorityRepairAfterLoad();
+    return loaded;
+}
+
 #if (QT_VERSION >= QT_VERSION_CHECK(5, 14, 0))
 void QKeyMapper::on_settingselectComboBox_textActivated(const QString &text)
 #else
@@ -50788,16 +50870,7 @@ void QKeyMapper::on_settingselectComboBox_currentTextChanged(const QString &text
 #endif
             return;
         }
-        loadSetting_flag = true;
-        QString loadresult = loadKeyMapSetting(curSettingSelectStr);
-        QString displaySettingName = loadresult;
-        if (displaySettingName == GROUPNAME_GLOBALSETTING) {
-            displaySettingName = tr(DISPLAYNAME_GLOBALSETTING);
-        }
-        ui->settingNameLineEdit->setText(displaySettingName);
-        Q_UNUSED(loadresult);
-        loadSetting_flag = false;
-        flushPendingCommonPriorityRepairAfterLoad();
+        loadSelectedSettingGroup(curSettingSelectStr);
     }
     else {
 #ifdef DEBUG_LOGOUT_ON
