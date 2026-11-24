@@ -844,6 +844,15 @@ void McpControlTest::configurationListArgumentsAndOwnership()
     const auto selection = validateMappingChangeRequest(method, load);
     QVERIFY(selection.ok());
     QVERIFY(selection.configurationList.loadsGroup());
+    auto globalLoad = load;
+    globalLoad.insert(QStringLiteral("group"), QStringLiteral("QKeyMapperGlobalSetting"));
+    const auto globalSelection = validateMappingChangeRequest(method, globalLoad);
+    QVERIFY(globalSelection.ok());
+    QVERIFY(globalSelection.configurationList.loadsGroup());
+    QCOMPARE(globalSelection.configurationList.group, QStringLiteral("QKeyMapperGlobalSetting"));
+    auto emptyNameLoad = load;
+    emptyNameLoad.insert(QStringLiteral("group"), QString());
+    QVERIFY(!validateMappingChangeRequest(method, emptyNameLoad).ok());
     load.insert(QStringLiteral("file_name"), QStringLiteral("other.ini"));
     QVERIFY(!validateMappingChangeRequest(method, load).ok());
     QJsonObject loadEmpty = reset;

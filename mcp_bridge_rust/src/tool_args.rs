@@ -1202,6 +1202,12 @@ mod tests {
         let mut extra = remove;
         extra["target_group"] = "Other".into();
         assert!(preview(&extra).is_err());
+        let mut load_global = load.clone();
+        load_global["group"] = "QKeyMapperGlobalSetting".into();
+        assert_eq!(preview(&load_global).unwrap(), *load_global.as_object().unwrap());
+        let mut load_blank_name = load.clone();
+        load_blank_name["group"] = "".into();
+        assert!(preview(&load_blank_name).is_err());
         let mut load_with_path = load;
         load_with_path["file_name"] = "other.ini".into();
         assert!(preview(&load_with_path).is_err());

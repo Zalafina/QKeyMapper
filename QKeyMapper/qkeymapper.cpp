@@ -39072,16 +39072,22 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
     } else if (loadingEmpty) {
         action = QStringLiteral("configuration.load_empty");
     } else {
+        const bool targetGlobal = selecting && binding.group == QLatin1String(GROUPNAME_GLOBALSETTING);
         const int source = int(before.indexOf(binding.group));
-        if (source < 0) {
+        if (!targetGlobal && source < 0) {
             reject(QStringLiteral("invalid_target"), QStringLiteral("Provide an exact ordinary group in the current catalog."));
             return;
         }
         if (selecting) {
+            const bool validPrevious = previousGroup.isEmpty()
+                || previousGroup == QLatin1String(GROUPNAME_GLOBALSETTING)
+                || before.contains(previousGroup);
             const QString prefix = binding.group + QLatin1Char('/');
-            if (!before.contains(previousGroup) || !cache.contains(prefix + QLatin1String(KEYMAPDATA_ORIGINALKEYS))
-                || !cache.contains(prefix + QLatin1String(KEYMAPDATA_MAPPINGKEYS))) {
-                reject(QStringLiteral("invalid_target"), QStringLiteral("Loading requires a saved ordinary source and target with stored mapping data."));
+            const bool hasOrdinaryKeys = cache.contains(prefix + QLatin1String(KEYMAPDATA_ORIGINALKEYS))
+                && cache.contains(prefix + QLatin1String(KEYMAPDATA_MAPPINGKEYS));
+            if (!validPrevious || (!targetGlobal && !hasOrdinaryKeys)) {
+                reject(QStringLiteral("invalid_target"),
+                    QStringLiteral("Loading requires a clean loaded source and a saved ordinary or global configuration."));
                 return;
             }
             action = QStringLiteral("configuration.load");

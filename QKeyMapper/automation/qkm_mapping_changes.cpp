@@ -1477,7 +1477,7 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
                 {QStringLiteral("catalog_revision"), revision}, {QStringLiteral("group"), groupName}},
                 {QStringLiteral("action"), QStringLiteral("catalog_revision"), QStringLiteral("group")}));
         auto applyLoad = capability("configuration.load.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
-        const QJsonArray loadLimits{QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("ordinary_groups_only"),
+        const QJsonArray loadLimits{QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("ordinary_or_global_group_only"),
             QStringLiteral("require_clean_loaded_profile"), QStringLiteral("fixed_file_read_only"),
             QStringLiteral("reload_invalidates_source_references")};
         for (auto *item : {&load, &applyLoad}) {
