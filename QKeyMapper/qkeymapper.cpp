@@ -23854,14 +23854,9 @@ void QKeyMapper::setCurrentSettingSelectByGroupName(const QString &settingName)
     ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
 }
 
-static bool resetStoredSettingSelectOrder(QSettings &settingFile)
+static QVariantMap collectIniDescendantValues(const QSettings &settingFile, const QString &group)
 {
-    const QString key = QString::fromLatin1(SETTINGSELECT_ORDER_LIST);
-    if (!settingFile.contains(key)) return settingFile.status() == QSettings::NoError;
-    const QVariant previousOrder = settingFile.value(key);
-
-    // QSettings::remove also removes descendants; preserve any configuration with the same name.
-    const QString groupPrefix = key + QLatin1Char('/');
+    const QString groupPrefix = group + QLatin1Char('/');
     QVariantMap nestedValues;
     const QStringList keys = settingFile.allKeys();
     for (const auto &existingKey : keys) {
@@ -23869,12 +23864,32 @@ static bool resetStoredSettingSelectOrder(QSettings &settingFile)
             nestedValues.insert(existingKey, settingFile.value(existingKey));
         }
     }
-    if (settingFile.status() != QSettings::NoError) return false;
+    return nestedValues;
+}
 
-    settingFile.remove(key);
-    for (auto it = nestedValues.cbegin(); it != nestedValues.cend(); ++it) {
+static void restoreIniValues(QSettings &settingFile, const QVariantMap &values)
+{
+    for (auto it = values.cbegin(); it != values.cend(); ++it) {
         settingFile.setValue(it.key(), it.value());
     }
+}
+
+static void removeIniScalarPreservingGroup(QSettings &settingFile, const QString &key, const QVariantMap &nestedValues)
+{
+    // QSettings::remove also removes descendants; preserve any configuration with the same name.
+    settingFile.remove(key);
+    restoreIniValues(settingFile, nestedValues);
+}
+
+static bool resetStoredSettingSelectOrder(QSettings &settingFile)
+{
+    const QString key = QString::fromLatin1(SETTINGSELECT_ORDER_LIST);
+    if (!settingFile.contains(key)) return settingFile.status() == QSettings::NoError;
+    const QVariant previousOrder = settingFile.value(key);
+    const auto nestedValues = collectIniDescendantValues(settingFile, key);
+    if (settingFile.status() != QSettings::NoError) return false;
+
+    removeIniScalarPreservingGroup(settingFile, key, nestedValues);
     settingFile.sync();
     if (settingFile.status() == QSettings::NoError) return true;
 
@@ -50824,37 +50839,71 @@ bool QKeyMapper::removeSettingByIndex(int targetSettingIndex)
         QMessageBox::StandardButton reply = QkmMessageBox::question(this, PROGRAM_NAME, message,
                                                                    QMessageBox::Yes | QMessageBox::No,
                                                                    QMessageBox::No);
-        if (reply != QMessageBox::Yes) {
-            // User cancelled, don't remove
+        if (reply != QMessageBox::Yes || m_KeyMapStatus != KEYMAP_IDLE) {
+            return false;
+        }
+        targetSettingIndex = findSettingSelectIndexByGroupName(settingSelectStr);
+        if (targetSettingIndex <= GLOBALSETTING_INDEX || !settingFile.childGroups().contains(settingSelectStr)) {
             return false;
         }
 
-#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
-        closeSetupDialog_OnDataChanged();
-#endif
+        const QString selection = currentSettingSelectGroupName();
+        const bool removesSelection = selection == settingSelectStr;
+        const QString orderKey = QString::fromLatin1(SETTINGSELECT_ORDER_LIST);
+        const QString startupKey = QString::fromLatin1(SETTINGSELECT);
+        const bool hadOrder = settingFile.contains(orderKey);
+        const QVariant oldOrder = settingFile.value(orderKey);
+        const QVariant oldStartup = settingFile.value(startupKey);
+        const bool removesStartup = oldStartup.toString() == settingSelectStr;
+        const auto savedGroup = collectIniDescendantValues(settingFile, settingSelectStr);
+        const QStringList rootKeys = settingFile.childKeys();
+        const auto sameNameKey = std::find_if(rootKeys.cbegin(), rootKeys.cend(), [&](const QString &key) {
+            return key.compare(settingSelectStr, Qt::CaseInsensitive) == 0;
+        });
+        const QVariant sameNameValue = sameNameKey != rootKeys.cend() ? settingFile.value(*sameNameKey) : QVariant();
+        if (settingFile.status() != QSettings::NoError || savedGroup.isEmpty()) {
+            showFailurePopup(tr("Save failure : ") + settingSelectStr);
+            return false;
+        }
 
         settingFile.remove(settingSelectStr);
+        if (sameNameKey != rootKeys.cend()) settingFile.setValue(*sameNameKey, sameNameValue);
         removeSettingSelectOrderEntry(settingFile, settingSelectStr);
-        if (settingFile.value(SETTINGSELECT).toString() == settingSelectStr) {
-            settingFile.remove(SETTINGSELECT);
+        if (removesStartup) {
+            const auto startupGroup = collectIniDescendantValues(settingFile, startupKey);
+            removeIniScalarPreservingGroup(settingFile, startupKey, startupGroup);
         }
 
         // Flush with UTF-8 before a reload constructs another QSettings instance.
         settingFile.sync();
         if (settingFile.status() != QSettings::NoError) {
+            restoreIniValues(settingFile, savedGroup);
+            if (hadOrder) {
+                settingFile.setValue(orderKey, oldOrder);
+            } else if (settingFile.contains(orderKey)) {
+                const auto orderGroup = collectIniDescendantValues(settingFile, orderKey);
+                removeIniScalarPreservingGroup(settingFile, orderKey, orderGroup);
+            }
+            if (removesStartup) settingFile.setValue(startupKey, oldStartup);
             showFailurePopup(tr("Save failure : ") + settingSelectStr);
             return false;
         }
 
+#ifdef CLOSE_SETUPDIALOG_ONDATACHANGED
+        if (removesSelection) closeSetupDialog_OnDataChanged();
+#endif
         {
             // Qt 5 emits currentTextChanged while removing the selected item.
             const QSignalBlocker blocker(ui->settingselectComboBox);
             ui->settingselectComboBox->removeItem(targetSettingIndex);
             m_SettingSelectListWithoutDescription.removeAt(targetSettingIndex);
+            if (!removesSelection) setCurrentSettingSelectByGroupName(selection);
         }
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[removeSetting] Remove setting select ->" << settingSelectStr;
 #endif
+        if (!removesSelection) return true;
+
         // currentSettingText = ui->settingselectComboBox->currentText();
         QString curSettingSelectStr;
         int curSettingSelectIndex = ui->settingselectComboBox->currentIndex();
