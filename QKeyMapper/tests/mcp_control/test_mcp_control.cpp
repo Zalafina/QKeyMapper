@@ -1508,6 +1508,21 @@ void McpControlTest::mappingChangeArguments()
     for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
         QVERIFY(!validatePlaySoundEffect(value).ok());
 
+    const auto validateGlobalSwitchTimeout = [&](const QJsonValue &value) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("general.set_global_switch_timeout")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("timeout_ms"), value}});
+    };
+    for (int value : {0, 2000, 999999999}) {
+        const auto result = validateGlobalSwitchTimeout(value);
+        QVERIFY(result.ok() && result.update.globalSwitchTimeoutMs.has_value());
+        QCOMPARE(*result.update.globalSwitchTimeoutMs, value);
+    }
+    for (const auto &value : {QJsonValue(-1), QJsonValue(1000000000), QJsonValue(1.5),
+            QJsonValue(QStringLiteral("2000")), QJsonValue(true), QJsonValue(QJsonValue::Null)})
+        QVERIFY(!validateGlobalSwitchTimeout(value).ok());
+
     const auto validateStartupPosition = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
@@ -1534,13 +1549,15 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 92);
+    QCOMPARE(capabilities.size(), 94);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 86);
+    QCOMPARE(demoCapabilities.size(), 88);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
+    QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
+    QCOMPARE(capabilities.at(88).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
-        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_sound_effect.apply");
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
     }));
     for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
             QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply")}) {

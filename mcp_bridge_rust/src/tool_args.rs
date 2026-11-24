@@ -392,6 +392,14 @@ struct PlaySoundEffect {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct GlobalSwitchTimeout {
+    action: String,
+    source_tab_ref: String,
+    timeout_ms: u32,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct StartupPoint {
     x: i32,
     y: i32,
@@ -784,6 +792,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 }
                 Some("general.set_sound_effect") => {
                     return typed(arguments, |v: &PlaySoundEffect| tab_ref(&v.source_tab_ref));
+                }
+                Some("general.set_global_switch_timeout") => {
+                    return typed(arguments, |v: &GlobalSwitchTimeout| {
+                        tab_ref(&v.source_tab_ref) && v.timeout_ms <= 999_999_999
+                    });
                 }
                 Some("general.set_startup_position") => {
                     if arguments
@@ -1238,6 +1251,27 @@ mod tests {
         }
         assert!(preview(&json!({"action":"general.set_sound_effect", "source_tab_ref":tab, "play_sound_effect":1})).is_err());
         assert!(preview(&json!({"action":"general.set_sound_effect", "source_tab_ref":tab, "play_sound_effect":true, "extra":1})).is_err());
+    }
+
+    #[test]
+    fn general_global_switch_timeout_checks_integer_bounds() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for timeout in [0_u64, 2000, 999_999_999] {
+            let valid = json!({"action":"general.set_global_switch_timeout", "source_tab_ref":tab, "timeout_ms":timeout});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!(-1),
+            json!(1_000_000_000),
+            json!(1.5),
+            json!("2000"),
+            json!(true),
+        ] {
+            assert!(preview(&json!({"action":"general.set_global_switch_timeout", "source_tab_ref":tab, "timeout_ms":bad})).is_err());
+        }
+        assert!(preview(&json!({"action":"general.set_global_switch_timeout", "source_tab_ref":tab, "timeout_ms":0, "extra":1})).is_err());
     }
 
     #[test]

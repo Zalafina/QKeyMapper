@@ -229,6 +229,17 @@ async def check_contract(exe):
                     denied = await client.call_tool("qkm_preview_changes", args)
                     assert denied.is_error is True and denied.structured_content is None
                 assert not validator.is_valid(move | {field: 1})
+            switch_timeout = {"action": "general.set_global_switch_timeout", "source_tab_ref": tab}
+            for ms in (0, 2000, 999_999_999):
+                args = switch_timeout | {"timeout_ms": ms}
+                validator.validate(args)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", args))
+            for bad in ({"timeout_ms": -1}, {"timeout_ms": 1_000_000_000}, {"timeout_ms": 1.5},
+                        {"timeout_ms": "2000"}, {"timeout_ms": True}, {"extra": 1}):
+                args = switch_timeout | bad
+                assert not validator.is_valid(args)
+                denied = await client.call_tool("qkm_preview_changes", args)
+                assert denied.is_error is True and denied.structured_content is None
             startup = {"action": "general.set_startup_position", "source_tab_ref": tab}
             point = {"x": -50000, "y": 50000}
             for fields in ({"mode": 0}, {"mode": 1}, {"mode": 2}, {"point": point}, {"mode": 2, "point": point}):
@@ -268,7 +279,7 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
-                "save_window_size", "save_splitter_position", "play_sound_effect", "startup_position",
+                "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms", "startup_position",
                 "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)

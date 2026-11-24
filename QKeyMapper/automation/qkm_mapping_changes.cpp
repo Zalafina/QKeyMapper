@@ -301,6 +301,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool saveWindowSizePreview = preview && action == QLatin1String("general.set_save_window_size");
     const bool saveSplitterPositionPreview = preview && action == QLatin1String("general.set_save_splitter_position");
     const bool playSoundEffectPreview = preview && action == QLatin1String("general.set_sound_effect");
+    const bool globalSwitchTimeoutPreview = preview && action == QLatin1String("general.set_global_switch_timeout");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -315,7 +316,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || clearTabPreview || moveTabPreview || tabCommonPreview || tabCollapsePreview || commonFeaturePreview || selectTabPreview
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
-        || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview || startupPositionPreview;
+        || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
+        || globalSwitchTimeoutPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -333,6 +335,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : saveWindowSizePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_window_size")}
         : saveSplitterPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_splitter_position")}
         : playSoundEffectPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("play_sound_effect")}
+        : globalSwitchTimeoutPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("timeout_ms")}
         : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
@@ -432,6 +435,15 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             const auto value = arguments.value(QStringLiteral("play_sound_effect"));
             if (!value.isBool()) return fail("Provide an explicit boolean play_sound_effect.");
             result.update.playSoundEffect = value.toBool();
+        }
+        if (globalSwitchTimeoutPreview) {
+            using namespace QKeyMapperConstants;
+            const auto value = arguments.value(QStringLiteral("timeout_ms"));
+            const int timeout = value.toInt(-1);
+            if (!value.isDouble() || value.toDouble() != timeout
+                || timeout < GLOBALSETTING_SWITCH_TIMEOUT_MIN || timeout > GLOBALSETTING_SWITCH_TIMEOUT_MAX)
+                return fail("Global setting switch timeout must be an integer between 0 and 999999999 milliseconds.");
+            result.update.globalSwitchTimeoutMs = timeout;
         }
         if (startupPositionPreview) {
             using namespace QKeyMapperConstants;
@@ -1487,6 +1499,19 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
     for (auto *item : {&soundEffectPreview, &soundEffectApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
             QStringLiteral("notification_sound_option"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto globalSwitchPreview = capability("general.set_global_switch_timeout.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_global_switch_timeout")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("timeout_ms"), boundedInteger(GLOBALSETTING_SWITCH_TIMEOUT_MIN, GLOBALSETTING_SWITCH_TIMEOUT_MAX)}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("timeout_ms")}));
+    auto globalSwitchApply = capability("general.set_global_switch_timeout.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&globalSwitchPreview, &globalSwitchApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
+            QStringLiteral("global_setting_switch_timeout_ms"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
