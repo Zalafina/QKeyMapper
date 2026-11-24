@@ -38079,6 +38079,12 @@ static QJsonObject automationFullscreenGlobalMapping(bool disableInFullscreen, c
         {QStringLiteral("allowed_processes"), allowedProcesses}};
 }
 
+static QJsonObject automationKey2Mouse(int xSpeed, int ySpeed, int pollingIntervalMs)
+{
+    return {{QStringLiteral("x_speed"), xSpeed}, {QStringLiteral("y_speed"), ySpeed},
+        {QStringLiteral("polling_interval_ms"), pollingIntervalMs}};
+}
+
 QJsonObject QKeyMapper::automationMappingDisplay() const
 {
     return {{QStringLiteral("category_column"), m_ShowCategory},
@@ -38153,6 +38159,12 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             m_GeneralAdvancedDialog->getGlobalMappingFullscreenAllowedProcesses()));
         result.insert(QStringLiteral("startup_position"), automationStartupPosition(m_GeneralAdvancedDialog->getStartupPosition(),
             m_GeneralAdvancedDialog->getSpecifyStartupPosition()));
+    }
+    if (m_MappingAdvancedDialog) {
+        result.insert(QStringLiteral("key2mouse"), automationKey2Mouse(
+            m_MappingAdvancedDialog->getMouseXSpeed(),
+            m_MappingAdvancedDialog->getMouseYSpeed(),
+            m_MappingAdvancedDialog->getMousePollingInterval()));
     }
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
@@ -40083,6 +40095,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || changingPlaySoundEffect || changingGlobalSwitchTimeout || changingFullscreenGlobalMapping
             || changingStartupPosition;
         const bool changingWindowDisplayMode = updating && update.windowDisplayMode.has_value();
+        const bool changingKey2Mouse = updating
+            && (update.mouseXSpeed.has_value() || update.mouseYSpeed.has_value() || update.mousePollingIntervalMs.has_value());
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -40098,7 +40112,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
-            || changingWindowDisplayMode;
+            || changingWindowDisplayMode || changingKey2Mouse;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
@@ -40112,17 +40126,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const int sourceTab = updating ? update.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt() : s_KeyMappingTabWidgetCurrentIndex;
         const int tab = update.copyTargetTabRef.isEmpty() ? sourceTab : update.copyTargetTabRef.section(QLatin1Char(':'), 2, 2).toInt();
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
-            || m_KeyMappingDataTable->hasActiveEditor() || (changingGeneralPreference && !m_GeneralAdvancedDialog)) {
+            || m_KeyMappingDataTable->hasActiveEditor()
+            || (changingGeneralPreference && !m_GeneralAdvancedDialog)
+            || (changingKey2Mouse && !m_MappingAdvancedDialog)) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
-            && !changingWindowDisplayMode && isCommonMappingTabIndex(tab)) {
+            && !changingWindowDisplayMode && !changingKey2Mouse && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
-        if (changingWindowDisplayMode && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
+        if ((changingWindowDisplayMode || changingKey2Mouse) && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
             return;
         }
@@ -40439,6 +40455,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
                 change = {{QStringLiteral("kind"), QStringLiteral("set_window_display_mode")},
                     {QStringLiteral("before"), before}, {QStringLiteral("after"), after}};
+            } else if (changingKey2Mouse) {
+                const int beforeX = m_MappingAdvancedDialog->getMouseXSpeed();
+                const int beforeY = m_MappingAdvancedDialog->getMouseYSpeed();
+                const int beforePoll = m_MappingAdvancedDialog->getMousePollingInterval();
+                const int afterX = update.mouseXSpeed.value_or(beforeX);
+                const int afterY = update.mouseYSpeed.value_or(beforeY);
+                const int afterPoll = update.mousePollingIntervalMs.value_or(beforePoll);
+                modified = beforeX != afterX || beforeY != afterY || beforePoll != afterPoll;
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_key2mouse_settings")},
+                    {QStringLiteral("before"), automationKey2Mouse(beforeX, beforeY, beforePoll)},
+                    {QStringLiteral("after"), automationKey2Mouse(afterX, afterY, afterPoll)}};
             } else if (changingGeneralTablePreference) {
                 const int before = changingTableEditTrigger ? m_GeneralAdvancedDialog->getTableEditModeTrigger()
                     : m_GeneralAdvancedDialog->getTableInsertMode();
@@ -40943,6 +40972,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingFullscreenGlobalMapping ? QStringLiteral("general.set_fullscreen_global_mapping")
             : changingStartupPosition ? QStringLiteral("general.set_startup_position")
             : changingWindowDisplayMode ? QStringLiteral("configuration.set_window_display_mode")
+            : changingKey2Mouse ? QStringLiteral("configuration.set_key2mouse_settings")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
@@ -41022,6 +41052,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 if (update.startupPositionPoint) m_GeneralAdvancedDialog->setSpecifyStartupPosition(*update.startupPositionPoint);
             } else if (changingWindowDisplayMode) {
                 ui->checkDisplayModeComboBox->setCurrentIndex(*update.windowDisplayMode);
+            } else if (changingKey2Mouse) {
+                if (update.mouseXSpeed) m_MappingAdvancedDialog->setMouseXSpeed(*update.mouseXSpeed);
+                if (update.mouseYSpeed) m_MappingAdvancedDialog->setMouseYSpeed(*update.mouseYSpeed);
+                if (update.mousePollingIntervalMs) m_MappingAdvancedDialog->setMousePollingInterval(*update.mousePollingIntervalMs);
             } else if (changingMappingDisplay) {
                 const bool notes = mappingDisplayAfter.value(QStringLiteral("notes")).toBool();
                 const bool category = mappingDisplayAfter.value(QStringLiteral("category_column")).toBool();

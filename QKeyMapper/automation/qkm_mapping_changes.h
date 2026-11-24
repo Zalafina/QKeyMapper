@@ -69,6 +69,9 @@ struct MappingUpdateArguments {
     std::optional<int> globalSwitchTimeoutMs;
     std::optional<bool> disableGlobalMappingInFullscreen;
     std::optional<QString> fullscreenAllowedProcesses;
+    std::optional<int> mouseXSpeed;
+    std::optional<int> mouseYSpeed;
+    std::optional<int> mousePollingIntervalMs;
     std::optional<int> startupPositionMode;
     std::optional<QPoint> startupPositionPoint;
     QByteArray tableImportDocument;

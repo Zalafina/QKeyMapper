@@ -303,6 +303,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool playSoundEffectPreview = preview && action == QLatin1String("general.set_sound_effect");
     const bool globalSwitchTimeoutPreview = preview && action == QLatin1String("general.set_global_switch_timeout");
     const bool fullscreenGlobalMappingPreview = preview && action == QLatin1String("general.set_fullscreen_global_mapping");
+    const bool key2MousePreview = preview && action == QLatin1String("configuration.set_key2mouse_settings");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -318,7 +319,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || startupPositionPreview;
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -338,6 +339,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : playSoundEffectPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("play_sound_effect")}
         : globalSwitchTimeoutPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("timeout_ms")}
         : fullscreenGlobalMappingPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}
+        : key2MousePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}
         : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
@@ -473,6 +475,33 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                     return fail("Allowed processes require disabling global mapping in fullscreen.");
                 result.update.fullscreenAllowedProcesses = processes;
             }
+        }
+        if (key2MousePreview) {
+            using namespace QKeyMapperConstants;
+            const auto raw = arguments.value(QStringLiteral("key2mouse"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return fail("Provide at least one key2mouse setting.");
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (it.key() != QStringLiteral("x_speed") && it.key() != QStringLiteral("y_speed")
+                    && it.key() != QStringLiteral("polling_interval_ms"))
+                    return fail("Only x_speed, y_speed, and polling_interval_ms are allowed.");
+            }
+            const auto parseIntInRange = [](const QJsonObject &obj, const QString &key, int minVal, int maxVal,
+                                            std::optional<int> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                const int parsed = val.toInt(minVal - 1);
+                if (!val.isDouble() || val.toDouble() != parsed || parsed < minVal || parsed > maxVal)
+                    return false;
+                target = parsed;
+                return true;
+            };
+            if (!parseIntInRange(fields, QStringLiteral("x_speed"), MOUSE_SPEED_MIN, MOUSE_SPEED_MAX, result.update.mouseXSpeed)
+                || !parseIntInRange(fields, QStringLiteral("y_speed"), MOUSE_SPEED_MIN, MOUSE_SPEED_MAX, result.update.mouseYSpeed))
+                return fail("key2mouse x_speed and y_speed must be integers between 1 and 99.");
+            if (!parseIntInRange(fields, QStringLiteral("polling_interval_ms"), MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX, result.update.mousePollingIntervalMs))
+                return fail("key2mouse polling_interval_ms must be an integer between 1 and 99 milliseconds.");
         }
         if (startupPositionPreview) {
             using namespace QKeyMapperConstants;
@@ -1567,6 +1596,27 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
     for (auto *item : {&fullscreenPreview, &fullscreenApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
             QStringLiteral("fullscreen_global_mapping_policy"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject key2MouseSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("x_speed"), boundedInteger(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX)},
+            {QStringLiteral("y_speed"), boundedInteger(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX)},
+            {QStringLiteral("polling_interval_ms"), boundedInteger(MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX)}}}};
+    auto key2MousePreview = capability("configuration.set_key2mouse_settings.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_key2mouse_settings")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("key2mouse"), key2MouseSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}));
+    auto key2MouseApply = capability("configuration.set_key2mouse_settings.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&key2MousePreview, &key2MouseApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("key2mouse_speed_and_polling_interval"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);

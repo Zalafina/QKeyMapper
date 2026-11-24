@@ -1552,6 +1552,30 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateFullscreenGlobalMapping({{QStringLiteral("disable_in_fullscreen"), true},
         {QStringLiteral("extra"), true}}).ok());
 
+    const auto validateKey2Mouse = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_key2mouse_settings")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("key2mouse"), fields}});
+    };
+    const auto key2MouseBounds = validateKey2Mouse({{QStringLiteral("x_speed"), 1},
+        {QStringLiteral("y_speed"), 99}, {QStringLiteral("polling_interval_ms"), 1}});
+    QVERIFY(key2MouseBounds.ok() && key2MouseBounds.update.mouseXSpeed == 1
+        && key2MouseBounds.update.mouseYSpeed == 99 && key2MouseBounds.update.mousePollingIntervalMs == 1);
+    const auto key2MousePollOnly = validateKey2Mouse({{QStringLiteral("polling_interval_ms"), 99}});
+    QVERIFY(key2MousePollOnly.ok() && !key2MousePollOnly.update.mouseXSpeed.has_value()
+        && !key2MousePollOnly.update.mouseYSpeed.has_value() && key2MousePollOnly.update.mousePollingIntervalMs == 99);
+    QVERIFY(validateKey2Mouse({{QStringLiteral("x_speed"), 15}}).ok());
+    QVERIFY(!validateKey2Mouse({}).ok());
+    QVERIFY(!validateKey2Mouse({{QStringLiteral("x_speed"), 0}}).ok());
+    QVERIFY(!validateKey2Mouse({{QStringLiteral("y_speed"), 100}}).ok());
+    QVERIFY(!validateKey2Mouse({{QStringLiteral("polling_interval_ms"), 0}}).ok());
+    QVERIFY(!validateKey2Mouse({{QStringLiteral("polling_interval_ms"), 100}}).ok());
+    QVERIFY(!validateKey2Mouse({{QStringLiteral("x_speed"), 1.5}}).ok());
+    QVERIFY(!validateKey2Mouse({{QStringLiteral("y_speed"), true}}).ok());
+    QVERIFY(!validateKey2Mouse({{QStringLiteral("polling_interval_ms"), QJsonValue::Null}}).ok());
+    QVERIFY(!validateKey2Mouse({{QStringLiteral("x_speed"), 3}, {QStringLiteral("extra"), 1}}).ok());
+
     const auto validateStartupPosition = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
@@ -1578,20 +1602,25 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 96);
+    QCOMPARE(capabilities.size(), 98);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 90);
+    QCOMPARE(demoCapabilities.size(), 92);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
     QCOMPARE(capabilities.at(88).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.apply"));
     QCOMPARE(capabilities.at(89).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_fullscreen_global_mapping.preview"));
     QCOMPARE(capabilities.at(90).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_fullscreen_global_mapping.apply"));
+    QCOMPARE(capabilities.at(91).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_key2mouse_settings.preview"));
+    QCOMPARE(capabilities.at(92).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_key2mouse_settings.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_fullscreen_global_mapping.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_key2mouse_settings.apply");
     }));
     for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
             QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply")}) {

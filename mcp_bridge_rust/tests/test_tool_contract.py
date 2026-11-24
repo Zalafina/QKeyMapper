@@ -257,6 +257,20 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            key2mouse = {"action": "configuration.set_key2mouse_settings", "source_tab_ref": tab}
+            for fields in ({"x_speed": 1}, {"y_speed": 99}, {"polling_interval_ms": 1},
+                           {"x_speed": 15, "y_speed": 25, "polling_interval_ms": 5}):
+                request = key2mouse | {"key2mouse": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for fields in ({}, {"x_speed": 0}, {"x_speed": 100}, {"y_speed": 0}, {"y_speed": 100},
+                           {"polling_interval_ms": 0}, {"polling_interval_ms": 100},
+                           {"x_speed": 1.5}, {"y_speed": True}, {"polling_interval_ms": None},
+                           {"x_speed": 3, "extra": 1}):
+                request = key2mouse | {"key2mouse": fields}
+                assert not validator.is_valid(request), fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             startup = {"action": "general.set_startup_position", "source_tab_ref": tab}
             point = {"x": -50000, "y": 50000}
             for fields in ({"mode": 0}, {"mode": 1}, {"mode": 2}, {"point": point}, {"mode": 2, "point": point}):
@@ -297,7 +311,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "startup_position",
+                "fullscreen_global_mapping", "key2mouse", "startup_position",
                 "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)

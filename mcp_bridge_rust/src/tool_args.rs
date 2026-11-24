@@ -417,6 +417,25 @@ struct FullscreenGlobalMapping {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct Key2MouseFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    x_speed: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    y_speed: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    polling_interval_ms: Option<u8>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct Key2MouseSettings {
+    action: String,
+    source_tab_ref: String,
+    key2mouse: Key2MouseFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct StartupPoint {
     x: i32,
     y: i32,
@@ -834,6 +853,25 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                 processes.encode_utf16().count() <= 32_767
                                     && !processes.chars().any(|c| matches!(c, '\0' | '\r' | '\n'))
                             })
+                    });
+                }
+                Some("configuration.set_key2mouse_settings") => {
+                    if arguments
+                        .get("key2mouse")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &Key2MouseSettings| {
+                        let fields = &v.key2mouse;
+                        tab_ref(&v.source_tab_ref)
+                            && (fields.x_speed.is_some()
+                                || fields.y_speed.is_some()
+                                || fields.polling_interval_ms.is_some())
+                            && fields.x_speed.is_none_or(|x| (1..=99).contains(&x))
+                            && fields.y_speed.is_none_or(|y| (1..=99).contains(&y))
+                            && fields.polling_interval_ms.is_none_or(|ms| (1..=99).contains(&ms))
                     });
                 }
                 Some("general.set_startup_position") => {
@@ -1344,6 +1382,38 @@ mod tests {
             assert!(preview(&json!({"action":"general.set_fullscreen_global_mapping", "source_tab_ref":tab, "fullscreen_global_mapping":bad})).is_err());
         }
         assert!(preview(&json!({"action":"general.set_fullscreen_global_mapping", "source_tab_ref":tab, "fullscreen_global_mapping":{"disable_in_fullscreen":true}, "extra":1})).is_err());
+    }
+
+    #[test]
+    fn configuration_key2mouse_settings_checks_integer_bounds() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for fields in [
+            json!({"x_speed": 1}),
+            json!({"y_speed": 99}),
+            json!({"polling_interval_ms": 1}),
+            json!({"x_speed": 12, "y_speed": 24, "polling_interval_ms": 5}),
+        ] {
+            let valid = json!({"action":"configuration.set_key2mouse_settings", "source_tab_ref":tab, "key2mouse":fields});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!({}),
+            json!({"x_speed": 0}),
+            json!({"x_speed": 100}),
+            json!({"y_speed": 0}),
+            json!({"y_speed": 100}),
+            json!({"polling_interval_ms": 0}),
+            json!({"polling_interval_ms": 100}),
+            json!({"x_speed": 1.5}),
+            json!({"y_speed": true}),
+            json!({"polling_interval_ms": null}),
+            json!({"x_speed": 3, "extra": 1}),
+        ] {
+            assert!(preview(&json!({"action":"configuration.set_key2mouse_settings", "source_tab_ref":tab, "key2mouse":bad})).is_err());
+        }
+        assert!(preview(&json!({"action":"configuration.set_key2mouse_settings", "source_tab_ref":tab, "key2mouse":{"x_speed":3}, "extra":1})).is_err());
     }
 
     #[test]
