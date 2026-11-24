@@ -1613,6 +1613,27 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("F8")},
         {QStringLiteral("extra"), QStringLiteral("F9")}}).ok());
 
+    const auto validateCustomNotification = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_custom_notification")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("custom_notification"), fields}});
+    };
+    const auto customNotifyBoth = validateCustomNotification({{QStringLiteral("enabled"), true},
+        {QStringLiteral("position"), 6}});
+    QVERIFY(customNotifyBoth.ok() && customNotifyBoth.update.customNotificationEnabled == std::optional<bool>(true)
+        && customNotifyBoth.update.customNotificationPosition == std::optional<int>(6));
+    QVERIFY(validateCustomNotification({{QStringLiteral("enabled"), false}}).ok());
+    QVERIFY(validateCustomNotification({{QStringLiteral("position"), 0}}).ok());
+    QVERIFY(!validateCustomNotification({}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), 1}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), true}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), 0.5}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), -1}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), 7}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), false}, {QStringLiteral("position"), 3}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), true}, {QStringLiteral("extra"), 1}}).ok());
+
     const auto validateStartupPosition = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
@@ -1639,9 +1660,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 102);
+    QCOMPARE(capabilities.size(), 104);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 96);
+    QCOMPARE(demoCapabilities.size(), 98);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1654,6 +1675,8 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(94).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_process_icon_as_tray_icon.apply"));
     QCOMPARE(capabilities.at(95).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_point_display_keys.preview"));
     QCOMPARE(capabilities.at(96).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_point_display_keys.apply"));
+    QCOMPARE(capabilities.at(97).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification.preview"));
+    QCOMPARE(capabilities.at(98).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
     }));
@@ -1668,6 +1691,9 @@ void McpControlTest::mappingChangeArguments()
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_point_display_keys.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_custom_notification.apply");
     }));
     for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
             QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply")}) {

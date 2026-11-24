@@ -75,6 +75,8 @@ struct MappingUpdateArguments {
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;
+    std::optional<bool> customNotificationEnabled;
+    std::optional<int> customNotificationPosition;
     std::optional<int> startupPositionMode;
     std::optional<QPoint> startupPositionPoint;
     QByteArray tableImportDocument;

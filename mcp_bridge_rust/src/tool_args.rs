@@ -461,6 +461,23 @@ struct PointDisplayKeys {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct CustomNotificationFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    position: Option<u8>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct CustomNotification {
+    action: String,
+    source_tab_ref: String,
+    custom_notification: CustomNotificationFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct StartupPoint {
     x: i32,
     y: i32,
@@ -924,6 +941,22 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                 || fields.screen_point_key.is_some())
                             && fields.window_point_key.as_deref().is_none_or(valid_key)
                             && fields.screen_point_key.as_deref().is_none_or(valid_key)
+                    });
+                }
+                Some("configuration.set_custom_notification") => {
+                    if arguments
+                        .get("custom_notification")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &CustomNotification| {
+                        let fields = &v.custom_notification;
+                        tab_ref(&v.source_tab_ref)
+                            && (fields.enabled.is_some() || fields.position.is_some())
+                            && fields.position.is_none_or(|position| position <= 6)
+                            && !(fields.enabled == Some(false) && fields.position.is_some())
                     });
                 }
                 Some("general.set_startup_position") => {
@@ -1510,6 +1543,37 @@ mod tests {
             assert!(preview(&json!({"action":"configuration.set_point_display_keys", "source_tab_ref":tab, "point_display_keys":bad})).is_err());
         }
         assert!(preview(&json!({"action":"configuration.set_point_display_keys", "source_tab_ref":tab, "point_display_keys":{"window_point_key":"F8"}, "extra":1})).is_err());
+    }
+
+    #[test]
+    fn configuration_custom_notification_checks_constraints() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for fields in [
+            json!({"enabled": true}),
+            json!({"enabled": false}),
+            json!({"position": 0}),
+            json!({"position": 6}),
+            json!({"enabled": true, "position": 5}),
+        ] {
+            let valid = json!({"action":"configuration.set_custom_notification", "source_tab_ref":tab, "custom_notification":fields});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!({}),
+            json!({"enabled": 1}),
+            json!({"position": true}),
+            json!({"position": -1}),
+            json!({"position": 7}),
+            json!({"position": 3.5}),
+            json!({"position": null}),
+            json!({"enabled": false, "position": 3}),
+            json!({"enabled": true, "extra": 1}),
+        ] {
+            assert!(preview(&json!({"action":"configuration.set_custom_notification", "source_tab_ref":tab, "custom_notification":bad})).is_err());
+        }
+        assert!(preview(&json!({"action":"configuration.set_custom_notification", "source_tab_ref":tab, "custom_notification":{"enabled":true}, "extra":1})).is_err());
     }
 
     #[test]

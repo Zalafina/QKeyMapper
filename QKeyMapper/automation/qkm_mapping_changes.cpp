@@ -16,6 +16,8 @@
 namespace QkmAutomation {
 namespace {
 constexpr MappingRowMove RowMoves[] = {MappingRowMove::Up, MappingRowMove::Down, MappingRowMove::Top, MappingRowMove::Bottom};
+constexpr int CustomNotificationPositionMin = QKeyMapperConstants::NOTIFICATION_POSITION_NONE;
+constexpr int CustomNotificationPositionMax = QKeyMapperConstants::NOTIFICATION_POSITION_BOTTOM_RIGHT;
 
 QString sampleTime() { return QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs); }
 bool operationPending(const QJsonObject &operation)
@@ -306,6 +308,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool key2MousePreview = preview && action == QLatin1String("configuration.set_key2mouse_settings");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
+    const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -322,7 +325,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || processIconTrayPreview
-        || pointDisplayKeysPreview || startupPositionPreview;
+        || pointDisplayKeysPreview || customNotificationPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -345,6 +348,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : key2MousePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
+        : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
         : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
@@ -536,6 +540,32 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             if (!parseKeyName(fields, QStringLiteral("window_point_key"), result.update.showWindowPointKey)
                 || !parseKeyName(fields, QStringLiteral("screen_point_key"), result.update.showScreenPointKey))
                 return fail("Point display keys must be non-empty single-line strings of at most 64 UTF-16 code units.");
+        }
+        if (customNotificationPreview) {
+            const auto raw = arguments.value(QStringLiteral("custom_notification"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return fail("Provide at least one custom notification field.");
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (it.key() != QStringLiteral("enabled") && it.key() != QStringLiteral("position"))
+                    return fail("Only enabled and position are allowed.");
+            }
+            if (fields.contains(QStringLiteral("enabled"))) {
+                const auto enabled = fields.value(QStringLiteral("enabled"));
+                if (!enabled.isBool()) return fail("custom_notification enabled must be a boolean.");
+                result.update.customNotificationEnabled = enabled.toBool();
+            }
+            if (fields.contains(QStringLiteral("position"))) {
+                const auto position = fields.value(QStringLiteral("position"));
+                const int parsed = position.toInt(CustomNotificationPositionMin - 1);
+                if (!position.isDouble() || position.toDouble() != parsed
+                    || parsed < CustomNotificationPositionMin || parsed > CustomNotificationPositionMax)
+                    return fail("custom_notification position must be an integer between 0 and 6.");
+                result.update.customNotificationPosition = parsed;
+            }
+            if (result.update.customNotificationEnabled && !*result.update.customNotificationEnabled
+                && result.update.customNotificationPosition)
+                return fail("custom_notification position cannot be set while disabling custom notification.");
         }
         if (startupPositionPreview) {
             using namespace QKeyMapperConstants;
@@ -1690,6 +1720,31 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
             QStringLiteral("canonical_none_or_keyboard_key_name"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject customNotificationSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("enabled"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("position"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("minimum"), CustomNotificationPositionMin},
+                {QStringLiteral("maximum"), CustomNotificationPositionMax}}}}},
+        {QStringLiteral("if"), QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("enabled"), QStringLiteral("position")}}}},
+        {QStringLiteral("then"), QJsonObject{{QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("enabled"), QJsonObject{{QStringLiteral("const"), true}}}}}}}};
+    auto customNotificationPreviewCap = capability("configuration.set_custom_notification.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_custom_notification")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("custom_notification"), customNotificationSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}));
+    auto customNotificationApply = capability("configuration.set_custom_notification.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&customNotificationPreviewCap, &customNotificationApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("position_requires_enabled_and_0_to_6"), QStringLiteral("first_enable_initializes_from_global_style"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }

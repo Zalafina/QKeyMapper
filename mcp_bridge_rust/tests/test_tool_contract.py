@@ -287,6 +287,19 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            custom_notify = {"action": "configuration.set_custom_notification", "source_tab_ref": tab}
+            for fields in ({"enabled": True}, {"enabled": False}, {"position": 0}, {"position": 6},
+                           {"enabled": True, "position": 5}):
+                request = custom_notify | {"custom_notification": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for fields in ({}, {"enabled": 1}, {"position": True}, {"position": -1}, {"position": 7},
+                           {"position": 3.5}, {"position": None}, {"enabled": False, "position": 3},
+                           {"enabled": True, "extra": 1}):
+                request = custom_notify | {"custom_notification": fields}
+                assert not validator.is_valid(request), fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             startup = {"action": "general.set_startup_position", "source_tab_ref": tab}
             point = {"x": -50000, "y": 50000}
             for fields in ({"mode": 0}, {"mode": 1}, {"mode": 2}, {"point": point}, {"mode": 2, "point": point}):
@@ -328,7 +341,7 @@ async def check_contract(exe):
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
                 "fullscreen_global_mapping", "key2mouse", "process_icon_as_tray_icon", "point_display_keys",
-                "startup_position",
+                "custom_notification", "startup_position",
                 "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)

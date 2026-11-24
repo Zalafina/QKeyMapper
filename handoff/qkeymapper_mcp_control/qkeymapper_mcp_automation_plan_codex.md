@@ -14,16 +14,25 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | ADV-POINT-KEYS-247 [Gemini] `configuration.set_point_display_keys`（窗口／屏幕坐标显示快捷键与规范 `"None"`／原生输入键严格校验），本机选验完成，待 Codex 复核（继续推进 248） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (本提交，源码基线 3cae0d65) |
+| 当前切片 | ADV-NOTIFY-248 [Gemini] `configuration.set_custom_notification`（配置专属提示信息开关与位置及首次样式初始化，收尾 `QMappingAdvancedDialog` M2-B 全部 7 项），本机选验完成，待 Codex 复核（继续推进 249） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (本提交，源码基线 205afd0e) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～247 |
-| 当前验证／证据 | 247 Qt6 Release `87EF0BDF` 零警告；Rust 23+11 单测（`0190E26F`）与双协议契约 6 组通过；双 Qt 定向组件 `F0D902E4`/`EF9D281A` 各 4 passed；隔离产品 `2A8BAB08`（禁用 FakerInput 分配与连接）＋正式 Rust `0190E26F` 完成 GUI 探针、只读拦截、非法键名／本地化“无”拒绝、双键同设 `F10/F10`、清草稿改 `None/F10`、冷启动、双 Qt 读回（`ShowWindowPointKey="None"`、`ShowScreenPointKey="F10"`，基线 86 键不变）及演示模式，全退出 0 |
-| 当前控制器 | 11-24 PID 6448 活跃（剩余约 2h0m，有效至 19:02）。247 进程、配对、凭据、授权与登记已清零 |
-| 下一项动作 | 推进 ADV-NOTIFY-248 [Gemini]（`configuration.set_custom_notification`，收尾 `QMappingAdvancedDialog` M2-B 项），随后规划 `WIN-CRITERIA-249` 等 |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～248（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾） |
+| 当前验证／证据 | 248 Qt6 Release `EB81F143` 零警告；Rust 23+12 单测（`1B90ABC4`）与双协议契约 6 组通过；双 Qt 定向组件 `3E536DE8`/`4F48D111` 各 4 passed；隔离产品 `7BE70E23`（禁用 FakerInput 分配与连接）＋正式 Rust `1B90ABC4` 完成 GUI 探针与对话框截图、只读拦截、禁用态改位置拒绝、首次预览取消不初始化、保存基线、启用+`position=5`、禁用保留、再启用 keeps style、0..6、冷启动、双 Qt 读回（`Enabled=true`, `Position=5`, `changed_other_keys=0`）及演示模式，全退出 0 |
+| 当前控制器 | 11-24 PID 6448 活跃（剩余约 1h43m，有效至 19:02）。248 进程、配对、凭据、授权与登记已清零 |
+| 下一项动作 | 推进 `WIN-CRITERIA-249 [Gemini]`（`configuration.set_window_match_criteria`），随后继续 `WIN-AUTOSTART-250`、`WIN-SAME-WINDOWS-251` 与 `IGNORE-*` |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### ADV-NOTIFY-248 [Gemini]：配置专属提示信息开关与位置 `configuration.set_custom_notification`
+
+- **源码基线**：`205afd0e`。
+- **变更范围**：`automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::customNotificationEnabled`／`customNotificationPosition`、`configuration.set_custom_notification` 严格校验（至少一项、`enabled` 布尔、`position` 为 `0..6` 整数，且同传 `enabled=false` 与 `position` 拒绝）及标准/演示双模式能力（104 标准 / 98 演示）；`QKeyMapper/qkeymapper.cpp` 新增 `automationCustomNotification`，在 `collectAutomationState` 输出 `custom_notification`（`enabled`、`position`、`style_initialized`），在 `handleAutomationMappingChange` 处理 `changingCustomNotification`（预览精确计算 `willInitFromGlobal` 与全局位置初始化预览但不提前改变 `m_CustomNotificationStyleInitialized`，拒绝在 `enabled=false` 时单设 `position`，应用按先 `setCustomNotificationEnabled` 后 `setCustomNotificationPosition` 次序共用 `onCustomNotificationEnabledChanged` 与 `dirty` 联动）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json`（`custom_notification` 带 `if/then` 约束）与 `test_tool_contract.py`。本切片同步标志 `QMappingAdvancedDialog` 全部 7 项 M2-B 控件已完成 MCP 接入。
+- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`EB81F143`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`1B90ABC4`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`3E536DE8`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`4F48D111`）；复用双 Qt 高级读回器 `out/mcp_adv_mouse_245_20261124/{qt6,qt5}-reader/release/read_mapping_advanced.exe`（`0E41D434` / `DE0E99C1`）；隔离产品 `out/mcp_product/adv_notify_248_20261124/runtime/QKeyMapperMcpAcceptance_AdvNotify.exe`（`7BE70E23`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/adv_notify_248_20261124/run1/`（含 `gui-probe-result.json`、`after_save_capture.png`、`baseline_saved.ini`、`saved.ini` 与 `readback-{qt6,qt5}.json`）。
+- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+12 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针与对话框截图 `after_save_capture.png` 验证初始未启用/禁用下拉与设定按钮/初值 3/干净、勾选启用与 dirty 联动、改设位置 `5`（底部居中）与关闭后位置保留且不写 INI；正式 Rust 隔离产品 `run1` 覆盖只读 `permission_denied`、Schema 与运行时禁用态改 `position` 拒绝、首次预览 `enabled=true` 精确预测 `initializes_from_global_style=true` 且取消后 `style_initialized=false` 不落样式键、先保存 `baseline_saved.ini`（不含 14 项 `CustomNotification_*` 样式键）、同次启用并设 `position=5`、无操作、禁用保留 `position=5` 且 `style_initialized=true`、再禁用态拒改 `position=1`、再启用 `initializes_from_global_style=false` 并保留 `position=5`、位置切 `0`（`None`）再切回 `5` 并保存 `McpSaved`（确认 14 项 `CustomNotification_*` 样式键全部持久化）、冷启动恢复 `{enabled:true, position:5, style_initialized:true}`、双 Qt 6.8.3／5.15.2 读回（`CustomNotification_Enabled=true`、`CustomNotification_Position=5`，相对 `baseline_saved.ini` 排除 16 项 `McpSaved/CustomNotification_*` 后 `unchanged_other_keys=260`、`changed_other_keys=0`）与 `--demo-configuration-only` 不写盘。全部自有产品退出 0，控制器 PID `6448` 已清零。
+- **失败重试轮次**：`cargo test` 初次因 `tool_args.rs` 新增单测缺少本地 `preview` 闭包编译失败，补齐闭包后全套构建、契约、组件及 `run1` 产品验收均一次性全绿通过。
+- **明确未验范围**：**开启 FakerInput 连接的运行**、映射启停与切表触发通知时实际提示框出现位置与定制样式绘制（含 `position=0` 不显示与未启用自定义回退全局样式）、`McpSaved` 仅含 `Enabled=true` 而无样式键时 `style_initialized` 惰性初始化分支、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
 
 ### ADV-POINT-KEYS-247 [Gemini]：窗口／屏幕坐标显示快捷键 `configuration.set_point_display_keys`
 

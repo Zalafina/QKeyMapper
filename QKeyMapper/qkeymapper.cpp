@@ -38091,6 +38091,13 @@ static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QS
         {QStringLiteral("screen_point_key"), screenKey}};
 }
 
+static QJsonObject automationCustomNotification(bool enabled, int position, bool styleInitialized)
+{
+    return {{QStringLiteral("enabled"), enabled},
+        {QStringLiteral("position"), position},
+        {QStringLiteral("style_initialized"), styleInitialized}};
+}
+
 QJsonObject QKeyMapper::automationMappingDisplay() const
 {
     return {{QStringLiteral("category_column"), m_ShowCategory},
@@ -38177,6 +38184,10 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         result.insert(QStringLiteral("point_display_keys"), automationPointDisplayKeys(
             m_MappingAdvancedDialog->getCanonicalShowWindowPointKey(),
             m_MappingAdvancedDialog->getCanonicalShowScreenPointKey()));
+        result.insert(QStringLiteral("custom_notification"), automationCustomNotification(
+            m_MappingAdvancedDialog->getCustomNotificationEnabled(),
+            m_MappingAdvancedDialog->getCustomNotificationPosition(),
+            m_CustomNotificationStyleInitialized));
     }
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
@@ -40112,6 +40123,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingProcessIconAsTrayIcon = updating && update.processIconAsTrayIcon.has_value();
         const bool changingPointDisplayKeys = updating
             && (update.showWindowPointKey.has_value() || update.showScreenPointKey.has_value());
+        const bool changingCustomNotification = updating
+            && (update.customNotificationEnabled.has_value() || update.customNotificationPosition.has_value());
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -40127,7 +40140,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
-            || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys;
+            || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys
+            || changingCustomNotification;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
@@ -40143,18 +40157,20 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
             || m_KeyMappingDataTable->hasActiveEditor()
             || (changingGeneralPreference && !m_GeneralAdvancedDialog)
-            || ((changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys) && !m_MappingAdvancedDialog)) {
+            || ((changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys || changingCustomNotification) && !m_MappingAdvancedDialog)) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
-            && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon && !changingPointDisplayKeys
+            && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon
+            && !changingPointDisplayKeys && !changingCustomNotification
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
-        if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys)
+        if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon
+                || changingPointDisplayKeys || changingCustomNotification)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
             return;
@@ -40518,6 +40534,29 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), QStringLiteral("set_point_display_keys")},
                     {QStringLiteral("before"), automationPointDisplayKeys(beforeWindow, beforeScreen)},
                     {QStringLiteral("after"), automationPointDisplayKeys(afterWindow, afterScreen)}};
+            } else if (changingCustomNotification) {
+                const bool beforeEnabled = m_MappingAdvancedDialog->getCustomNotificationEnabled();
+                const int beforePosition = m_MappingAdvancedDialog->getCustomNotificationPosition();
+                const bool beforeStyleInitialized = m_CustomNotificationStyleInitialized;
+                const bool afterEnabled = update.customNotificationEnabled.value_or(beforeEnabled);
+                if (update.customNotificationPosition.has_value() && !afterEnabled) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("Enable custom notification before setting custom notification position."));
+                    return;
+                }
+                const bool willInitFromGlobal = (!beforeEnabled && afterEnabled && !beforeStyleInitialized);
+                const int afterPosition = update.customNotificationPosition.has_value()
+                    ? *update.customNotificationPosition
+                    : (willInitFromGlobal ? ui->notificationComboBox->currentIndex() : beforePosition);
+                const bool afterStyleInitialized = beforeStyleInitialized || willInitFromGlobal;
+                modified = (afterEnabled != beforeEnabled) || (afterPosition != beforePosition);
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_custom_notification")},
+                    {QStringLiteral("before"), automationCustomNotification(beforeEnabled, beforePosition, beforeStyleInitialized)},
+                    {QStringLiteral("after"), automationCustomNotification(afterEnabled, afterPosition, afterStyleInitialized)},
+                    {QStringLiteral("initializes_from_global_style"), willInitFromGlobal},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingGeneralTablePreference) {
                 const int before = changingTableEditTrigger ? m_GeneralAdvancedDialog->getTableEditModeTrigger()
                     : m_GeneralAdvancedDialog->getTableInsertMode();
@@ -41025,6 +41064,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingKey2Mouse ? QStringLiteral("configuration.set_key2mouse_settings")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
+            : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
@@ -41113,6 +41153,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (changingPointDisplayKeys) {
                 if (update.showWindowPointKey) m_MappingAdvancedDialog->setShowWindowPointKey(*update.showWindowPointKey);
                 if (update.showScreenPointKey) m_MappingAdvancedDialog->setShowScreenPointKey(*update.showScreenPointKey);
+            } else if (changingCustomNotification) {
+                if (update.customNotificationEnabled) {
+                    m_MappingAdvancedDialog->setCustomNotificationEnabled(*update.customNotificationEnabled);
+                }
+                if (update.customNotificationPosition) {
+                    m_MappingAdvancedDialog->setCustomNotificationPosition(*update.customNotificationPosition);
+                }
             } else if (changingMappingDisplay) {
                 const bool notes = mappingDisplayAfter.value(QStringLiteral("notes")).toBool();
                 const bool category = mappingDisplayAfter.value(QStringLiteral("category_column")).toBool();
