@@ -14,16 +14,25 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | REVIEW-FIX-241-ROOT-THRESHOLDS [Gemini]（基于 `781d0965` 完成 Codex 三轮 P2 复核的根区空白重载与手柄 12 项阈值原子加载修正，本机选验完成，待 Codex 复核；准备进入 `WIN-AUTOSTART-250`） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (本提交) |
+| 当前切片 | TRAY-MCP-FIX [Gemini]（基于 `02626cc8` 修复托盘右键菜单“Agent / MCP 控制”左键点击放行、最小化恢复及独立分栏，本机选验完成，待 Codex 复核；准备进入 `WIN-AUTOSTART-250`） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (本提交) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～249（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾）＋ 241/249 Codex 三轮 P2 边界修正 |
-| 当前验证／证据 | `REVIEW-FIX-241-ROOT-THRESHOLDS [Gemini]` Qt6 Release `79D85D7C` 零警告；复用未改动 Rust Sidecar `C072833F` 与 249 实测证据；241 隔离产品 `8C42274B` `run7` 全 9 轮通过（覆盖 `[General]` 非默认 `7/11/F12`＋`LT 70/40/20` 冷空白回退保真、`McpSaved` 回退前后 LT `50/30/15` 全 12 项阈值不被夹紧为 `85`、同进程 27 项高级控件前后快照完全一致及 `has_unsaved_changes=false`；运行副本禁用 FakerInput 分配与连接） |
-| 当前控制器 | 11-25 PID 39460 当前活跃且已清零（有效至 19:00，scope/registered_targets/owned_targets/unresolved_starts 全空） |
-| 下一项动作 | 按用户指示接续 `WIN-AUTOSTART-250 [Gemini]`（`configuration.set_auto_match_foreground`，可复用 `249` 的 `read_window_match.exe`），随后推进 `WIN-SAME-WINDOWS-251` 与 `IGNORE-*` |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～249（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾）＋ 241/249 Codex 三轮 P2 边界修正 ＋ TRAY-MCP-FIX 托盘 MCP 入口点击与分栏修正 |
+| 当前验证／证据 | `TRAY-MCP-FIX [Gemini]` Qt6 Release `FBE93090` 零警告；隔离探针 `11A7EC92` 零警告（禁用 FakerInput 分配与连接）；私有桌面 `run2` 证实 7 项菜单结构含 `ShowHide`/`McpAction`/`Quit` 前后分隔线、截图 `tray-mcp-menu.png` 视觉确认、“显示/隐藏”前后及最小化窗口左键点击均正常打开/恢复 `mcpControlDialog` 且错位拖拽松开不误触发、`ini_unchanged=true` |
+| 当前控制器 | 11-25 PID 40116 当前活跃且已清零（有效至 19:00，scope/registered_targets/owned_targets/unresolved_starts 全空） |
+| 下一项动作 | 立即推进 `WIN-AUTOSTART-250 [Gemini]`（`configuration.set_auto_match_foreground`，复用 `249` 的 `read_window_match.exe`），随后推进 `WIN-SAME-WINDOWS-251` 与 `IGNORE-*` |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### TRAY-MCP-FIX [Gemini]：修复托盘右键菜单“Agent / MCP 控制”左键点击被 `SystrayMenu` 吞掉并补充独立分栏
+
+- **源码基线**：`02626cc8`。
+- **变更范围**：核对确认主计划第 1719 行已规划独立托盘入口且 `initSysTrayIcon()` 已连接 `m_TrayIconMenu_McpAction -> showMcpControlDialog`，但 `SystrayMenu::mousePressEvent`/`mouseReleaseEvent` 仅放行原有 3 个动作（吞掉左键点击）。本次在 `QKeyMapper/qkeymapper_constants.h` 新增 `SYSTRAY_MENU_ITEM_PRESSED_MCP = 4`；在 `QKeyMapper/qkeymapper.cpp` 的 `initSysTrayIcon()` 于 `m_TrayIconMenu_ShowHideAction` 与 `m_TrayIconMenu_McpAction` 之间新增 `addSeparator()` 形成独立分栏，在 `showMcpControlDialog()` 补充最小化窗口 `showNormal()` 恢复，并在 `SystrayMenu::mousePressEvent`/`mouseReleaseEvent` 新增 `m_TrayIconMenu_McpAction` 配对放行。
+- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`FBE93090`，零警告）；隔离探针 `out/mcp_product/tray_mcp_fix_20261125/runtime/QKeyMapperMcpAcceptance_TrayMcp.exe`（`11A7EC92`，零警告，**运行副本禁用 FakerInput 分配与连接**）；证据 `out/mcp_product/tray_mcp_fix_20261125/run2/`（含 `tray-mcp-probe-result.json` 与 `tray-mcp-menu.png`）。
+- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 与隔离运行副本均零警告；私有桌面隔离产品 `run2` 退出 0，实测菜单动作序列为 7 项且 `separator_before_mcp=true`、`separator_after_mcp=true`，人工／模型直接查验 `run2/tray-mcp-menu.png` 确认上下分隔线布局清晰；实测主窗可见点击打开（`opened_when_main_visible=true`）、跨项错位按压松开拦截（`mismatch_blocked=true`）、主窗隐藏托盘点击打开（`main_hidden_before_click=true`、`opened_when_main_hidden=true`）、最小化对话框再次点击恢复（`restored_from_minimized=true`）及 `ini_unchanged=true`。控制器 PID `40116` 已清零。
+- **失败重试轮次**：`run1` 因前次探针编译警告中断漏拷运行目录 DLL 且当时存在用户个人运行实例造成 `start_result_unknown` 触发旧控制器 PID `39460` 安全关闭；补齐全部 DLL 并经 `dumpbin /dependents` 验证且由用户外部重开控制器 PID `40116` 后，`run2` 一次性全绿通过。
+- **明确未验范围**：**开启 FakerInput 连接的运行**、`Default` 桌面真实系统托盘图标右键弹出、Qt5 整体产品、Win10、跨登录及 QQ 联调保持待验。本机选验完成，待 Codex 复核。
 
 ### REVIEW-FIX-241-ROOT-THRESHOLDS [Gemini]：241 根区空白重载与手柄阈值原子加载（Codex 三轮 P2 复核修正）
 

@@ -160,6 +160,7 @@ namespace QKeyMapperConstants {
     inline constexpr int SYSTRAY_MENU_ITEM_PRESSED_MAPPINGSWITCH = 1;
     inline constexpr int SYSTRAY_MENU_ITEM_PRESSED_SHOWHIDE      = 2;
     inline constexpr int SYSTRAY_MENU_ITEM_PRESSED_QUIT          = 3;
+    inline constexpr int SYSTRAY_MENU_ITEM_PRESSED_MCP           = 4;
 
     inline constexpr Qt::Key KEY_REFRESH           = Qt::Key_F5;
     inline constexpr Qt::Key KEY_RECORD_START      = Qt::Key_F11;

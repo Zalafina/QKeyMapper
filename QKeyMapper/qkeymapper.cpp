@@ -32823,7 +32823,11 @@ void QKeyMapper::initProcessInfoTable(void)
 bool QKeyMapper::showMcpControlDialog()
 {
     if (!m_McpControlDialog) return false;
-    m_McpControlDialog->show();
+    if (m_McpControlDialog->isMinimized()) {
+        m_McpControlDialog->showNormal();
+    } else {
+        m_McpControlDialog->show();
+    }
     m_McpControlDialog->raise();
     m_McpControlDialog->activateWindow();
     return m_McpControlDialog->isVisible();
@@ -32853,6 +32857,7 @@ void QKeyMapper::initSysTrayIcon()
     m_SysTrayIconMenu->addAction(m_TrayIconMenu_MappingSwitchAction);
     m_SysTrayIconMenu->addSeparator(); // Add a separator horizontal line
     m_SysTrayIconMenu->addAction(m_TrayIconMenu_ShowHideAction);
+    m_SysTrayIconMenu->addSeparator(); // Separate Agent / MCP Control as an independent section
     m_SysTrayIconMenu->addAction(m_TrayIconMenu_McpAction);
     m_SysTrayIconMenu->addSeparator(); // Add a separator horizontal line
     m_SysTrayIconMenu->addAction(m_TrayIconMenu_QuitAction);
@@ -54439,6 +54444,12 @@ void SystrayMenu::mousePressEvent(QMouseEvent *event)
 #endif
                 m_MenuItem_Pressed = SYSTRAY_MENU_ITEM_PRESSED_SHOWHIDE;
             }
+            else if (action == QKeyMapper::getInstance()->m_TrayIconMenu_McpAction) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[SystrayMenu::mousePressEvent] Mouse Left-Button Pressed on action Mcp";
+#endif
+                m_MenuItem_Pressed = SYSTRAY_MENU_ITEM_PRESSED_MCP;
+            }
             else if (action == QKeyMapper::getInstance()->m_TrayIconMenu_QuitAction) {
 #ifdef DEBUG_LOGOUT_ON
                 qDebug() << "[SystrayMenu::mousePressEvent] Mouse Left-Button Pressed on action Quit";
@@ -54479,6 +54490,14 @@ void SystrayMenu::mouseReleaseEvent(QMouseEvent *event)
                 qDebug() << "[SystrayMenu::mouseReleaseEvent] Mouse Left-Button Released on action ShowHide.";
 #endif
                 if (m_MenuItem_Pressed == SYSTRAY_MENU_ITEM_PRESSED_SHOWHIDE) {
+                    click_matched = true;
+                }
+            }
+            else if (action == QKeyMapper::getInstance()->m_TrayIconMenu_McpAction) {
+#ifdef DEBUG_LOGOUT_ON
+                qDebug() << "[SystrayMenu::mouseReleaseEvent] Mouse Left-Button Released on action Mcp.";
+#endif
+                if (m_MenuItem_Pressed == SYSTRAY_MENU_ITEM_PRESSED_MCP) {
                     click_matched = true;
                 }
             }
