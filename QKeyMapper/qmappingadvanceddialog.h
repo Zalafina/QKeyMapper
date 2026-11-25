@@ -26,6 +26,7 @@ public:
     QByteArray automationEditorFingerprint() const;
 
     void initGamepadThresholdSpinBoxes(void);
+    void resetGamepadThresholdsToDefaults(void);
 
     int getMouseXSpeed(void);
     int getMouseYSpeed(void);

@@ -28348,7 +28348,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 #endif
     }
     else {
-        ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
+        ui->brakeThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
     }
 
     if (true == settingFile.contains(settingSelectStr+GRIP_THRESHOLD_ACCEL)){
@@ -28840,6 +28840,12 @@ void QKeyMapper::loadEmptyMapSetting()
     // ui->mouseYSpeedSpinBox->setValue(MOUSE_SPEED_DEFAULT);
     m_MappingAdvancedDialog->setMouseXSpeed(MOUSE_SPEED_DEFAULT);
     m_MappingAdvancedDialog->setMouseYSpeed(MOUSE_SPEED_DEFAULT);
+    m_MappingAdvancedDialog->setMousePollingInterval(MOUSE_POLLING_INTERNAL_DEFAULT);
+    m_MappingAdvancedDialog->resetGamepadThresholdsToDefaults();
+    m_MappingAdvancedDialog->setGamepadTouchpadXSpeed(GAMEPAD_TOUCHPAD_SPEED_DEFAULT);
+    m_MappingAdvancedDialog->setGamepadTouchpadYSpeed(GAMEPAD_TOUCHPAD_SPEED_DEFAULT);
+    m_MappingAdvancedDialog->setGamepadTouchpadInvertX(false);
+    m_MappingAdvancedDialog->setGamepadTouchpadInvertY(false);
     ui->Gyro2MouseXSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
     ui->Gyro2MouseYSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
     ui->Gyro2MouseMinXSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
@@ -28861,7 +28867,7 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->directModeCheckBox->setChecked(false);
     ui->filterKeysCheckBox->setChecked(true);
     ui->dataPortSpinBox->setValue(DATA_PORT_DEFAULT);
-    ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
+    ui->brakeThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_BRAKE_DEFAULT);
     ui->accelThresholdDoubleSpinBox->setValue(GRIP_THRESHOLD_ACCEL_DEFAULT);
 
     ui->autoStartMappingCheckBox->setCheckState(Qt::Checked);
@@ -28870,6 +28876,18 @@ void QKeyMapper::loadEmptyMapSetting()
     ui->sendToSameTitleWindowsCheckBox->setChecked(false);
     m_MappingAdvancedDialog->setAcceptVirtualGamepadInput(false);
     m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
+    m_MappingAdvancedDialog->setShowWindowPointKey(SHOW_POINTS_IN_WINDOW_KEY);
+    m_MappingAdvancedDialog->setShowScreenPointKey(SHOW_POINTS_IN_SCREEN_KEY);
+    m_MappingAdvancedDialog->blockSignals(true);
+    m_MappingAdvancedDialog->setCustomNotificationPosition(ui->notificationComboBox->currentIndex());
+    m_MappingAdvancedDialog->setCustomNotificationEnabled(false);
+    m_MappingAdvancedDialog->blockSignals(false);
+    m_CustomNotificationStyleInitialized = false;
+    if (m_CustomNotificationSetupDialog != Q_NULLPTR && m_NotificationSetupDialog != Q_NULLPTR) {
+        m_CustomNotificationSetupDialog->loadNotificationSettings(m_NotificationSetupDialog->getNotificationSettings());
+    }
+    updateCustomNotificationDialogTitle();
+    closeCustomNotificationSetupDialog();
     m_MappingAdvancedDialog->setCommonMappingTableEnabled(MAPPINGTABLE_COMMON_ENABLED_DEFAULT);
     updateCommonMappingTabVisibility();
 

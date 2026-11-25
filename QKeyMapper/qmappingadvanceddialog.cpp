@@ -367,6 +367,63 @@ void QMappingAdvancedDialog::initGamepadThresholdSpinBoxes()
     });
 }
 
+void QMappingAdvancedDialog::resetGamepadThresholdsToDefaults(void)
+{
+    struct SpinDefault {
+        QSpinBox *spin;
+        int defaultValue;
+    };
+    const SpinDefault entries[12] = {
+        { ui->LT_Threshold_PressSpinBox, GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT },
+        { ui->LT_Threshold_LightPressSpinBox, GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT },
+        { ui->LT_Threshold_ReleaseSpinBox, GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT },
+        { ui->RT_Threshold_PressSpinBox, GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT },
+        { ui->RT_Threshold_LightPressSpinBox, GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT },
+        { ui->RT_Threshold_ReleaseSpinBox, GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT },
+        { ui->LS_Threshold_PushSpinBox, GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT },
+        { ui->LS_Threshold_LightPushSpinBox, GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT },
+        { ui->LS_Threshold_ReleaseSpinBox, GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT },
+        { ui->RS_Threshold_PushSpinBox, GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT },
+        { ui->RS_Threshold_LightPushSpinBox, GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT },
+        { ui->RS_Threshold_ReleaseSpinBox, GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT },
+    };
+
+    bool changed = false;
+    bool prevBlocked[12]{};
+    for (int i = 0; i < 12; ++i) {
+        if (entries[i].spin->value() != entries[i].defaultValue) {
+            changed = true;
+        }
+        prevBlocked[i] = entries[i].spin->blockSignals(true);
+    }
+
+    // Clear per-triplet min/max locks before restoring defaults so higher corrupted values do not clamp them.
+    for (const SpinDefault &entry : entries) {
+        entry.spin->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
+        entry.spin->setValue(entry.defaultValue);
+    }
+
+    for (int group = 0; group < 4; ++group) {
+        QSpinBox *pressSpin = entries[group * 3 + 0].spin;
+        QSpinBox *lightSpin = entries[group * 3 + 1].spin;
+        QSpinBox *releaseSpin = entries[group * 3 + 2].spin;
+        pressSpin->setMinimum(lightSpin->value());
+        lightSpin->setMinimum(releaseSpin->value());
+        lightSpin->setMaximum(pressSpin->value());
+        releaseSpin->setMaximum(lightSpin->value());
+    }
+
+    for (int i = 0; i < 12; ++i) {
+        entries[i].spin->blockSignals(prevBlocked[i]);
+    }
+
+    if (changed) {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
+    }
+}
+
 int QMappingAdvancedDialog::getMouseXSpeed()
 {
     return ui->mouseXSpeedSpinBox->value();
