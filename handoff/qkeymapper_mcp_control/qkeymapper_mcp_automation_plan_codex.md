@@ -14,16 +14,27 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | REVIEW-FIX-241-RESET [Gemini]（基于 `9aec8be5`／代码 `e94536d9` 完成 Codex 二轮 P2 复核的空白回退全字段重置修正，本机选验完成，待 Codex 复核；准备进入 `WIN-AUTOSTART-250`） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (本提交) |
+| 当前切片 | REVIEW-FIX-241-ROOT-THRESHOLDS [Gemini]（基于 `781d0965` 完成 Codex 三轮 P2 复核的根区空白重载与手柄 12 项阈值原子加载修正，本机选验完成，待 Codex 复核；准备进入 `WIN-AUTOSTART-250`） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (本提交) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～249（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾）＋ 241/249 Codex 两轮 P2 边界修正 |
-| 当前验证／证据 | `REVIEW-FIX-241-RESET [Gemini]` Qt6 Release `5C386AB7` 零警告；复用未改动的 Rust Sidecar `C072833F` 与 249 实测证据；241 隔离产品 `B072A82F` `run6` 全 8 轮通过（含携带 14 项非默认键的坏组回退 `McpSaved`／空白前后状态全字段精确一致、`has_unsaved_changes=false`、立即加载 `McpSaved` 成功与显式 `load_empty` 仍置脏；运行副本禁用 FakerInput 分配与连接） |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～249（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾）＋ 241/249 Codex 三轮 P2 边界修正 |
+| 当前验证／证据 | `REVIEW-FIX-241-ROOT-THRESHOLDS [Gemini]` Qt6 Release `79D85D7C` 零警告；复用未改动 Rust Sidecar `C072833F` 与 249 实测证据；241 隔离产品 `8C42274B` `run7` 全 9 轮通过（覆盖 `[General]` 非默认 `7/11/F12`＋`LT 70/40/20` 冷空白回退保真、`McpSaved` 回退前后 LT `50/30/15` 全 12 项阈值不被夹紧为 `85`、同进程 27 项高级控件前后快照完全一致及 `has_unsaved_changes=false`；运行副本禁用 FakerInput 分配与连接） |
 | 当前控制器 | 11-25 PID 39460 当前活跃且已清零（有效至 19:00，scope/registered_targets/owned_targets/unresolved_starts 全空） |
 | 下一项动作 | 按用户指示接续 `WIN-AUTOSTART-250 [Gemini]`（`configuration.set_auto_match_foreground`，可复用 `249` 的 `read_window_match.exe`），随后推进 `WIN-SAME-WINDOWS-251` 与 `IGNORE-*` |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### REVIEW-FIX-241-ROOT-THRESHOLDS [Gemini]：241 根区空白重载与手柄阈值原子加载（Codex 三轮 P2 复核修正）
+
+- **源码基线**：`781d0965`。
+- **变更范围**：
+  1. **根区空白回退按磁盘 `[General]` 重载**：`QKeyMapper::loadKeyMapSetting`（`qkeymapper.h/.cpp`）新增 `bool loadRootBlankOnly = false` 参数，在 `loadRootBlankOnly=true` 时跳过窗口位置／全局偏好加载并固定将 `settingSelectStr` 置空，走与冷启动无 `SettingSelect` 相同的根区 `[General]` 读取路径；新增 `QKeyMapper::reloadRootBlankSettingGroup()`（复用 `loadSetting_flag=true`、`EMPTYSETTING_INDEX` 与 `settingNameLineEdit` 清理及共通修复）。`handleAutomationConfigurationList` 回退到原干净空白来源（`restoreCleanEmpty=true`）改用 `reloadRootBlankSettingGroup()`＋`clearSaveSettingDirty()`，既保留旧 INI `[General]` 非默认值又不标 dirty；显式 `configuration.load_empty` 仍走 `selectEmptySettingGroup()` 重置默认并保留草稿 `has_unsaved_changes=true`。
+  2. **手柄 12 项阈值原子加载**：`QMappingAdvancedDialog`（`qmappingadvanceddialog.h/.cpp`）新增 `GamepadThresholdSettings` 与 `setGamepadThresholds()`（校验规范化四组三元后屏蔽 12 个 SpinBox 信号、先放开上下限到 `0..100` 再写入全部 12 值，最后重建三元 `Release <= Light <= Press/Push` 约束，`resetGamepadThresholdsToDefaults()` 改为委托该入口）；`loadKeyMapSetting()` 先读取全部 12 项阈值再调用 `setGamepadThresholds()` 一次性应用，消除高阈值坏组回退 `McpSaved` 时因加载顺序先设 `Press=50` 被 `LightPress=85` 夹紧成 `85` 的问题。
+- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`79D85D7C`，零警告）；复用未改动 Rust Sidecar `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`C072833F`）；241 隔离产品 `out/mcp_product/configuration_load_global_241_20261124/runtime/QKeyMapperMcpAcceptance_ConfigLoadGlobal.exe`（`8C42274B`，零警告，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/configuration_load_global_241_20261124/run7/`（含 `calls.jsonl`、`corrupt-saved-dialog-snapshots.json`、`corrupt-root-nondefault-dialog-snapshots.json` 与 `gui-probe-result.json`）。
+- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 与 241 隔离运行副本均为零警告；私有桌面 241 隔离产品 `run7` 全部 9 轮退出 0，其中：`corrupt_from_saved` 与 `corrupt_from_blank` 同进程 27 项高级控件快照实测坏组（含 `LT=90/85/80`、`Key2Mouse_PollingInterval=17`、`Touchpad_XSpeed=2.5/InvertX=true`、`Brake=0.85`）失败回退后 `lt_press/lt_light_press/lt_release` 精确恢复 `50/30/15`（不再被夹为 `85`）且全 12 项阈值、触摸板与刹车值前后精确一致、`has_unsaved_changes=false`；新增 `corrupt_from_root_nondefault_blank` 在 `[General]` 写入 `Key2Mouse_PollingInterval=7`、`Key2Mouse_XSpeed=11`、`ShowWindowPointKey=F12`、`LT=70/40/20`、`Touchpad_XSpeed=1.75`、`Brake=1.45` 且无 `SettingSelect`，实测坏组失败回退后 `qkm_get_state` 与同进程快照均精确维持 `[General]` 非默认值（`7/11/F12` 与 `LT 70/40/20` 等全 27 项完全不变且 `has_unsaved_changes=false`），紧接着 `configuration.load("McpSaved")` 成功；`absent_global` 显式 `configuration.load_empty` 仍置 `has_unsaved_changes=true`。控制器 PID `39460` 已清零。
+- **失败重试轮次**：Qt6 Release、隔离构建与 `run7` 全部 9 轮均一次性全绿通过。
+- **明确未验范围**：本次未重跑 Rust / 双 Qt 组件 / `249`（对应逻辑未改，沿用 `e94536d9` 证据）；**开启 FakerInput 连接的运行**、Qt5 整体产品、Win10、跨登录及 QQ 联调保持待验。本机选验完成，待 Codex 复核。
 
 ### REVIEW-FIX-241-RESET [Gemini]：241 空白回退完整配置级重置（Codex 二轮 P2 复核修正）
 

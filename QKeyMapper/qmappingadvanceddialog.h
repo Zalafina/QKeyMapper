@@ -25,7 +25,23 @@ public:
     void setUILanguage(int languageindex);
     QByteArray automationEditorFingerprint() const;
 
+    struct GamepadThresholdSettings {
+        int ltPress;
+        int ltLightPress;
+        int ltRelease;
+        int rtPress;
+        int rtLightPress;
+        int rtRelease;
+        int lsPush;
+        int lsLightPush;
+        int lsRelease;
+        int rsPush;
+        int rsLightPush;
+        int rsRelease;
+    };
+
     void initGamepadThresholdSpinBoxes(void);
+    void setGamepadThresholds(const GamepadThresholdSettings &settings);
     void resetGamepadThresholdsToDefaults(void);
 
     int getMouseXSpeed(void);

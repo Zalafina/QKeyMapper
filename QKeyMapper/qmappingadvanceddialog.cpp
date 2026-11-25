@@ -367,40 +367,52 @@ void QMappingAdvancedDialog::initGamepadThresholdSpinBoxes()
     });
 }
 
-void QMappingAdvancedDialog::resetGamepadThresholdsToDefaults(void)
+void QMappingAdvancedDialog::setGamepadThresholds(const GamepadThresholdSettings &settings)
 {
-    struct SpinDefault {
-        QSpinBox *spin;
-        int defaultValue;
+    auto normalizeTriplet = [](int &pressOrPush, int &light, int &release) {
+        pressOrPush = qBound(GAMEPAD_THRESHOLD_PERCENT_MIN, pressOrPush, GAMEPAD_THRESHOLD_PERCENT_MAX);
+        release = qBound(GAMEPAD_THRESHOLD_PERCENT_MIN, release, pressOrPush);
+        light = qBound(release, light, pressOrPush);
     };
-    const SpinDefault entries[12] = {
-        { ui->LT_Threshold_PressSpinBox, GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT },
-        { ui->LT_Threshold_LightPressSpinBox, GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT },
-        { ui->LT_Threshold_ReleaseSpinBox, GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT },
-        { ui->RT_Threshold_PressSpinBox, GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT },
-        { ui->RT_Threshold_LightPressSpinBox, GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT },
-        { ui->RT_Threshold_ReleaseSpinBox, GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT },
-        { ui->LS_Threshold_PushSpinBox, GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT },
-        { ui->LS_Threshold_LightPushSpinBox, GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT },
-        { ui->LS_Threshold_ReleaseSpinBox, GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT },
-        { ui->RS_Threshold_PushSpinBox, GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT },
-        { ui->RS_Threshold_LightPushSpinBox, GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT },
-        { ui->RS_Threshold_ReleaseSpinBox, GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT },
+
+    GamepadThresholdSettings normalized = settings;
+    normalizeTriplet(normalized.ltPress, normalized.ltLightPress, normalized.ltRelease);
+    normalizeTriplet(normalized.rtPress, normalized.rtLightPress, normalized.rtRelease);
+    normalizeTriplet(normalized.lsPush, normalized.lsLightPush, normalized.lsRelease);
+    normalizeTriplet(normalized.rsPush, normalized.rsLightPush, normalized.rsRelease);
+
+    struct SpinTarget {
+        QSpinBox *spin;
+        int value;
+    };
+    const SpinTarget entries[12] = {
+        { ui->LT_Threshold_PressSpinBox, normalized.ltPress },
+        { ui->LT_Threshold_LightPressSpinBox, normalized.ltLightPress },
+        { ui->LT_Threshold_ReleaseSpinBox, normalized.ltRelease },
+        { ui->RT_Threshold_PressSpinBox, normalized.rtPress },
+        { ui->RT_Threshold_LightPressSpinBox, normalized.rtLightPress },
+        { ui->RT_Threshold_ReleaseSpinBox, normalized.rtRelease },
+        { ui->LS_Threshold_PushSpinBox, normalized.lsPush },
+        { ui->LS_Threshold_LightPushSpinBox, normalized.lsLightPush },
+        { ui->LS_Threshold_ReleaseSpinBox, normalized.lsRelease },
+        { ui->RS_Threshold_PushSpinBox, normalized.rsPush },
+        { ui->RS_Threshold_LightPushSpinBox, normalized.rsLightPush },
+        { ui->RS_Threshold_ReleaseSpinBox, normalized.rsRelease },
     };
 
     bool changed = false;
     bool prevBlocked[12]{};
     for (int i = 0; i < 12; ++i) {
-        if (entries[i].spin->value() != entries[i].defaultValue) {
+        if (entries[i].spin->value() != entries[i].value) {
             changed = true;
         }
         prevBlocked[i] = entries[i].spin->blockSignals(true);
     }
 
-    // Clear per-triplet min/max locks before restoring defaults so higher corrupted values do not clamp them.
-    for (const SpinDefault &entry : entries) {
+    // Clear per-triplet min/max locks before assigning all 12 values so sequential updates cannot clamp them.
+    for (const SpinTarget &entry : entries) {
         entry.spin->setRange(GAMEPAD_THRESHOLD_PERCENT_MIN, GAMEPAD_THRESHOLD_PERCENT_MAX);
-        entry.spin->setValue(entry.defaultValue);
+        entry.spin->setValue(entry.value);
     }
 
     for (int group = 0; group < 4; ++group) {
@@ -422,6 +434,25 @@ void QMappingAdvancedDialog::resetGamepadThresholdsToDefaults(void)
             keyMapper->requestSaveSettingDirty();
         }
     }
+}
+
+void QMappingAdvancedDialog::resetGamepadThresholdsToDefaults(void)
+{
+    const GamepadThresholdSettings defaults{
+        GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT,
+        GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT,
+    };
+    setGamepadThresholds(defaults);
 }
 
 int QMappingAdvancedDialog::getMouseXSpeed()

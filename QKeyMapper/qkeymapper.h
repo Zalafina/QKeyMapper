@@ -2213,8 +2213,9 @@ private:
     static QVariantList serializeIgnoreRules(const OrderedMap<QString, IgnoreWindowInfo> &rules);
     static QVariantList serializeSyncGroupNotes(const QHash<int, QString> &notes);
     static QVariantList serializeCommonMappingData(const QList<MAP_KEYDATA> &data);
-    QString loadKeyMapSetting(const QString &settingtext, bool load_all = false, bool preserveVButtonPanelVisibility = false);
+    QString loadKeyMapSetting(const QString &settingtext, bool load_all = false, bool preserveVButtonPanelVisibility = false, bool loadRootBlankOnly = false);
     QString loadSelectedSettingGroup(const QString &group);
+    bool reloadRootBlankSettingGroup(void);
     bool selectEmptySettingGroup(void);
     void loadEmptyMapSetting(void);
     void loadGeneralSetting(void);

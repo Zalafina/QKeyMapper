@@ -23996,7 +23996,7 @@ bool QKeyMapper::removeSettingByName(const QString &settingName)
     return removeSettingByIndex(settingIndex);
 }
 
-QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all, bool preserveVButtonPanelVisibility)
+QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all, bool preserveVButtonPanelVisibility, bool loadRootBlankOnly)
 {
     if (KEYMAP_STOPPING == m_KeyMapStatus && m_mappingStopPhase != MappingStopPhase::GuiTail) { return {}; }
     QScopedValueRollback<bool> sourceLoadGuard(m_MappingSourceLoading, true);
@@ -24017,7 +24017,7 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
     QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
     initializeAutomationSettingsReader();
 
-    if (settingtext.isEmpty() || load_all) {
+    if ((settingtext.isEmpty() || load_all) && !loadRootBlankOnly) {
         QkmIbInputClient::instance().setPreferences(QkmIbInputClient::readPreferences(settingFile));
         refreshIbInputUi();
 
@@ -25075,7 +25075,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
 
     // validgroups = validgroups + validgroups_fullmatch + validgroups_customsetting;
 
-    if (true == settingtext.isEmpty()) {
+    if (loadRootBlankOnly) {
+        settingSelectStr.clear();
+        initKeyMappingTable = true;
+    }
+    else if (true == settingtext.isEmpty()) {
         if (true == settingFile.contains(SETTINGSELECT)){
             QVariant settingSelect = settingFile.value(SETTINGSELECT);
 #if (QT_VERSION >= QT_VERSION_CHECK(6, 0, 0))
@@ -27830,197 +27834,30 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         m_MappingAdvancedDialog->setMousePollingInterval(MOUSE_POLLING_INTERNAL_DEFAULT);
     }
 
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_LT_THRESHOLD_PRESS)){
-        int gamdpad_LT_ThresholdPress = settingFile.value(settingSelectStr+GAMEPAD_LT_THRESHOLD_PRESS).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_LT_ThresholdPress && gamdpad_LT_ThresholdPress <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setLeftTriggerPressThreshold(gamdpad_LT_ThresholdPress);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad LeftTrigger Press Threshold =" << gamdpad_LT_ThresholdPress;
-#endif
+    const auto readGamepadThreshold = [&](const char *key, int defaultVal) {
+        if (settingFile.contains(settingSelectStr + key)) {
+            const int value = settingFile.value(settingSelectStr + key).toInt();
+            if (GAMEPAD_THRESHOLD_PERCENT_MIN <= value && value <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
+                return value;
+            }
         }
-        else {
-            m_MappingAdvancedDialog->setLeftTriggerPressThreshold(GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setLeftTriggerPressThreshold(GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_LT_THRESHOLD_RELEASE)){
-        int gamdpad_LT_ThresholdRelease = settingFile.value(settingSelectStr+GAMEPAD_LT_THRESHOLD_RELEASE).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_LT_ThresholdRelease && gamdpad_LT_ThresholdRelease <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setLeftTriggerReleaseThreshold(gamdpad_LT_ThresholdRelease);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad LeftTrigger Release Threshold =" << gamdpad_LT_ThresholdRelease;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setLeftTriggerReleaseThreshold(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setLeftTriggerReleaseThreshold(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_RT_THRESHOLD_PRESS)){
-        int gamdpad_RT_ThresholdPress = settingFile.value(settingSelectStr+GAMEPAD_RT_THRESHOLD_PRESS).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_RT_ThresholdPress && gamdpad_RT_ThresholdPress <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setRightTriggerPressThreshold(gamdpad_RT_ThresholdPress);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad RightTrigger Press Threshold =" << gamdpad_RT_ThresholdPress;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setRightTriggerPressThreshold(GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setRightTriggerPressThreshold(GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_RT_THRESHOLD_RELEASE)){
-        int gamdpad_RT_ThresholdRelease = settingFile.value(settingSelectStr+GAMEPAD_RT_THRESHOLD_RELEASE).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_RT_ThresholdRelease && gamdpad_RT_ThresholdRelease <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setRightTriggerReleaseThreshold(gamdpad_RT_ThresholdRelease);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad RightTrigger Release Threshold =" << gamdpad_RT_ThresholdRelease;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setRightTriggerReleaseThreshold(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setRightTriggerReleaseThreshold(GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_LS_THRESHOLD_PUSH)){
-        int gamdpad_LS_ThresholdPush = settingFile.value(settingSelectStr+GAMEPAD_LS_THRESHOLD_PUSH).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_LS_ThresholdPush && gamdpad_LS_ThresholdPush <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setLeftStickPushThreshold(gamdpad_LS_ThresholdPush);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad LeftStick Push Threshold =" << gamdpad_LS_ThresholdPush;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setLeftStickPushThreshold(GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setLeftStickPushThreshold(GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_LS_THRESHOLD_RELEASE)){
-        int gamdpad_LS_ThresholdRelease = settingFile.value(settingSelectStr+GAMEPAD_LS_THRESHOLD_RELEASE).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_LS_ThresholdRelease && gamdpad_LS_ThresholdRelease <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setLeftStickReleaseThreshold(gamdpad_LS_ThresholdRelease);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad LeftStick Release Threshold =" << gamdpad_LS_ThresholdRelease;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setLeftStickReleaseThreshold(GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setLeftStickReleaseThreshold(GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_RS_THRESHOLD_PUSH)){
-        int gamdpad_RS_ThresholdPush = settingFile.value(settingSelectStr+GAMEPAD_RS_THRESHOLD_PUSH).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_RS_ThresholdPush && gamdpad_RS_ThresholdPush <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setRightStickPushThreshold(gamdpad_RS_ThresholdPush);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad RightStick Push Threshold =" << gamdpad_RS_ThresholdPush;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setRightStickPushThreshold(GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setRightStickPushThreshold(GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_RS_THRESHOLD_RELEASE)){
-        int gamdpad_RS_ThresholdRelease = settingFile.value(settingSelectStr+GAMEPAD_RS_THRESHOLD_RELEASE).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_RS_ThresholdRelease && gamdpad_RS_ThresholdRelease <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setRightStickReleaseThreshold(gamdpad_RS_ThresholdRelease);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad RightStick Release Threshold =" << gamdpad_RS_ThresholdRelease;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setRightStickReleaseThreshold(GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setRightStickReleaseThreshold(GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_LT_THRESHOLD_LIGHTPRESS)){
-        int gamdpad_LT_ThresholdLightPress = settingFile.value(settingSelectStr+GAMEPAD_LT_THRESHOLD_LIGHTPRESS).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_LT_ThresholdLightPress && gamdpad_LT_ThresholdLightPress <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setLeftTriggerLightPressThreshold(gamdpad_LT_ThresholdLightPress);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad LeftTrigger LightPress Threshold =" << gamdpad_LT_ThresholdLightPress;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setLeftTriggerLightPressThreshold(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setLeftTriggerLightPressThreshold(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_RT_THRESHOLD_LIGHTPRESS)){
-        int gamdpad_RT_ThresholdLightPress = settingFile.value(settingSelectStr+GAMEPAD_RT_THRESHOLD_LIGHTPRESS).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_RT_ThresholdLightPress && gamdpad_RT_ThresholdLightPress <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setRightTriggerLightPressThreshold(gamdpad_RT_ThresholdLightPress);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad RightTrigger LightPress Threshold =" << gamdpad_RT_ThresholdLightPress;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setRightTriggerLightPressThreshold(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setRightTriggerLightPressThreshold(GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_LS_THRESHOLD_LIGHTPUSH)){
-        int gamdpad_LS_ThresholdLightPush = settingFile.value(settingSelectStr+GAMEPAD_LS_THRESHOLD_LIGHTPUSH).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_LS_ThresholdLightPush && gamdpad_LS_ThresholdLightPush <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setLeftStickLightPushThreshold(gamdpad_LS_ThresholdLightPush);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad LeftStick LightPush Threshold =" << gamdpad_LS_ThresholdLightPush;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setLeftStickLightPushThreshold(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setLeftStickLightPushThreshold(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GAMEPAD_RS_THRESHOLD_LIGHTPUSH)){
-        int gamdpad_RS_ThresholdLightPush = settingFile.value(settingSelectStr+GAMEPAD_RS_THRESHOLD_LIGHTPUSH).toInt();
-        if (GAMEPAD_THRESHOLD_PERCENT_MIN <= gamdpad_RS_ThresholdLightPush && gamdpad_RS_ThresholdLightPush <= GAMEPAD_THRESHOLD_PERCENT_MAX) {
-            m_MappingAdvancedDialog->setRightStickLightPushThreshold(gamdpad_RS_ThresholdLightPush);
-#ifdef DEBUG_LOGOUT_ON
-            qDebug() << "[loadKeyMapSetting]" << "Gamepad RightStick LightPush Threshold =" << gamdpad_RS_ThresholdLightPush;
-#endif
-        }
-        else {
-            m_MappingAdvancedDialog->setRightStickLightPushThreshold(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
-        }
-    }
-    else {
-        m_MappingAdvancedDialog->setRightStickLightPushThreshold(GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT);
-    }
+        return defaultVal;
+    };
+    const QMappingAdvancedDialog::GamepadThresholdSettings gamepadThresholds{
+        readGamepadThreshold(GAMEPAD_LT_THRESHOLD_PRESS, GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_LT_THRESHOLD_LIGHTPRESS, GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_LT_THRESHOLD_RELEASE, GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_RT_THRESHOLD_PRESS, GAMEPAD_TRIGGER_PRESS_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_RT_THRESHOLD_LIGHTPRESS, GAMEPAD_TRIGGER_LIGHTPRESS_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_RT_THRESHOLD_RELEASE, GAMEPAD_TRIGGER_RELEASE_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_LS_THRESHOLD_PUSH, GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_LS_THRESHOLD_LIGHTPUSH, GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_LS_THRESHOLD_RELEASE, GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_RS_THRESHOLD_PUSH, GAMEPAD_STICK_PUSH_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_RS_THRESHOLD_LIGHTPUSH, GAMEPAD_STICK_LIGHTPUSH_THRESHOLD_PERCENT_DEFAULT),
+        readGamepadThreshold(GAMEPAD_RS_THRESHOLD_RELEASE, GAMEPAD_STICK_RELEASE_THRESHOLD_PERCENT_DEFAULT),
+    };
+    m_MappingAdvancedDialog->setGamepadThresholds(gamepadThresholds);
 
     if (true == settingFile.contains(settingSelectStr+GAMEPAD_TOUCHPAD_X_SPEED)){
         double gamepadTouchpadXSpeed = settingFile.value(settingSelectStr+GAMEPAD_TOUCHPAD_X_SPEED).toDouble();
@@ -39256,12 +39093,18 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
         const auto generation = m_MappingLoadGeneration;
         const auto load = [&](const QString &group, bool restoreCleanEmpty) {
             if (group.isEmpty()) {
-                const bool emptyLoaded = selectEmptySettingGroup() && m_MappingSourceLoadAccepted
-                    && m_LoadedMappingSettingGroup.isEmpty() && currentSettingSelectGroupName().isEmpty();
-                if (emptyLoaded && restoreCleanEmpty) {
-                    clearSaveSettingDirty();
+                if (restoreCleanEmpty) {
+                    const bool rootRestored = reloadRootBlankSettingGroup()
+                        && m_MappingSourceLoadAccepted
+                        && m_LoadedMappingSettingGroup.isEmpty()
+                        && currentSettingSelectGroupName().isEmpty();
+                    if (rootRestored) {
+                        clearSaveSettingDirty();
+                    }
+                    return rootRestored;
                 }
-                return emptyLoaded;
+                return selectEmptySettingGroup() && m_MappingSourceLoadAccepted
+                    && m_LoadedMappingSettingGroup.isEmpty() && currentSettingSelectGroupName().isEmpty();
             }
             return loadSelectedSettingGroup(group) == group && m_MappingSourceLoadAccepted
                 && m_LoadedMappingSettingGroup == group && currentSettingSelectGroupName() == group;
@@ -51155,6 +50998,31 @@ QString QKeyMapper::loadSelectedSettingGroup(const QString &group)
     }
     flushPendingCommonPriorityRepairAfterLoad();
     return loaded;
+}
+
+bool QKeyMapper::reloadRootBlankSettingGroup(void)
+{
+    if (KEYMAP_STOPPING == m_KeyMapStatus || loadSetting_flag || !ui || !ui->settingselectComboBox) {
+        return false;
+    }
+    bool reloaded = false;
+    {
+        QScopedValueRollback<bool> loading(loadSetting_flag, true);
+        loadKeyMapSetting(QString(), false, false, true);
+        reloaded = m_MappingSourceLoadAccepted && m_LoadedMappingSettingGroup.isEmpty();
+        if (reloaded) {
+            {
+                const QSignalBlocker blocker(ui->settingselectComboBox);
+                ui->settingselectComboBox->setCurrentIndex(EMPTYSETTING_INDEX);
+                ui->settingselectComboBox->setToolTip(ui->settingselectComboBox->currentText());
+            }
+            ui->settingNameLineEdit->setText(QString());
+            ui->settingNameLineEdit->setEnabled(true);
+            ui->settingNameLineEdit->setReadOnly(false);
+        }
+    }
+    flushPendingCommonPriorityRepairAfterLoad();
+    return reloaded && currentSettingSelectGroupName().isEmpty();
 }
 
 bool QKeyMapper::selectEmptySettingGroup(void)
