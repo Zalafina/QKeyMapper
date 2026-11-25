@@ -280,6 +280,81 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.action = MappingChangeAction::UpsertMacro;
         return result;
     }
+    if (preview && action == QLatin1String("ignore_rules.upsert")) {
+        const auto value = arguments.value(QStringLiteral("ignore_rule"));
+        if (arguments.size() != 2 || !value.isObject()) {
+            return fail("Ignore rule updates require only action and ignore_rule.");
+        }
+        const auto fields = value.toObject();
+        const QSet<QString> allowedKeys{
+            QStringLiteral("catalog_revision"), QStringLiteral("rule_name"),
+            QStringLiteral("process_name"), QStringLiteral("process_match_mode"),
+            QStringLiteral("window_title"), QStringLiteral("window_title_match_mode"),
+            QStringLiteral("class_name"), QStringLiteral("class_name_match_mode"),
+            QStringLiteral("description"), QStringLiteral("disabled")};
+        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+            if (!allowedKeys.contains(it.key())) {
+                return fail("Unknown ignore_rule argument.");
+            }
+        }
+        auto &rule = result.ignoreRule;
+        rule.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
+        const auto rawRuleName = fields.value(QStringLiteral("rule_name"));
+        const QString ruleNameText = rawRuleName.toString();
+        const QString trimmedRuleName = ruleNameText.trimmed();
+        if (!isLowerHex(rule.catalogRevision, 64)
+            || !rawRuleName.isString()
+            || ruleNameText.size() > WindowMatchTextMaxLength
+            || ruleNameText.contains(QChar::Null)
+            || ruleNameText.contains(QLatin1Char('\r'))
+            || ruleNameText.contains(QLatin1Char('\n'))
+            || trimmedRuleName.isEmpty()) {
+            return fail("Ignore rule upsert requires a current catalog_revision and non-empty single-line rule_name of at most 1024 UTF-16 code units.");
+        }
+        rule.ruleName = trimmedRuleName;
+        const auto parseOptionalText = [](const QJsonObject &obj, const QString &key, std::optional<QString> &target) -> bool {
+            if (!obj.contains(key)) return true;
+            const auto val = obj.value(key);
+            const QString text = val.toString();
+            if (!val.isString() || text.size() > WindowMatchTextMaxLength || text.contains(QChar::Null)
+                || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n'))) {
+                return false;
+            }
+            target = text;
+            return true;
+        };
+        const auto parseOptionalMode = [](const QJsonObject &obj, const QString &key, std::optional<int> &target) -> bool {
+            if (!obj.contains(key)) return true;
+            const auto val = obj.value(key);
+            const int parsed = val.toInt(WindowMatchModeMin - 1);
+            if (!val.isDouble() || val.toDouble() != parsed
+                || parsed < WindowMatchModeMin || parsed > WindowMatchModeMax) {
+                return false;
+            }
+            target = parsed;
+            return true;
+        };
+        if (!parseOptionalText(fields, QStringLiteral("process_name"), rule.processName)
+            || !parseOptionalText(fields, QStringLiteral("window_title"), rule.windowTitle)
+            || !parseOptionalText(fields, QStringLiteral("class_name"), rule.className)
+            || !parseOptionalText(fields, QStringLiteral("description"), rule.description)) {
+            return fail("Ignore rule text fields must be single-line strings of at most 1024 UTF-16 code units.");
+        }
+        if (!parseOptionalMode(fields, QStringLiteral("process_match_mode"), rule.processMatchMode)
+            || !parseOptionalMode(fields, QStringLiteral("window_title_match_mode"), rule.windowTitleMatchMode)
+            || !parseOptionalMode(fields, QStringLiteral("class_name_match_mode"), rule.classNameMatchMode)) {
+            return fail("Ignore rule match mode fields must be integers between 0 and 5.");
+        }
+        if (fields.contains(QStringLiteral("disabled"))) {
+            const auto disabledVal = fields.value(QStringLiteral("disabled"));
+            if (!disabledVal.isBool()) {
+                return fail("Ignore rule disabled field must be a boolean.");
+            }
+            rule.disabled = disabledVal.toBool();
+        }
+        result.action = MappingChangeAction::UpsertIgnoreRule;
+        return result;
+    }
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
@@ -1856,6 +1931,36 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }
+    const QJsonObject ignoreRuleNameSchema{
+        {QStringLiteral("type"), QStringLiteral("string")},
+        {QStringLiteral("minLength"), 1},
+        {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
+        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*[^\\u0000\\r\\n\\s][^\\u0000\\r\\n]*$")}};
+    const QJsonObject ignoreRuleFieldsSchema = schema({
+        {QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), ignoreRuleNameSchema},
+        {QStringLiteral("process_name"), matchTextSchema},
+        {QStringLiteral("process_match_mode"), matchModeSchema},
+        {QStringLiteral("window_title"), matchTextSchema},
+        {QStringLiteral("window_title_match_mode"), matchModeSchema},
+        {QStringLiteral("class_name"), matchTextSchema},
+        {QStringLiteral("class_name_match_mode"), matchModeSchema},
+        {QStringLiteral("description"), matchTextSchema},
+        {QStringLiteral("disabled"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+        {QStringLiteral("catalog_revision"), QStringLiteral("rule_name")});
+    auto ignoreRuleUpsertPreview = capability("ignore_rules.upsert.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ignore_rules.upsert")}}},
+            {QStringLiteral("ignore_rule"), ignoreRuleFieldsSchema}},
+            {QStringLiteral("action"), QStringLiteral("ignore_rule")}));
+    auto ignoreRuleUpsertApply = capability("ignore_rules.upsert.apply", "qkm_apply_changes", Read | Configure, false, macroApplySchema);
+    for (auto *item : {&ignoreRuleUpsertPreview, &ignoreRuleUpsertApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
+            QStringLiteral("overwrite_in_place_or_append"), QStringLiteral("confirm_overwrite_for_existing_name"),
+            QStringLiteral("case_sensitive_and_gui_diagnostic_parity"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
     if (standardMode) {
         auto load = capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},
@@ -1913,7 +2018,7 @@ bool MappingChangeStore::remember(const MappingChangePreview &preview, const QSt
     QJsonObject value{{QStringLiteral("status"), status}, {QStringLiteral("persistence"), QStringLiteral("memory_only")}};
     if (preview.save) value.insert(QStringLiteral("target"), saveOperationTarget(preview));
     if (preview.removal) value.insert(QStringLiteral("target"), removalOperationTarget(preview));
-    if (preview.update || preview.preferences || preview.macro || preview.configurationImport || preview.configurationList)
+    if (preview.update || preview.preferences || preview.macro || preview.ignoreRule || preview.configurationImport || preview.configurationList)
         value.insert(QStringLiteral("target"), preview.description.value(QStringLiteral("target")));
     if (!errorCode.isEmpty()) value.insert(QStringLiteral("error"), QJsonObject{
         {QStringLiteral("code"), errorCode}, {QStringLiteral("message"), message}});
@@ -2087,6 +2192,14 @@ std::optional<MappingChangePreview> MappingChangeStore::createMacro(const Mappin
     return preview;
 }
 
+std::optional<MappingChangePreview> MappingChangeStore::createIgnoreRule(const MappingChangeOwner &owner,
+    const IgnoreRuleChangeArguments &arguments, const QJsonObject &description, const QString &preferencesRevision)
+{
+    auto preview = create(owner, MappingAdditionArguments(), description, preferencesRevision);
+    if (preview) { preview->ignoreRule = arguments; m_previews[preview->id] = *preview; }
+    return preview;
+}
+
 std::optional<MappingChangePreview> MappingChangeStore::createConfigurationImport(const MappingChangeOwner &owner,
     const ConfigurationImportBinding &binding, const QJsonObject &description, const QString &preferencesRevision)
 {
@@ -2218,7 +2331,7 @@ QJsonObject MappingChangeStore::operation(const MappingChangeOwner &owner, const
             {QStringLiteral("remaining_ms"), double(qMax(qint64(0), remaining))}};
         if (preview->save) value.insert(QStringLiteral("target"), saveOperationTarget(*preview));
         if (preview->removal) value.insert(QStringLiteral("target"), removalOperationTarget(*preview));
-        if (preview->macro || preview->configurationImport || preview->configurationList)
+        if (preview->macro || preview->ignoreRule || preview->configurationImport || preview->configurationList)
             value.insert(QStringLiteral("target"), preview->description.value(QStringLiteral("target")));
         return value;
     }

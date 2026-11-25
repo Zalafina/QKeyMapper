@@ -1766,9 +1766,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 110);
+    QCOMPARE(capabilities.size(), 112);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 102);
+    QCOMPARE(demoCapabilities.size(), 104);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1787,8 +1787,70 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(100).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_match_criteria.apply"));
     QCOMPARE(capabilities.at(101).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_send_to_same_windows.preview"));
     QCOMPARE(capabilities.at(102).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_send_to_same_windows.apply"));
-    QCOMPARE(capabilities.at(107).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(108).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(103).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.upsert.preview"));
+    QCOMPARE(capabilities.at(104).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.upsert.apply"));
+    QCOMPARE(capabilities.at(109).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(110).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
+    }));
+
+    const auto validateIgnoreUpsert = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("ignore_rules.upsert")},
+                {QStringLiteral("ignore_rule"), fields}});
+    };
+    const auto ignoreValid = validateIgnoreUpsert({
+        {QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QStringLiteral("  CustomRule  ")},
+        {QStringLiteral("process_name"), QStringLiteral("Demo.exe")},
+        {QStringLiteral("process_match_mode"), 1},
+        {QStringLiteral("window_title"), QStringLiteral("^Test$")},
+        {QStringLiteral("window_title_match_mode"), 5},
+        {QStringLiteral("class_name"), QStringLiteral("WndClass")},
+        {QStringLiteral("class_name_match_mode"), 3},
+        {QStringLiteral("description"), QStringLiteral("Note")},
+        {QStringLiteral("disabled"), true}});
+    QVERIFY(ignoreValid.ok() && ignoreValid.action == MappingChangeAction::UpsertIgnoreRule);
+    QCOMPARE(ignoreValid.ignoreRule.ruleName, QStringLiteral("CustomRule"));
+    QCOMPARE(ignoreValid.ignoreRule.processMatchMode.value_or(-1), 1);
+    QCOMPARE(ignoreValid.ignoreRule.windowTitleMatchMode.value_or(-1), 5);
+    QCOMPARE(ignoreValid.ignoreRule.classNameMatchMode.value_or(-1), 3);
+    QVERIFY(ignoreValid.ignoreRule.disabled.value_or(false));
+    QVERIFY(validateIgnoreUpsert({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QString(1024, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validateIgnoreUpsert({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QStringLiteral("   ")}}).ok());
+    QVERIFY(!validateIgnoreUpsert({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QString(1025, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validateIgnoreUpsert({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QStringLiteral("Bad\nName")}}).ok());
+    QVERIFY(!validateIgnoreUpsert({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QStringLiteral("Rule")},
+        {QStringLiteral("process_match_mode"), 6}}).ok());
+    QVERIFY(!validateIgnoreUpsert({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QStringLiteral("Rule")},
+        {QStringLiteral("window_title_match_mode"), true}}).ok());
+    QVERIFY(!validateIgnoreUpsert({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QStringLiteral("Rule")},
+        {QStringLiteral("disabled"), 1}}).ok());
+    QVERIFY(!validateIgnoreUpsert({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QStringLiteral("Rule")},
+        {QStringLiteral("description"), QStringLiteral("Line1\rLine2")}}).ok());
+    QVERIFY(!validateIgnoreUpsert({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_name"), QStringLiteral("Rule")},
+        {QStringLiteral("extra"), 1}}).ok());
+    MappingChangeStore ignoreStore;
+    const auto ignorePreview = ignoreStore.createIgnoreRule(
+        {QStringLiteral("inst"), QStringLiteral("pair"), 1},
+        ignoreValid.ignoreRule,
+        {{QStringLiteral("action"), QStringLiteral("ignore_rules.upsert")},
+            {QStringLiteral("target"), QJsonObject{{QStringLiteral("rule_name"), QStringLiteral("CustomRule")}}}},
+        {});
+    QVERIFY(ignorePreview.has_value());
+    QCOMPARE(ignoreStore.operation({QStringLiteral("inst"), QStringLiteral("pair"), 1}, ignorePreview->id)
+        .value(QStringLiteral("target")).toObject().value(QStringLiteral("rule_name")).toString(),
+        QStringLiteral("CustomRule"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
     }));

@@ -115,9 +115,11 @@ async def check_contract(exe):
             assert start_tool.input_schema["properties"]["save_policy"]["const"] == "start_only"
             query = next(tool.input_schema for tool in tools if tool.name == "qkm_query")
             assert set(query["properties"]["entity"]["enum"]) == {
-                "configurations", "tabs", "mapping_sources", "mappings", "windows", "demo_context", "macros"}
+                "configurations", "tabs", "mapping_sources", "mappings", "windows", "demo_context", "macros", "ignore_rules"}
             expect_not_connected(await client.call_tool(
                 "qkm_query", {"entity": "macros", "offset": 1, "catalog_revision": "a" * 64}))
+            expect_not_connected(await client.call_tool(
+                "qkm_query", {"entity": "ignore_rules", "offset": 1, "catalog_revision": "a" * 64}))
             previews = next(tool.input_schema for tool in tools if tool.name == "qkm_preview_changes")
             macro_rule, = (rule for rule in previews["oneOf"]
                            if rule["properties"]["action"].get("const") == "macro.upsert")
@@ -359,8 +361,48 @@ async def check_contract(exe):
                             upsert | {"macro": macro | {"extra": True}}):
                 denied = await client.call_tool("qkm_preview_changes", invalid)
                 assert denied.is_error is True and denied.structured_content is None
+            ignore_rule_base = {"catalog_revision": revision, "rule_name": "  CustomRule  "}
+            ignore_upsert = {"action": "ignore_rules.upsert", "ignore_rule": ignore_rule_base}
+            for fields in (
+                ignore_rule_base,
+                ignore_rule_base | {
+                    "rule_name": "A" * 1024,
+                    "process_name": "DemoApp.exe",
+                    "process_match_mode": 1,
+                    "window_title": "^MyWindow$",
+                    "window_title_match_mode": 5,
+                    "class_name": "Qt6QWindow",
+                    "class_name_match_mode": 3,
+                    "description": "Note",
+                    "disabled": True,
+                },
+            ):
+                req = {"action": "ignore_rules.upsert", "ignore_rule": fields}
+                validator.validate(req)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", req))
+            for bad in (
+                {"catalog_revision": "bad", "rule_name": "Rule"},
+                {"catalog_revision": revision},
+                {"catalog_revision": revision, "rule_name": ""},
+                {"catalog_revision": revision, "rule_name": "   "},
+                {"catalog_revision": revision, "rule_name": "A" * 1025},
+                {"catalog_revision": revision, "rule_name": "Bad\nRule"},
+                {"catalog_revision": revision, "rule_name": "Rule", "process_name": "A" * 1025},
+                {"catalog_revision": revision, "rule_name": "Rule", "description": "L1\rL2"},
+                {"catalog_revision": revision, "rule_name": "Rule", "process_match_mode": -1},
+                {"catalog_revision": revision, "rule_name": "Rule", "window_title_match_mode": 6},
+                {"catalog_revision": revision, "rule_name": "Rule", "class_name_match_mode": True},
+                {"catalog_revision": revision, "rule_name": "Rule", "disabled": 1},
+                {"catalog_revision": revision, "rule_name": "Rule", "extra": 1},
+            ):
+                bad_req = {"action": "ignore_rules.upsert", "ignore_rule": bad}
+                assert not validator.is_valid(bad_req), bad
+                denied = await client.call_tool("qkm_preview_changes", bad_req)
+                assert denied.is_error is True and denied.structured_content is None
+            denied = await client.call_tool("qkm_preview_changes", ignore_upsert | {"extra": 1})
+            assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
-                "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
+                "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
                 "fullscreen_global_mapping", "key2mouse", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",

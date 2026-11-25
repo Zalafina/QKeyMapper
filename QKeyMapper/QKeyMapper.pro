@@ -63,6 +63,10 @@ else {
     message("Qt6 Version")
 }
 
+win32-msvc* {
+    QMAKE_CXXFLAGS *= /bigobj
+}
+
 contains(DEFINES, SINGLE_APPLICATION) {
     DEFINES += QAPPLICATION_CLASS=QApplication
     QT += network

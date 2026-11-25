@@ -22,6 +22,7 @@ enum Entity {
     Windows,
     DemoContext,
     Macros,
+    IgnoreRules,
 }
 
 #[derive(Default, Deserialize, Serialize)]
@@ -339,6 +340,37 @@ struct MacroImport {
 struct MacroPreview<T> {
     action: String,
     #[serde(rename = "macro")]
+    data: T,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct IgnoreRuleUpsert {
+    catalog_revision: String,
+    rule_name: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    process_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    process_match_mode: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    window_title: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    window_title_match_mode: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    class_name: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    class_name_match_mode: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    description: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    disabled: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct IgnoreRulePreview<T> {
+    action: String,
+    #[serde(rename = "ignore_rule")]
     data: T,
 }
 
@@ -1137,6 +1169,31 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && valid_macro_backup_name(&v.data.file_name)
                     });
                 }
+                Some("ignore_rules.upsert") => {
+                    if arguments
+                        .get("ignore_rule")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    let single_bounded = |text: &str| {
+                        text.encode_utf16().count() <= 1024 && !text.contains(['\0', '\r', '\n'])
+                    };
+                    return typed(arguments, |v: &IgnoreRulePreview<IgnoreRuleUpsert>| {
+                        let d = &v.data;
+                        revision(&d.catalog_revision)
+                            && !d.rule_name.trim().is_empty()
+                            && single_bounded(&d.rule_name)
+                            && d.process_name.as_deref().is_none_or(single_bounded)
+                            && d.window_title.as_deref().is_none_or(single_bounded)
+                            && d.class_name.as_deref().is_none_or(single_bounded)
+                            && d.description.as_deref().is_none_or(single_bounded)
+                            && d.process_match_mode.is_none_or(|m| m <= 5)
+                            && d.window_title_match_mode.is_none_or(|m| m <= 5)
+                            && d.class_name_match_mode.is_none_or(|m| m <= 5)
+                    });
+                }
                 _ => {}
             }
             let duplicate =
@@ -1723,6 +1780,53 @@ mod tests {
             assert!(preview(&json!({"action":"configuration.set_window_match_criteria", "source_tab_ref":tab, "window_match_criteria":bad})).is_err());
         }
         assert!(preview(&json!({"action":"configuration.set_window_match_criteria", "source_tab_ref":tab, "window_match_criteria":{"process_name":"a.exe"}, "extra":1})).is_err());
+    }
+
+    #[test]
+    fn ignore_rules_upsert_checks_constraints() {
+        let revision = "a".repeat(64);
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let valid_cases = [
+            json!({"catalog_revision": revision, "rule_name": "  CustomRule  "}),
+            json!({
+                "catalog_revision": revision,
+                "rule_name": "A".repeat(1024),
+                "process_name": "",
+                "process_match_mode": 0,
+                "window_title": "^Window-[0-9]+$",
+                "window_title_match_mode": 5,
+                "class_name": "Qt6QWindow",
+                "class_name_match_mode": 3,
+                "description": "Custom note",
+                "disabled": true
+            }),
+        ];
+        for fields in valid_cases {
+            let req = json!({"action": "ignore_rules.upsert", "ignore_rule": fields});
+            assert_eq!(preview(&req).unwrap(), *req.as_object().unwrap());
+        }
+        let invalid_cases = [
+            json!({"catalog_revision": "bad", "rule_name": "Rule"}),
+            json!({"catalog_revision": revision}),
+            json!({"catalog_revision": revision, "rule_name": ""}),
+            json!({"catalog_revision": revision, "rule_name": "   \t  "}),
+            json!({"catalog_revision": revision, "rule_name": "A".repeat(1025)}),
+            json!({"catalog_revision": revision, "rule_name": "Rule\n2"}),
+            json!({"catalog_revision": revision, "rule_name": "Rule", "process_name": "A".repeat(1025)}),
+            json!({"catalog_revision": revision, "rule_name": "Rule", "window_title": "line1\rline2"}),
+            json!({"catalog_revision": revision, "rule_name": "Rule", "class_name": "a\u{0000}b"}),
+            json!({"catalog_revision": revision, "rule_name": "Rule", "description": null}),
+            json!({"catalog_revision": revision, "rule_name": "Rule", "process_match_mode": -1}),
+            json!({"catalog_revision": revision, "rule_name": "Rule", "window_title_match_mode": 6}),
+            json!({"catalog_revision": revision, "rule_name": "Rule", "class_name_match_mode": true}),
+            json!({"catalog_revision": revision, "rule_name": "Rule", "disabled": 1}),
+            json!({"catalog_revision": revision, "rule_name": "Rule", "extra": 1}),
+        ];
+        for bad in invalid_cases {
+            assert!(preview(&json!({"action": "ignore_rules.upsert", "ignore_rule": bad})).is_err());
+        }
+        assert!(preview(&json!({"action": "ignore_rules.upsert", "ignore_rule": {"catalog_revision": revision, "rule_name": "Rule"}, "extra": 1})).is_err());
     }
 
     #[test]

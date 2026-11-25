@@ -2202,6 +2202,15 @@ public:
     static void updateIgnoreWindowInfoListDescriptionTranslation(void);
     static void saveIgnoreRulesToINI(void);
     static void loadIgnoreRulesFromINI(void);
+    struct IgnoreRuleUpsertResult {
+        bool valid = false;
+        bool existed = false;
+        bool changed = false;
+        int index = -1;
+        QString normalizedName;
+    };
+    static bool ignoreWindowInfoEquals(const IgnoreWindowInfo &lhs, const IgnoreWindowInfo &rhs);
+    static IgnoreRuleUpsertResult upsertIgnoreWindowInfoRule(const IgnoreWindowInfo &rule, QIgnoreWindowInfoListDialog *dialog = nullptr);
     static void saveMacroListToINI(const QString &setting_groupname);
     static void loadMacroListFromINI(const QString &setting_groupname);
     static void saveUniversalMacroListToINI(void);

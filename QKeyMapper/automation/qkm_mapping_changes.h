@@ -140,6 +140,19 @@ struct MacroChangeArguments {
     bool overwriteImportDuplicates = false;
 };
 
+struct IgnoreRuleChangeArguments {
+    QString catalogRevision;
+    QString ruleName;
+    std::optional<QString> processName;
+    std::optional<int> processMatchMode;
+    std::optional<QString> windowTitle;
+    std::optional<int> windowTitleMatchMode;
+    std::optional<QString> className;
+    std::optional<int> classNameMatchMode;
+    std::optional<QString> description;
+    std::optional<bool> disabled;
+};
+
 struct ConfigurationImportBinding {
     QString catalogRevision;
     QStringList groups;
@@ -164,7 +177,7 @@ struct ConfigurationListBinding {
 
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };
 enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences,
-    UpsertMacro, DeleteMacro, ImportMacro, ImportConfiguration, SaveConfigurationImport, ChangeConfigurationList };
+    UpsertMacro, DeleteMacro, ImportMacro, UpsertIgnoreRule, ImportConfiguration, SaveConfigurationImport, ChangeConfigurationList };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
     MappingChangeAction action = MappingChangeAction::AddMapping;
@@ -173,6 +186,7 @@ struct MappingChangeRequest {
     MappingUpdateArguments update;
     IbInputPreferencesArguments preferences;
     MacroChangeArguments macro;
+    IgnoreRuleChangeArguments ignoreRule;
     ConfigurationImportBinding configurationImport;
     ConfigurationListBinding configurationList;
     QString settingName;
@@ -221,6 +235,7 @@ struct MappingChangePreview {
     std::optional<MappingUpdateArguments> update;
     std::optional<IbInputPreferencesArguments> preferences;
     std::optional<MacroChangeArguments> macro;
+    std::optional<IgnoreRuleChangeArguments> ignoreRule;
     QString preferencesRevision;
     std::optional<ConfigurationImportBinding> configurationImport;
     std::optional<ConfigurationListBinding> configurationList;
@@ -245,6 +260,8 @@ public:
         const IbInputPreferencesArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
     std::optional<MappingChangePreview> createMacro(const MappingChangeOwner &owner,
         const MacroChangeArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
+    std::optional<MappingChangePreview> createIgnoreRule(const MappingChangeOwner &owner,
+        const IgnoreRuleChangeArguments &arguments, const QJsonObject &description, const QString &preferencesRevision);
     std::optional<MappingChangePreview> createConfigurationImport(const MappingChangeOwner &owner,
         const ConfigurationImportBinding &binding, const QJsonObject &description, const QString &preferencesRevision);
     std::optional<MappingChangePreview> createConfigurationList(const MappingChangeOwner &owner,

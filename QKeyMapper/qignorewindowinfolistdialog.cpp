@@ -187,20 +187,9 @@ void QIgnoreWindowInfoListDialog::mousePressEvent(QMouseEvent *event)
 
 void QIgnoreWindowInfoListDialog::on_saveRuleButton_clicked()
 {
-    // Get and validate rule name
-    QString ruleName = ui->ruleNameLineEdit->text().trimmed();
-
-    if (ruleName.isEmpty()) {
-        QString popupMessage = tr("Rule name cannot be empty.");
-        QString popupMessageColor = FAILURE_COLOR;
-        int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
-        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
-        return;
-    }
-
-    // Create IgnoreWindowInfo structure from UI
+    // Create IgnoreWindowInfo structure from UI (name trimmed inside shared helper)
     IgnoreWindowInfo info;
-    info.ruleName = ruleName;
+    info.ruleName = ui->ruleNameLineEdit->text();
     info.processName = ui->ruleProcessNameLineEdit->text();
     info.windowTitle = ui->ruleWindowTitleLineEdit->text();
     info.className = ui->ruleClassNameLineEdit->text();
@@ -210,29 +199,16 @@ void QIgnoreWindowInfoListDialog::on_saveRuleButton_clicked()
     info.classNameMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(ui->ruleClassNameMatchTypeComboBox->currentIndex());
     info.disabled = ui->ruleDisabledCheckBox->isChecked();
 
-    // Check if rule already exists (update vs add)
-    bool isUpdate = QKeyMapper::s_IgnoreWindowInfoMap.contains(ruleName);
-    bool ruleChanged = true;
-    if (isUpdate) {
-        const IgnoreWindowInfo &currentInfo = QKeyMapper::s_IgnoreWindowInfoMap[ruleName];
-        ruleChanged = currentInfo.ruleName != info.ruleName
-                      || currentInfo.processName != info.processName
-                      || currentInfo.windowTitle != info.windowTitle
-                      || currentInfo.className != info.className
-                      || currentInfo.description != info.description
-                      || currentInfo.processNameMatchType != info.processNameMatchType
-                      || currentInfo.windowTitleMatchType != info.windowTitleMatchType
-                      || currentInfo.classNameMatchType != info.classNameMatchType
-                      || currentInfo.disabled != info.disabled;
+    const QKeyMapper::IgnoreRuleUpsertResult upsertResult = QKeyMapper::upsertIgnoreWindowInfoRule(info, this);
+    if (!upsertResult.valid) {
+        QString popupMessage = tr("Rule name cannot be empty.");
+        QString popupMessageColor = FAILURE_COLOR;
+        int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
+        emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+        return;
     }
 
-    // Add or update rule in map
-    QKeyMapper::s_IgnoreWindowInfoMap[ruleName] = info;
-
-    // Refresh list widget
-    updateRulesListWidget();
-
-    if (ruleChanged) {
+    if (upsertResult.changed) {
         if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
             keyMapper->requestSaveSettingDirty();
         }
@@ -240,10 +216,10 @@ void QIgnoreWindowInfoListDialog::on_saveRuleButton_clicked()
 
     // Show success message
     QString popupMessage;
-    if (isUpdate) {
-        popupMessage = tr("Rule \"%1\" updated successfully").arg(ruleName);
+    if (upsertResult.existed) {
+        popupMessage = tr("Rule \"%1\" updated successfully").arg(upsertResult.normalizedName);
     } else {
-        popupMessage = tr("Rule \"%1\" added successfully").arg(ruleName);
+        popupMessage = tr("Rule \"%1\" added successfully").arg(upsertResult.normalizedName);
     }
     QString popupMessageColor = SUCCESS_COLOR;
     int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
