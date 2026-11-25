@@ -444,6 +444,14 @@ struct ProcessIconAsTrayIcon {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct AutoMatchForeground {
+    action: String,
+    source_tab_ref: String,
+    auto_match_foreground: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct PointDisplayKeysFields {
     #[serde(skip_serializing_if = "Option::is_none")]
     window_point_key: Option<String>,
@@ -943,6 +951,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 }
                 Some("configuration.set_process_icon_as_tray_icon") => {
                     return typed(arguments, |v: &ProcessIconAsTrayIcon| {
+                        tab_ref(&v.source_tab_ref)
+                    });
+                }
+                Some("configuration.set_auto_match_foreground") => {
+                    return typed(arguments, |v: &AutoMatchForeground| {
                         tab_ref(&v.source_tab_ref)
                     });
                 }
@@ -1567,6 +1580,20 @@ mod tests {
         assert!(preview(&json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":1})).is_err());
         assert!(preview(&json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":null})).is_err());
         assert!(preview(&json!({"action":"configuration.set_process_icon_as_tray_icon", "source_tab_ref":tab, "process_icon_as_tray_icon":true, "extra":1})).is_err());
+    }
+
+    #[test]
+    fn configuration_auto_match_foreground_requires_tab_and_boolean() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for flag in [true, false] {
+            let valid = json!({"action":"configuration.set_auto_match_foreground", "source_tab_ref":tab, "auto_match_foreground":flag});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        assert!(preview(&json!({"action":"configuration.set_auto_match_foreground", "source_tab_ref":tab, "auto_match_foreground":1})).is_err());
+        assert!(preview(&json!({"action":"configuration.set_auto_match_foreground", "source_tab_ref":tab, "auto_match_foreground":null})).is_err());
+        assert!(preview(&json!({"action":"configuration.set_auto_match_foreground", "source_tab_ref":tab, "auto_match_foreground":true, "extra":1})).is_err());
     }
 
     #[test]

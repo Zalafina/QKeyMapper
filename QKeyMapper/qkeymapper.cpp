@@ -28252,8 +28252,11 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         ui->sendToSameTitleWindowsCheckBox->setChecked(false);
     }
 
-    if (ui->autoStartMappingCheckBox->isChecked()) {
+    if (ui->autoStartMappingCheckBox->isChecked() || (loadGlobalSetting && loadDefault != true)) {
         ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
+    }
+    else if (KEYMAP_IDLE == m_KeyMapStatus) {
+        ui->sendToSameTitleWindowsCheckBox->setEnabled(true);
     }
 
     if (true == settingFile.contains(settingSelectStr+ACCEPTVIRTUALGAMEPADINPUT_CHECKED)){
@@ -28711,6 +28714,7 @@ void QKeyMapper::loadEmptyMapSetting()
     setEnableSystemFilterKeyCheckedInternal(ENABLE_SYSTEM_FILTERKEY_CHECKED_DEFAULT);
     setDisableFilterKeyClickSoundCheckedInternal(DISABLE_FILTERKEY_CLICKSOUND_ON_ENABLE_DEFAULT);
     ui->sendToSameTitleWindowsCheckBox->setChecked(false);
+    ui->sendToSameTitleWindowsCheckBox->setEnabled(false);
     m_MappingAdvancedDialog->setAcceptVirtualGamepadInput(false);
     m_MappingAdvancedDialog->setProcessIconAsTrayIcon(false);
     m_MappingAdvancedDialog->setShowWindowPointKey(SHOW_POINTS_IN_WINDOW_KEY);
@@ -38034,6 +38038,13 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         ui->windowTitleLineEdit->text(), ui->checkWindowTitleComboBox->currentIndex(),
         ui->classNameLineEdit->text(), ui->checkClassNameComboBox->currentIndex(),
         m_MapProcessInfo.FileName, m_MapProcessInfo.WindowTitle, m_MapProcessInfo.ClassName));
+    const int autoMatchCheckState = int(ui->autoStartMappingCheckBox->checkState());
+    result.insert(QStringLiteral("auto_match_foreground"), QJsonObject{
+        {QStringLiteral("enabled"), autoMatchCheckState == int(Qt::Checked)},
+        {QStringLiteral("check_state"), autoMatchCheckState},
+        {QStringLiteral("editable"), ui->autoStartMappingCheckBox->isEnabled()},
+        {QStringLiteral("global_saved_auto_start"), s_GlobalSettingAutoStart == Qt::Checked},
+        {QStringLiteral("send_to_same_windows_editable"), ui->sendToSameTitleWindowsCheckBox->isEnabled()}});
     result.insert(QStringLiteral("save_window_size"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveWindowSize());
     result.insert(QStringLiteral("save_splitter_position"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveSplitterPosition());
     result.insert(QStringLiteral("play_sound_effect"), isSoundEffectEnabled());
@@ -40011,6 +40022,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && (update.windowProcessName.has_value() || update.windowProcessMatchMode.has_value()
                 || update.windowTitleText.has_value() || update.windowTitleMatchMode.has_value()
                 || update.windowClassName.has_value() || update.windowClassMatchMode.has_value());
+        const bool changingAutoMatchForeground = updating && update.autoMatchForeground.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -40027,7 +40039,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys
-            || changingCustomNotification || changingWindowMatchCriteria;
+            || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
@@ -40051,12 +40063,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
             && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
+            && !changingAutoMatchForeground
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
         if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon
-                || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria)
+                || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria
+                || changingAutoMatchForeground)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
             return;
@@ -40070,6 +40084,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 && ui->checkProcessComboBox->isEnabled() && ui->checkWindowTitleComboBox->isEnabled()
                 && ui->checkClassNameComboBox->isEnabled())) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("Window match criteria are disabled for the loaded configuration."));
+            return;
+        }
+        if (changingAutoMatchForeground && !ui->autoStartMappingCheckBox->isEnabled()) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Auto match foreground is disabled for the loaded configuration."));
             return;
         }
         if (changingProcessIconAsTrayIcon && !m_MappingAdvancedDialog->isProcessIconAsTrayIconEnabled()) {
@@ -40486,6 +40504,28 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("after"), QkmAutomation::buildWindowMatchCriteriaFields(
                         afterProcess, afterProcessMode, afterTitle, afterTitleMode, afterClass, afterClassMode)},
                     {QStringLiteral("updates_cached_process_info_immediately"), false},
+                    {QStringLiteral("persisted"), false}};
+            } else if (changingAutoMatchForeground) {
+                const int beforeState = int(ui->autoStartMappingCheckBox->checkState());
+                const bool beforeEnabled = (beforeState == int(Qt::Checked));
+                const bool afterEnabled = *update.autoMatchForeground;
+                const int afterState = afterEnabled ? int(Qt::Checked) : int(Qt::Unchecked);
+                modified = (beforeState != afterState);
+                const bool isGlobalProfile = (GLOBALSETTING_INDEX == ui->settingselectComboBox->currentIndex());
+                const bool sendToSameEditableBefore = ui->sendToSameTitleWindowsCheckBox->isEnabled();
+                const bool sendToSameEditableAfter = modified ? (!afterEnabled && !isGlobalProfile) : sendToSameEditableBefore;
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_auto_match_foreground")},
+                    {QStringLiteral("before"), QJsonObject{
+                        {QStringLiteral("enabled"), beforeEnabled},
+                        {QStringLiteral("check_state"), beforeState},
+                        {QStringLiteral("send_to_same_windows_editable"), sendToSameEditableBefore}}},
+                    {QStringLiteral("after"), QJsonObject{
+                        {QStringLiteral("enabled"), afterEnabled},
+                        {QStringLiteral("check_state"), afterState},
+                        {QStringLiteral("send_to_same_windows_editable"), sendToSameEditableAfter}}},
+                    {QStringLiteral("updates_disk_matcher_immediately"), false},
                     {QStringLiteral("persisted"), false}};
             } else if (changingGeneralTablePreference) {
                 const int before = changingTableEditTrigger ? m_GeneralAdvancedDialog->getTableEditModeTrigger()
@@ -40996,6 +41036,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
             : changingWindowMatchCriteria ? QStringLiteral("configuration.set_window_match_criteria")
+            : changingAutoMatchForeground ? QStringLiteral("configuration.set_auto_match_foreground")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
@@ -41110,6 +41151,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 if (update.windowClassMatchMode) {
                     ui->checkClassNameComboBox->setCurrentIndex(*update.windowClassMatchMode);
                 }
+            } else if (changingAutoMatchForeground) {
+                ui->autoStartMappingCheckBox->setCheckState(*update.autoMatchForeground ? Qt::Checked : Qt::Unchecked);
             } else if (changingMappingDisplay) {
                 const bool notes = mappingDisplayAfter.value(QStringLiteral("notes")).toBool();
                 const bool category = mappingDisplayAfter.value(QStringLiteral("category_column")).toBool();

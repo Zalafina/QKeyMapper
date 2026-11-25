@@ -100,6 +100,7 @@ struct MappingUpdateArguments {
     std::optional<int> windowTitleMatchMode;
     std::optional<QString> windowClassName;
     std::optional<int> windowClassMatchMode;
+    std::optional<bool> autoMatchForeground;
     std::optional<int> startupPositionMode;
     std::optional<QPoint> startupPositionPoint;
     QByteArray tableImportDocument;
