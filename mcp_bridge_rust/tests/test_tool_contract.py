@@ -208,7 +208,8 @@ async def check_contract(exe):
                                        ("general.set_save_splitter_position", "save_splitter_position"),
                                        ("general.set_sound_effect", "play_sound_effect"),
                                        ("configuration.set_process_icon_as_tray_icon", "process_icon_as_tray_icon"),
-                                       ("configuration.set_auto_match_foreground", "auto_match_foreground")):
+                                       ("configuration.set_auto_match_foreground", "auto_match_foreground"),
+                                       ("configuration.set_send_to_same_windows", "send_to_same_windows")):
                 option = {"action": action_name, "source_tab_ref": tab, field: True}
                 for value in (True, False):
                     request = option | {field: value}
@@ -362,7 +363,7 @@ async def check_contract(exe):
                 "copy_to", "macro", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
                 "fullscreen_global_mapping", "key2mouse", "process_icon_as_tray_icon", "point_display_keys",
-                "custom_notification", "window_match_criteria", "auto_match_foreground", "startup_position",
+                "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)

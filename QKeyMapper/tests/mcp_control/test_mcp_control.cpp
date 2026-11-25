@@ -1612,6 +1612,28 @@ void McpControlTest::mappingChangeArguments()
             {QStringLiteral("auto_match_foreground"), true},
             {QStringLiteral("extra"), 1}}).ok());
 
+    const auto validateSendToSameWindows = [&](const QJsonValue &value) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_send_to_same_windows")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("send_to_same_windows"), value}});
+    };
+    for (bool value : {true, false}) {
+        const auto result = validateSendToSameWindows(value);
+        QVERIFY(result.ok() && result.update.sendToSameWindows.has_value());
+        QCOMPARE(*result.update.sendToSameWindows, value);
+    }
+    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
+        QVERIFY(!validateSendToSameWindows(value).ok());
+    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("configuration.set_send_to_same_windows")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))}}).ok());
+    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("configuration.set_send_to_same_windows")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+            {QStringLiteral("send_to_same_windows"), true},
+            {QStringLiteral("extra"), 1}}).ok());
+
     const auto validatePointDisplayKeys = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("configuration.set_point_display_keys")},
@@ -1744,9 +1766,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 108);
+    QCOMPARE(capabilities.size(), 110);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 100);
+    QCOMPARE(demoCapabilities.size(), 102);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1763,8 +1785,10 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(98).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification.apply"));
     QCOMPARE(capabilities.at(99).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_match_criteria.preview"));
     QCOMPARE(capabilities.at(100).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_match_criteria.apply"));
-    QCOMPARE(capabilities.at(105).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(106).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(101).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_send_to_same_windows.preview"));
+    QCOMPARE(capabilities.at(102).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_send_to_same_windows.apply"));
+    QCOMPARE(capabilities.at(107).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(108).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
     }));
@@ -1785,6 +1809,9 @@ void McpControlTest::mappingChangeArguments()
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_window_match_criteria.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_send_to_same_windows.apply");
     }));
     for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
             QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply"),

@@ -315,6 +315,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
     const bool windowMatchCriteriaPreview = preview && action == QLatin1String("configuration.set_window_match_criteria");
     const bool autoMatchForegroundPreview = preview && action == QLatin1String("configuration.set_auto_match_foreground");
+    const bool sendToSameWindowsPreview = preview && action == QLatin1String("configuration.set_send_to_same_windows");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -331,7 +332,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || processIconTrayPreview
-        || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || startupPositionPreview;
+        || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -357,6 +358,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
         : windowMatchCriteriaPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_match_criteria")}
         : autoMatchForegroundPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("auto_match_foreground")}
+        : sendToSameWindowsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("send_to_same_windows")}
         : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
         : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
         : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
@@ -621,6 +623,11 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             const auto value = arguments.value(QStringLiteral("auto_match_foreground"));
             if (!value.isBool()) return fail("Provide an explicit boolean auto_match_foreground.");
             result.update.autoMatchForeground = value.toBool();
+        }
+        if (sendToSameWindowsPreview) {
+            const auto value = arguments.value(QStringLiteral("send_to_same_windows"));
+            if (!value.isBool()) return fail("Provide an explicit boolean send_to_same_windows.");
+            result.update.sendToSameWindows = value.toBool();
         }
         if (startupPositionPreview) {
             using namespace QKeyMapperConstants;
@@ -1833,6 +1840,19 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
             QStringLiteral("ordinary_or_blank_profile_only"), QStringLiteral("case_sensitive_and_regex_validated"),
             QStringLiteral("cache_updates_on_save_or_load"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto sendToSameWindowsPreviewCap = capability("configuration.set_send_to_same_windows.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_send_to_same_windows")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("send_to_same_windows"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("send_to_same_windows")}));
+    auto sendToSameWindowsApply = capability("configuration.set_send_to_same_windows.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&sendToSameWindowsPreviewCap, &sendToSameWindowsApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("requires_auto_match_disabled_and_non_global_profile"), QStringLiteral("preserves_checked_value_when_auto_match_enabled"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }
