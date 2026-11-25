@@ -14,16 +14,24 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | WIN-RESTORE-PATH-255 [Gemini]（基于 `65c33ac0` 实现 `configuration.restore_process_path.{preview,apply}`、`get_state.restore_process_path` 与共用 `QKeyMapper::restoreProcessPathToProcessLineEdit()`，同步修正 GUI `on_restoreProcessPathButton_clicked()` 使用 `setText` 未触发 `dirty` 的信号差异，本机选验完成，待 Codex 复核；准备盘点下一项 M2-B / M3-B Win11 切片） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (20695a69)、254 (65c33ac0)、255 (本提交) |
+| 当前切片 | SET-SCALE-256 [Gemini]（基于 `e4fb73d6` 实现 `general.set_display_scale.{preview,apply}`、`get_state.display_scale` 与共用 `QKeyMapper::setDisplayScaleEnum(int)`，并重构 `initScaleMenu()` 复用同一路径，本机选验完成，待 Codex 复核；准备盘点下一项 M2-B / M3-B Win11 切片） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (20695a69)、254 (65c33ac0)、255 (e4fb73d6)、256 (本提交) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～255（含 `QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7、忽略规则目录／增改／删除／恢复默认 `252`～`254`、窗口进程绝对路径恢复 `255`）＋ 241/249 Codex 三轮 P2 边界修正 ＋ TRAY-MCP-FIX 托盘 MCP 入口点击与分栏修正 |
-| 当前验证／证据 | `WIN-RESTORE-PATH-255 [Gemini]` Qt6 Release `9B606FB3` 零警告；Rust Sidecar `3310AD10`、`cargo test`（23+19 passed, 1 ignored）及 `test_tool_contract.py` 双协议 6 组通过；双 Qt 组件 `568835D0`／`B7955C2C` 各 4 passed；隔离产品 `1E56ABBC` 零警告（运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）；私有桌面 `run4` 全部场景（GUI 弹窗取消保持 clean／确认置 `dirty`／同路径无弹窗、只读守卫、Schema/取消/确认守卫、恢复前保持 `cached.file_name=demo.exe`、再次恢复无变更判别、保存重载刷新缓存、无存储路径 `McpSecond` 返回 `invalid_target`、全局配置返回 `unsupported_capability`、冷启校验、双 Qt 6.8.3／5.15.2 读回器 `9317E5D7`/`4ACA411E` 对 `saved_restored.ini` 读回 `ProcessInfo_FileName=ProcessInfo_FilePath="C:/Program Files/DemoApp/demo.exe"` 且 `changed_other_keys=0`、`--demo-configuration-only`）全部退出 0 |
-| 当前控制器 | 11-25 PID 40116 当前活跃且已清零（有效至 19:00，剩余约 1h37m，scope/registered_targets/owned_targets/unresolved_starts 全空） |
-| 下一项动作 | 盘点 `capability_matrix.md` 中 M2-B／M3-B 剩余 Win11 可推进切片（如 `SET-SCALE`、`GEN-SAVE-SIZE`、`WIN-PROCESS-SELECT` 等）并继续推进 |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～256（含 `QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7、忽略规则目录／增改／删除／恢复默认 `252`～`254`、窗口进程绝对路径恢复 `255`、全局显示缩放 `256`）＋ 241/249 Codex 三轮 P2 边界修正 ＋ TRAY-MCP-FIX 托盘 MCP 入口点击与分栏修正 |
+| 当前验证／证据 | `SET-SCALE-256 [Gemini]` Qt6 Release `4811ED24` 零警告；Rust Sidecar `428232C4`、`cargo test`（23+20 passed, 1 ignored）及 `test_tool_contract.py` 双协议 6 组通过；双 Qt 组件 `E5FA00E6`／`C8B7EF2A` 各 4 passed；隔离产品 `004A4FEE` 零警告（运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）；私有桌面 `run2` 全部场景（GUI 组合框 125% `1413x903` 与菜单 80% `904x578`、`ini_unchanged=true`、只读守卫、Schema 越界/类型校验、预览取消干净、`0->1` 启动生效不实时缩、`1->2` 实时缩放、`2->2` 无变更、未选常规页签返回 `context_busy`、`tab.select` 后 `2->9`、保存后冷启 `scale_enum=9`/`0.8`、双 Qt 6.8.3／5.15.2 读回器 `D499E7DE`/`5D825297` 对 `saved_scale.ini` 读回 `display_scale=9` 且 `unchanged_other_keys=261`/`changed_other_keys=0`、`--demo-configuration-only` 设为 `scale_enum=3` 且 INI 未改动）全部退出 0 |
+| 当前控制器 | 11-25 PID 40116 当前活跃且已清零（有效至 19:00，剩余约 1h17m，scope/registered_targets/owned_targets/unresolved_starts 全空） |
+| 下一项动作 | 盘点 `capability_matrix.md` 中 M2-B／M3-B 剩余 Win11 可推进切片（如 `GEN-SAVE-SIZE`、`IGNORE-EDITOR`、`WIN-PROCESS-SELECT` 等）并继续推进 |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### SET-SCALE-256 [Gemini]：全局显示缩放 `general.set_display_scale` 与 `get_state.display_scale`
+
+- **源码基线**：`e4fb73d6`；实现 `QKeyMapper::setDisplayScaleEnum(int)` 共用路径并重构 `initScaleMenu()` 复用该函数，同时补齐 `general.set_display_scale.{preview,apply}`（120/112 能力项）、`get_state.display_scale` 与 Rust Sidecar 参数校验／工具契约。
+- **变更文件**：`QKeyMapper/qkeymapper.{h,cpp}`、`QKeyMapper/automation/qkm_mapping_changes.{h,cpp}`、`QKeyMapper/tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/{tool_args.rs,tool_catalog.json}`、`mcp_bridge_rust/tests/test_tool_contract.py`、`handoff/qkeymapper_mcp_control/{qkeymapper_mcp_automation_plan_codex.md,capability_matrix.md}`。
+- **构建产物（SHA256 前 8 位）**：Qt6 Release `QKeyMapper.exe` `4811ED24`（`scripts\build_qt6.ps1` 零警告）、Rust Sidecar `qkeymapper-mcp-rust.exe` `428232C4`、Qt6 组件 `test_mcp_control.exe` `E5FA00E6`（4 passed, 0 failed）、Qt5 组件 `test_mcp_control.exe` `C8B7EF2A`（4 passed, 0 failed）、隔离产品 `QKeyMapperMcpAcceptance_SetScale.exe` `004A4FEE`（零警告，ALL_NON_SYSTEM_DLLS_PRESENT；运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）、双 Qt INI 读回器 `read_display_scale.exe`（Qt 6.8.3 `D499E7DE`／Qt 5.15.2 `5D825297`）。
+- **测试与验证覆盖**：`cargo test`（lib `23 passed; 0 failed; 1 ignored` + bin `20 passed; 0 failed; 0 ignored`）；`test_tool_contract.py` 6 组全通过；私有桌面 `QkmProduct_f9ef637579174a46b5609655cdffd350` `run2`（PID 40116）覆盖 GUI 组合框/托盘或视图缩放菜单联动、只读守卫、Schema 边界、未选中常规页签 `context_busy`、`tab.select` 后实时缩放与重启生效枚举切换、保存/冷启/双 Qt INI 读回（`display_scale=9`，`unchanged_other_keys=261, changed_other_keys=0`）及 `--demo-configuration-only`。重试记录：构建读回器时修复 1 次 `QVariant::toInt(&ok)` 参数类型；产品测试脚本 `run1` 修正 1 次未切换常规页签直接修改全局缩放导致预期内的 `context_busy`。
+- **未验范围**：Win10 正式 Release／跨 DPI 多显示器实体物理拖拽与开启 FakerInput 连接的运行待验。本机选验完成，待 Codex 复核。
 
 ### WIN-RESTORE-PATH-255 [Gemini]：窗口进程绝对路径恢复 `configuration.restore_process_path` 与 GUI dirty 同步修正
 

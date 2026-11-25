@@ -16698,15 +16698,9 @@ void QKeyMapper::initScaleMenu(void)
         group->addAction(action);
     }
     connect(group, &QActionGroup::triggered, this, [this](QAction *action) {
-        if (!action || m_KeyMapStatus != KEYMAP_IDLE || !ui->scaleComboBox->isEnabled()) {
+        if (!action || !setDisplayScaleEnum(action->data().toInt())) {
             syncScaleMenu();
-            return;
         }
-        const int index = ui->scaleComboBox->findData(action->data());
-        if (index < 0) { syncScaleMenu(); return; }
-        // Preserve index-change dirty tracking; only activation applies scaling.
-        ui->scaleComboBox->setCurrentIndex(index);
-        onScaleComboBoxActivated(index);
     });
     connect(ui->scaleComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged),
             this, [this](int) { syncScaleMenu(); });
@@ -37511,6 +37505,21 @@ void QKeyMapper::onScaleComboBoxActivated(int index)
     markSaveSettingDirty();
 }
 
+bool QKeyMapper::setDisplayScaleEnum(int scaleEnum)
+{
+    if (m_KeyMapStatus != KEYMAP_IDLE || !ui || !ui->scaleComboBox || !ui->scaleComboBox->isEnabled()) {
+        return false;
+    }
+    const int index = ui->scaleComboBox->findData(scaleEnum);
+    if (index < 0 || ui->scaleComboBox->currentData().toInt() == scaleEnum) {
+        return false;
+    }
+    // Keep index-change dirty tracking even when target scale factor matches current compensation (Default <-> 100%).
+    ui->scaleComboBox->setCurrentIndex(index);
+    onScaleComboBoxActivated(index);
+    return true;
+}
+
 void QKeyMapper::sessionLockStateChanged(bool locked)
 {
     const auto lifecycleWork = QSharedPointer<SendInputWorkItem>::create();
@@ -38193,6 +38202,18 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     result.insert(QStringLiteral("save_splitter_position"), m_GeneralAdvancedDialog && m_GeneralAdvancedDialog->getSaveSplitterPosition());
     result.insert(QStringLiteral("play_sound_effect"), isSoundEffectEnabled());
     result.insert(QStringLiteral("global_switch_timeout_ms"), int(getGeneralAdvancedSwitchTimeout()));
+    {
+        const int scaleEnum = (ui && ui->scaleComboBox) ? ui->scaleComboBox->currentData().toInt() : QKeyMapperConstants::DISPLAY_SCALE_DEFAULT;
+        const double targetScale = QKeyMapperConstants::displayScaleEnumToFactor(scaleEnum);
+        const double startupScale = (s_StartupGlobalScaleFactor > 0.0) ? s_StartupGlobalScaleFactor : 1.0;
+        const bool scaleEditable = (m_KeyMapStatus == KEYMAP_IDLE && ui && ui->scaleComboBox && ui->scaleComboBox->isEnabled());
+        result.insert(QStringLiteral("display_scale"), QJsonObject{
+            {QStringLiteral("scale_enum"), scaleEnum},
+            {QStringLiteral("target_scale_factor"), targetScale},
+            {QStringLiteral("startup_scale_factor"), startupScale},
+            {QStringLiteral("runtime_compensation"), m_runtimeScaleCompensation},
+            {QStringLiteral("editable"), scaleEditable}});
+    }
     if (m_GeneralAdvancedDialog) {
         result.insert(QStringLiteral("fullscreen_global_mapping"), automationFullscreenGlobalMapping(
             m_GeneralAdvancedDialog->getDisableGlobalMappingInFullscreen(),
@@ -40538,6 +40559,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingAutoMatchForeground = updating && update.autoMatchForeground.has_value();
         const bool changingSendToSameWindows = updating && update.sendToSameWindows.has_value();
         const bool restoringProcessPath = updating && update.restoreProcessPath;
+        const bool changingDisplayScale = updating && update.displayScale.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -40554,7 +40576,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys
-            || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath;
+            || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingDisplayScale;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
@@ -40578,9 +40600,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
             && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
-            && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath
+            && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
+            return;
+        }
+        if (changingDisplayScale && (!ui || !ui->scaleComboBox || !ui->scaleComboBox->isEnabled())) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("The display scale control is unavailable or disabled."));
             return;
         }
         if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon
@@ -41116,6 +41142,28 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("will_modify"), modified},
                     {QStringLiteral("updates_cached_process_info_immediately"), false},
                     {QStringLiteral("persisted"), false}};
+            } else if (changingDisplayScale) {
+                const int beforeEnum = ui->scaleComboBox->currentData().toInt();
+                const int afterEnum = *update.displayScale;
+                const double beforeFactor = QKeyMapperConstants::displayScaleEnumToFactor(beforeEnum);
+                const double afterFactor = QKeyMapperConstants::displayScaleEnumToFactor(afterEnum);
+                const double startupScale = (s_StartupGlobalScaleFactor > 0.0) ? s_StartupGlobalScaleFactor : 1.0;
+                const double beforeComp = m_runtimeScaleCompensation;
+                const double afterComp = afterFactor / startupScale;
+                const bool appliesLiveScale = !qFuzzyCompare(afterComp, beforeComp);
+                modified = (beforeEnum != afterEnum);
+                target.insert(QStringLiteral("scope"), QStringLiteral("global_setting"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_display_scale")},
+                    {QStringLiteral("before"), QJsonObject{
+                        {QStringLiteral("scale_enum"), beforeEnum},
+                        {QStringLiteral("target_scale_factor"), beforeFactor},
+                        {QStringLiteral("runtime_compensation"), beforeComp}}},
+                    {QStringLiteral("after"), QJsonObject{
+                        {QStringLiteral("scale_enum"), afterEnum},
+                        {QStringLiteral("target_scale_factor"), afterFactor},
+                        {QStringLiteral("runtime_compensation"), afterComp}}},
+                    {QStringLiteral("applies_live_scale"), appliesLiveScale},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingGeneralTablePreference) {
                 const int before = changingTableEditTrigger ? m_GeneralAdvancedDialog->getTableEditModeTrigger()
                     : m_GeneralAdvancedDialog->getTableInsertMode();
@@ -41628,6 +41676,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingAutoMatchForeground ? QStringLiteral("configuration.set_auto_match_foreground")
             : changingSendToSameWindows ? QStringLiteral("configuration.set_send_to_same_windows")
             : restoringProcessPath ? QStringLiteral("configuration.restore_process_path")
+            : changingDisplayScale ? QStringLiteral("general.set_display_scale")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
@@ -41752,6 +41801,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 ui->sendToSameTitleWindowsCheckBox->setChecked(*update.sendToSameWindows);
             } else if (restoringProcessPath) {
                 restoreProcessPathToProcessLineEdit();
+            } else if (changingDisplayScale) {
+                setDisplayScaleEnum(*update.displayScale);
             } else if (changingMappingDisplay) {
                 const bool notes = mappingDisplayAfter.value(QStringLiteral("notes")).toBool();
                 const bool category = mappingDisplayAfter.value(QStringLiteral("category_column")).toBool();

@@ -407,6 +407,14 @@ struct TableEditTrigger {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct DisplayScale {
+    action: String,
+    source_tab_ref: String,
+    display_scale: u8,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct WindowDisplayMode {
     action: String,
     source_tab_ref: String,
@@ -1084,6 +1092,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && fields.process_match_mode.is_none_or(|mode| mode <= 5)
                             && fields.window_title_match_mode.is_none_or(|mode| mode <= 5)
                             && fields.class_name_match_mode.is_none_or(|mode| mode <= 5)
+                    });
+                }
+                Some("general.set_display_scale") => {
+                    return typed(arguments, |v: &DisplayScale| {
+                        tab_ref(&v.source_tab_ref) && v.display_scale <= 10
                     });
                 }
                 Some("general.set_startup_position") => {
@@ -1940,6 +1953,32 @@ mod tests {
             json!({"action": "configuration.restore_process_path"}),
             json!({"action": "configuration.restore_process_path", "source_tab_ref": row}),
             json!({"action": "configuration.restore_process_path", "source_tab_ref": tab, "extra": true}),
+        ] {
+            assert!(preview(&bad).is_err());
+        }
+    }
+
+    #[test]
+    fn general_display_scale_checks_bounds() {
+        let revision = "a".repeat(64);
+        let tab = format!("{revision}:source:0");
+        let row = format!("{revision}:row:0:0");
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for scale in [0, 1, 2, 5, 6, 10] {
+            let valid = json!({"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": scale});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!({"action": "general.set_display_scale", "source_tab_ref": tab}),
+            json!({"action": "general.set_display_scale", "display_scale": 2}),
+            json!({"action": "general.set_display_scale", "source_tab_ref": row, "display_scale": 2}),
+            json!({"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": -1}),
+            json!({"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": 11}),
+            json!({"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": 1.5}),
+            json!({"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": true}),
+            json!({"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": null}),
+            json!({"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": 2, "extra": 1}),
         ] {
             assert!(preview(&bad).is_err());
         }

@@ -2216,6 +2216,7 @@ public:
     static int removeIgnoreWindowInfoRules(const QStringList &ruleNames, QIgnoreWindowInfoListDialog *dialog = nullptr);
     static bool restoreDefaultIgnoreWindowInfoRules(QIgnoreWindowInfoListDialog *dialog = nullptr);
     bool restoreProcessPathToProcessLineEdit(void);
+    bool setDisplayScaleEnum(int scaleEnum);
     static void saveMacroListToINI(const QString &setting_groupname);
     static void loadMacroListFromINI(const QString &setting_groupname);
     static void saveUniversalMacroListToINI(void);

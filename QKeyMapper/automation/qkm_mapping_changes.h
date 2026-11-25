@@ -79,6 +79,7 @@ struct MappingUpdateArguments {
     QJsonObject mappingDisplay;
     std::optional<int> tableInsertMode;
     std::optional<int> tableEditTrigger;
+    std::optional<int> displayScale;
     std::optional<int> windowDisplayMode;
     std::optional<bool> saveWindowSize;
     std::optional<bool> saveSplitterPosition;

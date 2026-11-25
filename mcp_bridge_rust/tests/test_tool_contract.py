@@ -337,6 +337,23 @@ async def check_contract(exe):
                 assert not validator.is_valid(request)
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            for scale in (0, 2, 10):
+                scale_req = {"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": scale}
+                validator.validate(scale_req)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", scale_req))
+            for bad_scale in (
+                {"action": "general.set_display_scale", "source_tab_ref": tab},
+                {"action": "general.set_display_scale", "display_scale": 2},
+                {"action": "general.set_display_scale", "source_tab_ref": row, "display_scale": 2},
+                {"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": -1},
+                {"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": 11},
+                {"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": 1.5},
+                {"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": True},
+                {"action": "general.set_display_scale", "source_tab_ref": tab, "display_scale": 2, "extra": 1},
+            ):
+                assert not validator.is_valid(bad_scale), bad_scale
+                denied = await client.call_tool("qkm_preview_changes", bad_scale)
+                assert denied.is_error is True and denied.structured_content is None
             expect_not_connected(await client.call_tool("qkm_preview_changes", upsert))
             assert macro_fields["properties"]["segment_comments"] == {"type": ["array", "null"], "minItems": 1,
                                                                       "items": {"type": "string", "maxLength": 32767}}
@@ -450,7 +467,7 @@ async def check_contract(exe):
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
                 "fullscreen_global_mapping", "key2mouse", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
-                "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
+                "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
                           if rule["properties"]["action"].get("enum") == moves)
             assert move_rule["required"] == ["action"]

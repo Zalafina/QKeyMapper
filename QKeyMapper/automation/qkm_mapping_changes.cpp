@@ -443,6 +443,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool autoMatchForegroundPreview = preview && action == QLatin1String("configuration.set_auto_match_foreground");
     const bool sendToSameWindowsPreview = preview && action == QLatin1String("configuration.set_send_to_same_windows");
     const bool restoreProcessPathPreview = preview && action == QLatin1String("configuration.restore_process_path");
+    const bool displayScalePreview = preview && action == QLatin1String("general.set_display_scale");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -459,7 +460,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || processIconTrayPreview
-        || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || startupPositionPreview;
+        || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -473,6 +474,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : mappingDisplayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("mapping_display")}
         : insertModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_insert_mode")}
         : editTriggerPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_edit_trigger")}
+        : displayScalePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("display_scale")}
         : windowDisplayModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_display_mode")}
         : saveWindowSizePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_window_size")}
         : saveSplitterPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_splitter_position")}
@@ -562,6 +564,16 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 return fail("Table edit trigger must be 0 (right double-click) or 1 (left double-click).");
             }
             result.update.tableEditTrigger = trigger;
+        }
+        if (displayScalePreview) {
+            using namespace QKeyMapperConstants;
+            const auto value = arguments.value(QStringLiteral("display_scale"));
+            const int scaleEnum = value.toInt(-1);
+            if (!value.isDouble() || value.toDouble() != scaleEnum
+                || scaleEnum < DISPLAY_SCALE_MIN || scaleEnum > DISPLAY_SCALE_MAX) {
+                return fail("Display scale must be an integer between 0 (default) and 10 (90%).");
+            }
+            result.update.displayScale = scaleEnum;
         }
         if (windowDisplayModePreview) {
             const int mode = arguments.value(QStringLiteral("window_display_mode")).toInt(-1);
@@ -2058,6 +2070,21 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_configuration"),
             QStringLiteral("requires_stored_process_file_path"), QStringLiteral("explicit_scope_confirmation"),
             QStringLiteral("disabled_for_global_configuration"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto displayScalePreviewCap = capability("general.set_display_scale.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_display_scale")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("display_scale"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("minimum"), QKeyMapperConstants::DISPLAY_SCALE_MIN},
+                {QStringLiteral("maximum"), QKeyMapperConstants::DISPLAY_SCALE_MAX}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("display_scale")}));
+    auto displayScaleApply = capability("general.set_display_scale.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&displayScalePreviewCap, &displayScaleApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("global_application_setting"),
+            QStringLiteral("applies_live_scale_compensation"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);

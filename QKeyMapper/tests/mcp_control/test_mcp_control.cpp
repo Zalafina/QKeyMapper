@@ -1766,9 +1766,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 118);
+    QCOMPARE(capabilities.size(), 120);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 110);
+    QCOMPARE(demoCapabilities.size(), 112);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1795,8 +1795,10 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(108).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.restore_defaults.apply"));
     QCOMPARE(capabilities.at(109).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.restore_process_path.preview"));
     QCOMPARE(capabilities.at(110).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.restore_process_path.apply"));
-    QCOMPARE(capabilities.at(115).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(116).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(111).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_display_scale.preview"));
+    QCOMPARE(capabilities.at(112).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_display_scale.apply"));
+    QCOMPARE(capabilities.at(117).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(118).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
     }));
@@ -1809,6 +1811,28 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.restore_process_path.apply");
     }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_display_scale.apply");
+    }));
+
+    for (const int scale : {0, 1, 2, 5, 6, 10}) {
+        const auto validScale = validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("general.set_display_scale")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("display_scale"), scale}});
+        QVERIFY(validScale.ok() && validScale.action == MappingChangeAction::UpdateMapping);
+        QVERIFY(validScale.update.displayScale.has_value());
+        QCOMPARE(*validScale.update.displayScale, scale);
+    }
+    for (const QJsonValue &bad : QJsonArray{-1, 11, 1.5, true, QStringLiteral("2"), QJsonValue(QJsonValue::Null)}) {
+        QVERIFY(!validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("general.set_display_scale")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("display_scale"), bad}}).ok());
+    }
+    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("general.set_display_scale")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))}}).ok());
 
     const auto restorePathValid = validateMappingChangeRequest(previewMethod,
         {{QStringLiteral("action"), QStringLiteral("configuration.restore_process_path")},
