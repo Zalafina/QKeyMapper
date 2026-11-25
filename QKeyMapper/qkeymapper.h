@@ -2198,6 +2198,8 @@ public:
     bool clearKeyListFavoriteItems(KeyListCollectionType collectionType);
     bool pushKeyListRecentItem(KeyListCollectionType collectionType, const QString &itemText);
     bool clearKeyListRecentItems(KeyListCollectionType collectionType);
+    static OrderedMap<QString, IgnoreWindowInfo> buildDefaultIgnoreWindowInfoList(void);
+    static bool ignoreWindowInfoMapsEqual(const OrderedMap<QString, IgnoreWindowInfo> &lhs, const OrderedMap<QString, IgnoreWindowInfo> &rhs);
     static void initIgnoreWindowInfoList(void);
     static void updateIgnoreWindowInfoListDescriptionTranslation(void);
     static void saveIgnoreRulesToINI(void);
@@ -2212,6 +2214,7 @@ public:
     static bool ignoreWindowInfoEquals(const IgnoreWindowInfo &lhs, const IgnoreWindowInfo &rhs);
     static IgnoreRuleUpsertResult upsertIgnoreWindowInfoRule(const IgnoreWindowInfo &rule, QIgnoreWindowInfoListDialog *dialog = nullptr);
     static int removeIgnoreWindowInfoRules(const QStringList &ruleNames, QIgnoreWindowInfoListDialog *dialog = nullptr);
+    static bool restoreDefaultIgnoreWindowInfoRules(QIgnoreWindowInfoListDialog *dialog = nullptr);
     static void saveMacroListToINI(const QString &setting_groupname);
     static void loadMacroListFromINI(const QString &setting_groupname);
     static void saveUniversalMacroListToINI(void);

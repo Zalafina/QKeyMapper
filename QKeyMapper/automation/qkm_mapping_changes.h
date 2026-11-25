@@ -144,6 +144,7 @@ struct IgnoreRuleChangeArguments {
     QString catalogRevision;
     QString ruleName;
     QStringList namesToDelete;
+    bool restoreDefaults = false;
     std::optional<QString> processName;
     std::optional<int> processMatchMode;
     std::optional<QString> windowTitle;
@@ -178,7 +179,7 @@ struct ConfigurationListBinding {
 
 enum class MappingChangeMethod { Preview, Apply, Cancel, Operation, Stop, Start };
 enum class MappingChangeAction { AddMapping, SaveConfiguration, DeleteMapping, UpdateMapping, UpdateIbInputPreferences,
-    UpsertMacro, DeleteMacro, ImportMacro, UpsertIgnoreRule, DeleteIgnoreRule, ImportConfiguration, SaveConfigurationImport, ChangeConfigurationList };
+    UpsertMacro, DeleteMacro, ImportMacro, UpsertIgnoreRule, DeleteIgnoreRule, RestoreDefaultIgnoreRules, ImportConfiguration, SaveConfigurationImport, ChangeConfigurationList };
 struct MappingChangeRequest {
     MappingChangeMethod method = MappingChangeMethod::Preview;
     MappingChangeAction action = MappingChangeAction::AddMapping;

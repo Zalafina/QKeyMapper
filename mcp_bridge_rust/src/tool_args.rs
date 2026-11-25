@@ -375,6 +375,12 @@ struct IgnoreRuleDelete {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct IgnoreRuleRestoreDefaults {
+    catalog_revision: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct IgnoreRulePreview<T> {
     action: String,
     #[serde(rename = "ignore_rule")]
@@ -1221,6 +1227,18 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             })
                     });
                 }
+                Some("ignore_rules.restore_defaults") => {
+                    if arguments
+                        .get("ignore_rule")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &IgnoreRulePreview<IgnoreRuleRestoreDefaults>| {
+                        revision(&v.data.catalog_revision)
+                    });
+                }
                 _ => {}
             }
             let duplicate =
@@ -1886,6 +1904,25 @@ mod tests {
             assert!(preview(&json!({"action": "ignore_rules.delete", "ignore_rule": bad})).is_err());
         }
         assert!(preview(&json!({"action": "ignore_rules.delete", "ignore_rule": {"catalog_revision": revision, "rule_names": ["A"]}, "extra": 1})).is_err());
+    }
+
+    #[test]
+    fn ignore_rules_restore_defaults_checks_constraints() {
+        let revision = "a".repeat(64);
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let valid = json!({"action": "ignore_rules.restore_defaults", "ignore_rule": {"catalog_revision": revision}});
+        assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        for bad in [
+            json!({}),
+            json!({"catalog_revision": "bad"}),
+            json!({"catalog_revision": null}),
+            json!({"catalog_revision": revision, "rule_name": "A"}),
+            json!({"catalog_revision": revision, "rule_names": ["A"]}),
+        ] {
+            assert!(preview(&json!({"action": "ignore_rules.restore_defaults", "ignore_rule": bad})).is_err());
+        }
+        assert!(preview(&json!({"action": "ignore_rules.restore_defaults", "ignore_rule": {"catalog_revision": revision}, "extra": 1})).is_err());
     }
 
     #[test]

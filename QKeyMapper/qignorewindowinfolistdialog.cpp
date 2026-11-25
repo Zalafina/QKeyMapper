@@ -316,12 +316,12 @@ void QIgnoreWindowInfoListDialog::on_restoreDefaultRulesButton_clicked()
         return;
     }
 
-    QKeyMapper::initIgnoreWindowInfoList();
-    updateRulesListWidget();
-    initRuleWindowInfoArea();
+    const bool changed = QKeyMapper::restoreDefaultIgnoreWindowInfoRules(this);
 
-    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
-        keyMapper->requestSaveSettingDirty();
+    if (changed) {
+        if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+            keyMapper->requestSaveSettingDirty();
+        }
     }
 
     QString popupMessage = tr("Rules restored to default successfully");

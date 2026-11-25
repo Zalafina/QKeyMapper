@@ -20786,10 +20786,40 @@ bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, Q
     return readresult;
 }
 
-void QKeyMapper::initIgnoreWindowInfoList()
+static void applyDefaultIgnoreWindowInfoDescriptions(OrderedMap<QString, IgnoreWindowInfo> &rules)
 {
-    // Clear existing rules
-    s_IgnoreWindowInfoMap.clear();
+    if (rules.contains("Qt tooltip window")) {
+        rules["Qt tooltip window"].description = QKeyMapper::tr("Tooltip display of Qt.");
+    }
+
+    if (rules.contains("Qt combobox items window")) {
+        rules["Qt combobox items window"].description = QKeyMapper::tr("ComboBox item list display of Qt.");
+    }
+
+    if (rules.contains("Qt tool window")) {
+        rules["Qt tool window"].description = QKeyMapper::tr("Tool window of Qt.");
+    }
+
+    if (rules.contains("System shadow window")) {
+        rules["System shadow window"].description = QKeyMapper::tr("Shadow display of Windows system.");
+    }
+
+    if (rules.contains("Multitask view Staging")) {
+        rules["Multitask view Staging"].description = QKeyMapper::tr("Alt+Tab multi task view staging.");
+    }
+
+    if (rules.contains("Multitask view Frame Win10")) {
+        rules["Multitask view Frame Win10"].description = QKeyMapper::tr("Alt+Tab multi task view of Win10.");
+    }
+
+    if (rules.contains("Multitask view Frame Win11")) {
+        rules["Multitask view Frame Win11"].description = QKeyMapper::tr("Alt+Tab multi task view of Win11.");
+    }
+}
+
+OrderedMap<QString, IgnoreWindowInfo> QKeyMapper::buildDefaultIgnoreWindowInfoList()
+{
+    OrderedMap<QString, IgnoreWindowInfo> defaults;
 
     IgnoreWindowInfo info;
 
@@ -20802,7 +20832,7 @@ void QKeyMapper::initIgnoreWindowInfoList()
     // info.windowTitle = "^(?:虚拟按钮(?:面板设定|颜色|面板背景色|按下颜色|锁定颜色|字体颜色)|VButton Panel (?:Setup|Button Color|BG Color|Pressed Color|Locked Color|Text Color)|仮想ボタン(?:パネル設定|の色|パネル背景色|押下の色|ロックの色|文字色))$";
     info.windowTitle = "^(?:虚拟按钮.+|VButton Panel .+|仮想ボタン.+)$";
     info.className.clear();
-    s_IgnoreWindowInfoMap[info.ruleName] = info;
+    defaults[info.ruleName] = info;
 
 
     info.ruleName = "QKeyMapper floating button panel setup window";
@@ -20813,7 +20843,7 @@ void QKeyMapper::initIgnoreWindowInfoList()
     // info.windowTitle = "^(?:悬浮按钮(?:设定|颜色|按下状态颜色|锁定状态颜色|字体颜色)|Floating Button (?:Setup|Color|Pressed Color|Locked Color|Text Color)|フローティングボタン(?:設定|の色|の押下状態の色|のロック状態の色|の文字色))$";
     info.windowTitle = "^(?:悬浮按钮.+|Floating Button .+|フローティングボタン.+)$";
     info.className.clear();
-    s_IgnoreWindowInfoMap[info.ruleName] = info;
+    defaults[info.ruleName] = info;
 
     info.ruleName = "Qt tooltip window";
     info.processNameMatchType = WindowInfoMatchType::Ignore;
@@ -20822,7 +20852,7 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.processName.clear();
     info.windowTitle.clear();
     info.className = QT_TOOLTIP_WINDOW_CLASS;
-    s_IgnoreWindowInfoMap[info.ruleName] = info;
+    defaults[info.ruleName] = info;
 
     info.ruleName = "Qt combobox items window";
     info.processNameMatchType = WindowInfoMatchType::Ignore;
@@ -20831,7 +20861,7 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.processName.clear();
     info.windowTitle.clear();
     info.className = QT_COMBOBOX_ITEMS_WINDOW_CLASS;
-    s_IgnoreWindowInfoMap[info.ruleName] = info;
+    defaults[info.ruleName] = info;
 
     info.ruleName = "Qt tool window";
     info.processNameMatchType = WindowInfoMatchType::Ignore;
@@ -20840,7 +20870,7 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.processName.clear();
     info.windowTitle.clear();
     info.className = QT_TOOL_WINDOW_CLASS;
-    s_IgnoreWindowInfoMap[info.ruleName] = info;
+    defaults[info.ruleName] = info;
 
     info.ruleName = "System shadow window";
     info.processNameMatchType = WindowInfoMatchType::Ignore;
@@ -20849,7 +20879,7 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.processName.clear();
     info.windowTitle = "^$"; // Empty window title
     info.className = SYSTEM_SHADOW_WINDOW_CLASS;
-    s_IgnoreWindowInfoMap[info.ruleName] = info;
+    defaults[info.ruleName] = info;
 
     info.ruleName = "Multitask view Staging";
     info.processNameMatchType = WindowInfoMatchType::Contains;
@@ -20858,7 +20888,7 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.processName = "explorer.exe";
     info.windowTitle.clear();
     info.className = "ForegroundStaging";
-    s_IgnoreWindowInfoMap[info.ruleName] = info;
+    defaults[info.ruleName] = info;
 
     info.ruleName = "Multitask view Frame Win10";
     info.processNameMatchType = WindowInfoMatchType::Contains;
@@ -20867,7 +20897,7 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.processName = "explorer.exe";
     info.windowTitle.clear();
     info.className = "MultitaskingViewFrame";
-    s_IgnoreWindowInfoMap[info.ruleName] = info;
+    defaults[info.ruleName] = info;
 
     info.ruleName = "Multitask view Frame Win11";
     info.processNameMatchType = WindowInfoMatchType::Contains;
@@ -20876,38 +20906,36 @@ void QKeyMapper::initIgnoreWindowInfoList()
     info.processName = "explorer.exe";
     info.windowTitle.clear();
     info.className = "XamlExplorerHostIslandWindow";
-    s_IgnoreWindowInfoMap[info.ruleName] = info;
+    defaults[info.ruleName] = info;
+
+    applyDefaultIgnoreWindowInfoDescriptions(defaults);
+    return defaults;
+}
+
+bool QKeyMapper::ignoreWindowInfoMapsEqual(const OrderedMap<QString, IgnoreWindowInfo> &lhs,
+                                           const OrderedMap<QString, IgnoreWindowInfo> &rhs)
+{
+    if (lhs.size() != rhs.size()) {
+        return false;
+    }
+    auto lit = lhs.begin();
+    auto rit = rhs.begin();
+    for (; lit != lhs.end() && rit != rhs.end(); ++lit, ++rit) {
+        if (lit.key() != rit.key() || !ignoreWindowInfoEquals(lit.value(), rit.value())) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void QKeyMapper::initIgnoreWindowInfoList()
+{
+    s_IgnoreWindowInfoMap = buildDefaultIgnoreWindowInfoList();
 }
 
 void QKeyMapper::updateIgnoreWindowInfoListDescriptionTranslation()
 {
-    if (s_IgnoreWindowInfoMap.contains("Qt tooltip window")) {
-        s_IgnoreWindowInfoMap["Qt tooltip window"].description = tr("Tooltip display of Qt.");
-    }
-
-    if (s_IgnoreWindowInfoMap.contains("Qt combobox items window")) {
-        s_IgnoreWindowInfoMap["Qt combobox items window"].description = tr("ComboBox item list display of Qt.");
-    }
-
-    if (s_IgnoreWindowInfoMap.contains("Qt tool window")) {
-        s_IgnoreWindowInfoMap["Qt tool window"].description = tr("Tool window of Qt.");
-    }
-
-    if (s_IgnoreWindowInfoMap.contains("System shadow window")) {
-        s_IgnoreWindowInfoMap["System shadow window"].description = tr("Shadow display of Windows system.");
-    }
-
-    if (s_IgnoreWindowInfoMap.contains("Multitask view Staging")) {
-        s_IgnoreWindowInfoMap["Multitask view Staging"].description = tr("Alt+Tab multi task view staging.");
-    }
-
-    if (s_IgnoreWindowInfoMap.contains("Multitask view Frame Win10")) {
-        s_IgnoreWindowInfoMap["Multitask view Frame Win10"].description = tr("Alt+Tab multi task view of Win10.");
-    }
-
-    if (s_IgnoreWindowInfoMap.contains("Multitask view Frame Win11")) {
-        s_IgnoreWindowInfoMap["Multitask view Frame Win11"].description = tr("Alt+Tab multi task view of Win11.");
-    }
+    applyDefaultIgnoreWindowInfoDescriptions(s_IgnoreWindowInfoMap);
 }
 
 QVariantList QKeyMapper::serializeIgnoreRules(const OrderedMap<QString, IgnoreWindowInfo> &rules)
@@ -20986,6 +21014,20 @@ int QKeyMapper::removeIgnoreWindowInfoRules(const QStringList &ruleNames, QIgnor
         dialog->clearEditorIfDisplayingRuleNames(removedNames);
     }
     return removedTotal;
+}
+
+bool QKeyMapper::restoreDefaultIgnoreWindowInfoRules(QIgnoreWindowInfoListDialog *dialog)
+{
+    const OrderedMap<QString, IgnoreWindowInfo> defaults = buildDefaultIgnoreWindowInfoList();
+    const bool changed = !ignoreWindowInfoMapsEqual(s_IgnoreWindowInfoMap, defaults);
+    s_IgnoreWindowInfoMap = defaults;
+
+    if (QIgnoreWindowInfoListDialog *targetDialog = dialog ? dialog : QIgnoreWindowInfoListDialog::getInstance()) {
+        targetDialog->updateRulesListWidget();
+        targetDialog->initRuleWindowInfoArea();
+    }
+
+    return changed;
 }
 
 void QKeyMapper::saveIgnoreRulesToINI()
@@ -40149,12 +40191,15 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         return;
     }
     if ((!applying && (validation.action == MappingChangeAction::UpsertIgnoreRule
-                       || validation.action == MappingChangeAction::DeleteIgnoreRule))
+                       || validation.action == MappingChangeAction::DeleteIgnoreRule
+                       || validation.action == MappingChangeAction::RestoreDefaultIgnoreRules))
         || (applyingPreview && applyingPreview->ignoreRule.has_value())) {
         const auto &ruleArgs = applying ? *applyingPreview->ignoreRule : validation.ignoreRule;
-        const bool deleting = !ruleArgs.namesToDelete.isEmpty();
-        if (validation.confirmConflicts || validation.confirmScope
-            || (deleting ? validation.confirmOverwrite : validation.confirmDelete)) {
+        const bool restoringDefaults = ruleArgs.restoreDefaults;
+        const bool deleting = !restoringDefaults && !ruleArgs.namesToDelete.isEmpty();
+        if (validation.confirmConflicts
+            || (restoringDefaults ? (validation.confirmOverwrite || validation.confirmDelete)
+                                  : (validation.confirmScope || (deleting ? validation.confirmOverwrite : validation.confirmDelete)))) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("The confirmation flags must match the ignore rule change."));
             return;
         }
@@ -40184,13 +40229,60 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         QJsonObject target{{QStringLiteral("instance_id"), owner.instance},
             {QStringLiteral("catalog_revision"), revision}};
         QJsonArray changes;
+        QJsonArray defaultRulesArray;
         QJsonObject diagnostics;
         IgnoreWindowInfo after;
         int targetIndex = -1;
         bool replacing = false;
         bool modified = true;
         int remainingCount = s_IgnoreWindowInfoMap.size();
-        if (deleting) {
+        const int beforeCount = s_IgnoreWindowInfoMap.size();
+        int afterCount = s_IgnoreWindowInfoMap.size();
+        int removedCustomCount = 0;
+        int restoredMissingCount = 0;
+        int resetModifiedCount = 0;
+        if (restoringDefaults) {
+            const OrderedMap<QString, IgnoreWindowInfo> defaults = buildDefaultIgnoreWindowInfoList();
+            QStringList removedCustom;
+            QStringList existingIntersection;
+            const auto &currentRules = std::as_const(s_IgnoreWindowInfoMap);
+            for (auto it = currentRules.begin(); it != currentRules.end(); ++it) {
+                if (!defaults.contains(it.key())) {
+                    removedCustom.append(it.key());
+                } else {
+                    existingIntersection.append(it.key());
+                }
+            }
+            QStringList restoredMissing;
+            QStringList resetModified;
+            QStringList defaultIntersection;
+            int idx = 0;
+            for (auto it = defaults.begin(); it != defaults.end(); ++it, ++idx) {
+                defaultRulesArray.append(automationIgnoreRuleRow(idx, it.value()));
+                if (!s_IgnoreWindowInfoMap.contains(it.key())) {
+                    restoredMissing.append(it.key());
+                } else {
+                    defaultIntersection.append(it.key());
+                    if (!ignoreWindowInfoEquals(s_IgnoreWindowInfoMap.value(it.key()), it.value())) {
+                        resetModified.append(it.key());
+                    }
+                }
+            }
+            const bool orderChanged = existingIntersection != defaultIntersection;
+            modified = !ignoreWindowInfoMapsEqual(s_IgnoreWindowInfoMap, defaults);
+            afterCount = defaults.size();
+            removedCustomCount = int(removedCustom.size());
+            restoredMissingCount = int(restoredMissing.size());
+            resetModifiedCount = int(resetModified.size());
+            changes.append(QJsonObject{
+                {QStringLiteral("kind"), QStringLiteral("replace_all_ignore_rules")},
+                {QStringLiteral("before_count"), beforeCount},
+                {QStringLiteral("after_count"), afterCount},
+                {QStringLiteral("removed_custom_rule_names"), QJsonArray::fromStringList(removedCustom)},
+                {QStringLiteral("restored_missing_rule_names"), QJsonArray::fromStringList(restoredMissing)},
+                {QStringLiteral("reset_modified_rule_names"), QJsonArray::fromStringList(resetModified)},
+                {QStringLiteral("order_changed"), orderChanged}});
+        } else if (deleting) {
             const QSet<QString> selected(ruleArgs.namesToDelete.cbegin(), ruleArgs.namesToDelete.cend());
             QJsonArray orderedNames;
             int index = 0;
@@ -40262,15 +40354,22 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("before"), beforeRow},
                 {QStringLiteral("after"), afterRow}});
         }
-        const QString action = deleting ? QStringLiteral("ignore_rules.delete") : QStringLiteral("ignore_rules.upsert");
+        const QString action = restoringDefaults
+            ? QStringLiteral("ignore_rules.restore_defaults")
+            : (deleting ? QStringLiteral("ignore_rules.delete") : QStringLiteral("ignore_rules.upsert"));
         QJsonObject description{{QStringLiteral("action"), action},
             {QStringLiteral("target"), target},
             {QStringLiteral("changes"), changes},
-            {QStringLiteral("confirmation_required"), deleting || replacing},
+            {QStringLiteral("confirmation_required"), restoringDefaults || deleting || replacing},
             {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false},
             {QStringLiteral("started_by_operation"), false}};
-        if (deleting) {
+        if (restoringDefaults) {
+            description.insert(QStringLiteral("default_rules"), defaultRulesArray);
+            description.insert(QStringLiteral("before_count"), beforeCount);
+            description.insert(QStringLiteral("after_count"), afterCount);
+            description.insert(QStringLiteral("will_modify"), modified);
+        } else if (deleting) {
             description.insert(QStringLiteral("remaining_count"), remainingCount);
         } else {
             description.insert(QStringLiteral("diagnostics"), diagnostics);
@@ -40300,14 +40399,38 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("stale_preview"), QStringLiteral("The ignore rule change no longer matches the preview."));
             return;
         }
+        if (restoringDefaults && !validation.confirmScope) {
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the full replacement of all ignore rules and confirm with confirm_scope=true."));
+            return;
+        }
         if (deleting && !validation.confirmDelete) {
             reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the ignore rule names and confirm their deletion with a fresh preview."));
             return;
         }
-        if (!deleting && replacing != validation.confirmOverwrite) {
+        if (!restoringDefaults && !deleting && replacing != validation.confirmOverwrite) {
             reject(replacing ? QStringLiteral("confirmation_required") : QStringLiteral("invalid_arguments"),
                 replacing ? QStringLiteral("Review the existing ignore rule and confirm the overwrite with a fresh preview.")
                           : QStringLiteral("This ignore rule addition has no overwrite to confirm."));
+            return;
+        }
+        if (restoringDefaults) {
+            const bool appliedModified = restoreDefaultIgnoreWindowInfoRules(m_IgnoreRulesListDialog);
+            if (appliedModified) {
+                requestSaveSettingDirty();
+            }
+            const QJsonObject result{{QStringLiteral("action"), action},
+                {QStringLiteral("target"), target},
+                {QStringLiteral("modified"), appliedModified},
+                {QStringLiteral("before_count"), beforeCount},
+                {QStringLiteral("after_count"), s_IgnoreWindowInfoMap.size()},
+                {QStringLiteral("removed_custom_count"), removedCustomCount},
+                {QStringLiteral("restored_missing_count"), restoredMissingCount},
+                {QStringLiteral("reset_modified_count"), resetModifiedCount},
+                {QStringLiteral("saved"), false},
+                {QStringLiteral("started_by_operation"), false},
+                {QStringLiteral("query_catalog_again"), appliedModified}};
+            store.finish(owner, validation.id, QStringLiteral("applied"), result);
+            server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
             return;
         }
         if (deleting) {

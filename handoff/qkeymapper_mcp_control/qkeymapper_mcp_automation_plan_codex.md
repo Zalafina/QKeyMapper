@@ -14,16 +14,31 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | IGNORE-DELETE-253 [Gemini]（基于 `922887e7` 实现 `ignore_rules.delete.{preview,apply}`、共用 `QKeyMapper::removeIgnoreWindowInfoRules`、`clearEditorIfDisplayingRuleNames` 及 `loadIgnoreRulesFromINI` 对空/单条列表与损坏标量的精确类型分派，本机选验完成，待 Codex 复核；准备进入 `IGNORE-DEFAULTS-254`） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (本提交) |
+| 当前切片 | IGNORE-DEFAULTS-254 [Gemini]（基于 `20695a69` 实现 `ignore_rules.restore_defaults.{preview,apply}` 与共用 `QKeyMapper::buildDefaultIgnoreWindowInfoList` / `ignoreWindowInfoMapsEqual` / `restoreDefaultIgnoreWindowInfoRules`，同步支持运行期三语言默认描述与全量无变更 `modified=false` 判别，本机选验完成，待 Codex 复核；准备盘点下一项 M2-B / M3-B Win11 切片） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (20695a69)、254 (本提交) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～253（含 `QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7、忽略规则目录／增改 `252` 与删除 `253`）＋ 241/249 Codex 三轮 P2 边界修正 ＋ TRAY-MCP-FIX 托盘 MCP 入口点击与分栏修正 |
-| 当前验证／证据 | `IGNORE-DELETE-253 [Gemini]` Qt6 Release `B854C19D` 零警告；Rust Sidecar `56F850C1`、`cargo test`（23+17 passed, 1 ignored）及 `test_tool_contract.py` 双协议 6 组通过；双 Qt 组件 `D8840D5F`／`6CE533BC` 各 4 passed；隔离产品 `ED74BAC4` 零警告（运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）；私有桌面 `run4` 全部场景（GUI 双击加载与删除无关/同条规则草稿保留/清理、只读守卫、Schema/确认/陈旧/不存在拦截、规范序双删与保存、7→1→0 逐级冷重启持久化、`isWindowInIgnoreList` 清零验证、损坏标量 `invalid_scalar_value` 回退 9 条默认值、双 Qt 6.8.3／5.15.2 对 `saved_partial.ini`/`saved_empty.ini` INI 读回 `changed_other_keys=0`、`--demo-configuration-only`）全部退出 0 |
-| 当前控制器 | 11-25 PID 40116 当前活跃且已清零（有效至 19:00，剩余约 2h28m，scope/registered_targets/owned_targets/unresolved_starts 全空） |
-| 下一项动作 | 立即进入 `IGNORE-DEFAULTS-254 [Gemini]` 等 M2-B／M3-B 剩余 Win11 切片 |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～254（含 `QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7、忽略规则目录／增改 `252`、删除 `253` 与恢复默认 `254`）＋ 241/249 Codex 三轮 P2 边界修正 ＋ TRAY-MCP-FIX 托盘 MCP 入口点击与分栏修正 |
+| 当前验证／证据 | `IGNORE-DEFAULTS-254 [Gemini]` Qt6 Release `6390162F` 零警告；Rust Sidecar `8C059B96`、`cargo test`（23+18 passed, 1 ignored）及 `test_tool_contract.py` 双协议 6 组通过；双 Qt 组件 `ADB9E2EF`／`0A363708` 各 4 passed；隔离产品 `E649BD7B` 零警告（运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）；私有桌面 `run1` 全 9 次产品运行（GUI 弹窗取消/确认恢复默认与草稿清空、只读守卫、Schema/陈旧/取消/标志守卫、增改删混合全量替换与无变更二次判别、9 规则冷重启与 `isWindowInIgnoreList` 实时匹配、中英日三语恢复默认描述两两互异、双 Qt 6.8.3／5.15.2 对 `saved_defaults.ini` INI 读回 `changed_other_keys=0`、`--demo-configuration-only`）一次性全部退出 0 |
+| 当前控制器 | 11-25 PID 40116 当前活跃且已清零（有效至 19:00，剩余约 2h05m，scope/registered_targets/owned_targets/unresolved_starts 全空） |
+| 下一项动作 | 盘点 `capability_matrix.md` 中 M2-B／M3-B 剩余 Win11 可推进切片（如 `IGNORE-EDITOR`、`WIN-RESTORE-PATH`、`WIN-PROCESS-SELECT` 等）并继续推进 |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### IGNORE-DEFAULTS-254 [Gemini]：全局忽略规则恢复默认 `ignore_rules.restore_defaults` 与运行期三语言描述同步
+
+- 源码基线：`20695a69`。
+- 变更范围：
+  - `QKeyMapper/qkeymapper.{h,cpp}` & `QKeyMapper/qignorewindowinfolistdialog.cpp`：提取 `applyDefaultIgnoreWindowInfoDescriptions`、`QKeyMapper::buildDefaultIgnoreWindowInfoList()`、`QKeyMapper::ignoreWindowInfoMapsEqual()` 与共用 `QKeyMapper::restoreDefaultIgnoreWindowInfoRules(dialog)`；`buildDefaultIgnoreWindowInfoList()` 构造全部 9 条内置默认规则并立即按当前语言 `tr(...)` 填充 7 条内置描述（冷启时 `setUILanguage()` 仍同步调用 `updateIgnoreWindowInfoListDescriptionTranslation()` 刷新）；`restoreDefaultIgnoreWindowInfoRules()` 按内容与顺序精准判别是否发生真实变化（`changed`），并刷新 `updateRulesListWidget()` 与 `initRuleWindowInfoArea()`；重构 `on_restoreDefaultRulesButton_clicked()` 复用该函数并仅在 `changed` 时置 dirty。
+  - `QKeyMapper/automation/qkm_mapping_changes.{h,cpp}` & `QKeyMapper/tests/mcp_control/test_mcp_control.cpp`：新增 `ignore_rules.restore_defaults.{preview,apply}`（标准 116 / demo 108 项），仅接受 `ignore_rule.catalog_revision`（64 位小写 hex），拒绝多余字段，预览返回 `replace_all_ignore_rules` 差异（`removed_custom_rule_names`/`restored_missing_rule_names`/`reset_modified_rule_names`/`order_changed`）、完整 9 条 `default_rules` 与 `will_modify`，严格校验 `confirm_scope=true` 门禁并拒绝 `confirm_overwrite`/`confirm_delete`/`confirm_conflicts`；`test_mcp_control.cpp` 同步更新能力基线与参数校验。
+  - `mcp_bridge_rust/src/{tool_args.rs,tool_catalog.json}` & `mcp_bridge_rust/tests/test_tool_contract.py`：补齐 `IgnoreRuleRestoreDefaults`、`ignore_rules.restore_defaults` Schema（拒绝 `null` 与多余属性）、工具描述及双协议契约测试。
+- 关键产物 SHA256 前 8 位：正式 `Qt6 Release` (`out/build_qt6/release/QKeyMapper.exe`) `6390162F`；Rust Sidecar (`qkeymapper-mcp-rust.exe`) `8C059B96`；双 Qt 组件 (`QKeyMapperMcpControlTest.exe`) Qt6 `ADB9E2EF`／Qt5 `0A363708`；隔离验证包 `QKeyMapperMcpAcceptance_IgnoreDefaults.exe` `E649BD7B`；双 Qt UTF-8 读回器 (`read_ignore_rules.exe`) `6C356B54`／`81BB7231`。
+- 实测与重试记录：
+  - 构建与单元／契约：`scripts\build_qt6.ps1` 零警告（`EXIT=0, WARN_LINES=0`）；`cargo test`（23 + 18 passed, 1 ignored）与 `test_tool_contract.py`（双协议 6 组 PASS）；Qt6／Qt5 组件各 4 passed（0 warnings）；隔离包构建 0 warnings 且 `ALL_NON_SYSTEM_DLLS_PRESENT`。
+  - 私有桌面真实产品 `run1`（`verify_ignore_defaults.py`，桌面 `QkmProduct_b55a0db45e604fdb82d8dd1ceb341349`）：`gui_baseline`（删 `"Qt tooltip window"` + 添 `"McpGuiCustom"` 并双击加载入编辑区后，点 `RestoreDefault`→No 保持自定义规则与编辑草稿；再点→Yes 恢复 9 条默认规则、`disabled=false`、当前中文描述非空、清空编辑草稿、置 dirty、`isWindowInIgnoreList` 恢复匹配且 INI 未改）、`readonly`（只读拦截）、`standard_flow`（Schema/陈旧版本拦截、增 1 自定义＋改 1 内置描述/禁用＋删 1 内置后预览取消保持、错误确认标志与缺 `confirm_scope` 拦截、准确列出移除/补回/重置清单后 `confirm_scope=true` 提交并置 dirty、再次恢复确认 `will_modify=false`/`modified=false` 与保存）、`cold_defaults` + `cold_match`（9 条全部 `disabled=false` 且实时匹配恢复）、双 Qt 6.8.3 / 5.15.2 读回（`saved_defaults.ini` 9 条且 `changed_other_keys=0, unchanged_other_keys=261`）、`lang_0`/`1`/`2` 三语言恢复默认（分别测得 `'Qt的tooltip显示。'` / `'Tooltip display of Qt.'` / `'Qt のツールチップ表示。'`）、`demo`（仅内存恢复不写盘）全部一次通过；控制器已清零且无残留进程。
+  - 重试过程：仅验证夹具 `ignore_defaults_gui.cpp` 初次编排时 `isWindowInIgnoreList` 参数多加了 `const` 导致 1 次编译失败，去掉 `const` 后重编并通过；正式源码、Rust 契约与私有桌面产品 `run1` 均一次通过。
+  - 已知环境差异与未验项：**运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验**；Win10 正式 Release、以及先增删空规则列表后再触发语言热切换刷新未在本轮单测范围（静态 `setUILanguage()` 已有 `updateIgnoreWindowInfoListDescriptionTranslation()` 刷新逻辑）。
+  - 本机选验完成，待 Codex 复核。
 
 ### IGNORE-DELETE-253 [Gemini]：全局忽略规则删除 `ignore_rules.delete` 与空／单条列表冷启持久化修正
 

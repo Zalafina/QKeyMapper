@@ -388,6 +388,24 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.action = MappingChangeAction::DeleteIgnoreRule;
         return result;
     }
+    if (preview && action == QLatin1String("ignore_rules.restore_defaults")) {
+        const auto value = arguments.value(QStringLiteral("ignore_rule"));
+        if (arguments.size() != 2 || !value.isObject()) {
+            return fail("Restoring default ignore rules requires only action and ignore_rule.");
+        }
+        const auto fields = value.toObject();
+        if (fields.size() != 1 || !fields.value(QStringLiteral("catalog_revision")).isString()) {
+            return fail("Restoring default ignore rules accepts only catalog_revision inside ignore_rule.");
+        }
+        auto &rule = result.ignoreRule;
+        rule.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
+        if (!isLowerHex(rule.catalogRevision, 64)) {
+            return fail("Provide the current 64-character hex ignore rules catalog_revision.");
+        }
+        rule.restoreDefaults = true;
+        result.action = MappingChangeAction::RestoreDefaultIgnoreRules;
+        return result;
+    }
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
@@ -2010,6 +2028,21 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
     for (auto *item : {&ignoreRuleDeletePreview, &ignoreRuleDeleteApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
             QStringLiteral("exact_distinct_rule_names"), QStringLiteral("explicit_delete_confirmation"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const auto ignoreRestoreDefaultsSchema = schema({
+        {QStringLiteral("catalog_revision"), revision}},
+        {QStringLiteral("catalog_revision")});
+    auto ignoreRuleRestorePreview = capability("ignore_rules.restore_defaults.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ignore_rules.restore_defaults")}}},
+            {QStringLiteral("ignore_rule"), ignoreRestoreDefaultsSchema}},
+            {QStringLiteral("action"), QStringLiteral("ignore_rule")}));
+    auto ignoreRuleRestoreApply = capability("ignore_rules.restore_defaults.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
+    for (auto *item : {&ignoreRuleRestorePreview, &ignoreRuleRestoreApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
+            QStringLiteral("replaces_all_ignore_rules_with_builtin_defaults"), QStringLiteral("explicit_scope_confirmation"),
             QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);

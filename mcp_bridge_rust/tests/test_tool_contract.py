@@ -419,6 +419,21 @@ async def check_contract(exe):
                 assert not validator.is_valid(bad_req), bad_del
                 denied = await client.call_tool("qkm_preview_changes", bad_req)
                 assert denied.is_error is True and denied.structured_content is None
+            ignore_def_rule = {"catalog_revision": revision}
+            ignore_def = {"action": "ignore_rules.restore_defaults", "ignore_rule": ignore_def_rule}
+            validator.validate(ignore_def)
+            expect_not_connected(await client.call_tool("qkm_preview_changes", ignore_def))
+            for bad_def in (
+                {},
+                {"catalog_revision": "bad"},
+                {"catalog_revision": None},
+                {"catalog_revision": revision, "rule_name": "A"},
+                {"catalog_revision": revision, "rule_names": ["A"]},
+            ):
+                bad_req = {"action": "ignore_rules.restore_defaults", "ignore_rule": bad_def}
+                assert not validator.is_valid(bad_req), bad_def
+                denied = await client.call_tool("qkm_preview_changes", bad_req)
+                assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
