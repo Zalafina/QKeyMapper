@@ -442,6 +442,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool windowMatchCriteriaPreview = preview && action == QLatin1String("configuration.set_window_match_criteria");
     const bool autoMatchForegroundPreview = preview && action == QLatin1String("configuration.set_auto_match_foreground");
     const bool sendToSameWindowsPreview = preview && action == QLatin1String("configuration.set_send_to_same_windows");
+    const bool restoreProcessPathPreview = preview && action == QLatin1String("configuration.restore_process_path");
     const bool startupPositionPreview = preview && action == QLatin1String("general.set_startup_position");
     const bool addBlankTabPreview = preview && action == QLatin1String("tab.add_blank");
     const bool copyTabPreview = preview && action == QLatin1String("tab.copy");
@@ -458,7 +459,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || processIconTrayPreview
-        || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || startupPositionPreview;
+        || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
@@ -846,6 +847,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.update.copyTab = copyTabPreview;
         result.update.deleteTab = deleteTabPreview;
         result.update.clearTab = clearTabPreview;
+        result.update.restoreProcessPath = restoreProcessPathPreview;
         if (moveTabPreview || selectTabPreview) {
             const auto target = arguments.value(QStringLiteral("target_tab_ref"));
             const auto targetQuery = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
@@ -2044,6 +2046,19 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
             QStringLiteral("replaces_all_ignore_rules_with_builtin_defaults"), QStringLiteral("explicit_scope_confirmation"),
             QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto restoreProcessPathPreviewCap = capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.restore_process_path")}}},
+            {QStringLiteral("source_tab_ref"), reference}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref")}));
+    auto restoreProcessPathApply = capability("configuration.restore_process_path.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
+    for (auto *item : {&restoreProcessPathPreviewCap, &restoreProcessPathApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_configuration"),
+            QStringLiteral("requires_stored_process_file_path"), QStringLiteral("explicit_scope_confirmation"),
+            QStringLiteral("disabled_for_global_configuration"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }

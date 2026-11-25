@@ -1766,9 +1766,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 116);
+    QCOMPARE(capabilities.size(), 118);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 108);
+    QCOMPARE(demoCapabilities.size(), 110);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1793,8 +1793,10 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(106).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.delete.apply"));
     QCOMPARE(capabilities.at(107).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.restore_defaults.preview"));
     QCOMPARE(capabilities.at(108).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.restore_defaults.apply"));
-    QCOMPARE(capabilities.at(113).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(114).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(109).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.restore_process_path.preview"));
+    QCOMPARE(capabilities.at(110).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.restore_process_path.apply"));
+    QCOMPARE(capabilities.at(115).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(116).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
     }));
@@ -1804,6 +1806,21 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.restore_defaults.apply");
     }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.restore_process_path.apply");
+    }));
+
+    const auto restorePathValid = validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("configuration.restore_process_path")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))}});
+    QVERIFY(restorePathValid.ok() && restorePathValid.action == MappingChangeAction::UpdateMapping);
+    QVERIFY(restorePathValid.update.restoreProcessPath);
+    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("configuration.restore_process_path")}}).ok());
+    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("configuration.restore_process_path")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+            {QStringLiteral("extra"), true}}).ok());
 
     const auto validateIgnoreRestoreDefaults = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,

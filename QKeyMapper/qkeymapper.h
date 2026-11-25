@@ -2215,6 +2215,7 @@ public:
     static IgnoreRuleUpsertResult upsertIgnoreWindowInfoRule(const IgnoreWindowInfo &rule, QIgnoreWindowInfoListDialog *dialog = nullptr);
     static int removeIgnoreWindowInfoRules(const QStringList &ruleNames, QIgnoreWindowInfoListDialog *dialog = nullptr);
     static bool restoreDefaultIgnoreWindowInfoRules(QIgnoreWindowInfoListDialog *dialog = nullptr);
+    bool restoreProcessPathToProcessLineEdit(void);
     static void saveMacroListToINI(const QString &setting_groupname);
     static void loadMacroListFromINI(const QString &setting_groupname);
     static void saveUniversalMacroListToINI(void);

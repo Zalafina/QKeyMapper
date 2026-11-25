@@ -154,6 +154,8 @@ enum Action {
     DeleteTab,
     #[serde(rename = "tab.clear")]
     ClearTab,
+    #[serde(rename = "configuration.restore_process_path")]
+    RestoreProcessPath,
     #[serde(rename = "tab.move")]
     MoveTab,
     #[serde(rename = "tab.select")]
@@ -1397,7 +1399,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                         && values.len() == 2 + color_count
                         && values.contains_key("source_tab_ref")
                 }
-                Some("tab.add_blank" | "tab.copy" | "tab.delete" | "tab.clear") => {
+                Some("tab.add_blank" | "tab.copy" | "tab.delete" | "tab.clear" | "configuration.restore_process_path") => {
                     values.len() == 2 && values.contains_key("source_tab_ref")
                 }
                 _ => true,
@@ -1923,6 +1925,24 @@ mod tests {
             assert!(preview(&json!({"action": "ignore_rules.restore_defaults", "ignore_rule": bad})).is_err());
         }
         assert!(preview(&json!({"action": "ignore_rules.restore_defaults", "ignore_rule": {"catalog_revision": revision}, "extra": 1})).is_err());
+    }
+
+    #[test]
+    fn configuration_restore_process_path_checks_constraints() {
+        let revision = "a".repeat(64);
+        let tab = format!("{revision}:source:0");
+        let row = format!("{revision}:row:0:0");
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let valid = json!({"action": "configuration.restore_process_path", "source_tab_ref": tab});
+        assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        for bad in [
+            json!({"action": "configuration.restore_process_path"}),
+            json!({"action": "configuration.restore_process_path", "source_tab_ref": row}),
+            json!({"action": "configuration.restore_process_path", "source_tab_ref": tab, "extra": true}),
+        ] {
+            assert!(preview(&bad).is_err());
+        }
     }
 
     #[test]

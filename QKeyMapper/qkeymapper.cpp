@@ -38148,6 +38148,34 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         ui->windowTitleLineEdit->text(), ui->checkWindowTitleComboBox->currentIndex(),
         ui->classNameLineEdit->text(), ui->checkClassNameComboBox->currentIndex(),
         m_MapProcessInfo.FileName, m_MapProcessInfo.WindowTitle, m_MapProcessInfo.ClassName));
+    {
+        const bool rpEditable = ui->restoreProcessPathButton && ui->processLineEdit
+            && ui->restoreProcessPathButton->isEnabled() && ui->processLineEdit->isEnabled();
+        const bool rpHasStored = !m_MapProcessInfo.FilePath.isEmpty();
+        const QString currentProcText = ui->processLineEdit ? ui->processLineEdit->text() : QString();
+        const bool rpDiffers = rpHasStored && (currentProcText != m_MapProcessInfo.FilePath);
+        const auto boundedStored = QkmAutomation::boundAutomationText(m_MapProcessInfo.FilePath);
+        const auto boundedCurrent = QkmAutomation::boundAutomationText(currentProcText);
+        QJsonObject rpState{
+            {QStringLiteral("editable"), rpEditable},
+            {QStringLiteral("has_stored_path"), rpHasStored},
+            {QStringLiteral("differs_from_process_name"), rpDiffers},
+            {QStringLiteral("can_restore"), rpEditable && rpDiffers},
+            {QStringLiteral("stored_file_path"), boundedStored.value},
+            {QStringLiteral("current_process_name"), boundedCurrent.value},
+            {QStringLiteral("text_max_code_units"), QkmAutomation::WindowMatchStateTextMaxCodeUnits}};
+        if (boundedStored.truncated) {
+            rpState.insert(QStringLiteral("stored_file_path_truncated"), true);
+            rpState.insert(QStringLiteral("stored_file_path_full_code_units"), boundedStored.fullCodeUnits);
+            rpState.insert(QStringLiteral("stored_file_path_full_sha256"), boundedStored.fullSha256);
+        }
+        if (boundedCurrent.truncated) {
+            rpState.insert(QStringLiteral("current_process_name_truncated"), true);
+            rpState.insert(QStringLiteral("current_process_name_full_code_units"), boundedCurrent.fullCodeUnits);
+            rpState.insert(QStringLiteral("current_process_name_full_sha256"), boundedCurrent.fullSha256);
+        }
+        result.insert(QStringLiteral("restore_process_path"), rpState);
+    }
     const int autoMatchCheckState = int(ui->autoStartMappingCheckBox->checkState());
     result.insert(QStringLiteral("auto_match_foreground"), QJsonObject{
         {QStringLiteral("enabled"), autoMatchCheckState == int(Qt::Checked)},
@@ -40509,6 +40537,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 || update.windowClassName.has_value() || update.windowClassMatchMode.has_value());
         const bool changingAutoMatchForeground = updating && update.autoMatchForeground.has_value();
         const bool changingSendToSameWindows = updating && update.sendToSameWindows.has_value();
+        const bool restoringProcessPath = updating && update.restoreProcessPath;
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool addingBlankTab = updating && update.addBlankTab;
@@ -40525,13 +40554,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys
-            || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground || changingSendToSameWindows;
+            || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
         const bool batchTrigger = triggerUpdate && !update.batchRows.isEmpty();
         const bool duplicatingRow = updating && !update.copyPosition.isEmpty();
         if ((validation.confirmConflicts && !update.originalKey.has_value() && !changingCommonFeature && !duplicatingRow)
-            || (validation.confirmScope && !batchTrigger) || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
+            || (validation.confirmScope && !batchTrigger && !restoringProcessPath) || validation.confirmOverwrite || (validation.confirmDelete && !removingTabData)) {
             reject(QStringLiteral("invalid_arguments"), QStringLiteral("Other operation confirmations cannot authorize a settings update."));
             return;
         }
@@ -40549,14 +40578,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
             && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
-            && !changingAutoMatchForeground && !changingSendToSameWindows
+            && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
         }
         if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon
                 || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria
-                || changingAutoMatchForeground || changingSendToSameWindows)
+                || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
             return;
@@ -40580,6 +40609,16 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("unsupported_capability"),
                 QStringLiteral("Send to same windows is disabled while auto match foreground is active or for the global configuration."));
             return;
+        }
+        if (restoringProcessPath) {
+            if (!ui->restoreProcessPathButton->isEnabled() || !ui->processLineEdit->isEnabled()) {
+                reject(QStringLiteral("unsupported_capability"), QStringLiteral("Restoring the stored process path is disabled for the loaded configuration."));
+                return;
+            }
+            if (m_MapProcessInfo.FilePath.isEmpty()) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("The loaded configuration has no stored process file path to restore."));
+                return;
+            }
         }
         if (changingProcessIconAsTrayIcon && !m_MappingAdvancedDialog->isProcessIconAsTrayIconEnabled()) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("Process icon as tray icon is disabled for the loaded configuration."));
@@ -41034,6 +41073,48 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("after"), QJsonObject{
                         {QStringLiteral("enabled"), after},
                         {QStringLiteral("effective_enabled"), afterEffective}}},
+                    {QStringLiteral("persisted"), false}};
+            } else if (restoringProcessPath) {
+                const QString beforeProcess = ui->processLineEdit->text();
+                const QString afterProcess = m_MapProcessInfo.FilePath;
+                const int processMatchMode = ui->checkProcessComboBox->currentIndex();
+                const bool regexValid = processMatchMode != WINDOWINFO_MATCH_INDEX_REGEXMATCH
+                    || afterProcess.isEmpty()
+                    || QRegularExpression(afterProcess).isValid();
+                const auto boundedBefore = QkmAutomation::boundAutomationText(beforeProcess);
+                const auto boundedAfter = QkmAutomation::boundAutomationText(afterProcess);
+                const auto boundedCached = QkmAutomation::boundAutomationText(m_MapProcessInfo.FileName);
+                modified = (beforeProcess != afterProcess);
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                QJsonObject beforeObj{{QStringLiteral("process_name"), boundedBefore.value}};
+                if (boundedBefore.truncated) {
+                    beforeObj.insert(QStringLiteral("process_name_truncated"), true);
+                    beforeObj.insert(QStringLiteral("process_name_full_code_units"), boundedBefore.fullCodeUnits);
+                    beforeObj.insert(QStringLiteral("process_name_full_sha256"), boundedBefore.fullSha256);
+                }
+                QJsonObject afterObj{{QStringLiteral("process_name"), boundedAfter.value}};
+                if (boundedAfter.truncated) {
+                    afterObj.insert(QStringLiteral("process_name_truncated"), true);
+                    afterObj.insert(QStringLiteral("process_name_full_code_units"), boundedAfter.fullCodeUnits);
+                    afterObj.insert(QStringLiteral("process_name_full_sha256"), boundedAfter.fullSha256);
+                }
+                QJsonObject diagObj{
+                    {QStringLiteral("process_match_mode"), processMatchMode},
+                    {QStringLiteral("regex_valid"), regexValid},
+                    {QStringLiteral("cached_file_name"), boundedCached.value},
+                    {QStringLiteral("text_max_code_units"), QkmAutomation::WindowMatchStateTextMaxCodeUnits}};
+                if (boundedCached.truncated) {
+                    diagObj.insert(QStringLiteral("cached_file_name_truncated"), true);
+                    diagObj.insert(QStringLiteral("cached_file_name_full_code_units"), boundedCached.fullCodeUnits);
+                    diagObj.insert(QStringLiteral("cached_file_name_full_sha256"), boundedCached.fullSha256);
+                }
+                change = {{QStringLiteral("kind"), QStringLiteral("restore_process_path")},
+                    {QStringLiteral("before"), beforeObj},
+                    {QStringLiteral("after"), afterObj},
+                    {QStringLiteral("diagnostics"), diagObj},
+                    {QStringLiteral("will_modify"), modified},
+                    {QStringLiteral("updates_cached_process_info_immediately"), false},
                     {QStringLiteral("persisted"), false}};
             } else if (changingGeneralTablePreference) {
                 const int before = changingTableEditTrigger ? m_GeneralAdvancedDialog->getTableEditModeTrigger()
@@ -41546,6 +41627,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingWindowMatchCriteria ? QStringLiteral("configuration.set_window_match_criteria")
             : changingAutoMatchForeground ? QStringLiteral("configuration.set_auto_match_foreground")
             : changingSendToSameWindows ? QStringLiteral("configuration.set_send_to_same_windows")
+            : restoringProcessPath ? QStringLiteral("configuration.restore_process_path")
             : changingMappingDisplay ? QStringLiteral("configuration.set_mapping_display")
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
@@ -41561,7 +41643,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             {QStringLiteral("changes"), changes}, {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false}, {QStringLiteral("started_by_operation"), false}};
         const bool confirmationRequired = !conflictRows.isEmpty();
-        if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired || removingTabData || batchTrigger);
+        if (updating) description.insert(QStringLiteral("confirmation_required"), confirmationRequired || removingTabData || batchTrigger || restoringProcessPath);
         if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
             reject(QStringLiteral("result_too_large"), QStringLiteral("The complete settings update exceeds the response limit.")); return;
         }
@@ -41588,6 +41670,10 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         if (batchTrigger && !validation.confirmScope) {
             reject(QStringLiteral("confirmation_required"), QStringLiteral("Review all listed rows and explicitly confirm the batch trigger scope in a fresh preview."));
+            return;
+        }
+        if (restoringProcessPath && !validation.confirmScope) {
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the stored process file path and explicitly confirm restoring it with confirm_scope=true."));
             return;
         }
         if (confirmationRequired && !validation.confirmConflicts) {
@@ -41664,6 +41750,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 ui->autoStartMappingCheckBox->setCheckState(*update.autoMatchForeground ? Qt::Checked : Qt::Unchecked);
             } else if (changingSendToSameWindows) {
                 ui->sendToSameTitleWindowsCheckBox->setChecked(*update.sendToSameWindows);
+            } else if (restoringProcessPath) {
+                restoreProcessPathToProcessLineEdit();
             } else if (changingMappingDisplay) {
                 const bool notes = mappingDisplayAfter.value(QStringLiteral("notes")).toBool();
                 const bool category = mappingDisplayAfter.value(QStringLiteral("category_column")).toBool();
@@ -55238,8 +55326,26 @@ void QKeyMapper::on_mapList_SelectFunctionButton_toggled(bool checked)
     updateMappingKeyListComboBox();
 }
 
+bool QKeyMapper::restoreProcessPathToProcessLineEdit()
+{
+    if (!ui || !ui->processLineEdit || !ui->restoreProcessPathButton
+        || !ui->restoreProcessPathButton->isEnabled() || !ui->processLineEdit->isEnabled()) {
+        return false;
+    }
+    if (m_MapProcessInfo.FilePath.isEmpty() || ui->processLineEdit->text() == m_MapProcessInfo.FilePath) {
+        return false;
+    }
+    ui->processLineEdit->setText(m_MapProcessInfo.FilePath);
+    markSaveSettingDirty();
+    return true;
+}
+
 void QKeyMapper::on_restoreProcessPathButton_clicked()
 {
+    if (!ui || !ui->processLineEdit || !ui->restoreProcessPathButton
+        || !ui->restoreProcessPathButton->isEnabled() || !ui->processLineEdit->isEnabled()) {
+        return;
+    }
     if (!m_MapProcessInfo.FilePath.isEmpty()
         && ui->processLineEdit->text() != m_MapProcessInfo.FilePath) {
         QString message = tr("Restore to absolute process path \"%1\"?").arg(m_MapProcessInfo.FilePath);
@@ -55251,7 +55357,7 @@ void QKeyMapper::on_restoreProcessPathButton_clicked()
             return;
         }
 
-        ui->processLineEdit->setText(m_MapProcessInfo.FilePath);
+        restoreProcessPathToProcessLineEdit();
     }
 }
 

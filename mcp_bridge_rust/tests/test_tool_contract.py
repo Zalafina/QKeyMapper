@@ -434,6 +434,17 @@ async def check_contract(exe):
                 assert not validator.is_valid(bad_req), bad_def
                 denied = await client.call_tool("qkm_preview_changes", bad_req)
                 assert denied.is_error is True and denied.structured_content is None
+            restore_path_req = {"action": "configuration.restore_process_path", "source_tab_ref": tab}
+            validator.validate(restore_path_req)
+            expect_not_connected(await client.call_tool("qkm_preview_changes", restore_path_req))
+            for bad_rp in (
+                {"action": "configuration.restore_process_path"},
+                {"action": "configuration.restore_process_path", "source_tab_ref": row},
+                {"action": "configuration.restore_process_path", "source_tab_ref": tab, "extra": True},
+            ):
+                assert not validator.is_valid(bad_rp), bad_rp
+                denied = await client.call_tool("qkm_preview_changes", bad_rp)
+                assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",

@@ -111,6 +111,7 @@ struct MappingUpdateArguments {
     bool copyTab = false;
     bool deleteTab = false;
     bool clearTab = false;
+    bool restoreProcessPath = false;
     QString targetTabRef;
     bool selectTab = false;
     std::optional<bool> tabIncludeCommon;

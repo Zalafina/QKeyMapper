@@ -14,16 +14,31 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | IGNORE-DEFAULTS-254 [Gemini]（基于 `20695a69` 实现 `ignore_rules.restore_defaults.{preview,apply}` 与共用 `QKeyMapper::buildDefaultIgnoreWindowInfoList` / `ignoreWindowInfoMapsEqual` / `restoreDefaultIgnoreWindowInfoRules`，同步支持运行期三语言默认描述与全量无变更 `modified=false` 判别，本机选验完成，待 Codex 复核；准备盘点下一项 M2-B / M3-B Win11 切片） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (20695a69)、254 (本提交) |
+| 当前切片 | WIN-RESTORE-PATH-255 [Gemini]（基于 `65c33ac0` 实现 `configuration.restore_process_path.{preview,apply}`、`get_state.restore_process_path` 与共用 `QKeyMapper::restoreProcessPathToProcessLineEdit()`，同步修正 GUI `on_restoreProcessPathButton_clicked()` 使用 `setText` 未触发 `dirty` 的信号差异，本机选验完成，待 Codex 复核；准备盘点下一项 M2-B / M3-B Win11 切片） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (20695a69)、254 (65c33ac0)、255 (本提交) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～254（含 `QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7、忽略规则目录／增改 `252`、删除 `253` 与恢复默认 `254`）＋ 241/249 Codex 三轮 P2 边界修正 ＋ TRAY-MCP-FIX 托盘 MCP 入口点击与分栏修正 |
-| 当前验证／证据 | `IGNORE-DEFAULTS-254 [Gemini]` Qt6 Release `6390162F` 零警告；Rust Sidecar `8C059B96`、`cargo test`（23+18 passed, 1 ignored）及 `test_tool_contract.py` 双协议 6 组通过；双 Qt 组件 `ADB9E2EF`／`0A363708` 各 4 passed；隔离产品 `E649BD7B` 零警告（运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）；私有桌面 `run1` 全 9 次产品运行（GUI 弹窗取消/确认恢复默认与草稿清空、只读守卫、Schema/陈旧/取消/标志守卫、增改删混合全量替换与无变更二次判别、9 规则冷重启与 `isWindowInIgnoreList` 实时匹配、中英日三语恢复默认描述两两互异、双 Qt 6.8.3／5.15.2 对 `saved_defaults.ini` INI 读回 `changed_other_keys=0`、`--demo-configuration-only`）一次性全部退出 0 |
-| 当前控制器 | 11-25 PID 40116 当前活跃且已清零（有效至 19:00，剩余约 2h05m，scope/registered_targets/owned_targets/unresolved_starts 全空） |
-| 下一项动作 | 盘点 `capability_matrix.md` 中 M2-B／M3-B 剩余 Win11 可推进切片（如 `IGNORE-EDITOR`、`WIN-RESTORE-PATH`、`WIN-PROCESS-SELECT` 等）并继续推进 |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～255（含 `QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7、忽略规则目录／增改／删除／恢复默认 `252`～`254`、窗口进程绝对路径恢复 `255`）＋ 241/249 Codex 三轮 P2 边界修正 ＋ TRAY-MCP-FIX 托盘 MCP 入口点击与分栏修正 |
+| 当前验证／证据 | `WIN-RESTORE-PATH-255 [Gemini]` Qt6 Release `9B606FB3` 零警告；Rust Sidecar `3310AD10`、`cargo test`（23+19 passed, 1 ignored）及 `test_tool_contract.py` 双协议 6 组通过；双 Qt 组件 `568835D0`／`B7955C2C` 各 4 passed；隔离产品 `1E56ABBC` 零警告（运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）；私有桌面 `run4` 全部场景（GUI 弹窗取消保持 clean／确认置 `dirty`／同路径无弹窗、只读守卫、Schema/取消/确认守卫、恢复前保持 `cached.file_name=demo.exe`、再次恢复无变更判别、保存重载刷新缓存、无存储路径 `McpSecond` 返回 `invalid_target`、全局配置返回 `unsupported_capability`、冷启校验、双 Qt 6.8.3／5.15.2 读回器 `9317E5D7`/`4ACA411E` 对 `saved_restored.ini` 读回 `ProcessInfo_FileName=ProcessInfo_FilePath="C:/Program Files/DemoApp/demo.exe"` 且 `changed_other_keys=0`、`--demo-configuration-only`）全部退出 0 |
+| 当前控制器 | 11-25 PID 40116 当前活跃且已清零（有效至 19:00，剩余约 1h37m，scope/registered_targets/owned_targets/unresolved_starts 全空） |
+| 下一项动作 | 盘点 `capability_matrix.md` 中 M2-B／M3-B 剩余 Win11 可推进切片（如 `SET-SCALE`、`GEN-SAVE-SIZE`、`WIN-PROCESS-SELECT` 等）并继续推进 |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### WIN-RESTORE-PATH-255 [Gemini]：窗口进程绝对路径恢复 `configuration.restore_process_path` 与 GUI dirty 同步修正
+
+- 源码基线：`65c33ac0`。
+- 变更范围：
+  - `QKeyMapper/qkeymapper.{h,cpp}`：提取共用 `QKeyMapper::restoreProcessPathToProcessLineEdit()`，在 `ui->restoreProcessPathButton` 与 `ui->processLineEdit` 启用且 `m_MapProcessInfo.FilePath` 非空并不同于当前输入时恢复绝对路径并同步调用 `markSaveSettingDirty()`；重构 `on_restoreProcessPathButton_clicked()` 确认 `Yes` 后复用该函数，消除原 `setText` 不触发 `textEdited` 导致 GUI 恢复路径后漏标 dirty 的信号差异；在 `collectAutomationState` 新增 `restore_process_path` 状态块（含 `editable`/`has_stored_path`/`differs_from_process_name`/`can_restore`/`stored_file_path`/`current_process_name` 及 1024 UTF-16 有界截断元数据）。
+  - `QKeyMapper/automation/qkm_mapping_changes.{h,cpp}`、`QKeyMapper/qkeymapper.cpp` & `QKeyMapper/tests/mcp_control/test_mcp_control.cpp`：新增 `configuration.restore_process_path.{preview,apply}`（标准 118 / demo 110 项），接收 `source_tab_ref`，按禁用状态拒绝 `unsupported_capability`、按空存储路径拒绝 `invalid_target`、按未配置保存组切回/一致组校验拒绝 `stale_source`，预览严格区分编辑框值变化与未立即修改 `m_MapProcessInfo.FileName` 缓存（`updates_cached_process_info_immediately=false`）、无变更时 `will_modify=false`／提交返回 `modified=false`，严格校验 `confirm_scope=true` 门禁；`test_mcp_control.cpp` 同步更新能力基线与参数校验。
+  - `mcp_bridge_rust/src/{tool_args.rs,tool_catalog.json}` & `mcp_bridge_rust/tests/test_tool_contract.py`：新增 `PreviewAction::RestoreProcessPath`、`configuration.restore_process_path` Schema（独立 `oneOf` 仅允许 `action` 与 `source_tab_ref`）、工具描述及双协议契约测试。
+- 关键产物 SHA256 前 8 位：正式 `Qt6 Release` (`out/build_qt6/release/QKeyMapper.exe`) `9B606FB3`；Rust Sidecar (`qkeymapper-mcp-rust.exe`) `3310AD10`；双 Qt 组件 (`QKeyMapperMcpControlTest.exe`) Qt6 `568835D0`／Qt5 `B7955C2C`；隔离验证包 `QKeyMapperMcpAcceptance_WinRestorePath.exe` `1E56ABBC`；双 Qt 读回器 (`read_process_info.exe`) `9317E5D7`／`4ACA411E`。
+- 实测与重试记录：
+  - 构建与单元／契约：`scripts\build_qt6.ps1` 零警告（`EXIT=0, WARN_LINES=0`）；`cargo test`（23 + 19 passed, 1 ignored）与 `test_tool_contract.py`（双协议 6 组 PASS）；Qt6／Qt5 组件各 4 passed（0 warnings）；隔离包及双 Qt 读回器全部 0 warnings 且 `ALL_NON_SYSTEM_DLLS_PRESENT`。
+  - 私有桌面真实产品 `run4`（`verify_win_restore_path.py`，桌面 `QkmProduct_6a54419f84b04810b934e79c3433f793`）：`gui_baseline`（取消 No 保持 `"demo.exe"` 与 clean；确认 Yes 设为 `"C:/Program Files/DemoApp/demo.exe"` 且 `dirty=true`、未改 INI；再点不弹确认窗）、`readonly`（只读拦截）、`standard_flow`（先物化 `baseline_saved.ini`、Schema/取消/`confirm_overwrite`/`confirm_delete`/缺 `confirm_scope` 拦截、`confirm_scope=true` 恢复编辑框并置 dirty 同时保持 `cached.file_name="demo.exe"`、用新 `source_tab_ref` 二次恢复返回 `modified=false`、显式保存重载刷新缓存为完整路径、切至无路径 `McpSecond` 返回 `invalid_target`、切至 `QKeyMapperGlobalSetting` 返回 `unsupported_capability`）、`cold_restored`（冷启校验完整路径与缓存）、双 Qt 6.8.3／5.15.2 读回（`saved_restored.ini` 对比 `baseline_saved.ini` 均 `changed_other_keys=0, unchanged_other_keys=261`）、`demo`（仅改内存置 dirty，INI 不变）全部通过，控制器已清零且无残留进程。
+  - 重试过程：仅验证脚本 `verify_win_restore_path.py` 调整 3 次（`run1` 误用 `it["active"]`、`run2` 二次无变更未用 `source_binding_after` 新 `source_tab_ref`、`run3` 未先物化 `baseline_saved.ini` 导致对照了精简种子缺省 172 键），正式 C++／Rust 代码一次构建零修改通过 `run4`。
+  - 已知环境差异与未验项：**运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验**；Win10 正式 Release、以及与真实目标进程实际窗口匹配联动及超过 1024 字符超长路径截图展示未在本轮单测范围。
+  - 本机选验完成，待 Codex 复核。
 
 ### IGNORE-DEFAULTS-254 [Gemini]：全局忽略规则恢复默认 `ignore_rules.restore_defaults` 与运行期三语言描述同步
 
