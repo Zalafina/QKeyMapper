@@ -14,16 +14,24 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | SET-SCALE-256 [Gemini]（`ac2cb2ab`，基于 `e4fb73d6` 实现 `general.set_display_scale.{preview,apply}`、`get_state.display_scale` 与共用 `QKeyMapper::setDisplayScaleEnum(int)`，并重构 `initScaleMenu()` 复用同一路径，本机选验完成，待 Codex 复核；今日收尾检查点，停止继续开启后续切片） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (20695a69)、254 (65c33ac0)、255 (e4fb73d6)、256 (ac2cb2ab) |
+| 当前切片 | IGNORE-BUILTIN-DESC-FIX [Gemini]（基于 `e8c05c2f` 修复 Codex 对 `02626cc8..e8c05c2f` 提出的内置忽略规则自定义说明在冷启动及切换语言时被默认译文覆盖的 P2 问题；本机选验完成，待 Codex 复核；今日收尾检查点，停止继续开启后续切片） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (20695a69)、254 (65c33ac0)、255 (e4fb73d6)、256 (ac2cb2ab)、252-内置规则说明保真 (本提交) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～256（含 `QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7、忽略规则目录／增改／删除／恢复默认 `252`～`254`、窗口进程绝对路径恢复 `255`、全局显示缩放 `256`）＋ 241/249 Codex 三轮 P2 边界修正 ＋ TRAY-MCP-FIX 托盘 MCP 入口点击与分栏修正 |
-| 当前验证／证据 | `SET-SCALE-256 [Gemini]` Qt6 Release `4811ED24` 零警告；Rust Sidecar `428232C4`、`cargo test`（23+20 passed, 1 ignored）及 `test_tool_contract.py` 双协议 6 组通过；双 Qt 组件 `E5FA00E6`／`C8B7EF2A` 各 4 passed；隔离产品 `004A4FEE` 零警告（运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）；私有桌面 `run2` 全部场景（GUI 组合框 125% `1413x903` 与菜单 80% `904x578`、`ini_unchanged=true`、只读守卫、Schema 越界/类型校验、预览取消干净、`0->1` 启动生效不实时缩、`1->2` 实时缩放、`2->2` 无变更、未选常规页签返回 `context_busy`、`tab.select` 后 `2->9`、保存后冷启 `scale_enum=9`/`0.8`、双 Qt 6.8.3／5.15.2 读回器 `D499E7DE`/`5D825297` 对 `saved_scale.ini` 读回 `display_scale=9` 且 `unchanged_other_keys=261`/`changed_other_keys=0`、`--demo-configuration-only` 设为 `scale_enum=3` 且 INI 未改动）全部退出 0 |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～256（含 `QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7、忽略规则目录／增改／删除／恢复默认 `252`～`254`、窗口进程绝对路径恢复 `255`、全局显示缩放 `256`）＋ 241/249 Codex 三轮 P2 边界修正 ＋ 252 内置忽略规则说明保真修正 ＋ TRAY-MCP-FIX 托盘 MCP 入口点击与分栏修正 |
+| 当前验证／证据 | `IGNORE-BUILTIN-DESC-FIX [Gemini]` Qt6 Release `87AAA15A` 零警告；隔离产品 `EF2F93A3` 零警告（运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）；Rust Sidecar `428232C4`；双 Qt INI 读回器 `6C356B54`／`81BB7231`；私有桌面 `run7_builtin_desc` 全部场景（GUI 改自定义与清空内置说明跨 `ZH->EN->JA->ZH` 切换不覆盖且未改动的 `"Qt tool window"` 随语言刷新、`ini_unchanged=true`；MCP 修改 `"Qt tooltip window"` 为 `"MCP Custom Tooltip 说明"`、清空 `"Qt combobox items window"` 为 `""` 并保存后双 Qt 6.8.3/5.15.2 读回一致且 `changed_other_keys=0`；`LanguageIndex=0/1/2` 三语言冷启动保持自定义/空说明而未改动规则随语言更新；`ignore_rules.restore_defaults` 正常恢复当前语言默认说明）全部退出 0；控制器 PID `40116` 已清零 |
 | 当前控制器 | 11-25 PID 40116 当前活跃且已清零（有效至 19:00，scope/registered_targets/owned_targets/unresolved_starts 全空；将在 19:00 过期，明日接手需重新启动） |
-| 下一项动作 | 今日收尾已停在 256 检查点；明日接手时先只读检查分支/工作区与外部 gsudo 控制器状态，再从 `capability_matrix.md` 中 M2-B／M3-B 剩余 Win11 切片（如 `GEN-SAVE-SIZE`、`IGNORE-EDITOR`、`WIN-PROCESS-SELECT`、`WIN-LAST-MATCH`、`UI-PANEL` 等）继续推进 |
+| 下一项动作 | 今日收尾已停在 `IGNORE-BUILTIN-DESC-FIX` 检查点；明日接手时先只读检查分支/工作区与外部 gsudo 控制器状态，再从 `capability_matrix.md` 中 M2-B／M3-B 剩余 Win11 切片（如 `GEN-SAVE-SIZE`、`IGNORE-EDITOR`、`WIN-PROCESS-SELECT`、`WIN-LAST-MATCH`、`UI-PANEL` 等）继续推进 |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### IGNORE-BUILTIN-DESC-FIX [Gemini]：内置忽略规则自定义说明冷启动／语言切换保真修复
+
+- **源码基线**：`e8c05c2f`；修复 Codex 复核 `02626cc8..e8c05c2f` 指出的 P2 问题（冷启动与语言切换覆盖内置忽略规则自定义说明）。
+- **变更范围**：仅 `QKeyMapper/qkeymapper.cpp`（第 20783～20972 行）：将 7 条内置规则默认说明抽为 `kDefaultIgnoreWindowDescriptions` 表，新增 `knownDefaultIgnoreWindowDescriptions()` 从内置 `en_US`/`zh_CN`/`ja_JP` `.qm` 收集默认译文集合（纯值类型缓存）；`applyDefaultIgnoreWindowInfoDescriptions(..., bool preserveCustom)` 在 `buildDefaultIgnoreWindowInfoList()`（`false`）时强制填充默认译文，在 `updateIgnoreWindowInfoListDescriptionTranslation()`（`true`）时仅当当前说明属于默认译文集合或当前语言译文才刷新，其余自定义或显式清空说明原样保留。
+- **构建产物（SHA256 前 8 位）**：Qt6 Release `QKeyMapper.exe` `87AAA15A`（零警告）、隔离产品 `QKeyMapperMcpAcceptance_IgnoreUpsert.exe` `EF2F93A3`（零警告，**运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验**）、Rust Sidecar `qkeymapper-mcp-rust.exe` `428232C4`、双 Qt 读回器 `read_ignore_rules.exe` `6C356B54`／`81BB7231`。
+- **实测与重试记录**：私有桌面 `out/mcp_product/ignore_upsert_252_20261125/run7_builtin_desc/`（桌面 `QkmProduct_28bbdb8ce33d4a28873e90e9b7b238cb`）通过 GUI 运行时 `ZH->EN->JA->ZH` 语言切换、MCP 改写/清空内置规则保存与双 Qt 6.8.3/5.15.2 读回（`changed_other_keys=0`、`unchanged_other_keys=261`）、`LanguageIndex=0/1/2` 三语言冷启动读回（自定义与空说明均保留、未改动的 `"Qt tool window"` 随语言切换刷新）及 `ignore_rules.restore_defaults` 恢复当前语言默认说明。重试记录：仅测试夹具先后调整 4 次（`run3` 列表单击未命中双击加载槽、`run4` 补 `mouseDClick`/`itemDoubleClicked`、`run5` 遗漏 `restore_defaults` 的 `catalog_revision`、`run6` 运行目录旧 Sidecar 与 `confirm_scope` 参数对齐），正式产品源码一次修复通过。
+- **未验范围**：开启 FakerInput 连接的运行、Win10 正式 Release 及其余 5 条内置规则同路径逐一抽查（与受测规则走同一循环表）。本机选验完成，待 Codex 复核。
 
 ### SET-SCALE-256 [Gemini]：全局显示缩放 `general.set_display_scale` 与 `get_state.display_scale`
 

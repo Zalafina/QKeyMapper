@@ -20780,34 +20780,72 @@ bool QKeyMapper::readSaveSettingData(const QString &group, const QString &key, Q
     return readresult;
 }
 
-static void applyDefaultIgnoreWindowInfoDescriptions(OrderedMap<QString, IgnoreWindowInfo> &rules)
+struct DefaultIgnoreWindowDescriptionSpec
 {
-    if (rules.contains("Qt tooltip window")) {
-        rules["Qt tooltip window"].description = QKeyMapper::tr("Tooltip display of Qt.");
-    }
+    const char *ruleName;
+    const char *sourceDescription;
+};
 
-    if (rules.contains("Qt combobox items window")) {
-        rules["Qt combobox items window"].description = QKeyMapper::tr("ComboBox item list display of Qt.");
-    }
+static const DefaultIgnoreWindowDescriptionSpec kDefaultIgnoreWindowDescriptions[] = {
+    {"Qt tooltip window", QT_TRANSLATE_NOOP("QKeyMapper", "Tooltip display of Qt.")},
+    {"Qt combobox items window", QT_TRANSLATE_NOOP("QKeyMapper", "ComboBox item list display of Qt.")},
+    {"Qt tool window", QT_TRANSLATE_NOOP("QKeyMapper", "Tool window of Qt.")},
+    {"System shadow window", QT_TRANSLATE_NOOP("QKeyMapper", "Shadow display of Windows system.")},
+    {"Multitask view Staging", QT_TRANSLATE_NOOP("QKeyMapper", "Alt+Tab multi task view staging.")},
+    {"Multitask view Frame Win10", QT_TRANSLATE_NOOP("QKeyMapper", "Alt+Tab multi task view of Win10.")},
+    {"Multitask view Frame Win11", QT_TRANSLATE_NOOP("QKeyMapper", "Alt+Tab multi task view of Win11.")},
+};
 
-    if (rules.contains("Qt tool window")) {
-        rules["Qt tool window"].description = QKeyMapper::tr("Tool window of Qt.");
-    }
+static const QHash<QString, QSet<QString>> &knownDefaultIgnoreWindowDescriptions()
+{
+    static const QHash<QString, QSet<QString>> knownDescriptions = []() {
+        QHash<QString, QSet<QString>> map;
+        for (const DefaultIgnoreWindowDescriptionSpec &spec : kDefaultIgnoreWindowDescriptions) {
+            const QString key = QString::fromUtf8(spec.ruleName);
+            map[key].insert(QString::fromUtf8(spec.sourceDescription));
+        }
+#ifdef USE_QTRANSLATOR
+        static const char *const kQmPaths[] = {
+            ":/QKeyMapper_en_US.qm",
+            ":/QKeyMapper_zh_CN.qm",
+            ":/QKeyMapper_ja_JP.qm",
+        };
+        for (const char *qmPath : kQmPaths) {
+            QTranslator translator;
+            if (!translator.load(QString::fromUtf8(qmPath))) {
+                continue;
+            }
+            for (const DefaultIgnoreWindowDescriptionSpec &spec : kDefaultIgnoreWindowDescriptions) {
+                const QString translated = translator.translate("QKeyMapper", spec.sourceDescription);
+                if (!translated.isEmpty()) {
+                    map[QString::fromUtf8(spec.ruleName)].insert(translated);
+                }
+            }
+        }
+#endif
+        return map;
+    }();
+    return knownDescriptions;
+}
 
-    if (rules.contains("System shadow window")) {
-        rules["System shadow window"].description = QKeyMapper::tr("Shadow display of Windows system.");
-    }
-
-    if (rules.contains("Multitask view Staging")) {
-        rules["Multitask view Staging"].description = QKeyMapper::tr("Alt+Tab multi task view staging.");
-    }
-
-    if (rules.contains("Multitask view Frame Win10")) {
-        rules["Multitask view Frame Win10"].description = QKeyMapper::tr("Alt+Tab multi task view of Win10.");
-    }
-
-    if (rules.contains("Multitask view Frame Win11")) {
-        rules["Multitask view Frame Win11"].description = QKeyMapper::tr("Alt+Tab multi task view of Win11.");
+static void applyDefaultIgnoreWindowInfoDescriptions(OrderedMap<QString, IgnoreWindowInfo> &rules, bool preserveCustom)
+{
+    const QHash<QString, QSet<QString>> &knownDefaults = knownDefaultIgnoreWindowDescriptions();
+    for (const DefaultIgnoreWindowDescriptionSpec &spec : kDefaultIgnoreWindowDescriptions) {
+        const QString key = QString::fromUtf8(spec.ruleName);
+        if (!rules.contains(key)) {
+            continue;
+        }
+        const QString targetDescription = QCoreApplication::translate("QKeyMapper", spec.sourceDescription);
+        if (preserveCustom) {
+            const QString &currentDescription = rules[key].description;
+            const QSet<QString> defaultCandidates = knownDefaults.value(key);
+            if (currentDescription != targetDescription && !defaultCandidates.contains(currentDescription)) {
+                // Keep user/MCP customized or explicitly cleared descriptions across cold start and UI language switches.
+                continue;
+            }
+        }
+        rules[key].description = targetDescription;
     }
 }
 
@@ -20902,7 +20940,7 @@ OrderedMap<QString, IgnoreWindowInfo> QKeyMapper::buildDefaultIgnoreWindowInfoLi
     info.className = "XamlExplorerHostIslandWindow";
     defaults[info.ruleName] = info;
 
-    applyDefaultIgnoreWindowInfoDescriptions(defaults);
+    applyDefaultIgnoreWindowInfoDescriptions(defaults, false);
     return defaults;
 }
 
@@ -20929,7 +20967,7 @@ void QKeyMapper::initIgnoreWindowInfoList()
 
 void QKeyMapper::updateIgnoreWindowInfoListDescriptionTranslation()
 {
-    applyDefaultIgnoreWindowInfoDescriptions(s_IgnoreWindowInfoMap);
+    applyDefaultIgnoreWindowInfoDescriptions(s_IgnoreWindowInfoMap, true);
 }
 
 QVariantList QKeyMapper::serializeIgnoreRules(const OrderedMap<QString, IgnoreWindowInfo> &rules)
