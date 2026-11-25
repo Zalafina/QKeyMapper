@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 #include <QListWidgetItem>
 #include <QPointer>
+#include <QSet>
 #include <QTimer>
 
 class QkmUiScale;
@@ -28,6 +29,7 @@ public:
 
     void setUILanguage(int languageindex);
     void updateRulesListWidget(void);
+    void clearEditorIfDisplayingRuleNames(const QSet<QString> &removedRuleNames);
 
 protected:
     // bool event(QEvent *event) override;

@@ -20970,6 +20970,24 @@ QKeyMapper::IgnoreRuleUpsertResult QKeyMapper::upsertIgnoreWindowInfoRule(const 
     return result;
 }
 
+int QKeyMapper::removeIgnoreWindowInfoRules(const QStringList &ruleNames, QIgnoreWindowInfoListDialog *dialog)
+{
+    int removedTotal = 0;
+    QSet<QString> removedNames;
+    for (const QString &name : ruleNames) {
+        const int count = s_IgnoreWindowInfoMap.remove(name);
+        if (count > 0) {
+            removedTotal += count;
+            removedNames.insert(name);
+        }
+    }
+    if (removedTotal > 0 && dialog) {
+        dialog->updateRulesListWidget();
+        dialog->clearEditorIfDisplayingRuleNames(removedNames);
+    }
+    return removedTotal;
+}
+
 void QKeyMapper::saveIgnoreRulesToINI()
 {
     QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
@@ -20987,19 +21005,30 @@ void QKeyMapper::loadIgnoreRulesFromINI()
         return;
     }
 
-    // Load rules from INI file
-    QVariant rulesVar = settingFile.value(IGNOREWINDOWINFO_RULES);
-    if (!rulesVar.isValid() || !rulesVar.canConvert<QVariantList>()) {
+    // Load rules from INI file. QSettings writes an empty QVariantList as @Invalid(),
+    // which deserializes as an invalid QVariant; keep an explicit empty list instead of
+    // resetting to defaults, while still falling back on malformed non-list values.
+    const QVariant rulesVar = settingFile.value(IGNOREWINDOWINFO_RULES);
+    if (!rulesVar.isValid()) {
+        s_IgnoreWindowInfoMap.clear();
+        return;
+    }
+
+    QVariantList rulesList;
+    if (rulesVar.userType() == QMetaType::QVariantList) {
+        rulesList = rulesVar.toList();
+    } else if (rulesVar.userType() == QMetaType::QVariantMap) {
+        rulesList.append(rulesVar);
+    } else {
         initIgnoreWindowInfoList();
-        return; // No rules saved or invalid format
+        return; // Invalid format, fall back to built-in defaults
     }
 
     // Clear existing rules
     s_IgnoreWindowInfoMap.clear();
 
-    QVariantList rulesList = rulesVar.toList();
     for (const QVariant &ruleVar : std::as_const(rulesList)) {
-        if (!ruleVar.canConvert<QVariantMap>()) {
+        if (ruleVar.userType() != QMetaType::QVariantMap) {
             continue;
         }
 
@@ -40119,11 +40148,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
         return;
     }
-    if ((!applying && validation.action == MappingChangeAction::UpsertIgnoreRule)
+    if ((!applying && (validation.action == MappingChangeAction::UpsertIgnoreRule
+                       || validation.action == MappingChangeAction::DeleteIgnoreRule))
         || (applyingPreview && applyingPreview->ignoreRule.has_value())) {
         const auto &ruleArgs = applying ? *applyingPreview->ignoreRule : validation.ignoreRule;
-        if (validation.confirmConflicts || validation.confirmScope || validation.confirmDelete) {
-            reject(QStringLiteral("invalid_arguments"), QStringLiteral("Only confirm_overwrite can confirm an ignore rule replacement."));
+        const bool deleting = !ruleArgs.namesToDelete.isEmpty();
+        if (validation.confirmConflicts || validation.confirmScope
+            || (deleting ? validation.confirmOverwrite : validation.confirmDelete)) {
+            reject(QStringLiteral("invalid_arguments"), QStringLiteral("The confirmation flags must match the ignore rule change."));
             return;
         }
         if (!mappingAdditionAllowed(s_KeyMappingTabWidgetCurrentIndex) || hasOpenMappingEditor()
@@ -40149,66 +40181,100 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 QStringLiteral("Ignore rules catalog changed; query the current ignore rules list again."));
             return;
         }
-        const bool replacing = s_IgnoreWindowInfoMap.contains(ruleArgs.ruleName);
-        const IgnoreWindowInfo beforeInfo = replacing ? s_IgnoreWindowInfoMap.value(ruleArgs.ruleName) : IgnoreWindowInfo{};
-        IgnoreWindowInfo after = beforeInfo;
-        after.ruleName = ruleArgs.ruleName;
-        if (ruleArgs.processName) {
-            after.processName = *ruleArgs.processName;
+        QJsonObject target{{QStringLiteral("instance_id"), owner.instance},
+            {QStringLiteral("catalog_revision"), revision}};
+        QJsonArray changes;
+        QJsonObject diagnostics;
+        IgnoreWindowInfo after;
+        int targetIndex = -1;
+        bool replacing = false;
+        bool modified = true;
+        int remainingCount = s_IgnoreWindowInfoMap.size();
+        if (deleting) {
+            const QSet<QString> selected(ruleArgs.namesToDelete.cbegin(), ruleArgs.namesToDelete.cend());
+            QJsonArray orderedNames;
+            int index = 0;
+            const auto &currentRules = std::as_const(s_IgnoreWindowInfoMap);
+            for (auto it = currentRules.begin(); it != currentRules.end(); ++it, ++index) {
+                if (!selected.contains(it.key())) continue;
+                changes.append(QJsonObject{
+                    {QStringLiteral("kind"), QStringLiteral("delete_ignore_rule")},
+                    {QStringLiteral("index"), index},
+                    {QStringLiteral("before"), automationIgnoreRuleRow(index, it.value())},
+                    {QStringLiteral("after"), QJsonValue(QJsonValue::Null)}});
+                orderedNames.append(it.key());
+            }
+            if (orderedNames.size() != ruleArgs.namesToDelete.size()) {
+                reject(QStringLiteral("invalid_target"), QStringLiteral("All requested ignore rule names must exist in the current ignore rules list."));
+                return;
+            }
+            target.insert(QStringLiteral("rule_names"), orderedNames);
+            remainingCount = s_IgnoreWindowInfoMap.size() - int(orderedNames.size());
+        } else {
+            replacing = s_IgnoreWindowInfoMap.contains(ruleArgs.ruleName);
+            const IgnoreWindowInfo beforeInfo = replacing ? s_IgnoreWindowInfoMap.value(ruleArgs.ruleName) : IgnoreWindowInfo{};
+            after = beforeInfo;
+            after.ruleName = ruleArgs.ruleName;
+            if (ruleArgs.processName) {
+                after.processName = *ruleArgs.processName;
+            }
+            if (ruleArgs.processMatchMode) {
+                after.processNameMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(*ruleArgs.processMatchMode);
+            }
+            if (ruleArgs.windowTitle) {
+                after.windowTitle = *ruleArgs.windowTitle;
+            }
+            if (ruleArgs.windowTitleMatchMode) {
+                after.windowTitleMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(*ruleArgs.windowTitleMatchMode);
+            }
+            if (ruleArgs.className) {
+                after.className = *ruleArgs.className;
+            }
+            if (ruleArgs.classNameMatchMode) {
+                after.classNameMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(*ruleArgs.classNameMatchMode);
+            }
+            if (ruleArgs.description) {
+                after.description = *ruleArgs.description;
+            }
+            if (ruleArgs.disabled) {
+                after.disabled = *ruleArgs.disabled;
+            }
+            targetIndex = replacing ? int(s_IgnoreWindowInfoMap.keys().indexOf(ruleArgs.ruleName)) : s_IgnoreWindowInfoMap.size();
+            const QJsonValue beforeRow = replacing
+                ? QJsonValue(automationIgnoreRuleRow(targetIndex, beforeInfo))
+                : QJsonValue(QJsonValue::Null);
+            const QJsonObject afterRow = automationIgnoreRuleRow(targetIndex, after);
+            diagnostics = automationIgnoreRuleDiagnostics(after);
+            modified = !replacing || !ignoreWindowInfoEquals(beforeInfo, after);
+            qsizetype projectedBytes = ignoreCatalogBytes;
+            if (replacing) {
+                projectedBytes -= QJsonDocument(beforeRow.toObject()).toJson(QJsonDocument::Compact).size() + 1;
+            }
+            projectedBytes += QJsonDocument(afterRow).toJson(QJsonDocument::Compact).size() + 1;
+            if (projectedBytes > MaxSourceSnapshotBytes) {
+                reject(QStringLiteral("result_too_large"), QStringLiteral("The resulting ignore rules catalog exceeds its bounded size."));
+                return;
+            }
+            target.insert(QStringLiteral("rule_name"), ruleArgs.ruleName);
+            changes.append(QJsonObject{
+                {QStringLiteral("kind"), replacing ? QStringLiteral("replace_ignore_rule") : QStringLiteral("add_ignore_rule")},
+                {QStringLiteral("index"), targetIndex},
+                {QStringLiteral("before"), beforeRow},
+                {QStringLiteral("after"), afterRow}});
         }
-        if (ruleArgs.processMatchMode) {
-            after.processNameMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(*ruleArgs.processMatchMode);
-        }
-        if (ruleArgs.windowTitle) {
-            after.windowTitle = *ruleArgs.windowTitle;
-        }
-        if (ruleArgs.windowTitleMatchMode) {
-            after.windowTitleMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(*ruleArgs.windowTitleMatchMode);
-        }
-        if (ruleArgs.className) {
-            after.className = *ruleArgs.className;
-        }
-        if (ruleArgs.classNameMatchMode) {
-            after.classNameMatchType = static_cast<QKeyMapperConstants::WindowInfoMatchType>(*ruleArgs.classNameMatchMode);
-        }
-        if (ruleArgs.description) {
-            after.description = *ruleArgs.description;
-        }
-        if (ruleArgs.disabled) {
-            after.disabled = *ruleArgs.disabled;
-        }
-        const int targetIndex = replacing ? int(s_IgnoreWindowInfoMap.keys().indexOf(ruleArgs.ruleName)) : s_IgnoreWindowInfoMap.size();
-        const QJsonValue beforeRow = replacing
-            ? QJsonValue(automationIgnoreRuleRow(targetIndex, beforeInfo))
-            : QJsonValue(QJsonValue::Null);
-        const QJsonObject afterRow = automationIgnoreRuleRow(targetIndex, after);
-        const QJsonObject diagnostics = automationIgnoreRuleDiagnostics(after);
-        const bool modified = !replacing || !ignoreWindowInfoEquals(beforeInfo, after);
-        qsizetype projectedBytes = ignoreCatalogBytes;
-        if (replacing) {
-            projectedBytes -= QJsonDocument(beforeRow.toObject()).toJson(QJsonDocument::Compact).size() + 1;
-        }
-        projectedBytes += QJsonDocument(afterRow).toJson(QJsonDocument::Compact).size() + 1;
-        if (projectedBytes > MaxSourceSnapshotBytes) {
-            reject(QStringLiteral("result_too_large"), QStringLiteral("The resulting ignore rules catalog exceeds its bounded size."));
-            return;
-        }
-        const QJsonObject target{{QStringLiteral("instance_id"), owner.instance},
-            {QStringLiteral("catalog_revision"), revision},
-            {QStringLiteral("rule_name"), ruleArgs.ruleName}};
-        const QJsonArray changes{QJsonObject{
-            {QStringLiteral("kind"), replacing ? QStringLiteral("replace_ignore_rule") : QStringLiteral("add_ignore_rule")},
-            {QStringLiteral("index"), targetIndex},
-            {QStringLiteral("before"), beforeRow},
-            {QStringLiteral("after"), afterRow}}};
-        const QJsonObject description{{QStringLiteral("action"), QStringLiteral("ignore_rules.upsert")},
+        const QString action = deleting ? QStringLiteral("ignore_rules.delete") : QStringLiteral("ignore_rules.upsert");
+        QJsonObject description{{QStringLiteral("action"), action},
             {QStringLiteral("target"), target},
             {QStringLiteral("changes"), changes},
-            {QStringLiteral("diagnostics"), diagnostics},
-            {QStringLiteral("confirmation_required"), replacing},
+            {QStringLiteral("confirmation_required"), deleting || replacing},
             {QStringLiteral("modified"), false},
             {QStringLiteral("saved"), false},
             {QStringLiteral("started_by_operation"), false}};
+        if (deleting) {
+            description.insert(QStringLiteral("remaining_count"), remainingCount);
+        } else {
+            description.insert(QStringLiteral("diagnostics"), diagnostics);
+        }
         if (QJsonDocument(description).toJson(QJsonDocument::Compact).size() > MaxFramePayload - 2048) {
             reject(QStringLiteral("result_too_large"), QStringLiteral("The complete ignore rule change exceeds the response limit."));
             return;
@@ -40234,10 +40300,32 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("stale_preview"), QStringLiteral("The ignore rule change no longer matches the preview."));
             return;
         }
-        if (replacing != validation.confirmOverwrite) {
+        if (deleting && !validation.confirmDelete) {
+            reject(QStringLiteral("confirmation_required"), QStringLiteral("Review the ignore rule names and confirm their deletion with a fresh preview."));
+            return;
+        }
+        if (!deleting && replacing != validation.confirmOverwrite) {
             reject(replacing ? QStringLiteral("confirmation_required") : QStringLiteral("invalid_arguments"),
                 replacing ? QStringLiteral("Review the existing ignore rule and confirm the overwrite with a fresh preview.")
                           : QStringLiteral("This ignore rule addition has no overwrite to confirm."));
+            return;
+        }
+        if (deleting) {
+            const int removed = removeIgnoreWindowInfoRules(ruleArgs.namesToDelete, m_IgnoreRulesListDialog);
+            const bool anyRemoved = removed > 0;
+            if (anyRemoved) {
+                requestSaveSettingDirty();
+            }
+            const QJsonObject result{{QStringLiteral("action"), action},
+                {QStringLiteral("target"), target},
+                {QStringLiteral("deleted_count"), removed},
+                {QStringLiteral("remaining_count"), s_IgnoreWindowInfoMap.size()},
+                {QStringLiteral("modified"), anyRemoved},
+                {QStringLiteral("saved"), false},
+                {QStringLiteral("started_by_operation"), false},
+                {QStringLiteral("query_catalog_again"), anyRemoved}};
+            store.finish(owner, validation.id, QStringLiteral("applied"), result);
+            server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
             return;
         }
         if (modified) {
@@ -40245,7 +40333,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             Q_UNUSED(upsertResult);
             requestSaveSettingDirty();
         }
-        const QJsonObject result{{QStringLiteral("action"), QStringLiteral("ignore_rules.upsert")},
+        const QJsonObject result{{QStringLiteral("action"), action},
             {QStringLiteral("target"), target},
             {QStringLiteral("index"), targetIndex},
             {QStringLiteral("existed"), replacing},

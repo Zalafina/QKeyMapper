@@ -1766,9 +1766,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 112);
+    QCOMPARE(capabilities.size(), 114);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 104);
+    QCOMPARE(demoCapabilities.size(), 106);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1789,11 +1789,46 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(102).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_send_to_same_windows.apply"));
     QCOMPARE(capabilities.at(103).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.upsert.preview"));
     QCOMPARE(capabilities.at(104).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.upsert.apply"));
-    QCOMPARE(capabilities.at(109).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(110).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(105).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.delete.preview"));
+    QCOMPARE(capabilities.at(106).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("ignore_rules.delete.apply"));
+    QCOMPARE(capabilities.at(111).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(112).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
     }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.delete.apply");
+    }));
+
+    const auto validateIgnoreDelete = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("ignore_rules.delete")},
+                {QStringLiteral("ignore_rule"), fields}});
+    };
+    const auto ignoreDeleteValid = validateIgnoreDelete({
+        {QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_names"), QJsonArray{QStringLiteral("RuleA"), QStringLiteral("RuleB")}}});
+    QVERIFY(ignoreDeleteValid.ok() && ignoreDeleteValid.action == MappingChangeAction::DeleteIgnoreRule);
+    QCOMPARE(ignoreDeleteValid.ignoreRule.namesToDelete, QStringList({QStringLiteral("RuleA"), QStringLiteral("RuleB")}));
+    QVERIFY(!validateIgnoreDelete({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_names"), QJsonArray{}}}).ok());
+    QVERIFY(!validateIgnoreDelete({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_names"), QJsonArray{QStringLiteral("RuleA"), QStringLiteral("RuleA")}}}).ok());
+    QJsonArray tooManyRules;
+    for (int i = 0; i < 101; ++i) {
+        tooManyRules.append(QStringLiteral("Rule%1").arg(i));
+    }
+    QVERIFY(!validateIgnoreDelete({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_names"), tooManyRules}}).ok());
+    QVERIFY(!validateIgnoreDelete({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_names"), QJsonArray{QString()}}}).ok());
+    QVERIFY(!validateIgnoreDelete({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_names"), QJsonArray{QStringLiteral("Bad\nName")}}}).ok());
+    QVERIFY(!validateIgnoreDelete({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_names"), QJsonArray{QString(1025, QLatin1Char('A'))}}}).ok());
+    QVERIFY(!validateIgnoreDelete({{QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_names"), QJsonArray{QStringLiteral("RuleA")}},
+        {QStringLiteral("rule_name"), QStringLiteral("RuleA")}}).ok());
 
     const auto validateIgnoreUpsert = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,

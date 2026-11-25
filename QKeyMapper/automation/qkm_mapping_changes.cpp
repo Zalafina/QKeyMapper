@@ -355,6 +355,39 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.action = MappingChangeAction::UpsertIgnoreRule;
         return result;
     }
+    if (preview && action == QLatin1String("ignore_rules.delete")) {
+        const auto value = arguments.value(QStringLiteral("ignore_rule"));
+        if (arguments.size() != 2 || !value.isObject()) {
+            return fail("Ignore rule deletion requires only action and ignore_rule.");
+        }
+        const auto fields = value.toObject();
+        const QSet<QString> allowedKeys{QStringLiteral("catalog_revision"), QStringLiteral("rule_names")};
+        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+            if (!allowedKeys.contains(it.key())) {
+                return fail("Unknown ignore_rule deletion argument.");
+            }
+        }
+        auto &rule = result.ignoreRule;
+        rule.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
+        const auto namesVal = fields.value(QStringLiteral("rule_names"));
+        const auto names = namesVal.toArray();
+        if (!isLowerHex(rule.catalogRevision, 64) || !namesVal.isArray() || names.isEmpty() || names.size() > 100) {
+            return fail("Provide the current ignore rules catalog_revision and 1 to 100 rule names to delete.");
+        }
+        QSet<QString> distinct;
+        for (const auto &entry : names) {
+            const QString name = entry.toString();
+            if (!entry.isString() || name.isEmpty() || name.size() > WindowMatchTextMaxLength
+                || name.contains(QChar::Null) || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n'))
+                || distinct.contains(name)) {
+                return fail("Ignore rule names to delete must be distinct, non-empty single-line strings of at most 1024 UTF-16 code units.");
+            }
+            distinct.insert(name);
+            rule.namesToDelete.append(name);
+        }
+        result.action = MappingChangeAction::DeleteIgnoreRule;
+        return result;
+    }
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
@@ -1958,6 +1991,26 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
             QStringLiteral("overwrite_in_place_or_append"), QStringLiteral("confirm_overwrite_for_existing_name"),
             QStringLiteral("case_sensitive_and_gui_diagnostic_parity"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const auto ignoreDeleteFieldsSchema = schema({
+        {QStringLiteral("catalog_revision"), revision},
+        {QStringLiteral("rule_names"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
+            {QStringLiteral("minItems"), 1}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("uniqueItems"), true},
+            {QStringLiteral("items"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                {QStringLiteral("minLength"), 1}, {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
+                {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]+$")}}}}}},
+        {QStringLiteral("catalog_revision"), QStringLiteral("rule_names")});
+    auto ignoreRuleDeletePreview = capability("ignore_rules.delete.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ignore_rules.delete")}}},
+            {QStringLiteral("ignore_rule"), ignoreDeleteFieldsSchema}},
+            {QStringLiteral("action"), QStringLiteral("ignore_rule")}));
+    auto ignoreRuleDeleteApply = capability("ignore_rules.delete.apply", "qkm_apply_changes", Read | Configure, false, deleteApplySchema);
+    for (auto *item : {&ignoreRuleDeletePreview, &ignoreRuleDeleteApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
+            QStringLiteral("exact_distinct_rule_names"), QStringLiteral("explicit_delete_confirmation"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }

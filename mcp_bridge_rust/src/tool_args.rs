@@ -368,6 +368,13 @@ struct IgnoreRuleUpsert {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct IgnoreRuleDelete {
+    catalog_revision: String,
+    rule_names: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct IgnoreRulePreview<T> {
     action: String,
     #[serde(rename = "ignore_rule")]
@@ -1194,6 +1201,26 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && d.class_name_match_mode.is_none_or(|m| m <= 5)
                     });
                 }
+                Some("ignore_rules.delete") => {
+                    if arguments
+                        .get("ignore_rule")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &IgnoreRulePreview<IgnoreRuleDelete>| {
+                        let mut seen = std::collections::HashSet::new();
+                        revision(&v.data.catalog_revision)
+                            && (1..=100).contains(&v.data.rule_names.len())
+                            && v.data.rule_names.iter().all(|name| {
+                                !name.is_empty()
+                                    && name.encode_utf16().count() <= 1024
+                                    && !name.contains(['\0', '\r', '\n'])
+                                    && seen.insert(name)
+                            })
+                    });
+                }
                 _ => {}
             }
             let duplicate =
@@ -1827,6 +1854,38 @@ mod tests {
             assert!(preview(&json!({"action": "ignore_rules.upsert", "ignore_rule": bad})).is_err());
         }
         assert!(preview(&json!({"action": "ignore_rules.upsert", "ignore_rule": {"catalog_revision": revision, "rule_name": "Rule"}, "extra": 1})).is_err());
+    }
+
+    #[test]
+    fn ignore_rules_delete_checks_constraints() {
+        let revision = "a".repeat(64);
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for names in [
+            json!(["RuleA"]),
+            json!(["RuleA", "RuleB"]),
+            json!(["A".repeat(1024)]),
+        ] {
+            let req = json!({"action": "ignore_rules.delete", "ignore_rule": {"catalog_revision": revision, "rule_names": names}});
+            assert_eq!(preview(&req).unwrap(), *req.as_object().unwrap());
+        }
+        let too_many: Vec<String> = (0..101).map(|i| format!("R{i}")).collect();
+        for bad in [
+            json!({"catalog_revision": "bad", "rule_names": ["A"]}),
+            json!({"catalog_revision": revision}),
+            json!({"catalog_revision": revision, "rule_names": []}),
+            json!({"catalog_revision": revision, "rule_names": ["A", "A"]}),
+            json!({"catalog_revision": revision, "rule_names": too_many}),
+            json!({"catalog_revision": revision, "rule_names": [""]}),
+            json!({"catalog_revision": revision, "rule_names": ["Bad\nRule"]}),
+            json!({"catalog_revision": revision, "rule_names": ["A\u{0000}B"]}),
+            json!({"catalog_revision": revision, "rule_names": ["A".repeat(1025)]}),
+            json!({"catalog_revision": revision, "rule_names": null}),
+            json!({"catalog_revision": revision, "rule_names": ["A"], "rule_name": "A"}),
+        ] {
+            assert!(preview(&json!({"action": "ignore_rules.delete", "ignore_rule": bad})).is_err());
+        }
+        assert!(preview(&json!({"action": "ignore_rules.delete", "ignore_rule": {"catalog_revision": revision, "rule_names": ["A"]}, "extra": 1})).is_err());
     }
 
     #[test]

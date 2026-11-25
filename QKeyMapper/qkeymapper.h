@@ -2211,6 +2211,7 @@ public:
     };
     static bool ignoreWindowInfoEquals(const IgnoreWindowInfo &lhs, const IgnoreWindowInfo &rhs);
     static IgnoreRuleUpsertResult upsertIgnoreWindowInfoRule(const IgnoreWindowInfo &rule, QIgnoreWindowInfoListDialog *dialog = nullptr);
+    static int removeIgnoreWindowInfoRules(const QStringList &ruleNames, QIgnoreWindowInfoListDialog *dialog = nullptr);
     static void saveMacroListToINI(const QString &setting_groupname);
     static void loadMacroListFromINI(const QString &setting_groupname);
     static void saveUniversalMacroListToINI(void);

@@ -281,14 +281,11 @@ void QIgnoreWindowInfoListDialog::on_deleteRuleButton_clicked()
         return;
     }
 
-    // Remove rule from map
-    const int removedCount = QKeyMapper::s_IgnoreWindowInfoMap.remove(ruleName);
+    // Remove rule from map and refresh list / editor state cleanly
+    const int removedCount = QKeyMapper::removeIgnoreWindowInfoRules({ruleName}, this);
     if (removedCount <= 0) {
         return;
     }
-
-    // Refresh list widget
-    updateRulesListWidget();
 
     if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
         keyMapper->requestSaveSettingDirty();
@@ -299,9 +296,11 @@ void QIgnoreWindowInfoListDialog::on_deleteRuleButton_clicked()
     QString popupMessageColor = SUCCESS_COLOR;
     int popupMessageDisplayTime = POPUP_MESSAGE_DISPLAY_TIME_DEFAULT;
     emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
+}
 
-    // Clear input fields if deleted rule was being displayed
-    if (ui->ruleNameLineEdit->text().trimmed() == ruleName) {
+void QIgnoreWindowInfoListDialog::clearEditorIfDisplayingRuleNames(const QSet<QString> &removedRuleNames)
+{
+    if (removedRuleNames.contains(ui->ruleNameLineEdit->text().trimmed())) {
         initRuleWindowInfoArea();
     }
 }

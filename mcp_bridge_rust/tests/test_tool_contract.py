@@ -401,6 +401,24 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             denied = await client.call_tool("qkm_preview_changes", ignore_upsert | {"extra": 1})
             assert denied.is_error is True and denied.structured_content is None
+            ignore_del_rule = {"catalog_revision": revision, "rule_names": ["RuleA", "RuleB"]}
+            ignore_del = {"action": "ignore_rules.delete", "ignore_rule": ignore_del_rule}
+            validator.validate(ignore_del)
+            expect_not_connected(await client.call_tool("qkm_preview_changes", ignore_del))
+            for bad_del in (
+                {"catalog_revision": revision},
+                {"catalog_revision": revision, "rule_names": []},
+                {"catalog_revision": revision, "rule_names": ["A", "A"]},
+                {"catalog_revision": revision, "rule_names": [f"R{i}" for i in range(101)]},
+                {"catalog_revision": revision, "rule_names": [""]},
+                {"catalog_revision": revision, "rule_names": ["Bad\nRule"]},
+                {"catalog_revision": revision, "rule_names": ["A" * 1025]},
+                {"catalog_revision": revision, "rule_names": ["A"], "rule_name": "A"},
+            ):
+                bad_req = {"action": "ignore_rules.delete", "ignore_rule": bad_del}
+                assert not validator.is_valid(bad_req), bad_del
+                denied = await client.call_tool("qkm_preview_changes", bad_req)
+                assert denied.is_error is True and denied.structured_content is None
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
