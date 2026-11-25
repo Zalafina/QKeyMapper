@@ -1667,6 +1667,35 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_match_mode"), 6}}).ok());
     QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QStringLiteral("a")}, {QStringLiteral("extra"), 1}}).ok());
 
+    const auto normalBounded = boundAutomationText(QString(1024, QLatin1Char('A')));
+    QVERIFY(!normalBounded.truncated && normalBounded.value.size() == 1024 && normalBounded.fullCodeUnits == 1024);
+    const QString surrogateBoundary = QString(1023, QLatin1Char('a')) + QString::fromUtf8("\xF0\x9F\x98\x80");
+    const auto boundedSurrogate = boundAutomationText(surrogateBoundary);
+    QVERIFY(boundedSurrogate.truncated && boundedSurrogate.value.size() == 1023
+        && boundedSurrogate.fullCodeUnits == 1025 && boundedSurrogate.fullSha256.size() == 64);
+    const QString longCjk1 = QString(16000, QChar(0x4E2D));
+    const QString longCjk2 = QString(16000, QChar(0x6587));
+    const QString longCjk3 = QString(16000, QChar(0x7A97));
+    const QJsonObject boundedState = buildWindowMatchCriteriaState(
+        true, longCjk1, 1, longCjk2, 2, longCjk3, 3, longCjk1, longCjk2, longCjk3);
+    QVERIFY(boundedState.value(QStringLiteral("text_truncated")).toBool());
+    QCOMPARE(boundedState.value(QStringLiteral("text_max_code_units")).toInt(), WindowMatchStateTextMaxCodeUnits);
+    const QJsonObject truncatedMap = boundedState.value(QStringLiteral("truncated_fields")).toObject();
+    QCOMPARE(truncatedMap.size(), 6);
+    for (const char *key : {"process_name", "window_title", "class_name",
+            "cached.file_name", "cached.window_title", "cached.class_name"}) {
+        const QJsonObject meta = truncatedMap.value(QLatin1String(key)).toObject();
+        QCOMPARE(meta.value(QStringLiteral("full_code_units")).toInt(), 16000);
+        QCOMPARE(meta.value(QStringLiteral("returned_code_units")).toInt(), 1024);
+        QCOMPARE(meta.value(QStringLiteral("full_sha256")).toString().size(), 64);
+    }
+    QVERIFY(QJsonDocument(boundedState).toJson(QJsonDocument::Compact).size() < 24 * 1024);
+    const QJsonObject previewA = buildWindowMatchCriteriaFields(longCjk1, 1, QString(), 2, QString(), 0);
+    const QString longCjk1Tail = QString(15999, QChar(0x4E2D)) + QChar(0x4E2E);
+    const QJsonObject previewB = buildWindowMatchCriteriaFields(longCjk1Tail, 1, QString(), 2, QString(), 0);
+    QVERIFY(previewA.value(QStringLiteral("truncated_fields")).toObject().value(QStringLiteral("process_name"))
+        != previewB.value(QStringLiteral("truncated_fields")).toObject().value(QStringLiteral("process_name")));
+
     const auto validateStartupPosition = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},

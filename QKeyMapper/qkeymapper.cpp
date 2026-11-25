@@ -38098,31 +38098,6 @@ static QJsonObject automationCustomNotification(bool enabled, int position, bool
         {QStringLiteral("style_initialized"), styleInitialized}};
 }
 
-static QJsonObject automationWindowMatchCriteriaFields(const QString &processName, int processMode,
-    const QString &windowTitle, int titleMode, const QString &className, int classMode)
-{
-    return {{QStringLiteral("process_name"), processName},
-        {QStringLiteral("process_match_mode"), processMode},
-        {QStringLiteral("window_title"), windowTitle},
-        {QStringLiteral("window_title_match_mode"), titleMode},
-        {QStringLiteral("class_name"), className},
-        {QStringLiteral("class_name_match_mode"), classMode}};
-}
-
-static QJsonObject automationWindowMatchCriteria(bool editable, const QString &processName, int processMode,
-    const QString &windowTitle, int titleMode, const QString &className, int classMode,
-    const QString &cachedProcess, const QString &cachedTitle, const QString &cachedClass)
-{
-    QJsonObject result = automationWindowMatchCriteriaFields(
-        processName, processMode, windowTitle, titleMode, className, classMode);
-    result.insert(QStringLiteral("editable"), editable);
-    result.insert(QStringLiteral("cached"), QJsonObject{
-        {QStringLiteral("file_name"), cachedProcess},
-        {QStringLiteral("window_title"), cachedTitle},
-        {QStringLiteral("class_name"), cachedClass}});
-    return result;
-}
-
 QJsonObject QKeyMapper::automationMappingDisplay() const
 {
     return {{QStringLiteral("category_column"), m_ShowCategory},
@@ -38193,7 +38168,7 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         && ui->checkProcessComboBox->isEnabled()
         && ui->checkWindowTitleComboBox->isEnabled()
         && ui->checkClassNameComboBox->isEnabled();
-    result.insert(QStringLiteral("window_match_criteria"), automationWindowMatchCriteria(
+    result.insert(QStringLiteral("window_match_criteria"), QkmAutomation::buildWindowMatchCriteriaState(
         windowCriteriaEditable,
         ui->processLineEdit->text(), ui->checkProcessComboBox->currentIndex(),
         ui->windowTitleLineEdit->text(), ui->checkWindowTitleComboBox->currentIndex(),
@@ -39261,21 +39236,25 @@ void QKeyMapper::handleAutomationConfigurationList(const QkmAutomation::Automati
             return;
         }
         const auto generation = m_MappingLoadGeneration;
-        const auto load = [&](const QString &group) {
+        const auto load = [&](const QString &group, bool restoreCleanEmpty) {
             if (group.isEmpty()) {
-                return selectEmptySettingGroup() && m_MappingSourceLoadAccepted
+                const bool emptyLoaded = selectEmptySettingGroup() && m_MappingSourceLoadAccepted
                     && m_LoadedMappingSettingGroup.isEmpty() && currentSettingSelectGroupName().isEmpty();
+                if (emptyLoaded && restoreCleanEmpty) {
+                    clearSaveSettingDirty();
+                }
+                return emptyLoaded;
             }
             return loadSelectedSettingGroup(group) == group && m_MappingSourceLoadAccepted
                 && m_LoadedMappingSettingGroup == group && currentSettingSelectGroupName() == group;
         };
-        const bool loaded = load(loadingEmpty ? QString() : binding.group);
+        const bool loaded = load(loadingEmpty ? QString() : binding.group, false);
         bool restored = false;
         if (!loaded && previousGroup != binding.group && m_KeyMapStatus == KEYMAP_IDLE
             && QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() == runtime && server.isRequestCurrent(request)
             && readSettingSaveFile(snapshot.configurationPath, currentFile, exists) == ReadError::None
             && exists && currentFile == snapshot.configurationData) {
-            restored = load(previousGroup);
+            restored = load(previousGroup, previousGroup.isEmpty());
         }
         result.insert(QStringLiteral("modified"), m_MappingLoadGeneration != generation);
         result.insert(QStringLiteral("loaded"), loaded);
@@ -40636,9 +40615,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
                 target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
                 change = {{QStringLiteral("kind"), QStringLiteral("set_window_match_criteria")},
-                    {QStringLiteral("before"), automationWindowMatchCriteriaFields(
+                    {QStringLiteral("before"), QkmAutomation::buildWindowMatchCriteriaFields(
                         beforeProcess, beforeProcessMode, beforeTitle, beforeTitleMode, beforeClass, beforeClassMode)},
-                    {QStringLiteral("after"), automationWindowMatchCriteriaFields(
+                    {QStringLiteral("after"), QkmAutomation::buildWindowMatchCriteriaFields(
                         afterProcess, afterProcessMode, afterTitle, afterTitleMode, afterClass, afterClassMode)},
                     {QStringLiteral("updates_cached_process_info_immediately"), false},
                     {QStringLiteral("persisted"), false}};

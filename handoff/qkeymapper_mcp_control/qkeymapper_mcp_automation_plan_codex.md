@@ -1,6 +1,6 @@
 # QKeyMapper MCP 开发计划：操作等价性、阶段排期与双机交接
 
-更新日期：2026-11-24（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
+更新日期：2026-11-25（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
 
 本文件是本任务唯一的计划、进度、决策及最新交接状态来源。相关入口：[目录规则](../README.md)、[能力与等价性矩阵](capability_matrix.md)、[验证记录](validation.md)。
 
@@ -14,16 +14,27 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | WIN-CRITERIA-249 [Gemini] (`9c18d9b5`) `configuration.set_window_match_criteria`，本机选验完成，待 Codex 复核（2026-11-24 今日收尾检查点） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5) |
+| 当前切片 | REVIEW-FIX-241-249 [Gemini]（基于 `1a2e1c58` 完成 Codex 复核两项 `[P2]` 边界修正，本机选验完成，待 Codex 复核；准备进入 `WIN-AUTOSTART-250`） |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (本提交，源码基线 1a2e1c58) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
-| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～249（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾） |
-| 当前验证／证据 | 249 Qt6 Release `649498A0` 零警告；Rust 23+13 单测（`C072833F`）与双协议契约 6 组通过；双 Qt 定向组件 `97E3AF25`/`E34E9AE1` 各 4 passed；新建可复用双 Qt 读回器 `25D21FE6`/`9B2A787D`；隔离产品 `D1876E96`（禁用 FakerInput 分配与连接）＋正式 Rust `C072833F` 完成 GUI 探针、只读拦截、正则拦截、纯文本 clean->dirty 且缓存延迟、全局禁用拦截、冷启动、双 Qt 读回（`changed_other_keys=0`）及演示模式，全退出 0 |
-| 当前控制器 | 11-24 PID 6448 当前活跃且已清零（有效至 19:02，scope/registered_targets/unresolved_starts 全空；今日收尾后可在外部终端 `off` 关闭，明日新会话须在外部普通权限终端重新创建外部 gsudo 控制器） |
-| 下一项动作 | 明日从 `WIN-AUTOSTART-250 [Gemini]`（`configuration.set_auto_match_foreground`，可复用 `249` 的 `read_window_match.exe`）接续，随后推进 `WIN-SAME-WINDOWS-251` 与 `IGNORE-*` |
+| 当前已完成 | M2-A 宏导入 210～212、单表传输 215／216／218～220、普通配置组传输 222～224／226／228～231；M2-B 设置 213／214／217／221／225／227／232／234～249（`QGeneralAdvancedDialog` 11/11、`QMappingAdvancedDialog` M2-B 7/7 均已收尾）＋ 241/249 Codex P2 边界修正 |
+| 当前验证／证据 | `REVIEW-FIX-241-249 [Gemini]` Qt6 Release `DF6302B2` 零警告；Rust 23+13 单测（`C072833F`）与双协议契约 6 组通过；双 Qt 定向组件 `B5407462`/`18C17054` 各 4 passed；241 隔离产品 `0F8E1C9D` `run5` 8 轮通过（含空白回退清洁态与立即重载 `McpSaved`）；249 隔离产品 `31E8035D` `run3` 全 7 步通过（含 3×16,000 汉字边界 `qkm_get_state` 21,671 B 截断保真、编辑恢复及双 Qt 读回 `25D21FE6`/`9B2A787D` `changed_other_keys=0`）；运行副本禁用 FakerInput 分配与连接 |
+| 当前控制器 | 11-25 PID 39460 当前活跃且已清零（有效至 19:00，scope/registered_targets/owned_targets/unresolved_starts 全空） |
+| 下一项动作 | 按用户指示接续 `WIN-AUTOSTART-250 [Gemini]`（`configuration.set_auto_match_foreground`，可复用 `249` 的 `read_window_match.exe`），随后推进 `WIN-SAME-WINDOWS-251` 与 `IGNORE-*` |
 | 后续范围 | M3-B 剩余交付见下。137 真实跨登录／PC 重启、主动连接检查／试发、普通用户多实例前台绑定及 QQ 联调保持待办 |
+
+### REVIEW-FIX-241-249 [Gemini]：Codex 复核 P2 边界修正（空白回退清洁态与窗口匹配状态返回预算）
+
+- **源码基线**：`1a2e1c58`。
+- **变更范围**：
+  1. **241 空白来源失败回退清洁态**：`QKeyMapper/qkeymapper.cpp` 的 `handleAutomationConfigurationList` 为局部加载闭包增加 `restoreCleanEmpty` 参数，仅在加载失败回退至空白来源（`previousGroup.isEmpty()`）并调用 `selectEmptySettingGroup()` 成功后立即调用 `clearSaveSettingDirty()` 恢复 `has_unsaved_changes=false`，避免污染后续 `configuration.load`；显式 `configuration.load_empty` 仍传 `restoreCleanEmpty=false`，保留交互式清空创建草稿（`has_unsaved_changes=true`）语义。
+  2. **249 窗口匹配状态／预览返回预算与截断元数据**：`QKeyMapper/automation/qkm_mapping_changes.h/.cpp` 新增 `WindowMatchStateTextMaxCodeUnits = 1024`、`BoundedAutomationText`、`boundAutomationText`（按 UTF-16 代码单元安全截断并避开高代理拆分，同时计算全量 UTF-8 SHA-256 `full_sha256`）、`buildWindowMatchCriteriaFields` 与 `buildWindowMatchCriteriaState`；`QKeyMapper/qkeymapper.cpp` 移除局部重复构造并在 `collectAutomationState`（`window_match_criteria`）与 `handleAutomationMappingChange`（`changingWindowMatchCriteria` 的 `before`/`after` 预览快照）统一复用，`modified` 与 `RegexMatch` 合法性仍基于未截断原文判定，截断对象统一附带 `text_max_code_units`、`text_truncated` 及逐字段 `truncated_fields`（`full_code_units`、`returned_code_units`、`full_sha256`）以兼顾 `< 256 KiB` 负载预算与 `stale_preview` 尾部变更感知。`tests/mcp_control/test_mcp_control.cpp` 新增空白回退及超长/代理对边界与 6×16,000 汉字负载预算单测。
+- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`DF6302B2`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`C072833F`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`B5407462`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`18C17054`）；复用双 Qt 读回器 `out/mcp_win_criteria_249_20261124/{qt6,qt5}-reader/release/read_window_match.exe`（`25D21FE6` / `9B2A787D`）；241 隔离产品 `out/mcp_product/configuration_load_global_241_20261124/runtime/QKeyMapperMcpAcceptance_ConfigLoadGlobal.exe`（`0F8E1C9D`，**运行副本禁用 FakerInput 分配与连接**）及证据 `out/mcp_product/configuration_load_global_241_20261124/run5/`；249 隔离产品 `out/mcp_product/win_criteria_249_20261124/runtime/QKeyMapperMcpAcceptance_WinCriteria.exe`（`31E8035D`，**运行副本禁用 FakerInput 分配与连接**）及证据 `out/mcp_product/win_criteria_249_20261124/run3/`。
+- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+13 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 定向组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt6 零警告，Qt5 仅已知白名单 `qtmain.lib(qtmain_win.obj)` LNK4099）；私有桌面 241 隔离产品 `run5` 全 8 轮通过，重点验证 `corrupt_from_blank` 失败恢复空白后 `restored_previous_group=true` 且 `has_unsaved_changes=false`、紧接着 `configuration.load("McpSaved")` 成功不报 `unsaved_changes`，同时 `absent_global` 的显式 `configuration.load_empty` 仍置 `has_unsaved_changes=true`；私有桌面 249 隔离产品 `run3` 全 7 步及双 Qt 6.8.3／5.15.2 读回通过（`changed_other_keys=0`、`unchanged_other_keys=256`），新增 `oversized_legacy` 验证 3×16,000 汉字旧配置写入 `[McpSaved]` 后 `qkm_get_state` 稳定返回（21,671 B，`text_truncated=true`，6 个超长字段均给出 `truncated_fields` 与准确 `full_sha256`），且 `configuration.set_window_match_criteria({"process_name":"Short.exe"})` 预览（17,295 B）与应用成功、重查状态（18,451 B）仅保留其余 5 项截断。全部自有产品退出 0，控制器 PID `39460` 已清零。
+- **失败重试轮次**：`qkm_mapping_changes.cpp` 初次 Qt6 编译因 `qsizetype` 到 `int` 窄化转换失败，显式 `int(...)` 后双 Qt 均一次性编过；241 `run4` 前续 `absent_global` 与 `present_global` MCP 用例均已通过，仅收尾 `Close` 命中 `cache_control.verified_controller()` 读写 `state.json` 的并发 `os.replace` 竞态（`stale_controller`），通过控制器清理残留 PID `23292`（exit 0）并在 `out/` 验证脚本对同 `instance` 存活场景补充 50ms 瞬态重试后，`241 run5` 与 `249 run3` 均一次性全绿通过。
+- **明确未验范围**：**开启 FakerInput 连接的运行**、Qt5 整体产品、Win10、跨登录及 QQ 联调保持待验。本机选验完成，待 Codex 复核。
 
 ### WIN-CRITERIA-249 [Gemini]：窗口匹配条件文本与模式 `configuration.set_window_match_criteria`
 

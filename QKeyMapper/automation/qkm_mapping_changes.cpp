@@ -5,6 +5,7 @@
 #include "qkm_source_snapshot.h"
 #include "../qkeymapper_constants.h"
 
+#include <QCryptographicHash>
 #include <QDateTime>
 #include <QJsonArray>
 #include <QSet>
@@ -20,7 +21,7 @@ constexpr int CustomNotificationPositionMin = QKeyMapperConstants::NOTIFICATION_
 constexpr int CustomNotificationPositionMax = QKeyMapperConstants::NOTIFICATION_POSITION_BOTTOM_RIGHT;
 constexpr int WindowMatchModeMin = QKeyMapperConstants::WINDOWINFO_MATCH_INDEX_MIN;
 constexpr int WindowMatchModeMax = QKeyMapperConstants::WINDOWINFO_MATCH_INDEX_MAX;
-constexpr int WindowMatchTextMaxLength = 1024;
+constexpr int WindowMatchTextMaxLength = WindowMatchStateTextMaxCodeUnits;
 
 QString sampleTime() { return QDateTime::currentDateTimeUtc().toString(Qt::ISODateWithMs); }
 bool operationPending(const QJsonObject &operation)
@@ -2184,6 +2185,74 @@ QJsonObject MappingChangeStore::operation(const MappingChangeOwner &owner, const
     return {{QStringLiteral("operation_id"), id}, {QStringLiteral("status"), QStringLiteral("unknown")},
         {QStringLiteral("result_known"), false}, {QStringLiteral("sampled_at_utc"), sampleTime()},
         {QStringLiteral("recovery"), QStringLiteral("Query current state and source; do not blindly repeat a write. Results are bounded and do not survive interface reset or process exit.")}};
+}
+
+static void recordTruncatedField(QJsonObject &truncatedFields, const QString &field, const BoundedAutomationText &bounded)
+{
+    if (!bounded.truncated) {
+        return;
+    }
+    truncatedFields.insert(field, QJsonObject{
+        {QStringLiteral("full_code_units"), bounded.fullCodeUnits},
+        {QStringLiteral("returned_code_units"), int(bounded.value.size())},
+        {QStringLiteral("full_sha256"), bounded.fullSha256}});
+}
+
+BoundedAutomationText boundAutomationText(const QString &text, int maxCodeUnits)
+{
+    if (maxCodeUnits <= 0 || text.size() <= maxCodeUnits) {
+        return {text, false, int(text.size()), {}};
+    }
+    int limit = maxCodeUnits;
+    if (limit > 0 && text.at(limit - 1).isHighSurrogate()) {
+        --limit;
+    }
+    return {text.left(limit), true, int(text.size()),
+        QString::fromLatin1(QCryptographicHash::hash(text.toUtf8(), QCryptographicHash::Sha256).toHex())};
+}
+
+QJsonObject buildWindowMatchCriteriaFields(const QString &processName, int processMode,
+    const QString &windowTitle, int titleMode, const QString &className, int classMode, int maxCodeUnits)
+{
+    const BoundedAutomationText boundedProcess = boundAutomationText(processName, maxCodeUnits);
+    const BoundedAutomationText boundedTitle = boundAutomationText(windowTitle, maxCodeUnits);
+    const BoundedAutomationText boundedClass = boundAutomationText(className, maxCodeUnits);
+    QJsonObject truncatedFields;
+    recordTruncatedField(truncatedFields, QStringLiteral("process_name"), boundedProcess);
+    recordTruncatedField(truncatedFields, QStringLiteral("window_title"), boundedTitle);
+    recordTruncatedField(truncatedFields, QStringLiteral("class_name"), boundedClass);
+    return {{QStringLiteral("process_name"), boundedProcess.value},
+        {QStringLiteral("process_match_mode"), processMode},
+        {QStringLiteral("window_title"), boundedTitle.value},
+        {QStringLiteral("window_title_match_mode"), titleMode},
+        {QStringLiteral("class_name"), boundedClass.value},
+        {QStringLiteral("class_name_match_mode"), classMode},
+        {QStringLiteral("text_max_code_units"), maxCodeUnits},
+        {QStringLiteral("text_truncated"), !truncatedFields.isEmpty()},
+        {QStringLiteral("truncated_fields"), truncatedFields}};
+}
+
+QJsonObject buildWindowMatchCriteriaState(bool editable, const QString &processName, int processMode,
+    const QString &windowTitle, int titleMode, const QString &className, int classMode,
+    const QString &cachedProcess, const QString &cachedTitle, const QString &cachedClass, int maxCodeUnits)
+{
+    QJsonObject result = buildWindowMatchCriteriaFields(
+        processName, processMode, windowTitle, titleMode, className, classMode, maxCodeUnits);
+    const BoundedAutomationText boundedCachedProcess = boundAutomationText(cachedProcess, maxCodeUnits);
+    const BoundedAutomationText boundedCachedTitle = boundAutomationText(cachedTitle, maxCodeUnits);
+    const BoundedAutomationText boundedCachedClass = boundAutomationText(cachedClass, maxCodeUnits);
+    QJsonObject truncatedFields = result.value(QStringLiteral("truncated_fields")).toObject();
+    recordTruncatedField(truncatedFields, QStringLiteral("cached.file_name"), boundedCachedProcess);
+    recordTruncatedField(truncatedFields, QStringLiteral("cached.window_title"), boundedCachedTitle);
+    recordTruncatedField(truncatedFields, QStringLiteral("cached.class_name"), boundedCachedClass);
+    result.insert(QStringLiteral("editable"), editable);
+    result.insert(QStringLiteral("text_truncated"), !truncatedFields.isEmpty());
+    result.insert(QStringLiteral("truncated_fields"), truncatedFields);
+    result.insert(QStringLiteral("cached"), QJsonObject{
+        {QStringLiteral("file_name"), boundedCachedProcess.value},
+        {QStringLiteral("window_title"), boundedCachedTitle.value},
+        {QStringLiteral("class_name"), boundedCachedClass.value}});
+    return result;
 }
 
 void MappingChangeStore::clear() { m_previews.clear(); m_results.clear(); }

@@ -15,6 +15,23 @@
 namespace QkmAutomation {
 
 constexpr int MappingChangeBudgetMs = 5000;
+inline constexpr int WindowMatchStateTextMaxCodeUnits = 1024;
+
+struct BoundedAutomationText {
+    QString value;
+    bool truncated = false;
+    int fullCodeUnits = 0;
+    QString fullSha256;
+};
+
+BoundedAutomationText boundAutomationText(const QString &text, int maxCodeUnits = WindowMatchStateTextMaxCodeUnits);
+QJsonObject buildWindowMatchCriteriaFields(const QString &processName, int processMode,
+    const QString &windowTitle, int titleMode, const QString &className, int classMode,
+    int maxCodeUnits = WindowMatchStateTextMaxCodeUnits);
+QJsonObject buildWindowMatchCriteriaState(bool editable, const QString &processName, int processMode,
+    const QString &windowTitle, int titleMode, const QString &className, int classMode,
+    const QString &cachedProcess, const QString &cachedTitle, const QString &cachedClass,
+    int maxCodeUnits = WindowMatchStateTextMaxCodeUnits);
 
 struct MappingAdditionArguments {
     QString sourceRevision;
