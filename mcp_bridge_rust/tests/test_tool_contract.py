@@ -395,6 +395,25 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), bad_fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            fwin_base = {"action": "tab.set_floating_window", "source_tab_ref": tab}
+            for fields in ({"background_color": "#AA112233", "size": 128, "opacity": 0.65, "mouse_pass_through": True},
+                           {"background_color": "default", "size": 16, "radius": 320, "opacity": 0.1,
+                            "reference_point": 11, "position_x": -50000, "position_y": 50000,
+                            "mouse_pass_through": False, "mouse_pass_through_switch_key": "None"}):
+                request = fwin_base | {"floating_window": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for bad_fields in ({}, {"background_color": "#112233"}, {"size": 15}, {"size": 641},
+                               {"radius": -1}, {"radius": 321}, {"opacity": 0.09}, {"opacity": 1.01},
+                               {"opacity": 0.555}, {"reference_point": 12}, {"position_x": 50001},
+                               {"mouse_pass_through": 1}, {"mouse_pass_through_switch_key": ""},
+                               {"mouse_pass_through_switch_key": "F3\nX"}, {"size": None},
+                               {"size": 64, "extra": 1}):
+                request = fwin_base | {"floating_window": bad_fields}
+                if "opacity" not in bad_fields or bad_fields["opacity"] != 0.555:
+                    assert not validator.is_valid(request), bad_fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -584,7 +603,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

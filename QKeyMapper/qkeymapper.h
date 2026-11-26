@@ -490,6 +490,19 @@ struct KeyMappingTab_Info
     QList<MAP_KEYDATA> *KeyMappingData;
 };
 
+struct TabFloatingWindowSettings
+{
+    QColor backgroundColor = QKeyMapperConstants::FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;
+    int size = QKeyMapperConstants::FLOATINGWINDOW_SIZE_DEFAULT.width();
+    int radius = QKeyMapperConstants::FLOATINGWINDOW_RADIUS_DEFAULT;
+    double opacity = QKeyMapperConstants::FLOATINGWINDOW_OPACITY_DEFAULT;
+    int referencePoint = QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
+    int positionX = QKeyMapperConstants::FLOATINGWINDOW_POSITION_DEFAULT.x();
+    int positionY = QKeyMapperConstants::FLOATINGWINDOW_POSITION_DEFAULT.y();
+    bool mousePassThrough = QKeyMapperConstants::FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT;
+    QString mousePassThroughSwitchKey = QString::fromLatin1(QKeyMapperConstants::FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
+};
+
 struct ActiveKeyMappingRowSourceInfo
 {
     int SourceTabIndex = -1;
@@ -2128,6 +2141,8 @@ public:
     bool setMappingSourceRowNote(int tabIndex, int row, const QString &note);
     bool setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode);
     bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);
+    TabFloatingWindowSettings getMappingTabFloatingWindowSettings(int tabIndex) const;
+    bool setMappingTabFloatingWindowSettings(int tabIndex, const TabFloatingWindowSettings &settings);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;

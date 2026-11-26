@@ -258,7 +258,7 @@ ENV-38 保留为 PC-W10 的版本／漂移检查历史。ENV-39 已在 PC-W11 �
 | SET-004 | 启动、托盘、窗口尺寸／位置及通用高级 | [通用高级窗口](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 运行值、即时／保存／重启时机、系统启动项副作用 | M2-B／EQ-GENERAL-001 |
 | SET-005 | 开始／停止快捷键、系统筛选键及映射高级 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)、[映射高级](../../QKeyMapper/qmappingadvanceddialog.cpp) | 停止入口、系统筛选键会话恢复、驱动筛选的区别；高风险参数逐项列出 | M2-B／EQ-FILTER-001 |
 | UI-001 | 浮动按钮、样式及同步组 | [浮动按钮设定](../../QKeyMapper/qfloatingbuttonsetupdialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 应用／恢复、三态外观、派生布局、组状态及保存 | M2-B／EQ-FBUTTON-001 |
-| UI-002 | 悬浮窗口、Tab 图片及虚拟按钮面板 | [悬浮窗口](../../QKeyMapper/qfloatingwindowsetupdialog.cpp)、[面板设定](../../QKeyMapper/qvbuttonpanelsetupdialog.cpp) | 显示对象、位置／参考点、鼠标穿透、刷新及配置；拆为独立能力 | M2-B／EQ-PANEL-001 |
+| UI-002 | 悬浮窗口、Tab 图片及虚拟按钮面板 | [悬浮窗口](../../QKeyMapper/qfloatingwindowsetupdialog.cpp)、[面板设定](../../QKeyMapper/qvbuttonpanelsetupdialog.cpp) | 显示对象、位置／参考点、鼠标穿透、刷新及配置；拆为独立能力 | M2-B／EQ-PANEL-001；`UI-PANEL-261` 已选验虚拟按钮面板，`UI-FWINDOW-264` 已选验 Tab 悬浮窗口设定 |
 | UI-003 | 准星、通知／自定义通知及托盘图标 | [准星](../../QKeyMapper/qcrosshairsetupdialog.cpp)、[通知](../../QKeyMapper/qnotificationsetupdialog.cpp)、[托盘图标](../../QKeyMapper/qtrayiconselectdialog.cpp) | 编辑值与实际叠加／提示／托盘行为、文件依赖及生效时机 | M2-B／EQ-OVERLAY-001 |
 | UI-004 | 页面、编辑窗、最小化／显示及必要窗口操作 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)、各相关对话框 | 与常规 GUI 相同限制；实际显示、焦点影响及未提交编辑内容 | M2-B／EQ-UISESSION-001 |
 | INPUT-001 | 原始键／宏录制、序列编辑及坐标采集 | [录制](../../QKeyMapper/qkeyrecord.cpp)、[序列编辑](../../QKeyMapper/qmappingsequenceedit.cpp)、[坐标采集](../../QKeyMapper/qpointpickerdialog.cpp) | 实际采集、编辑草稿、确认／取消、上层更新及真实输入边界 | M2-A／M2-B／EQ-EDITOR-001 |
@@ -492,15 +492,15 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 
 | 稳定定位 ID | 控件类型／原始文案 | 绑定线索（该 cpp 的基线行号） | UI 声明线索 |
 |---|---|---|---|
-| `U-floating_window/floatingWindow_BGColorPicker` | ColorPickerWidget | `connect colorChanged @86` | 运行约束待核 |
-| `U-floating_window/windowSizeSpinBox` | QSpinBox | `on_windowSizeSpinBox_valueChanged @249` | 运行约束待核 |
-| `U-floating_window/windowRadiusSpinBox` | QSpinBox | `on_windowRadiusSpinBox_valueChanged @350` | 运行约束待核 |
-| `U-floating_window/windowOpacitySpinBox` | QDoubleSpinBox | `on_windowOpacitySpinBox_valueChanged @310` | 运行约束待核 |
-| `U-floating_window/referencePointComboBox` | QComboBox | `on_referencePointComboBox_currentIndexChanged @369` | 运行约束待核 |
-| `U-floating_window/windowPositionXSpinBox` | QSpinBox | `on_windowPositionXSpinBox_valueChanged @270` | 运行约束待核 |
-| `U-floating_window/windowPositionYSpinBox` | QSpinBox | `on_windowPositionYSpinBox_valueChanged @290` | 运行约束待核 |
-| `U-floating_window/mousePassThroughCheckBox` | QCheckBox；MousePassThrough | `on_mousePassThroughCheckBox_stateChanged @330` | 运行约束待核 |
-| `U-floating_window/mousePassThroughSwitchKeyComboBox` | QComboBox | `on_mousePassThroughSwitchKeyComboBox_currentIndexChanged @388` | 运行约束待核 |
+| `U-floating_window/floatingWindow_BGColorPicker` | ColorPickerWidget | `connect colorChanged @86` | 静态见 UI-002；`UI-FWINDOW-264 [Gemini]` 已接入 `tab.set_floating_window`／`get_state.tab_floating_window`（`"default"`/`#AARRGGBB`，Qt6 `C3A78F96`／Sidecar `AE67C24E`／双 Qt 组件／私有桌面 `run3` 与双 Qt INI 读回 `7C4BFC05`/`8BE8BFC8` `changed_other_keys=0` 通过，运行副本禁用 FakerInput 连接，实际叠加渲染与 Win10 待验） |
+| `U-floating_window/windowSizeSpinBox` | QSpinBox | `on_windowSizeSpinBox_valueChanged @249` | `UI-FWINDOW-264 [Gemini]` 已接入（`16..640`，私有 GUI 探针/边界/冷启读回通过） |
+| `U-floating_window/windowRadiusSpinBox` | QSpinBox | `on_windowRadiusSpinBox_valueChanged @350` | `UI-FWINDOW-264 [Gemini]` 已接入（`0..320`，私有 GUI 探针/边界/冷启读回通过） |
+| `U-floating_window/windowOpacitySpinBox` | QDoubleSpinBox | `on_windowOpacitySpinBox_valueChanged @310` | `UI-FWINDOW-264 [Gemini]` 已接入（`0.10..1.00` 两位小数，私有/边界/冷启读回通过） |
+| `U-floating_window/referencePointComboBox` | QComboBox | `on_referencePointComboBox_currentIndexChanged @369` | `UI-FWINDOW-264 [Gemini]` 已接入（`0..11`，边界/冷启读回通过） |
+| `U-floating_window/windowPositionXSpinBox` | QSpinBox | `on_windowPositionXSpinBox_valueChanged @270` | `UI-FWINDOW-264 [Gemini]` 已接入（`-50000..50000`，边界/冷启读回通过） |
+| `U-floating_window/windowPositionYSpinBox` | QSpinBox | `on_windowPositionYSpinBox_valueChanged @290` | `UI-FWINDOW-264 [Gemini]` 已接入（`-50000..50000`，边界/冷启读回通过） |
+| `U-floating_window/mousePassThroughCheckBox` | QCheckBox；MousePassThrough | `on_mousePassThroughCheckBox_stateChanged @330` | `UI-FWINDOW-264 [Gemini]` 已接入（布尔，私有 GUI 探针/冷启读回通过；实际鼠标穿透热点待验） |
+| `U-floating_window/mousePassThroughSwitchKeyComboBox` | QComboBox | `on_mousePassThroughSwitchKeyComboBox_currentIndexChanged @388` | `UI-FWINDOW-264 [Gemini]` 已接入（`"None"`／`MultiKeyboardInputList`，拒 `"无"`/空白/非法键，冷启读回通过；物理切换热键待验） |
 
 ### general（11 项）
 

@@ -3,14 +3,7 @@
 #include "ui_qfloatingwindowsetupdialog.h"
 #include "qstyle_singletons.h"
 
-namespace {
-void notifySaveSettingDirty()
-{
-    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
-        keyMapper->requestSaveSettingDirty();
-    }
-}
-}
+#include <QSignalBlocker>
 
 using namespace QKeyMapperConstants;
 
@@ -19,6 +12,7 @@ QFloatingWindowSetupDialog *QFloatingWindowSetupDialog::m_instance = Q_NULLPTR;
 QFloatingWindowSetupDialog::QFloatingWindowSetupDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::QFloatingWindowSetupDialog)
+    , m_TabIndex(-1)
 {
     m_instance = this;
     ui->setupUi(this);
@@ -192,6 +186,16 @@ void QFloatingWindowSetupDialog::showEvent(QShowEvent *event)
             WindowOpacity = FLOATINGWINDOW_OPACITY_DEFAULT;
         }
 
+        const QSignalBlocker blockColor(ui->floatingWindow_BGColorPicker);
+        const QSignalBlocker blockRef(ui->referencePointComboBox);
+        const QSignalBlocker blockPosX(ui->windowPositionXSpinBox);
+        const QSignalBlocker blockPosY(ui->windowPositionYSpinBox);
+        const QSignalBlocker blockSize(ui->windowSizeSpinBox);
+        const QSignalBlocker blockOpacity(ui->windowOpacitySpinBox);
+        const QSignalBlocker blockRadius(ui->windowRadiusSpinBox);
+        const QSignalBlocker blockPass(ui->mousePassThroughCheckBox);
+        const QSignalBlocker blockKey(ui->mousePassThroughSwitchKeyComboBox);
+
         if (MousePassThroughSwitchKey == FUNCTION_KEY_NONE) {
             ui->mousePassThroughSwitchKeyComboBox->setCurrentIndex(FUNCTION_KEY_NONE_INDEX);
         }
@@ -229,11 +233,14 @@ void QFloatingWindowSetupDialog::mousePressEvent(QMouseEvent *event)
 
 void QFloatingWindowSetupDialog::onBackgroundColorChanged(QColor &color)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+    QKeyMapper *mapper = QKeyMapper::getInstance();
+    if (!mapper || m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
-    if (color != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_BackgroundColor) {
+    TabFloatingWindowSettings updated = mapper->getMappingTabFloatingWindowSettings(m_TabIndex);
+    updated.backgroundColor = color;
+    if (mapper->setMappingTabFloatingWindowSettings(m_TabIndex, updated)) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug().nospace().noquote()
             << "[FloatingWindowSetup]" << " TabIndex[" << m_TabIndex
@@ -241,14 +248,13 @@ void QFloatingWindowSetupDialog::onBackgroundColorChanged(QColor &color)
             << "] FloatingWindow Background Color -> " << color.name(QColor::HexArgb)
             << ", Alpha: " << color.alpha();
 #endif
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_BackgroundColor = color;
-        notifySaveSettingDirty();
     }
 }
 
 void QFloatingWindowSetupDialog::on_windowSizeSpinBox_valueChanged(int value)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+    QKeyMapper *mapper = QKeyMapper::getInstance();
+    if (!mapper || m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
@@ -259,17 +265,16 @@ void QFloatingWindowSetupDialog::on_windowSizeSpinBox_valueChanged(int value)
         << "] Floating Window Size value changed -> " << value;
 #endif
 
-    const QSize windowSize(value, value);
-    if (windowSize != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Size) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Size = windowSize;
-        notifySaveSettingDirty();
-    }
+    TabFloatingWindowSettings updated = mapper->getMappingTabFloatingWindowSettings(m_TabIndex);
+    updated.size = value;
+    mapper->setMappingTabFloatingWindowSettings(m_TabIndex, updated);
 }
 
 
 void QFloatingWindowSetupDialog::on_windowPositionXSpinBox_valueChanged(int position_x)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+    QKeyMapper *mapper = QKeyMapper::getInstance();
+    if (!mapper || m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
@@ -280,16 +285,16 @@ void QFloatingWindowSetupDialog::on_windowPositionXSpinBox_valueChanged(int posi
         << "] Floating Window Position X changed -> " << position_x;
 #endif
 
-    if (position_x != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Position.x()) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Position.setX(position_x);
-        notifySaveSettingDirty();
-    }
+    TabFloatingWindowSettings updated = mapper->getMappingTabFloatingWindowSettings(m_TabIndex);
+    updated.positionX = position_x;
+    mapper->setMappingTabFloatingWindowSettings(m_TabIndex, updated);
 }
 
 
 void QFloatingWindowSetupDialog::on_windowPositionYSpinBox_valueChanged(int position_y)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+    QKeyMapper *mapper = QKeyMapper::getInstance();
+    if (!mapper || m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
@@ -300,16 +305,16 @@ void QFloatingWindowSetupDialog::on_windowPositionYSpinBox_valueChanged(int posi
         << "] Floating Window Position Y changed -> " << position_y;
 #endif
 
-    if (position_y != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Position.y()) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Position.setY(position_y);
-        notifySaveSettingDirty();
-    }
+    TabFloatingWindowSettings updated = mapper->getMappingTabFloatingWindowSettings(m_TabIndex);
+    updated.positionY = position_y;
+    mapper->setMappingTabFloatingWindowSettings(m_TabIndex, updated);
 }
 
 
 void QFloatingWindowSetupDialog::on_windowOpacitySpinBox_valueChanged(double value)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+    QKeyMapper *mapper = QKeyMapper::getInstance();
+    if (!mapper || m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
@@ -320,16 +325,15 @@ void QFloatingWindowSetupDialog::on_windowOpacitySpinBox_valueChanged(double val
         << "] Floating Window Opacity value changed -> " << value;
 #endif
 
-    const double currentOpacity = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Opacity;
-    if (!qFuzzyCompare(1.0 + value, 1.0 + currentOpacity)) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Opacity = value;
-        notifySaveSettingDirty();
-    }
+    TabFloatingWindowSettings updated = mapper->getMappingTabFloatingWindowSettings(m_TabIndex);
+    updated.opacity = value;
+    mapper->setMappingTabFloatingWindowSettings(m_TabIndex, updated);
 }
 
 void QFloatingWindowSetupDialog::on_mousePassThroughCheckBox_stateChanged(int state)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+    QKeyMapper *mapper = QKeyMapper::getInstance();
+    if (!mapper || m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
@@ -340,16 +344,15 @@ void QFloatingWindowSetupDialog::on_mousePassThroughCheckBox_stateChanged(int st
         << "] Floating Window Mouse PassThrough state changed -> " << (Qt::CheckState)state;
 #endif
 
-    const bool enabled = (Qt::Checked == state);
-    if (enabled != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_MousePassThrough) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThrough = enabled;
-        notifySaveSettingDirty();
-    }
+    TabFloatingWindowSettings updated = mapper->getMappingTabFloatingWindowSettings(m_TabIndex);
+    updated.mousePassThrough = (Qt::Checked == state);
+    mapper->setMappingTabFloatingWindowSettings(m_TabIndex, updated);
 }
 
 void QFloatingWindowSetupDialog::on_windowRadiusSpinBox_valueChanged(int value)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+    QKeyMapper *mapper = QKeyMapper::getInstance();
+    if (!mapper || m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
@@ -360,15 +363,15 @@ void QFloatingWindowSetupDialog::on_windowRadiusSpinBox_valueChanged(int value)
         << "] Floating Window Radius changed -> " << value;
 #endif
 
-    if (value != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_Radius) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_Radius = value;
-        notifySaveSettingDirty();
-    }
+    TabFloatingWindowSettings updated = mapper->getMappingTabFloatingWindowSettings(m_TabIndex);
+    updated.radius = value;
+    mapper->setMappingTabFloatingWindowSettings(m_TabIndex, updated);
 }
 
 void QFloatingWindowSetupDialog::on_referencePointComboBox_currentIndexChanged(int index)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+    QKeyMapper *mapper = QKeyMapper::getInstance();
+    if (!mapper || m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
@@ -379,15 +382,15 @@ void QFloatingWindowSetupDialog::on_referencePointComboBox_currentIndexChanged(i
         << "] Floating Window Reference Point changed -> " << QFloatingIconWindow::getReferencePointName(index);
 #endif
 
-    if (index != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_ReferencePoint) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_ReferencePoint = index;
-        notifySaveSettingDirty();
-    }
+    TabFloatingWindowSettings updated = mapper->getMappingTabFloatingWindowSettings(m_TabIndex);
+    updated.referencePoint = index;
+    mapper->setMappingTabFloatingWindowSettings(m_TabIndex, updated);
 }
 
 void QFloatingWindowSetupDialog::on_mousePassThroughSwitchKeyComboBox_currentIndexChanged(int index)
 {
-    if (m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
+    QKeyMapper *mapper = QKeyMapper::getInstance();
+    if (!mapper || m_TabIndex < 0 || m_TabIndex >= QKeyMapper::s_KeyMappingTabInfoList.size()) {
         return;
     }
 
@@ -401,8 +404,7 @@ void QFloatingWindowSetupDialog::on_mousePassThroughSwitchKeyComboBox_currentInd
     const QString switchKey = (index == FUNCTION_KEY_NONE_INDEX)
         ? QString(FUNCTION_KEY_NONE)
         : ui->mousePassThroughSwitchKeyComboBox->currentText();
-    if (switchKey != QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).FloatingWindow_MousePassThroughSwitchKey) {
-        QKeyMapper::s_KeyMappingTabInfoList[m_TabIndex].FloatingWindow_MousePassThroughSwitchKey = switchKey;
-        notifySaveSettingDirty();
-    }
+    TabFloatingWindowSettings updated = mapper->getMappingTabFloatingWindowSettings(m_TabIndex);
+    updated.mousePassThroughSwitchKey = switchKey;
+    mapper->setMappingTabFloatingWindowSettings(m_TabIndex, updated);
 }

@@ -701,6 +701,37 @@ struct TrayIconsSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct FloatingWindowFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    background_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    size: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    radius: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reference_point: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    position_x: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    position_y: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mouse_pass_through: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mouse_pass_through_switch_key: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct TabFloatingWindowSettings {
+    action: String,
+    source_tab_ref: String,
+    floating_window: FloatingWindowFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1469,6 +1500,55 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && f.monitoring.as_deref().is_none_or(valid_icon)
                             && f.global.as_deref().is_none_or(valid_icon)
                             && f.matched.as_deref().is_none_or(valid_icon)
+                    });
+                }
+                Some("tab.set_floating_window") => {
+                    if arguments
+                        .get("floating_window")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &TabFloatingWindowSettings| {
+                        let f = &v.floating_window;
+                        let any_set = f.background_color.is_some()
+                            || f.size.is_some()
+                            || f.radius.is_some()
+                            || f.opacity.is_some()
+                            || f.reference_point.is_some()
+                            || f.position_x.is_some()
+                            || f.position_y.is_some()
+                            || f.mouse_pass_through.is_some()
+                            || f.mouse_pass_through_switch_key.is_some();
+                        let valid_opacity = |raw: f64| {
+                            raw.is_finite()
+                                && (0.1..=1.0).contains(&raw)
+                                && ((raw * 100.0) - (raw * 100.0).round()).abs() <= 1e-6
+                        };
+                        let valid_switch_key = |s: &str| {
+                            !s.is_empty()
+                                && s.encode_utf16().count() <= 64
+                                && !s.chars().any(|c| matches!(c, '\0' | '\r' | '\n'))
+                        };
+                        let valid_bg = |s: &str| {
+                            s == "default"
+                                || (s.starts_with('#')
+                                    && s.len() == 9
+                                    && s[1..].bytes().all(|b| b.is_ascii_hexdigit()))
+                        };
+                        tab_ref(&v.source_tab_ref)
+                            && any_set
+                            && f.background_color.as_deref().is_none_or(valid_bg)
+                            && f.size.is_none_or(|n| (16..=640).contains(&n))
+                            && f.radius.is_none_or(|n| (0..=320).contains(&n))
+                            && f.opacity.is_none_or(valid_opacity)
+                            && f.reference_point.is_none_or(|n| (0..=11).contains(&n))
+                            && f.position_x.is_none_or(|n| (-50000..=50000).contains(&n))
+                            && f.position_y.is_none_or(|n| (-50000..=50000).contains(&n))
+                            && f.mouse_pass_through_switch_key
+                                .as_deref()
+                                .is_none_or(valid_switch_key)
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -2713,6 +2793,66 @@ mod tests {
             json!({"idle": ":/Black.ico", "extra": 1}),
         ] {
             assert!(preview(&json!({"action": "general.set_tray_icons", "source_tab_ref": tab, "tray_icons": bad})).is_err());
+        }
+    }
+
+    #[test]
+    fn tab_floating_window_checks_constraints() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let valid_full = json!({
+            "background_color": "#AA112233",
+            "size": 128,
+            "radius": 24,
+            "opacity": 0.65,
+            "reference_point": 11,
+            "position_x": -120,
+            "position_y": 240,
+            "mouse_pass_through": true,
+            "mouse_pass_through_switch_key": "None"
+        });
+        let wire = json!({
+            "action": "tab.set_floating_window",
+            "source_tab_ref": tab,
+            "floating_window": valid_full
+        });
+        assert_eq!(preview(&wire).unwrap(), *wire.as_object().unwrap());
+
+        let subset = json!({
+            "action": "tab.set_floating_window",
+            "source_tab_ref": tab,
+            "floating_window": {"background_color": "default", "size": 16, "opacity": 0.1}
+        });
+        assert_eq!(preview(&subset).unwrap(), *subset.as_object().unwrap());
+
+        for bad in [
+            json!({}),
+            json!({"background_color": "#112233"}),
+            json!({"size": 15}),
+            json!({"size": 641}),
+            json!({"radius": -1}),
+            json!({"radius": 321}),
+            json!({"opacity": 0.09}),
+            json!({"opacity": 1.01}),
+            json!({"opacity": 0.555}),
+            json!({"reference_point": -1}),
+            json!({"reference_point": 12}),
+            json!({"position_x": -50001}),
+            json!({"position_y": 50001}),
+            json!({"mouse_pass_through": 1}),
+            json!({"mouse_pass_through_switch_key": ""}),
+            json!({"mouse_pass_through_switch_key": "F3\n"}),
+            json!({"mouse_pass_through_switch_key": "A".repeat(65)}),
+            json!({"size": null}),
+            json!({"size": 64, "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "tab.set_floating_window",
+                "source_tab_ref": tab,
+                "floating_window": bad
+            }))
+            .is_err());
         }
     }
 

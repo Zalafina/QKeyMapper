@@ -18485,6 +18485,103 @@ bool QKeyMapper::setMappingTabNotificationMode(int tabIndex, Qt::CheckState mode
     return true;
 }
 
+TabFloatingWindowSettings QKeyMapper::getMappingTabFloatingWindowSettings(int tabIndex) const
+{
+    TabFloatingWindowSettings settings;
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
+        return settings;
+    }
+
+    const KeyMappingTab_Info &tab = s_KeyMappingTabInfoList.at(tabIndex);
+    settings.backgroundColor = tab.FloatingWindow_BackgroundColor.isValid()
+        ? tab.FloatingWindow_BackgroundColor
+        : QKeyMapperConstants::FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT;
+    settings.size = (!tab.FloatingWindow_Size.isEmpty()
+            && tab.FloatingWindow_Size.width() >= QKeyMapperConstants::FLOATINGWINDOW_SIZE_MIN
+            && tab.FloatingWindow_Size.width() <= QKeyMapperConstants::FLOATINGWINDOW_SIZE_MAX)
+        ? tab.FloatingWindow_Size.width()
+        : QKeyMapperConstants::FLOATINGWINDOW_SIZE_DEFAULT.width();
+    settings.radius = (tab.FloatingWindow_Radius >= QKeyMapperConstants::FLOATINGWINDOW_RADIUS_MIN
+            && tab.FloatingWindow_Radius <= QKeyMapperConstants::FLOATINGWINDOW_RADIUS_MAX)
+        ? tab.FloatingWindow_Radius
+        : QKeyMapperConstants::FLOATINGWINDOW_RADIUS_DEFAULT;
+    const double rawOpacity = (qIsFinite(tab.FloatingWindow_Opacity)
+            && tab.FloatingWindow_Opacity >= QKeyMapperConstants::FLOATINGWINDOW_OPACITY_MIN
+            && tab.FloatingWindow_Opacity <= QKeyMapperConstants::FLOATINGWINDOW_OPACITY_MAX)
+        ? tab.FloatingWindow_Opacity
+        : QKeyMapperConstants::FLOATINGWINDOW_OPACITY_DEFAULT;
+    settings.opacity = double(qRound(rawOpacity * 100.0)) / 100.0;
+    settings.referencePoint = QFloatingIconWindow::isValidReferencePoint(tab.FloatingWindow_ReferencePoint)
+        ? tab.FloatingWindow_ReferencePoint
+        : QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
+    const QPoint pos = tab.FloatingWindow_Position;
+    if (pos.x() >= QKeyMapperConstants::FLOATINGWINDOW_POSITION_MIN_X
+        && pos.x() <= QKeyMapperConstants::FLOATINGWINDOW_POSITION_MAX_X
+        && pos.y() >= QKeyMapperConstants::FLOATINGWINDOW_POSITION_MIN_Y
+        && pos.y() <= QKeyMapperConstants::FLOATINGWINDOW_POSITION_MAX_Y) {
+        settings.positionX = pos.x();
+        settings.positionY = pos.y();
+    }
+    settings.mousePassThrough = tab.FloatingWindow_MousePassThrough;
+    if (tab.FloatingWindow_MousePassThroughSwitchKey == QLatin1String(QKeyMapperConstants::FUNCTION_KEY_NONE)
+        || QKeyMapper_Worker::MultiKeyboardInputList.contains(tab.FloatingWindow_MousePassThroughSwitchKey)) {
+        settings.mousePassThroughSwitchKey = tab.FloatingWindow_MousePassThroughSwitchKey;
+    }
+    return settings;
+}
+
+bool QKeyMapper::setMappingTabFloatingWindowSettings(int tabIndex, const TabFloatingWindowSettings &settings)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) {
+        return false;
+    }
+    if (!settings.backgroundColor.isValid()
+        || settings.size < QKeyMapperConstants::FLOATINGWINDOW_SIZE_MIN
+        || settings.size > QKeyMapperConstants::FLOATINGWINDOW_SIZE_MAX
+        || settings.radius < QKeyMapperConstants::FLOATINGWINDOW_RADIUS_MIN
+        || settings.radius > QKeyMapperConstants::FLOATINGWINDOW_RADIUS_MAX
+        || !qIsFinite(settings.opacity)
+        || settings.opacity < QKeyMapperConstants::FLOATINGWINDOW_OPACITY_MIN
+        || settings.opacity > QKeyMapperConstants::FLOATINGWINDOW_OPACITY_MAX
+        || !QFloatingIconWindow::isValidReferencePoint(settings.referencePoint)
+        || settings.positionX < QKeyMapperConstants::FLOATINGWINDOW_POSITION_MIN_X
+        || settings.positionX > QKeyMapperConstants::FLOATINGWINDOW_POSITION_MAX_X
+        || settings.positionY < QKeyMapperConstants::FLOATINGWINDOW_POSITION_MIN_Y
+        || settings.positionY > QKeyMapperConstants::FLOATINGWINDOW_POSITION_MAX_Y
+        || (settings.mousePassThroughSwitchKey != QLatin1String(QKeyMapperConstants::FUNCTION_KEY_NONE)
+            && !QKeyMapper_Worker::MultiKeyboardInputList.contains(settings.mousePassThroughSwitchKey))) {
+        return false;
+    }
+
+    const int normalizedOpacityPct = qRound(settings.opacity * 100.0);
+    const double normalizedOpacity = double(normalizedOpacityPct) / 100.0;
+    const TabFloatingWindowSettings before = getMappingTabFloatingWindowSettings(tabIndex);
+    if (before.backgroundColor == settings.backgroundColor
+        && before.size == settings.size
+        && before.radius == settings.radius
+        && qRound(before.opacity * 100.0) == normalizedOpacityPct
+        && before.referencePoint == settings.referencePoint
+        && before.positionX == settings.positionX
+        && before.positionY == settings.positionY
+        && before.mousePassThrough == settings.mousePassThrough
+        && before.mousePassThroughSwitchKey == settings.mousePassThroughSwitchKey) {
+        return false;
+    }
+
+    KeyMappingTab_Info &tab = s_KeyMappingTabInfoList[tabIndex];
+    tab.FloatingWindow_BackgroundColor = settings.backgroundColor;
+    tab.FloatingWindow_Size = QSize(settings.size, settings.size);
+    tab.FloatingWindow_Radius = settings.radius;
+    tab.FloatingWindow_Opacity = normalizedOpacity;
+    tab.FloatingWindow_ReferencePoint = settings.referencePoint;
+    tab.FloatingWindow_Position = QPoint(settings.positionX, settings.positionY);
+    tab.FloatingWindow_MousePassThrough = settings.mousePassThrough;
+    tab.FloatingWindow_MousePassThroughSwitchKey = settings.mousePassThroughSwitchKey;
+    ++m_AutomationSourceEpoch;
+    requestSaveSettingDirty();
+    return true;
+}
+
 bool QKeyMapper::setMappingTabCommonInheritance(int tabIndex, bool includeCommon)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) return false;
@@ -22893,6 +22990,7 @@ bool QKeyMapper::hasOpenMappingEditor(const QWidget *allowedEditor) const
         || (m_ItemSetupDialog && m_ItemSetupDialog->m_CrosshairSetupDialog
             && m_ItemSetupDialog->m_CrosshairSetupDialog->isVisible())
         || (m_TableSetupDialog && m_TableSetupDialog->isVisible())
+        || (m_TableSetupDialog && m_TableSetupDialog->isFloatingWindowSetupDialogVisible())
         || (m_MacroListDialog && m_MacroListDialog->isVisible())
         || (m_MappingSequenceEdit && m_MappingSequenceEdit->isVisible())
         || (m_MappingAdvancedDialog && m_MappingAdvancedDialog != allowedEditor && m_MappingAdvancedDialog->isVisible());
@@ -38329,6 +38427,55 @@ static bool resolveTrayIconSelection(const QString &raw, const QString &defaultP
     return available.contains(resolvedOut);
 }
 
+static QJsonObject automationTabFloatingWindow(const TabFloatingWindowSettings &s)
+{
+    return {
+        {QStringLiteral("background_color"), s.backgroundColor.name(QColor::HexArgb)},
+        {QStringLiteral("size"), s.size},
+        {QStringLiteral("radius"), s.radius},
+        {QStringLiteral("opacity"), s.opacity},
+        {QStringLiteral("reference_point"), s.referencePoint},
+        {QStringLiteral("position_x"), s.positionX},
+        {QStringLiteral("position_y"), s.positionY},
+        {QStringLiteral("mouse_pass_through"), s.mousePassThrough},
+        {QStringLiteral("mouse_pass_through_switch_key"), s.mousePassThroughSwitchKey},
+    };
+}
+
+static TabFloatingWindowSettings mergeTabFloatingWindowSettings(
+    const TabFloatingWindowSettings &base, const QkmAutomation::TabFloatingWindowUpdate &u)
+{
+    TabFloatingWindowSettings target = base;
+    if (u.backgroundColor) {
+        target.backgroundColor = (*u.backgroundColor == QLatin1String("default"))
+            ? QKeyMapperConstants::FLOATINGWINDOW_BACKGROUND_COLOR_DEFAULT
+            : QColor(*u.backgroundColor);
+    }
+    if (u.size) target.size = *u.size;
+    if (u.radius) target.radius = *u.radius;
+    if (u.opacity) target.opacity = double(qRound(*u.opacity * 100.0)) / 100.0;
+    if (u.referencePoint) target.referencePoint = *u.referencePoint;
+    if (u.positionX) target.positionX = *u.positionX;
+    if (u.positionY) target.positionY = *u.positionY;
+    if (u.mousePassThrough) target.mousePassThrough = *u.mousePassThrough;
+    if (u.mousePassThroughSwitchKey) target.mousePassThroughSwitchKey = *u.mousePassThroughSwitchKey;
+    return target;
+}
+
+static bool tabFloatingWindowSettingsEqual(
+    const TabFloatingWindowSettings &a, const TabFloatingWindowSettings &b)
+{
+    return a.backgroundColor == b.backgroundColor
+        && a.size == b.size
+        && a.radius == b.radius
+        && qRound(a.opacity * 100.0) == qRound(b.opacity * 100.0)
+        && a.referencePoint == b.referencePoint
+        && a.positionX == b.positionX
+        && a.positionY == b.positionY
+        && a.mousePassThrough == b.mousePassThrough
+        && a.mousePassThroughSwitchKey == b.mousePassThroughSwitchKey;
+}
+
 static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QString &screenKey)
 {
     return {{QStringLiteral("window_point_key"), windowKey},
@@ -38541,6 +38688,16 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         trayObj.insert(QStringLiteral("available_icons"), QJsonArray::fromStringList(m_TrayIconSelectDialog->availableTrayIcons()));
         trayObj.insert(QStringLiteral("custom_icons"), QJsonArray::fromStringList(m_TrayIconSelectDialog->availableCustomTrayIcons()));
         result.insert(QStringLiteral("tray_icons"), trayObj);
+    }
+    {
+        QJsonObject fwObj = automationTabFloatingWindow(
+            getMappingTabFloatingWindowSettings(s_KeyMappingTabWidgetCurrentIndex));
+        fwObj.insert(QStringLiteral("tab_index"), s_KeyMappingTabWidgetCurrentIndex);
+        fwObj.insert(QStringLiteral("tab_name"), tab.TabName);
+        fwObj.insert(QStringLiteral("is_common"), isCommonMappingTab(tab));
+        fwObj.insert(QStringLiteral("editable"), !isCommonMappingTab(tab));
+        fwObj.insert(QStringLiteral("show_as_floating_window"), tab.TabCustomImage_ShowAsFloatingWindow);
+        result.insert(QStringLiteral("tab_floating_window"), fwObj);
     }
     if (m_Gyro2MouseOptionDialog) {
         result.insert(QStringLiteral("gyro2mouse_options"), automationGyro2MouseOptions(
@@ -40890,6 +41047,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingDisplayScale = updating && update.displayScale.has_value();
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
+        const bool changingTabFloatingWindow = updating && update.tabFloatingWindow.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
@@ -40900,7 +41058,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
-        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
+        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel
@@ -41749,6 +41907,21 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), QStringLiteral("set_tab_notification_colors")},
                     {QStringLiteral("before"), describe(tabInfo.TabFontColor, tabInfo.TabBackgroundColor)},
                     {QStringLiteral("after"), describe(notificationFont, notificationBackground)}};
+            } else if (changingTabFloatingWindow) {
+                const TabFloatingWindowSettings before = getMappingTabFloatingWindowSettings(tab);
+                const TabFloatingWindowSettings after = mergeTabFloatingWindowSettings(before, *update.tabFloatingWindow);
+                if (after.mousePassThroughSwitchKey != QLatin1String(FUNCTION_KEY_NONE)
+                    && !QKeyMapper_Worker::MultiKeyboardInputList.contains(after.mousePassThroughSwitchKey)) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("Floating window switch key must be None or a supported keyboard key name."));
+                    return;
+                }
+                modified = !tabFloatingWindowSettingsEqual(before, after);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_tab_floating_window")},
+                    {QStringLiteral("before"), automationTabFloatingWindow(before)},
+                    {QStringLiteral("after"), automationTabFloatingWindow(after)},
+                    {QStringLiteral("show_as_floating_window"), tabInfo.TabCustomImage_ShowAsFloatingWindow},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingTabNotification) {
                 modified = tabInfo.TabHideNotification != *update.tabNotificationMode;
                 change = {{QStringLiteral("kind"), QStringLiteral("set_tab_notification_mode")},
@@ -42158,6 +42331,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : settingDisabledVisibility ? QStringLiteral("configuration.set_show_disabled_rows")
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
             : changingTabNotificationColors ? QStringLiteral("tab.set_notification_colors")
+            : changingTabFloatingWindow ? QStringLiteral("tab.set_floating_window")
             : changingTabNotification ? QStringLiteral("tab.set_notification_mode")
             : changingTabHotkey ? QStringLiteral("tab.set_hotkey")
             : renamingTab ? QStringLiteral("tab.rename")
@@ -42426,6 +42600,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (changingTabNotificationColors) {
                 if (!setMappingTabNotificationColors(tab, notificationFont, notificationBackground)) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab no longer accepts notification color changes."));
+                    return;
+                }
+            } else if (changingTabFloatingWindow) {
+                const TabFloatingWindowSettings before = getMappingTabFloatingWindowSettings(tab);
+                const TabFloatingWindowSettings after = mergeTabFloatingWindowSettings(before, *update.tabFloatingWindow);
+                if (after.mousePassThroughSwitchKey != QLatin1String(FUNCTION_KEY_NONE)
+                    && !QKeyMapper_Worker::MultiKeyboardInputList.contains(after.mousePassThroughSwitchKey)) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("Floating window switch key must be None or a supported keyboard key name."));
+                    return;
+                }
+                if (!setMappingTabFloatingWindowSettings(tab, after)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab no longer accepts floating window changes."));
                     return;
                 }
             } else if (changingTabNotification) {

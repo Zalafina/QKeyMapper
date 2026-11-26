@@ -432,6 +432,84 @@ bool parseTrayIconsUpdate(const QJsonObject &arguments, TrayIconsUpdate &trayOut
     }
     return true;
 }
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+bool parseTabFloatingWindowUpdate(const QJsonObject &arguments, TabFloatingWindowUpdate &out, const char *&errorOut)
+{
+    const auto fail = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const auto raw = arguments.value(QStringLiteral("floating_window"));
+    const auto fields = raw.toObject();
+    if (!raw.isObject() || fields.isEmpty())
+        return fail("Provide at least one floating_window field.");
+    const QSet<QString> allowedFields{
+        QStringLiteral("background_color"), QStringLiteral("size"), QStringLiteral("radius"),
+        QStringLiteral("opacity"), QStringLiteral("reference_point"), QStringLiteral("position_x"),
+        QStringLiteral("position_y"), QStringLiteral("mouse_pass_through"),
+        QStringLiteral("mouse_pass_through_switch_key")};
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        if (!allowedFields.contains(it.key()))
+            return fail("Unknown floating_window field.");
+    }
+    const auto parseIntRange = [&](const QString &key, int minVal, int maxVal, std::optional<int> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        const int parsed = val.toInt(minVal - 1);
+        if (!val.isDouble() || std::floor(val.toDouble()) != val.toDouble()
+            || parsed < minVal || parsed > maxVal) {
+            return false;
+        }
+        target = parsed;
+        return true;
+    };
+    if (fields.contains(QStringLiteral("background_color"))) {
+        const auto val = fields.value(QStringLiteral("background_color"));
+        if (!val.isString())
+            return fail("floating_window.background_color must be \"default\" or an 8-digit hex string (#AARRGGBB).");
+        const QString s = val.toString();
+        static const QRegularExpression re(QStringLiteral("^#[0-9A-Fa-f]{8}$"));
+        if (s != QLatin1String("default") && !re.match(s).hasMatch())
+            return fail("floating_window.background_color must be \"default\" or an 8-digit hex string (#AARRGGBB).");
+        out.backgroundColor = (s == QLatin1String("default")) ? s : s.toLower();
+    }
+    if (!parseIntRange(QStringLiteral("size"), QKeyMapperConstants::FLOATINGWINDOW_SIZE_MIN, QKeyMapperConstants::FLOATINGWINDOW_SIZE_MAX, out.size)
+        || !parseIntRange(QStringLiteral("radius"), QKeyMapperConstants::FLOATINGWINDOW_RADIUS_MIN, QKeyMapperConstants::FLOATINGWINDOW_RADIUS_MAX, out.radius)
+        || !parseIntRange(QStringLiteral("reference_point"), QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_MIN, QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_MAX, out.referencePoint)
+        || !parseIntRange(QStringLiteral("position_x"), QKeyMapperConstants::FLOATINGWINDOW_POSITION_MIN_X, QKeyMapperConstants::FLOATINGWINDOW_POSITION_MAX_X, out.positionX)
+        || !parseIntRange(QStringLiteral("position_y"), QKeyMapperConstants::FLOATINGWINDOW_POSITION_MIN_Y, QKeyMapperConstants::FLOATINGWINDOW_POSITION_MAX_Y, out.positionY)) {
+        return fail("A floating_window integer field is invalid or out of range.");
+    }
+    if (fields.contains(QStringLiteral("opacity"))) {
+        const auto val = fields.value(QStringLiteral("opacity"));
+        const double rawOpacity = val.toDouble(-1.0);
+        if (!val.isDouble() || !qIsFinite(rawOpacity)
+            || rawOpacity < QKeyMapperConstants::FLOATINGWINDOW_OPACITY_MIN
+            || rawOpacity > QKeyMapperConstants::FLOATINGWINDOW_OPACITY_MAX
+            || std::abs(rawOpacity * 100.0 - double(qRound(rawOpacity * 100.0))) > 1e-6) {
+            return fail("floating_window.opacity must be between 0.1 and 1.0 with at most 2 decimal places.");
+        }
+        out.opacity = double(qRound(rawOpacity * 100.0)) / 100.0;
+    }
+    if (fields.contains(QStringLiteral("mouse_pass_through"))) {
+        const auto val = fields.value(QStringLiteral("mouse_pass_through"));
+        if (!val.isBool()) return fail("floating_window.mouse_pass_through must be a boolean.");
+        out.mousePassThrough = val.toBool();
+    }
+    if (fields.contains(QStringLiteral("mouse_pass_through_switch_key"))) {
+        const auto val = fields.value(QStringLiteral("mouse_pass_through_switch_key"));
+        const QString key = val.toString();
+        if (!val.isString() || key.isEmpty() || key.size() > 64
+            || key.contains(QLatin1Char('\0')) || key.contains(QLatin1Char('\r')) || key.contains(QLatin1Char('\n'))) {
+            return fail("floating_window.mouse_pass_through_switch_key must be a non-empty single-line string of at most 64 characters.");
+        }
+        out.mousePassThroughSwitchKey = key;
+    }
+    return true;
+}
 }
 
 const char *mappingRowMoveAction(MappingRowMove move)
@@ -824,6 +902,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool generalNotificationStylePreview = preview && action == QLatin1String("general.set_notification_style");
     const bool customNotificationStylePreview = preview && action == QLatin1String("configuration.set_custom_notification_style");
     const bool trayIconsPreview = preview && action == QLatin1String("general.set_tray_icons");
+    const bool tabFloatingWindowPreview = preview && action == QLatin1String("tab.set_floating_window");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -848,63 +927,81 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview
-        || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || processIconTrayPreview
+        || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || tabFloatingWindowPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
         || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
-    const QSet<QString> allowed = savePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("setting_name")}
-        : preferencesPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("preferences_revision"),
-            QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")}
-        : renamePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_name")}
-        : tabHotkeyPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tab_hotkey")}
-        : tabNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_mode")}
-        : mappingDisplayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("mapping_display")}
-        : insertModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_insert_mode")}
-        : editTriggerPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("table_edit_trigger")}
-        : displayScalePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("display_scale")}
-        : windowDisplayModePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_display_mode")}
-        : saveWindowSizePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_window_size")}
-        : saveSplitterPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("save_splitter_position")}
-        : playSoundEffectPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("play_sound_effect")}
-        : globalSwitchTimeoutPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("timeout_ms")}
-        : fullscreenGlobalMappingPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}
-        : key2MousePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}
-        : gyro2MouseOptionsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gyro2mouse_options")}
-        : gamepadThresholdsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_thresholds")}
-        : gamepadTouchpadPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_touchpad")}
-        : acceptVirtualGamepadInputPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("accept_virtual_gamepad_input")}
-        : vbuttonPanelPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("vbutton_panel")}
-        : (generalNotificationStylePreview || customNotificationStylePreview) ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_style")}
-        : trayIconsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tray_icons")}
-        : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
-        : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
-        : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
-        : windowMatchCriteriaPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_match_criteria")}
-        : autoMatchForegroundPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("auto_match_foreground")}
-        : sendToSameWindowsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("send_to_same_windows")}
-        : startupPositionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("startup_position")}
-        : disabledVisibilityPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_disabled_rows")}
-        : categoryFilterPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("category_filter")}
-        : tabNotificationColorsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"),
-            QStringLiteral("notification_font_color"), QStringLiteral("notification_background_color")}
-        : (moveTabPreview || selectTabPreview) ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("target_tab_ref")}
-        : tabCommonPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("include_common")}
-        : tabCollapsePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("common_collapsed")}
-        : commonFeaturePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("common_feature_enabled")}
-        : tabActionPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref")}
-        : movePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")}
-        : duplicatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs"), QStringLiteral("copy_to")}
-        : updatePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs"), QStringLiteral("send_method"),
-            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"), QStringLiteral("disabled"), QStringLiteral("note"), QStringLiteral("category"), QStringLiteral("row_modes"), QStringLiteral("send_timing")}
-        : deletePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"),
-            QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")} : preview
-        ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
-            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("insert_row"), QStringLiteral("send_method")}
-        : apply ? QSet<QString>{idField, QStringLiteral("confirm_conflicts"), QStringLiteral("confirm_scope"),
-            QStringLiteral("confirm_overwrite"), QStringLiteral("confirm_delete")}
-            : QSet<QString>{idField};
+    const char *singleTabField = renamePreview ? "tab_name"
+        : tabHotkeyPreview ? "tab_hotkey"
+        : tabNotificationPreview ? "notification_mode"
+        : mappingDisplayPreview ? "mapping_display"
+        : insertModePreview ? "table_insert_mode"
+        : editTriggerPreview ? "table_edit_trigger"
+        : displayScalePreview ? "display_scale"
+        : windowDisplayModePreview ? "window_display_mode"
+        : saveWindowSizePreview ? "save_window_size"
+        : saveSplitterPositionPreview ? "save_splitter_position"
+        : playSoundEffectPreview ? "play_sound_effect"
+        : globalSwitchTimeoutPreview ? "timeout_ms"
+        : fullscreenGlobalMappingPreview ? "fullscreen_global_mapping"
+        : key2MousePreview ? "key2mouse"
+        : gyro2MouseOptionsPreview ? "gyro2mouse_options"
+        : gamepadThresholdsPreview ? "gamepad_thresholds"
+        : gamepadTouchpadPreview ? "gamepad_touchpad"
+        : acceptVirtualGamepadInputPreview ? "accept_virtual_gamepad_input"
+        : vbuttonPanelPreview ? "vbutton_panel"
+        : (generalNotificationStylePreview || customNotificationStylePreview) ? "notification_style"
+        : trayIconsPreview ? "tray_icons"
+        : tabFloatingWindowPreview ? "floating_window"
+        : processIconTrayPreview ? "process_icon_as_tray_icon"
+        : pointDisplayKeysPreview ? "point_display_keys"
+        : customNotificationPreview ? "custom_notification"
+        : windowMatchCriteriaPreview ? "window_match_criteria"
+        : autoMatchForegroundPreview ? "auto_match_foreground"
+        : sendToSameWindowsPreview ? "send_to_same_windows"
+        : startupPositionPreview ? "startup_position"
+        : disabledVisibilityPreview ? "show_disabled_rows"
+        : categoryFilterPreview ? "category_filter"
+        : tabCommonPreview ? "include_common"
+        : tabCollapsePreview ? "common_collapsed"
+        : commonFeaturePreview ? "common_feature_enabled"
+        : nullptr;
+    QSet<QString> allowed;
+    if (singleTabField != nullptr) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QString::fromLatin1(singleTabField)};
+    } else if (savePreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("setting_name")};
+    } else if (preferencesPreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("preferences_revision"),
+            QStringLiteral("preferred_backend"), QStringLiteral("unavailable_policy")};
+    } else if (tabNotificationColorsPreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_tab_ref"),
+            QStringLiteral("notification_font_color"), QStringLiteral("notification_background_color")};
+    } else if (moveTabPreview || selectTabPreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("target_tab_ref")};
+    } else if (tabActionPreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_tab_ref")};
+    } else if (movePreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")};
+    } else if (duplicatePreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs"), QStringLiteral("copy_to")};
+    } else if (updatePreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs"), QStringLiteral("send_method"),
+            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("key_up_mapping_key"),
+            QStringLiteral("disabled"), QStringLiteral("note"), QStringLiteral("category"), QStringLiteral("row_modes"), QStringLiteral("send_timing")};
+    } else if (deletePreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"), QStringLiteral("source_refs")};
+    } else if (preview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_revision"), QStringLiteral("source_tab_ref"),
+            QStringLiteral("original_key"), QStringLiteral("mapping_key"), QStringLiteral("insert_row"), QStringLiteral("send_method")};
+    } else if (apply) {
+        allowed = {idField, QStringLiteral("confirm_conflicts"), QStringLiteral("confirm_scope"),
+            QStringLiteral("confirm_overwrite"), QStringLiteral("confirm_delete")};
+    } else {
+        allowed = {idField};
+    }
     for (auto it = arguments.constBegin(); it != arguments.constEnd(); ++it) {
         if (!allowed.contains(it.key())) return fail("Unknown mapping change argument.");
     }
@@ -1086,6 +1183,14 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 return fail(parseError);
             }
             result.update.trayIcons = parsedTray;
+        }
+        if (tabFloatingWindowPreview) {
+            const char *parseError = nullptr;
+            TabFloatingWindowUpdate parsedFWin;
+            if (!parseTabFloatingWindowUpdate(arguments, parsedFWin, parseError)) {
+                return fail(parseError);
+            }
+            result.update.tabFloatingWindow = parsedFWin;
         }
         if (processIconTrayPreview) {
             const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
@@ -1991,6 +2096,60 @@ void appendTrayIconCapabilities(QJsonArray &capabilities, const CapabilitySchema
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendTabFloatingWindowCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    const QJsonObject fwinSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("background_color"), QJsonObject{
+                {QStringLiteral("type"), QStringLiteral("string")},
+                {QStringLiteral("pattern"), QStringLiteral("^(default|#[0-9A-Fa-f]{8})$")}}},
+            {QStringLiteral("size"), QJsonObject{
+                {QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("minimum"), QKeyMapperConstants::FLOATINGWINDOW_SIZE_MIN},
+                {QStringLiteral("maximum"), QKeyMapperConstants::FLOATINGWINDOW_SIZE_MAX}}},
+            {QStringLiteral("radius"), QJsonObject{
+                {QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("minimum"), QKeyMapperConstants::FLOATINGWINDOW_RADIUS_MIN},
+                {QStringLiteral("maximum"), QKeyMapperConstants::FLOATINGWINDOW_RADIUS_MAX}}},
+            {QStringLiteral("opacity"), QJsonObject{
+                {QStringLiteral("type"), QStringLiteral("number")},
+                {QStringLiteral("minimum"), QKeyMapperConstants::FLOATINGWINDOW_OPACITY_MIN},
+                {QStringLiteral("maximum"), QKeyMapperConstants::FLOATINGWINDOW_OPACITY_MAX}}},
+            {QStringLiteral("reference_point"), QJsonObject{
+                {QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("minimum"), QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_MIN},
+                {QStringLiteral("maximum"), QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_MAX}}},
+            {QStringLiteral("position_x"), QJsonObject{
+                {QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("minimum"), QKeyMapperConstants::FLOATINGWINDOW_POSITION_MIN_X},
+                {QStringLiteral("maximum"), QKeyMapperConstants::FLOATINGWINDOW_POSITION_MAX_X}}},
+            {QStringLiteral("position_y"), QJsonObject{
+                {QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("minimum"), QKeyMapperConstants::FLOATINGWINDOW_POSITION_MIN_Y},
+                {QStringLiteral("maximum"), QKeyMapperConstants::FLOATINGWINDOW_POSITION_MAX_Y}}},
+            {QStringLiteral("mouse_pass_through"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("mouse_pass_through_switch_key"), CapabilitySchemaContext::string(QStringLiteral("^[^\\u0000\\r\\n]+$"), 64)}}}};
+    auto fwinPreview = CapabilitySchemaContext::capability("tab.set_floating_window.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("tab.set_floating_window")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("floating_window"), fwinSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("floating_window")}));
+    auto fwinApply = CapabilitySchemaContext::capability("tab.set_floating_window.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&fwinPreview, &fwinApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_attached_normal_source_only"),
+            QStringLiteral("two_decimal_opacity_precision"), QStringLiteral("switch_key_none_or_supported_keyboard_key"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -2123,6 +2282,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     appendVButtonPanelCapabilities(capabilities, ctx);
     appendNotificationStyleCapabilities(capabilities, ctx);
     appendTrayIconCapabilities(capabilities, ctx);
+    appendTabFloatingWindowCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

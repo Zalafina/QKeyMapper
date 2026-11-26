@@ -1092,9 +1092,9 @@ __declspec(noinline)
 #endif
 static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabilities)
 {
-    QCOMPARE(capabilities.size(), 136);
+    QCOMPARE(capabilities.size(), 138);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 128);
+    QCOMPARE(demoCapabilities.size(), 130);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1139,8 +1139,10 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QCOMPARE(capabilities.at(126).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification_style.apply"));
     QCOMPARE(capabilities.at(127).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_tray_icons.preview"));
     QCOMPARE(capabilities.at(128).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_tray_icons.apply"));
-    QCOMPARE(capabilities.at(133).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(134).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(129).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_floating_window.preview"));
+    QCOMPARE(capabilities.at(130).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_floating_window.apply"));
+    QCOMPARE(capabilities.at(135).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(136).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_gyro2mouse_options.apply");
     }));
@@ -1164,6 +1166,9 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_tray_icons.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("tab.set_floating_window.apply");
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
@@ -1640,6 +1645,68 @@ static void verifyTrayIconsValidation(const QString &previewMethod, const QJsonO
         QJsonObject{{QStringLiteral("idle"), QStringLiteral("default")}, {QStringLiteral("extra"), 1}},
     }) {
         QVERIFY(!validateTray(bad).ok());
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyTabFloatingWindowValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    const auto validateFWin = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("tab.set_floating_window")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("floating_window"), fields}});
+    };
+    const auto valid = validateFWin({
+        {QStringLiteral("background_color"), QStringLiteral("#AA112233")},
+        {QStringLiteral("size"), 128},
+        {QStringLiteral("radius"), 24},
+        {QStringLiteral("opacity"), 0.65},
+        {QStringLiteral("reference_point"), 11},
+        {QStringLiteral("position_x"), -120},
+        {QStringLiteral("position_y"), 240},
+        {QStringLiteral("mouse_pass_through"), true},
+        {QStringLiteral("mouse_pass_through_switch_key"), QStringLiteral("None")},
+    });
+    QVERIFY(valid.ok() && valid.update.tabFloatingWindow.has_value());
+    QCOMPARE(valid.update.tabFloatingWindow->backgroundColor, std::optional<QString>(QStringLiteral("#aa112233")));
+    QCOMPARE(valid.update.tabFloatingWindow->size, std::optional<int>(128));
+    QCOMPARE(valid.update.tabFloatingWindow->radius, std::optional<int>(24));
+    QVERIFY(valid.update.tabFloatingWindow->opacity.has_value()
+        && qRound(*valid.update.tabFloatingWindow->opacity * 100.0) == 65);
+    QCOMPARE(valid.update.tabFloatingWindow->referencePoint, std::optional<int>(11));
+    QCOMPARE(valid.update.tabFloatingWindow->positionX, std::optional<int>(-120));
+    QCOMPARE(valid.update.tabFloatingWindow->positionY, std::optional<int>(240));
+    QCOMPARE(valid.update.tabFloatingWindow->mousePassThrough, std::optional<bool>(true));
+    QCOMPARE(valid.update.tabFloatingWindow->mousePassThroughSwitchKey, std::optional<QString>(QStringLiteral("None")));
+
+    const auto defBg = validateFWin({{QStringLiteral("background_color"), QStringLiteral("default")}});
+    QVERIFY(defBg.ok() && defBg.update.tabFloatingWindow->backgroundColor == QStringLiteral("default"));
+
+    for (const QJsonObject &bad : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("background_color"), QStringLiteral("#112233")}},
+        QJsonObject{{QStringLiteral("size"), 15}},
+        QJsonObject{{QStringLiteral("size"), 641}},
+        QJsonObject{{QStringLiteral("radius"), -1}},
+        QJsonObject{{QStringLiteral("radius"), 321}},
+        QJsonObject{{QStringLiteral("opacity"), 0.09}},
+        QJsonObject{{QStringLiteral("opacity"), 1.01}},
+        QJsonObject{{QStringLiteral("opacity"), 0.555}},
+        QJsonObject{{QStringLiteral("reference_point"), -1}},
+        QJsonObject{{QStringLiteral("reference_point"), 12}},
+        QJsonObject{{QStringLiteral("position_x"), -50001}},
+        QJsonObject{{QStringLiteral("position_y"), 50001}},
+        QJsonObject{{QStringLiteral("mouse_pass_through"), 1}},
+        QJsonObject{{QStringLiteral("mouse_pass_through_switch_key"), QString()}},
+        QJsonObject{{QStringLiteral("mouse_pass_through_switch_key"), QStringLiteral("F3\n")}},
+        QJsonObject{{QStringLiteral("mouse_pass_through_switch_key"), QString(65, QLatin1Char('A'))}},
+        QJsonObject{{QStringLiteral("size"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("size"), 64}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!validateFWin(bad).ok());
     }
 }
 
@@ -2331,6 +2398,7 @@ void McpControlTest::mappingChangeArguments()
 
     verifyNotificationStyleValidation(previewMethod, input);
     verifyTrayIconsValidation(previewMethod, input);
+    verifyTabFloatingWindowValidation(previewMethod, input);
     verifyWindowAndTrayArgumentsValidation(previewMethod, input);
     if (QTest::currentTestFailed()) return;
 

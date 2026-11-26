@@ -99,6 +99,18 @@ struct TrayIconsUpdate {
     std::optional<QString> matched;
 };
 
+struct TabFloatingWindowUpdate {
+    std::optional<QString> backgroundColor;
+    std::optional<int> size;
+    std::optional<int> radius;
+    std::optional<double> opacity;
+    std::optional<int> referencePoint;
+    std::optional<int> positionX;
+    std::optional<int> positionY;
+    std::optional<bool> mousePassThrough;
+    std::optional<QString> mousePassThroughSwitchKey;
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -163,6 +175,7 @@ struct MappingUpdateArguments {
     std::optional<NotificationStyleUpdate> generalNotificationStyle;
     std::optional<NotificationStyleUpdate> customNotificationStyle;
     std::optional<TrayIconsUpdate> trayIcons;
+    std::optional<TabFloatingWindowUpdate> tabFloatingWindow;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;
