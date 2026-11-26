@@ -8,6 +8,7 @@
 #include "../../automation/qkm_demo_process.h"
 #include "../../automation/qkm_demo_host.h"
 #include "../../automation/qkm_window_image.h"
+#include "../../automation/qkm_safe_image_asset.h"
 #include "../../qkm_mapping_source_access.h"
 #include "../../qkeymapper_qt_compat.h"
 #include "../../qkeymapper_constants.h"
@@ -15,12 +16,14 @@
 #include "ui_qgeneraladvanceddialog.h"
 
 #include <QApplication>
+#include <QBuffer>
 #include <QCloseEvent>
 #include <QCheckBox>
 #include <QCryptographicHash>
 #include <QDir>
 #include <QFileInfo>
 #include <QFile>
+#include <QImage>
 #include <QSaveFile>
 #include <QScopeGuard>
 #include <QSemaphore>
@@ -224,6 +227,7 @@ private slots:
     void configurationSaveLifecycle();
     void configurationSaveExpiry();
     void configurationSaveLimits();
+    void safeImageAssetAndTrayScanSecurity();
 };
 
 void McpControlTest::ibInputChangeArguments()
@@ -5556,6 +5560,196 @@ int main(int argc, char **argv)
     }
     McpControlTest test;
     return QTest::qExec(&test, argc, argv);
+}
+
+void McpControlTest::safeImageAssetAndTrayScanSecurity()
+{
+    QTemporaryDir tempRoot;
+    QVERIFY(tempRoot.isValid());
+    const QString appRoot = tempRoot.filePath(QStringLiteral("app"));
+    const QString outsideRoot = tempRoot.filePath(QStringLiteral("outside"));
+    const QString subIcons = appRoot + QStringLiteral("/icons");
+    const QString trayRealDir = appRoot + QStringLiteral("/custom_trayicons");
+    QVERIFY(QDir().mkpath(subIcons));
+    QVERIFY(QDir().mkpath(outsideRoot));
+
+    auto writeAll = [](const QString &path, const QByteArray &bytes) {
+        QFile f(path);
+        return f.open(QIODevice::WriteOnly | QIODevice::Truncate) && f.write(bytes) == bytes.size();
+    };
+    auto buildTestIco = [](const QList<QSize> &sizes) -> QByteArray {
+        const quint16 count = static_cast<quint16>(sizes.size());
+        QByteArray header;
+        header.append('\0'); header.append('\0');
+        header.append(char(1)); header.append('\0');
+        header.append(char(count & 0xFF)); header.append(char((count >> 8) & 0xFF));
+        QList<QByteArray> dibs;
+        quint32 offset = 6 + 16 * quint32(count);
+        QByteArray entries;
+        for (const QSize &sz : sizes) {
+            const quint32 w = quint32(sz.width());
+            const quint32 h = quint32(sz.height());
+            const quint32 xorBytes = w * h * 4;
+            const quint32 andBytes = ((w + 31) / 32) * 4 * h;
+            QByteArray dib(40 + int(xorBytes + andBytes), '\0');
+            auto put32 = [&](int pos, quint32 v) { std::memcpy(dib.data() + pos, &v, 4); };
+            auto put16 = [&](int pos, quint16 v) { std::memcpy(dib.data() + pos, &v, 2); };
+            put32(0, 40);
+            put32(4, w);
+            put32(8, h * 2);
+            put16(12, 1);
+            put16(14, 32);
+            put32(20, xorBytes + andBytes);
+            for (quint32 p = 0; p < w * h; ++p) {
+                dib[40 + int(p * 4) + 0] = char(0xFF);
+                dib[40 + int(p * 4) + 1] = char(0x80);
+                dib[40 + int(p * 4) + 2] = char(0x20);
+                dib[40 + int(p * 4) + 3] = char(0xFF);
+            }
+            QByteArray entry(16, '\0');
+            entry[0] = char(w < 256 ? w : 0);
+            entry[1] = char(h < 256 ? h : 0);
+            entry[4] = char(1);
+            entry[6] = char(32);
+            const quint32 dibSize = quint32(dib.size());
+            std::memcpy(entry.data() + 8, &dibSize, 4);
+            std::memcpy(entry.data() + 12, &offset, 4);
+            offset += dibSize;
+            entries.append(entry);
+            dibs.append(dib);
+        }
+        QByteArray full = header + entries;
+        for (const QByteArray &dib : dibs) full.append(dib);
+        return full;
+    };
+
+    const QByteArray multiIcoBytes = buildTestIco({QSize(16, 16), QSize(32, 32)});
+    const QByteArray singleIcoBytes = buildTestIco({QSize(16, 16)});
+    QImage pngImg(24, 24, QImage::Format_ARGB32);
+    pngImg.fill(QColor(40, 140, 240, 255));
+    QByteArray pngBytes;
+    {
+        QBuffer pngBuf(&pngBytes);
+        QVERIFY(pngBuf.open(QIODevice::WriteOnly));
+        QVERIFY(pngImg.save(&pngBuf, "PNG"));
+    }
+    const QByteArray svgBytes = QByteArrayLiteral("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\"><rect width=\"32\" height=\"32\" fill=\"#2080ff\"/></svg>");
+
+    QVERIFY(writeAll(subIcons + QStringLiteral("/multi.ico"), multiIcoBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/single.png"), pngBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/badge.svg"), svgBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/mismatched.ico"), pngBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/empty.ico"), QByteArray()));
+    QVERIFY(writeAll(outsideRoot + QStringLiteral("/ext.ico"), singleIcoBytes));
+
+    const auto multiRes = loadSafeInAppImageAsset(QStringLiteral("icons\\MULTI.ICO"), appRoot);
+    QVERIFY(multiRes.ok && multiRes.relativePath == QStringLiteral("icons/multi.ico"));
+    QCOMPARE(multiRes.availableSizes, (QList<QSize>{QSize(32, 32), QSize(16, 16)}));
+    const auto pngRes = loadSafeInAppImageAsset(QStringLiteral("icons/single.png"), appRoot);
+    QVERIFY(pngRes.ok);
+    QCOMPARE(pngRes.availableSizes, (QList<QSize>{QSize(24, 24)}));
+    const auto svgRes = loadSafeInAppImageAsset(QStringLiteral("icons/badge.svg"), appRoot);
+    QVERIFY(svgRes.ok);
+    QVERIFY(svgRes.availableSizes.isEmpty());
+
+    QVERIFY(!loadSafeInAppImageAsset(QStringLiteral("icons/mismatched.ico"), appRoot).ok);
+    QVERIFY(!loadSafeInAppImageAsset(QStringLiteral("icons/empty.ico"), appRoot).ok);
+    QVERIFY(!loadSafeInAppImageAsset(QStringLiteral("../outside/ext.ico"), appRoot).ok);
+    QVERIFY(!loadSafeInAppImageAsset(QStringLiteral("icons/multi.ico:stream"), appRoot).ok);
+
+    // NTFS directory junction tests for both subdirs and custom_trayicons root.
+    QCOMPARE(QProcess::execute(QStringLiteral("cmd"),
+        {QStringLiteral("/c"), QStringLiteral("mklink"), QStringLiteral("/J"),
+         QDir::toNativeSeparators(appRoot + QStringLiteral("/linked_icons")),
+         QDir::toNativeSeparators(outsideRoot)}), 0);
+    QVERIFY(!loadSafeInAppImageAsset(QStringLiteral("linked_icons/ext.ico"), appRoot).ok);
+
+    QCOMPARE(QProcess::execute(QStringLiteral("cmd"),
+        {QStringLiteral("/c"), QStringLiteral("mklink"), QStringLiteral("/J"),
+         QDir::toNativeSeparators(trayRealDir),
+         QDir::toNativeSeparators(outsideRoot)}), 0);
+    const auto juncScan = scanSafeCustomTrayIcons(appRoot);
+    QVERIFY(juncScan.customIcons.isEmpty());
+    QVERIFY(!loadSafeCustomTrayIconAsset(QStringLiteral("custom_trayicons/ext.ico"), appRoot).ok);
+    SafeTrayIconCatalogCache trayCache;
+    const auto juncCached = trayCache.snapshot(appRoot);
+    QVERIFY(juncCached.customIcons.isEmpty());
+
+    // Remove junction and populate real custom_trayicons directory.
+    QCOMPARE(QProcess::execute(QStringLiteral("cmd"),
+        {QStringLiteral("/c"), QStringLiteral("rmdir"), QDir::toNativeSeparators(trayRealDir)}), 0);
+    QVERIFY(QDir().mkpath(trayRealDir));
+    QVERIFY(writeAll(trayRealDir + QStringLiteral("/a.ico"), singleIcoBytes));
+    QVERIFY(writeAll(trayRealDir + QStringLiteral("/b.ico"), singleIcoBytes));
+    QVERIFY(writeAll(trayRealDir + QStringLiteral("/c.ico"), singleIcoBytes));
+    QVERIFY(writeAll(trayRealDir + QStringLiteral("/bad.ico"), QByteArray()));
+    QVERIFY(writeAll(trayRealDir + QStringLiteral("/note.txt"), QByteArrayLiteral("txt")));
+
+    const auto smallScan = scanSafeCustomTrayIcons(appRoot);
+    QCOMPARE(smallScan.customIcons, (QStringList{
+        QStringLiteral("custom_trayicons/a.ico"),
+        QStringLiteral("custom_trayicons/b.ico"),
+        QStringLiteral("custom_trayicons/c.ico")}));
+    QVERIFY(!smallScan.truncated && smallScan.countExact);
+    QCOMPARE(smallScan.totalCount, std::optional<int>(3));
+    QCOMPARE(smallScan.minCount, 3);
+
+    const auto firstSnap = trayCache.snapshot(appRoot);
+    QVERIFY(!firstSnap.cacheHit && firstSnap.countExact && firstSnap.totalCount == std::optional<int>(3));
+    const auto secondSnap = trayCache.snapshot(appRoot);
+    QVERIFY(secondSnap.cacheHit && secondSnap.customIcons == firstSnap.customIcons);
+
+    // Populate 300 long-named .ico files to verify scan budget, truncation lower bound & out-of-window direct lookup.
+    const QString pad(100, QLatin1Char('x'));
+    QStringList allLarge;
+    allLarge.reserve(300);
+    for (int i = 0; i < 300; ++i) {
+        const QString rel = QStringLiteral("custom_trayicons/icon_%1_%2.ico").arg(i, 3, 10, QLatin1Char('0')).arg(pad);
+        QVERIFY(writeAll(appRoot + QLatin1Char('/') + rel, singleIcoBytes));
+        allLarge.append(rel);
+    }
+    const auto largeScan = trayCache.snapshot(appRoot);
+    QVERIFY(!largeScan.cacheHit);
+    QVERIFY(largeScan.truncated);
+    QVERIFY(!largeScan.countExact);
+    QVERIFY(!largeScan.totalCount.has_value());
+    QCOMPARE(largeScan.minCount, largeScan.customIcons.size());
+    QVERIFY(largeScan.customIcons.size() > 0 && largeScan.customIcons.size() <= MaxTrayIconStateItems);
+    int totalUtf8 = 0;
+    for (const QString &s : largeScan.customIcons) totalUtf8 += s.toUtf8().size();
+    QVERIFY(totalUtf8 <= MaxTrayIconStateUtf8Bytes);
+    QVERIFY(largeScan.entriesInspected <= MaxTrayIconScanEntries);
+    QVERIFY(largeScan.filesDecoded <= MaxTrayIconScanDecodes);
+    QVERIFY(trayCache.snapshot(appRoot).cacheHit);
+
+    QString omitted;
+    for (const QString &candidate : allLarge) {
+        if (!largeScan.customIcons.contains(candidate)) {
+            omitted = candidate;
+            break;
+        }
+    }
+    QVERIFY(!omitted.isEmpty());
+    QVERIFY(loadSafeCustomTrayIconAsset(omitted, appRoot).ok);
+
+    // Tab image cache: external path skips disk probe, in-app path caches sizes.
+    SafeTabImageSizeCache tabCache;
+    const auto extProbe = tabCache.probeSafeInAppImageSizes(outsideRoot + QStringLiteral("/ext.ico"), appRoot);
+    QVERIFY(!extProbe.probed && extProbe.external && extProbe.availableSizes.isEmpty());
+    const auto uncProbe = tabCache.probeSafeInAppImageSizes(QStringLiteral("\\\\server\\share\\x.ico"), appRoot);
+    QVERIFY(!uncProbe.probed && uncProbe.external);
+    const auto missingLocalProbe = tabCache.probeSafeInAppImageSizes(QStringLiteral("missing_sub/a.ico"), appRoot);
+    QVERIFY(!missingLocalProbe.probed && !missingLocalProbe.external && missingLocalProbe.availableSizes.isEmpty());
+    const auto inProbe1 = tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/multi.ico"), appRoot);
+    QVERIFY(inProbe1.probed && !inProbe1.external && !inProbe1.cacheHit);
+    QCOMPARE(inProbe1.availableSizes, (QList<QSize>{QSize(32, 32), QSize(16, 16)}));
+    QVERIFY(tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/multi.ico"), appRoot).cacheHit);
+
+    // Derive pixel size helper parity across normal & Common Tabs.
+    QCOMPARE(deriveTabCustomImagePixelAfterImageChange(QStringLiteral("icons/multi.ico"), QSize(16, 16), QString(), {}), QSize());
+    QCOMPARE(deriveTabCustomImagePixelAfterImageChange(QStringLiteral("icons/multi.ico"), QSize(16, 16), QStringLiteral("icons/multi.ico"), {QSize(32, 32)}), QSize(16, 16));
+    QCOMPARE(deriveTabCustomImagePixelAfterImageChange(QStringLiteral("icons/multi.ico"), QSize(16, 16), QStringLiteral("icons/other.ico"), {QSize(32, 32), QSize(16, 16)}), QSize(16, 16));
+    QCOMPARE(deriveTabCustomImagePixelAfterImageChange(QStringLiteral("icons/multi.ico"), QSize(16, 16), QStringLiteral("icons/single.png"), {QSize(24, 24)}), QSize());
 }
 
 #include "test_mcp_control.moc"

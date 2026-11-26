@@ -250,14 +250,7 @@ void QTableSetupDialog::updateTrayIconPixelComboBox(const QIcon &icon, const QSi
     qDebug() << "[QTableSetupDialog::updateTrayIconPixelComboBox]" << "Icon availableSizes sorted:" << availableSizes;
 #endif
 
-    // 3. Save current selection before clearing if it's not the default
-    QSize savedCurrentSize;
-    if (ui->customImageTrayIconPixelComboBox->currentIndex() != TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT) {
-        QString currentText = ui->customImageTrayIconPixelComboBox->currentText();
-        savedCurrentSize = parseComboBoxTextToSize(currentText);
-    }
-
-    // 4. Clear TrayIconPixelComboBox & set "Default" item (index 0) uses the original icon
+    // 3. Clear TrayIconPixelComboBox & set "Default" item (index 0) uses the original icon
     clearTrayIconPixelComboBox();
     ui->customImageTrayIconPixelComboBox->setItemIcon(TAB_CUSTOMIMAGE_TRAYICON_PIXEL_INDEX_DEFAULT, icon);
 
@@ -303,23 +296,9 @@ void QTableSetupDialog::updateTrayIconPixelComboBox(const QIcon &icon, const QSi
         }
     }
 
-    // 7. If targetSize didn't work, try saved current size
-    if (!indexSet && !savedCurrentSize.isEmpty()) {
-        for (int i = 0; i < availableSizes.size(); ++i) {
-            if (availableSizes[i] == savedCurrentSize) {
-                targetIndex = i + 1; // +1 because index 0 is "Default"
-                indexSet = true;
-#ifdef DEBUG_LOGOUT_ON
-                qDebug().nospace() << "[QTableSetupDialog::updateTrayIconPixelComboBox] Restored saved size at index " << targetIndex << " for size " << savedCurrentSize;
-#endif
-                break;
-            }
-        }
-    }
-
     Q_UNUSED(indexSet);
 
-    // 8. Set the final index (default if nothing matched)
+    // 6. Set the final index (default if targetSize is empty or unmatched)
     ui->customImageTrayIconPixelComboBox->blockSignals(true);
     ui->customImageTrayIconPixelComboBox->setCurrentIndex(targetIndex);
     ui->customImageTrayIconPixelComboBox->blockSignals(false);
@@ -405,6 +384,7 @@ void QTableSetupDialog::closeEvent(QCloseEvent *event)
     m_TabIndex = -1;
     m_SettingSelectIndex = -1;
     m_IsCommonTabMode = false;
+    clearTrayIconPixelComboBox();
 
     QDialog::closeEvent(event);
 }
@@ -767,15 +747,15 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         ui->customImageLabel->setPixmap(scaled_pixmap);
         ui->customImageLabel->setToolTip(customimage_path);
 
-        updateTrayIconPixelComboBox(icon_loaded);
-        const QSize nextTrayIconPixel = parseComboBoxTextToSize(ui->customImageTrayIconPixelComboBox->currentText());
         auto *mapper = QKeyMapper::getInstance();
         TabCustomImageSettings updated = mapper->getMappingTabCustomImageSettings(tabindex);
+        const QList<QSize> afterSizes = QKeyMapper::sortedTabCustomImageAvailableSizesFromIcon(icon_loaded);
+        const QSize nextTrayIconPixel = QKeyMapper::deriveTabCustomImagePixelAfterImageChange(
+            updated.imagePath, updated.trayIconPixel, customimage_path, afterSizes);
+        updateTrayIconPixelComboBox(icon_loaded, nextTrayIconPixel);
         updated.imagePath = customimage_path;
-        if (!QKeyMapper::isCommonMappingTabIndex(tabindex)) {
-            updated.trayIconPixel = nextTrayIconPixel;
-        }
-        mapper->setMappingTabCustomImageSettings(tabindex, updated);
+        updated.trayIconPixel = nextTrayIconPixel;
+        mapper->setMappingTabCustomImageSettings(tabindex, updated, &afterSizes, &icon_loaded);
     }
     else {
         QString popupMessage;

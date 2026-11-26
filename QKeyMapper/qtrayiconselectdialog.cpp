@@ -4,7 +4,23 @@
 #include "qkeymapper.h"
 #include "qstyle_singletons.h"
 
+#include <QComboBox>
+
 using namespace QKeyMapperConstants;
+
+namespace {
+
+bool traySelectionsEqual(
+    const QTrayIconSelectDialog::TrayIconSelections &a,
+    const QTrayIconSelectDialog::TrayIconSelections &b)
+{
+    return a.idle == b.idle
+        && a.monitoring == b.monitoring
+        && a.global == b.global
+        && a.matched == b.matched;
+}
+
+} // namespace
 
 QTrayIconSelectDialog *QTrayIconSelectDialog::m_instance = Q_NULLPTR;
 
@@ -127,35 +143,30 @@ const QStringList &QTrayIconSelectDialog::builtinTrayIcons()
     return list;
 }
 
+bool QTrayIconSelectDialog::isBuiltinTrayIcon(const QString &trayIconPath)
+{
+    return builtinTrayIcons().contains(trayIconPath);
+}
+
+QkmAutomation::SafeTrayIconScanResult QTrayIconSelectDialog::cachedCustomTrayIconScan() const
+{
+    return m_CustomTrayIconCache.snapshot();
+}
+
+void QTrayIconSelectDialog::invalidateCustomTrayIconCache()
+{
+    m_CustomTrayIconCache.invalidate();
+}
+
 QStringList QTrayIconSelectDialog::availableCustomTrayIcons() const
 {
-    QStringList customIcons;
-    QDir iconDir(CUSTOM_TRAYICONS_DIR);
-    if (!iconDir.exists()) {
-        return customIcons;
-    }
-
-    QStringList iconFilters;
-    iconFilters << "*.ico";
-    iconDir.setNameFilters(iconFilters);
-    iconDir.setFilter(QDir::Files | QDir::NoDotAndDotDot);
-
-    const QFileInfoList iconFiles = iconDir.entryInfoList();
-    for (const QFileInfo &fileInfo : iconFiles) {
-        const QString absolutePath = fileInfo.absoluteFilePath();
-        const QString relativePath = QString::fromLatin1(CUSTOM_TRAYICONS_DIR) + QLatin1Char('/') + fileInfo.fileName();
-        QIcon icon(absolutePath);
-        if (!icon.isNull()) {
-            customIcons.append(relativePath);
-        }
-    }
-    return customIcons;
+    return cachedCustomTrayIconScan().customIcons;
 }
 
 QStringList QTrayIconSelectDialog::availableTrayIcons() const
 {
     QStringList icons = builtinTrayIcons();
-    icons.append(availableCustomTrayIcons());
+    icons.append(cachedCustomTrayIconScan().customIcons);
     return icons;
 }
 
@@ -169,44 +180,101 @@ QTrayIconSelectDialog::TrayIconSelections QTrayIconSelectDialog::getTrayIconSele
     };
 }
 
-bool QTrayIconSelectDialog::applyTrayIconSelections(const TrayIconSelections &selections)
+void QTrayIconSelectDialog::ensureTrayIconItemPresent(const QString &trayIconPath, const QIcon &icon)
 {
-    if (ui->idleStateTrayIconSelectComboBox->findText(selections.idle) < 0
-        || ui->monitoringStateTrayIconSelectComboBox->findText(selections.monitoring) < 0
-        || ui->globalStateTrayIconSelectComboBox->findText(selections.global) < 0
-        || ui->matchedStateTrayIconSelectComboBox->findText(selections.matched) < 0) {
-        refreshTrayIconComboBoxesWithSelections();
+    if (trayIconPath.isEmpty() || icon.isNull()) {
+        return;
     }
+    const QList<QComboBox *> combos{
+        ui->idleStateTrayIconSelectComboBox,
+        ui->monitoringStateTrayIconSelectComboBox,
+        ui->globalStateTrayIconSelectComboBox,
+        ui->matchedStateTrayIconSelectComboBox
+    };
+    for (QComboBox *combo : combos) {
+        if (combo->findText(trayIconPath) < 0) {
+            combo->addItem(icon, trayIconPath);
+        }
+    }
+}
 
-    if (ui->idleStateTrayIconSelectComboBox->findText(selections.idle) < 0
-        || ui->monitoringStateTrayIconSelectComboBox->findText(selections.monitoring) < 0
-        || ui->globalStateTrayIconSelectComboBox->findText(selections.global) < 0
-        || ui->matchedStateTrayIconSelectComboBox->findText(selections.matched) < 0) {
+bool QTrayIconSelectDialog::applyVerifiedTrayIconSelections(
+    const TrayIconSelections &selections,
+    const QHash<QString, QIcon> &verifiedIcons,
+    bool deferTrayDisplayRefresh)
+{
+    auto resolveVerified = [&](const QString &path, QIcon &iconOut) -> bool {
+        if (isBuiltinTrayIcon(path)) {
+            iconOut = QIcon(path);
+            return !iconOut.isNull();
+        }
+        const auto it = verifiedIcons.constFind(path);
+        if (it == verifiedIcons.constEnd() || it.value().isNull()) {
+            return false;
+        }
+        iconOut = it.value();
+        return true;
+    };
+
+    QIcon idleIcon;
+    QIcon monitoringIcon;
+    QIcon globalIcon;
+    QIcon matchedIcon;
+    if (!resolveVerified(selections.idle, idleIcon)
+        || !resolveVerified(selections.monitoring, monitoringIcon)
+        || !resolveVerified(selections.global, globalIcon)
+        || !resolveVerified(selections.matched, matchedIcon)) {
         return false;
     }
 
     const TrayIconSelections before = getTrayIconSelections();
-    if (before.idle == selections.idle
-        && before.monitoring == selections.monitoring
-        && before.global == selections.global
-        && before.matched == selections.matched) {
+    if (traySelectionsEqual(before, selections)) {
         return false;
     }
 
-    setTrayIcon_IdleStateIcon(selections.idle);
-    setTrayIcon_MonitoringStateIcon(selections.monitoring);
-    setTrayIcon_GlobalStateIcon(selections.global);
-    setTrayIcon_MatchedStateIcon(selections.matched);
+    auto applyOne = [&](QComboBox *combo, const QString &target, const QIcon &icon) {
+        if (!isBuiltinTrayIcon(target)) {
+            m_VerifiedCustomIcons.insert(target, icon);
+        }
+        ensureTrayIconItemPresent(target, icon);
+        combo->setCurrentText(target);
+    };
+    applyOne(ui->idleStateTrayIconSelectComboBox, selections.idle, idleIcon);
+    applyOne(ui->monitoringStateTrayIconSelectComboBox, selections.monitoring, monitoringIcon);
+    applyOne(ui->globalStateTrayIconSelectComboBox, selections.global, globalIcon);
+    applyOne(ui->matchedStateTrayIconSelectComboBox, selections.matched, matchedIcon);
 
     if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
         keyMapper->requestSaveSettingDirty();
-        keyMapper->updateSystemTrayDisplay();
+        if (!deferTrayDisplayRefresh) {
+            keyMapper->updateSystemTrayDisplay();
+        }
     }
     return true;
 }
 
+bool QTrayIconSelectDialog::applyTrayIconSelections(const TrayIconSelections &selections)
+{
+    QHash<QString, QIcon> verifiedIcons;
+    TrayIconSelections normalized = selections;
+    QString *targets[4]{&normalized.idle, &normalized.monitoring, &normalized.global, &normalized.matched};
+    for (QString *targetPtr : targets) {
+        if (isBuiltinTrayIcon(*targetPtr)) {
+            continue;
+        }
+        const QkmAutomation::SafeImageAssetResult asset = QkmAutomation::loadSafeCustomTrayIconAsset(*targetPtr);
+        if (!asset.ok || QString::compare(asset.relativePath, *targetPtr, Qt::CaseInsensitive) != 0) {
+            return false;
+        }
+        *targetPtr = asset.relativePath;
+        verifiedIcons.insert(asset.relativePath, asset.icon);
+    }
+    return applyVerifiedTrayIconSelections(normalized, verifiedIcons, false);
+}
+
 void QTrayIconSelectDialog::initTrayIconComboBoxes()
 {
+    m_VerifiedCustomIcons.clear();
     ui->idleStateTrayIconSelectComboBox->clear();
     ui->monitoringStateTrayIconSelectComboBox->clear();
     ui->globalStateTrayIconSelectComboBox->clear();
@@ -226,34 +294,20 @@ void QTrayIconSelectDialog::initTrayIconComboBoxes()
 
 void QTrayIconSelectDialog::appendCustomTrayIconsFromDir(const QString &dir)
 {
-    // Check if the directory exists
-    QDir iconDir(dir);
-    if (!iconDir.exists()) {
+    if (dir != QLatin1String(CUSTOM_TRAYICONS_DIR)) {
         return;
     }
 
-    // Filter for .ico files
-    QStringList iconFilters;
-    iconFilters << "*.ico";
-    iconDir.setNameFilters(iconFilters);
-    iconDir.setFilter(QDir::Files | QDir::NoDotAndDotDot);
-
-    // Get all .ico files in the directory
-    QFileInfoList iconFiles = iconDir.entryInfoList();
-
-    for (const QFileInfo &fileInfo : std::as_const(iconFiles)) {
-        QString absolutePath = fileInfo.absoluteFilePath();
-        QString relativePath = dir + "/" + fileInfo.fileName();
-
-        // Try to create QIcon and check if it's valid
-        QIcon icon(absolutePath);
-        if (!icon.isNull()) {
-            // Add the valid icon to all four comboboxes
-            ui->idleStateTrayIconSelectComboBox->addItem(icon, relativePath);
-            ui->monitoringStateTrayIconSelectComboBox->addItem(icon, relativePath);
-            ui->globalStateTrayIconSelectComboBox->addItem(icon, relativePath);
-            ui->matchedStateTrayIconSelectComboBox->addItem(icon, relativePath);
+    const QkmAutomation::SafeTrayIconScanResult scan = QkmAutomation::scanSafeCustomTrayIcons();
+    for (const QkmAutomation::SafeTrayIconScanEntry &entry : scan.entries) {
+        if (entry.icon.isNull()) {
+            continue;
         }
+        m_VerifiedCustomIcons.insert(entry.relativePath, entry.icon);
+        ui->idleStateTrayIconSelectComboBox->addItem(entry.icon, entry.relativePath);
+        ui->monitoringStateTrayIconSelectComboBox->addItem(entry.icon, entry.relativePath);
+        ui->globalStateTrayIconSelectComboBox->addItem(entry.icon, entry.relativePath);
+        ui->matchedStateTrayIconSelectComboBox->addItem(entry.icon, entry.relativePath);
     }
 }
 
@@ -292,42 +346,98 @@ QString QTrayIconSelectDialog::getTrayIcon_MatchedStateIcon()
     return ui->matchedStateTrayIconSelectComboBox->currentText();
 }
 
+void QTrayIconSelectDialog::setTrayIconStateSelection(QComboBox *combo, const QString &trayIconFilename, const char *defaultFile)
+{
+    if (combo == Q_NULLPTR) {
+        return;
+    }
+
+    if (isBuiltinTrayIcon(trayIconFilename)) {
+        combo->setCurrentText(trayIconFilename);
+        return;
+    }
+
+    if (!trayIconFilename.isEmpty()) {
+        const auto cachedIt = m_VerifiedCustomIcons.constFind(trayIconFilename);
+        if (cachedIt != m_VerifiedCustomIcons.constEnd() && !cachedIt.value().isNull()) {
+            ensureTrayIconItemPresent(trayIconFilename, cachedIt.value());
+            combo->setCurrentText(trayIconFilename);
+            return;
+        }
+
+        const QkmAutomation::SafeImageAssetResult asset = QkmAutomation::loadSafeCustomTrayIconAsset(trayIconFilename);
+        if (asset.ok) {
+            m_VerifiedCustomIcons.insert(asset.relativePath, asset.icon);
+            ensureTrayIconItemPresent(asset.relativePath, asset.icon);
+            combo->setCurrentText(asset.relativePath);
+            return;
+        }
+    }
+
+    combo->setCurrentText(QLatin1String(defaultFile));
+}
+
 void QTrayIconSelectDialog::setTrayIcon_IdleStateIcon(const QString &trayicon_filename)
 {
-    ui->idleStateTrayIconSelectComboBox->setCurrentText(trayicon_filename);
+    setTrayIconStateSelection(ui->idleStateTrayIconSelectComboBox, trayicon_filename, TRAYICON_IDLE_DEFAULT_FILE);
 }
 
 void QTrayIconSelectDialog::setTrayIcon_MonitoringStateIcon(const QString &trayicon_filename)
 {
-    ui->monitoringStateTrayIconSelectComboBox->setCurrentText(trayicon_filename);
+    setTrayIconStateSelection(ui->monitoringStateTrayIconSelectComboBox, trayicon_filename, TRAYICON_MONITORING_DEFAULT_FILE);
 }
 
 void QTrayIconSelectDialog::setTrayIcon_GlobalStateIcon(const QString &trayicon_filename)
 {
-    ui->globalStateTrayIconSelectComboBox->setCurrentText(trayicon_filename);
+    setTrayIconStateSelection(ui->globalStateTrayIconSelectComboBox, trayicon_filename, TRAYICON_GLOBAL_DEFAULT_FILE);
 }
 
 void QTrayIconSelectDialog::setTrayIcon_MatchedStateIcon(const QString &trayicon_filename)
 {
-    ui->matchedStateTrayIconSelectComboBox->setCurrentText(trayicon_filename);
+    setTrayIconStateSelection(ui->matchedStateTrayIconSelectComboBox, trayicon_filename, TRAYICON_MATCHED_DEFAULT_FILE);
 }
 
 QString QTrayIconSelectDialog::getTrayIconPathOrDefault(const QString &trayiconpath, const QString &defaultTrayiconpath) const
 {
-    if (false == trayiconpath.isEmpty()) {
-        QIcon trayicon(trayiconpath);
-        if (!trayicon.isNull()) {
-            if (true == trayiconpath.startsWith(":/")) {
-                return trayiconpath;
-            }
+    if (trayiconpath.isEmpty()) {
+        return defaultTrayiconpath;
+    }
 
-            if (true == QFileInfo::exists(trayiconpath)) {
-                return trayiconpath;
-            }
-        }
+    if (isBuiltinTrayIcon(trayiconpath)) {
+        const QIcon trayicon(trayiconpath);
+        return !trayicon.isNull() ? trayiconpath : defaultTrayiconpath;
+    }
+
+    const QkmAutomation::SafeImageAssetResult asset = QkmAutomation::loadSafeCustomTrayIconAsset(trayiconpath);
+    if (asset.ok) {
+        m_VerifiedCustomIcons.insert(asset.relativePath, asset.icon);
+        return asset.relativePath;
     }
 
     return defaultTrayiconpath;
+}
+
+QIcon QTrayIconSelectDialog::getVerifiedStateQIcon(const QString &trayIconPath, const char *defaultFile) const
+{
+    if (isBuiltinTrayIcon(trayIconPath)) {
+        const QIcon trayIcon(trayIconPath);
+        if (!trayIcon.isNull()) {
+            return trayIcon;
+        }
+    }
+    else if (!trayIconPath.isEmpty()) {
+        const auto cachedIt = m_VerifiedCustomIcons.constFind(trayIconPath);
+        if (cachedIt != m_VerifiedCustomIcons.constEnd() && !cachedIt.value().isNull()) {
+            return cachedIt.value();
+        }
+        const QkmAutomation::SafeImageAssetResult asset = QkmAutomation::loadSafeCustomTrayIconAsset(trayIconPath);
+        if (asset.ok) {
+            m_VerifiedCustomIcons.insert(asset.relativePath, asset.icon);
+            return asset.icon;
+        }
+    }
+
+    return QIcon(QLatin1String(defaultFile));
 }
 
 void QTrayIconSelectDialog::refreshTrayIconComboBoxesWithSelections()
@@ -337,48 +447,51 @@ void QTrayIconSelectDialog::refreshTrayIconComboBoxesWithSelections()
     const QString globalStateTrayIcon = getTrayIcon_GlobalStateIcon();
     const QString matchedStateTrayIcon = getTrayIcon_MatchedStateIcon();
 
+    invalidateCustomTrayIconCache();
     initTrayIconComboBoxes();
 
-    setTrayIcon_IdleStateIcon(getTrayIconPathOrDefault(idleStateTrayIcon, TRAYICON_IDLE_DEFAULT_FILE));
-    setTrayIcon_MonitoringStateIcon(getTrayIconPathOrDefault(monitoringStateTrayIcon, TRAYICON_MONITORING_DEFAULT_FILE));
-    setTrayIcon_GlobalStateIcon(getTrayIconPathOrDefault(globalStateTrayIcon, TRAYICON_GLOBAL_DEFAULT_FILE));
-    setTrayIcon_MatchedStateIcon(getTrayIconPathOrDefault(matchedStateTrayIcon, TRAYICON_MATCHED_DEFAULT_FILE));
+    const QString resolvedIdle = getTrayIconPathOrDefault(idleStateTrayIcon, TRAYICON_IDLE_DEFAULT_FILE);
+    const QString resolvedMonitoring = getTrayIconPathOrDefault(monitoringStateTrayIcon, TRAYICON_MONITORING_DEFAULT_FILE);
+    const QString resolvedGlobal = getTrayIconPathOrDefault(globalStateTrayIcon, TRAYICON_GLOBAL_DEFAULT_FILE);
+    const QString resolvedMatched = getTrayIconPathOrDefault(matchedStateTrayIcon, TRAYICON_MATCHED_DEFAULT_FILE);
+
+    if (!isBuiltinTrayIcon(resolvedIdle)) {
+        ensureTrayIconItemPresent(resolvedIdle, m_VerifiedCustomIcons.value(resolvedIdle));
+    }
+    if (!isBuiltinTrayIcon(resolvedMonitoring)) {
+        ensureTrayIconItemPresent(resolvedMonitoring, m_VerifiedCustomIcons.value(resolvedMonitoring));
+    }
+    if (!isBuiltinTrayIcon(resolvedGlobal)) {
+        ensureTrayIconItemPresent(resolvedGlobal, m_VerifiedCustomIcons.value(resolvedGlobal));
+    }
+    if (!isBuiltinTrayIcon(resolvedMatched)) {
+        ensureTrayIconItemPresent(resolvedMatched, m_VerifiedCustomIcons.value(resolvedMatched));
+    }
+
+    setTrayIcon_IdleStateIcon(resolvedIdle);
+    setTrayIcon_MonitoringStateIcon(resolvedMonitoring);
+    setTrayIcon_GlobalStateIcon(resolvedGlobal);
+    setTrayIcon_MatchedStateIcon(resolvedMatched);
 }
 
 QIcon QTrayIconSelectDialog::getIdleStateQIcon()
 {
-    QIcon tray_icon = QIcon(getTrayIcon_IdleStateIcon());
-    if (tray_icon.isNull()) {
-        tray_icon = QIcon(TRAYICON_IDLE_DEFAULT_FILE);
-    }
-    return tray_icon;
+    return getVerifiedStateQIcon(getTrayIcon_IdleStateIcon(), TRAYICON_IDLE_DEFAULT_FILE);
 }
 
 QIcon QTrayIconSelectDialog::getMonitoringStateQIcon()
 {
-    QIcon tray_icon = QIcon(getTrayIcon_MonitoringStateIcon());
-    if (tray_icon.isNull()) {
-        tray_icon = QIcon(TRAYICON_MONITORING_DEFAULT_FILE);
-    }
-    return tray_icon;
+    return getVerifiedStateQIcon(getTrayIcon_MonitoringStateIcon(), TRAYICON_MONITORING_DEFAULT_FILE);
 }
 
 QIcon QTrayIconSelectDialog::getGlobalStateQIcon()
 {
-    QIcon tray_icon = QIcon(getTrayIcon_GlobalStateIcon());
-    if (tray_icon.isNull()) {
-        tray_icon = QIcon(TRAYICON_GLOBAL_DEFAULT_FILE);
-    }
-    return tray_icon;
+    return getVerifiedStateQIcon(getTrayIcon_GlobalStateIcon(), TRAYICON_GLOBAL_DEFAULT_FILE);
 }
 
 QIcon QTrayIconSelectDialog::getMatchedStateQIcon()
 {
-    QIcon tray_icon = QIcon(getTrayIcon_MatchedStateIcon());
-    if (tray_icon.isNull()) {
-        tray_icon = QIcon(TRAYICON_MATCHED_DEFAULT_FILE);
-    }
-    return tray_icon;
+    return getVerifiedStateQIcon(getTrayIcon_MatchedStateIcon(), TRAYICON_MATCHED_DEFAULT_FILE);
 }
 
 void QTrayIconSelectDialog::showEvent(QShowEvent *event)

@@ -28,6 +28,7 @@
 #include <memory>
 #include <optional>
 #include <functional>
+#include "automation/qkm_safe_image_asset.h"
 
 class QkmUiScale;
 class InputOwnerFence;
@@ -1552,6 +1553,10 @@ public:
     static QString resolveExistingTabCustomImagePath(const QString &storedPath);
     static QIcon loadTabCustomImage(QString &imagepath);
     static QList<QSize> sortedTabCustomImageAvailableSizes(const QString &imagePath);
+    static QList<QSize> sortedTabCustomImageAvailableSizesFromIcon(const QIcon &icon);
+    static QSize deriveTabCustomImagePixelAfterImageChange(
+        const QString &beforePath, const QSize &beforePixel,
+        const QString &afterPath, const QList<QSize> &afterSizes);
     static QIcon setTabCustomImage(int tabindex, QString &imagepath);
     static void clearTabCustomImage(int tabindex);
     static QIcon loadSettingCustomIcon(QString &iconpath);
@@ -2151,7 +2156,7 @@ public:
     void refreshKeyMappingDataTableByTabIndex(int tabindex, bool commonReordered = false);
     void refreshKeyMappingDataTable(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList, bool commonReordered = false);
     void updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappingDataTable, QList<MAP_KEYDATA> *mappingDataList, int row, int column);
-    void updateKeyMappingTabWidgetTabDisplay(int tabindex);
+    void updateKeyMappingTabWidgetTabDisplay(int tabindex, const QIcon *preloadedIcon = Q_NULLPTR);
     void updateTableWidgetItem(int tabindex, int row, int column);
     void updateSaveSettingActionIcon(QAction *action) const;
     void requestSaveSettingDirty(void);
@@ -2175,13 +2180,18 @@ public:
     TabFloatingWindowSettings getMappingTabFloatingWindowSettings(int tabIndex) const;
     bool setMappingTabFloatingWindowSettings(int tabIndex, const TabFloatingWindowSettings &settings);
     TabCustomImageSettings getMappingTabCustomImageSettings(int tabIndex) const;
-    bool setMappingTabCustomImageSettings(int tabIndex, const TabCustomImageSettings &settings);
+    bool setMappingTabCustomImageSettings(
+        int tabIndex,
+        const TabCustomImageSettings &settings,
+        const QList<QSize> *precomputedAfterSizes = Q_NULLPTR,
+        const QIcon *preloadedIcon = Q_NULLPTR,
+        bool deferTabDisplayRefresh = false);
     MappingCrosshairSettings getMappingSourceRowCrosshairSettings(int tabIndex, int row) const;
     bool setMappingSourceRowCrosshairSettings(int tabIndex, int row, const MappingCrosshairSettings &settings);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;
-    QJsonObject collectAutomationState(void) const;
+    QJsonObject collectAutomationState(bool includeAssetMetadata = false) const;
     QJsonObject automationMappingDisplay() const;
     QString automationIbInputPreferencesRevision() const;
     QJsonObject collectAutomationCatalog(void) const;
@@ -2927,6 +2937,7 @@ private:
     QLabel *m_FloatingButtonDragCoordinateLabel = Q_NULLPTR;
     HWND m_FloatingButtonLastTrackHWND = NULL;
     RECT m_FloatingButtonLastTrackClientRect = {};
+    mutable QkmAutomation::SafeTabImageSizeCache m_TabImageSizeCache;
 #ifdef USE_CUSTOMSTYLE
     CustomSpinBoxStyle *m_CustomSpinBoxStyle = Q_NULLPTR;
 #endif

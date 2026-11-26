@@ -7,6 +7,7 @@
 #include "automation/qkm_window_access.h"
 #include "automation/qkm_demo_mode.h"
 #include "automation/qkm_window_image.h"
+#include "automation/qkm_safe_image_asset.h"
 #include <QtMath>
 #include "qkeymapper.h"
 #include "qkm_ibinput_client.h"
@@ -15302,31 +15303,24 @@ QString QKeyMapper::resolveExistingTabCustomImagePath(const QString &storedPath)
 
 QList<QSize> QKeyMapper::sortedTabCustomImageAvailableSizes(const QString &imagePath)
 {
-    QList<QSize> availableSizes;
     const QString resolved = resolveExistingTabCustomImagePath(imagePath);
     if (resolved.isEmpty()) {
-        return availableSizes;
+        return {};
     }
+    return sortedTabCustomImageAvailableSizesFromIcon(QIcon(resolved));
+}
 
-    const QIcon icon(resolved);
-    if (icon.isNull()) {
-        return availableSizes;
-    }
+QList<QSize> QKeyMapper::sortedTabCustomImageAvailableSizesFromIcon(const QIcon &icon)
+{
+    return QkmAutomation::sortedUniqueAvailableSizesFromIcon(icon);
+}
 
-    const QList<QSize> rawSizes = icon.availableSizes();
-    for (const QSize &size : rawSizes) {
-        if (size.width() > 0 && size.height() > 0 && !availableSizes.contains(size)) {
-            availableSizes.append(size);
-        }
-    }
-
-    std::sort(availableSizes.begin(), availableSizes.end(), [](const QSize &a, const QSize &b) {
-        if (a.width() != b.width()) {
-            return a.width() > b.width();
-        }
-        return a.height() > b.height();
-    });
-    return availableSizes;
+QSize QKeyMapper::deriveTabCustomImagePixelAfterImageChange(
+    const QString &beforePath, const QSize &beforePixel,
+    const QString &afterPath, const QList<QSize> &afterSizes)
+{
+    return QkmAutomation::deriveTabCustomImagePixelAfterImageChange(
+        beforePath, beforePixel, afterPath, afterSizes);
 }
 
 QIcon QKeyMapper::loadTabCustomImage(QString &imagepath)
@@ -18662,7 +18656,12 @@ TabCustomImageSettings QKeyMapper::getMappingTabCustomImageSettings(int tabIndex
     return settings;
 }
 
-bool QKeyMapper::setMappingTabCustomImageSettings(int tabIndex, const TabCustomImageSettings &settings)
+bool QKeyMapper::setMappingTabCustomImageSettings(
+    int tabIndex,
+    const TabCustomImageSettings &settings,
+    const QList<QSize> *precomputedAfterSizes,
+    const QIcon *preloadedIcon,
+    bool deferTabDisplayRefresh)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
         return false;
@@ -18680,7 +18679,15 @@ bool QKeyMapper::setMappingTabCustomImageSettings(int tabIndex, const TabCustomI
 
     const TabCustomImageSettings before = getMappingTabCustomImageSettings(tabIndex);
     if (isCommonMappingTabIndex(tabIndex)) {
-        const QSize expectedCommonPixel = settings.imagePath.isEmpty() ? QSize() : before.trayIconPixel;
+        const QList<QSize> afterSizesForCheck = settings.imagePath.isEmpty()
+            ? QList<QSize>{}
+            : (precomputedAfterSizes != Q_NULLPTR
+                ? *precomputedAfterSizes
+                : (preloadedIcon != Q_NULLPTR
+                    ? sortedTabCustomImageAvailableSizesFromIcon(*preloadedIcon)
+                    : sortedTabCustomImageAvailableSizes(settings.imagePath)));
+        const QSize expectedCommonPixel = deriveTabCustomImagePixelAfterImageChange(
+            before.imagePath, before.trayIconPixel, settings.imagePath, afterSizesForCheck);
         if (settings.showPosition != before.showPosition
             || settings.padding != before.padding
             || settings.showAsTrayIcon != before.showAsTrayIcon
@@ -18707,8 +18714,8 @@ bool QKeyMapper::setMappingTabCustomImageSettings(int tabIndex, const TabCustomI
     tab.TabCustomImage_ShowAsTrayIcon = settings.showAsTrayIcon;
     tab.TabCustomImage_ShowAsFloatingWindow = settings.showAsFloatingWindow;
     tab.TabCustomImage_TrayIconPixel = settings.trayIconPixel;
-    if (imageChanged) {
-        updateKeyMappingTabWidgetTabDisplay(tabIndex);
+    if (imageChanged && !deferTabDisplayRefresh) {
+        updateKeyMappingTabWidgetTabDisplay(tabIndex, preloadedIcon);
     }
     ++m_AutomationSourceEpoch;
     requestSaveSettingDirty();
@@ -37106,7 +37113,7 @@ void QKeyMapper::updateKeyMappingDataTableItem(KeyMappingDataTableWidget *mappin
     }
 }
 
-void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
+void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex, const QIcon *preloadedIcon)
 {
     if ((tabindex < 0) || (tabindex >= ui->keyMappingTabWidget->count()) || (tabindex >= s_KeyMappingTabInfoList.size())) {
 #ifdef DEBUG_LOGOUT_ON
@@ -37133,7 +37140,10 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
 
     // ui->keyMappingTabWidget->tabBar()->setTabTextColor(tabindex, tab_color);
     QIcon icon_loaded;
-    if (!tab_customimage_path.isEmpty()) {
+    if (preloadedIcon != Q_NULLPTR) {
+        icon_loaded = *preloadedIcon;
+    }
+    else if (!tab_customimage_path.isEmpty()) {
         const QString resolvedImagePath = resolveExistingTabCustomImagePath(tab_customimage_path);
         icon_loaded = QIcon(resolvedImagePath.isEmpty() ? tab_customimage_path : resolvedImagePath);
     }
@@ -38669,11 +38679,14 @@ static QJsonObject automationTrayIcons(const QTrayIconSelectDialog::TrayIconSele
     };
 }
 
-static bool resolveTrayIconSelection(const QString &raw, const QString &defaultPath,
-    const QSet<QString> &available, QString &resolvedOut)
+static bool trayIconSelectionsEqual(
+    const QTrayIconSelectDialog::TrayIconSelections &a,
+    const QTrayIconSelectDialog::TrayIconSelections &b)
 {
-    resolvedOut = (raw == QLatin1String("default")) ? defaultPath : raw;
-    return available.contains(resolvedOut);
+    return a.idle == b.idle
+        && a.monitoring == b.monitoring
+        && a.global == b.global
+        && a.matched == b.matched;
 }
 
 static QJsonObject automationTabFloatingWindow(const TabFloatingWindowSettings &s)
@@ -38754,81 +38767,22 @@ static bool parseTabCustomImagePixel(const QString &text, QSize &out)
     return true;
 }
 
-static bool resolveSafeInAppTabCustomImagePath(
-    const QString &rawRelativePath, QString &normalizedRelOut, QString &errorOut)
-{
-    if (rawRelativePath.isEmpty()) {
-        normalizedRelOut.clear();
-        return true;
-    }
-
-    QString norm = rawRelativePath;
-    norm.replace(QLatin1Char('\\'), QLatin1Char('/'));
-    if (norm.size() > 260 || norm.contains(QLatin1Char(':')) || norm.startsWith(QLatin1Char('/'))) {
-        errorOut = QStringLiteral("custom_image.image_path must be a relative path inside the application directory.");
-        return false;
-    }
-    const QStringList parts = norm.split(QLatin1Char('/'), Qt::KeepEmptyParts);
-    for (const QString &part : parts) {
-        if (part.isEmpty() || part == QLatin1String(".") || part == QLatin1String("..")) {
-            errorOut = QStringLiteral("custom_image.image_path must not contain empty or traversal segments.");
-            return false;
-        }
-    }
-    const QString lower = norm.toLower();
-    if (!lower.endsWith(QLatin1String(".ico"))
-        && !lower.endsWith(QLatin1String(".png"))
-        && !lower.endsWith(QLatin1String(".svg"))) {
-        errorOut = QStringLiteral("custom_image.image_path must end with .ico, .png, or .svg.");
-        return false;
-    }
-
-    const QString appDirRaw = QCoreApplication::applicationDirPath();
-    const QString appDirCanonical = QFileInfo(appDirRaw).canonicalFilePath();
-    if (appDirCanonical.isEmpty()) {
-        errorOut = QStringLiteral("Application directory could not be resolved.");
-        return false;
-    }
-    QString appPrefix = appDirCanonical;
-    if (!appPrefix.endsWith(QLatin1Char('/'))) {
-        appPrefix.append(QLatin1Char('/'));
-    }
-
-    const QString candidatePath = QDir(appDirRaw).filePath(norm);
-    const QFileInfo info(candidatePath);
-    if (!info.exists() || !info.isFile() || info.isSymLink()) {
-        errorOut = QStringLiteral("custom_image.image_path does not point to an existing regular image file.");
-        return false;
-    }
-
-    const QString canonicalFile = info.canonicalFilePath();
-    if (canonicalFile.isEmpty() || !canonicalFile.startsWith(appPrefix, Qt::CaseInsensitive)) {
-        errorOut = QStringLiteral("custom_image.image_path must stay inside the application directory.");
-        return false;
-    }
-
-    const QIcon icon(canonicalFile);
-    const QPixmap testPixmap = icon.isNull()
-        ? QPixmap()
-        : icon.pixmap(QSize(QKeyMapperConstants::TAB_CUSTOMIMAGE_WIDTH_DEFAULT, QKeyMapperConstants::TAB_CUSTOMIMAGE_HEIGHT_DEFAULT));
-    if (icon.isNull() || testPixmap.isNull()) {
-        errorOut = QStringLiteral("Unable to load custom_image.image_path as a valid image.");
-        return false;
-    }
-
-    normalizedRelOut = QDir(appDirCanonical).relativeFilePath(canonicalFile);
-    return true;
-}
-
-static QJsonObject automationTabCustomImage(const TabCustomImageSettings &s, const QList<QSize> &availableSizes)
+static QJsonObject automationTabCustomImage(
+    const TabCustomImageSettings &s,
+    const QList<QSize> &availableSizes,
+    const std::optional<bool> &sizesProbed = std::nullopt,
+    const std::optional<bool> &externalPath = std::nullopt)
 {
     QJsonArray pixels;
     for (const QSize &sz : availableSizes) {
         pixels.append(formatTabCustomImagePixel(sz));
     }
-    return {
+    const QkmAutomation::BoundedAutomationText boundedPath =
+        QkmAutomation::boundAutomationText(s.imagePath, QkmAutomation::MaxTabImagePathStateChars);
+    QJsonObject obj{
         {QStringLiteral("has_image"), !s.imagePath.isEmpty()},
-        {QStringLiteral("image_path"), s.imagePath},
+        {QStringLiteral("image_path"), boundedPath.value},
+        {QStringLiteral("image_path_truncated"), boundedPath.truncated},
         {QStringLiteral("available_tray_icon_pixels"), pixels},
         {QStringLiteral("show_position"), s.showPosition},
         {QStringLiteral("padding"), s.padding},
@@ -38836,6 +38790,13 @@ static QJsonObject automationTabCustomImage(const TabCustomImageSettings &s, con
         {QStringLiteral("show_as_floating_window"), s.showAsFloatingWindow},
         {QStringLiteral("tray_icon_pixel"), formatTabCustomImagePixel(s.trayIconPixel)},
     };
+    if (sizesProbed.has_value()) {
+        obj.insert(QStringLiteral("image_sizes_probed"), *sizesProbed);
+    }
+    if (externalPath.has_value()) {
+        obj.insert(QStringLiteral("external_image_path"), *externalPath);
+    }
+    return obj;
 }
 
 static bool tabCustomImageSettingsEqual(const TabCustomImageSettings &a, const TabCustomImageSettings &b)
@@ -38850,21 +38811,13 @@ static bool tabCustomImageSettingsEqual(const TabCustomImageSettings &a, const T
 
 static bool mergeAndValidateTabCustomImageUpdate(
     const TabCustomImageSettings &before, const QkmAutomation::TabCustomImageUpdate &u,
-    TabCustomImageSettings &afterOut, QList<QSize> &afterSizesOut, QString &errorOut)
+    const QString &prevalidatedAfterRelPath, const QList<QSize> &afterSizes,
+    TabCustomImageSettings &afterOut, QString &errorOut)
 {
     afterOut = before;
     if (u.imagePath) {
-        if (u.imagePath->isEmpty()) {
-            afterOut.imagePath.clear();
-        } else {
-            QString normalizedRel;
-            if (!resolveSafeInAppTabCustomImagePath(*u.imagePath, normalizedRel, errorOut)) {
-                return false;
-            }
-            afterOut.imagePath = normalizedRel;
-        }
+        afterOut.imagePath = u.imagePath->isEmpty() ? QString() : prevalidatedAfterRelPath;
     }
-    afterSizesOut = QKeyMapper::sortedTabCustomImageAvailableSizes(afterOut.imagePath);
     if (u.showPosition) afterOut.showPosition = *u.showPosition;
     if (u.padding) afterOut.padding = *u.padding;
     if (u.showAsTrayIcon) afterOut.showAsTrayIcon = *u.showAsTrayIcon;
@@ -38875,15 +38828,14 @@ static bool mergeAndValidateTabCustomImageUpdate(
             errorOut = QStringLiteral("custom_image.tray_icon_pixel must be \"default\" or \"<W>x<H>\".");
             return false;
         }
-        if (!requestedPixel.isEmpty() && !afterSizesOut.contains(requestedPixel)) {
+        if (!requestedPixel.isEmpty() && !afterSizes.contains(requestedPixel)) {
             errorOut = QStringLiteral("custom_image.tray_icon_pixel must be \"default\" or one of the active image available_tray_icon_pixels.");
             return false;
         }
         afterOut.trayIconPixel = requestedPixel;
-    } else if (afterOut.imagePath.isEmpty()) {
-        afterOut.trayIconPixel = QSize();
-    } else if (afterOut.imagePath != before.imagePath && !afterOut.trayIconPixel.isEmpty() && !afterSizesOut.contains(afterOut.trayIconPixel)) {
-        afterOut.trayIconPixel = QSize();
+    } else {
+        afterOut.trayIconPixel = QKeyMapper::deriveTabCustomImagePixelAfterImageChange(
+            before.imagePath, before.trayIconPixel, afterOut.imagePath, afterSizes);
     }
     return true;
 }
@@ -38974,7 +38926,7 @@ QJsonObject QKeyMapper::automationMappingDisplay() const
         {QStringLiteral("notes"), m_ShowNotes}, {QStringLiteral("floating_column"), m_ShowFloating}};
 }
 
-QJsonObject QKeyMapper::collectAutomationState(void) const
+QJsonObject QKeyMapper::collectAutomationState(bool includeAssetMetadata) const
 {
     Q_ASSERT(QThread::currentThread() == thread());
     if (loadSetting_flag || m_MappingSourceLoading || !isInitialized() || ui == Q_NULLPTR || ui->settingselectComboBox->currentIndex() < 0
@@ -39155,7 +39107,10 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         }
         result.insert(QStringLiteral("notification_styles"), notificationStyles);
     }
-    if (m_TrayIconSelectDialog) {
+    if (includeAssetMetadata && m_TrayIconSelectDialog) {
+        const QkmAutomation::SafeTrayIconScanResult trayScan = m_TrayIconSelectDialog->cachedCustomTrayIconScan();
+        QStringList availableIcons = QTrayIconSelectDialog::builtinTrayIcons();
+        availableIcons.append(trayScan.customIcons);
         QJsonObject trayObj = automationTrayIcons(m_TrayIconSelectDialog->getTrayIconSelections());
         trayObj.insert(QStringLiteral("defaults"), QJsonObject{
             {QStringLiteral("idle"), QString::fromLatin1(QKeyMapperConstants::TRAYICON_IDLE_DEFAULT_FILE)},
@@ -39164,8 +39119,13 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             {QStringLiteral("matched"), QString::fromLatin1(QKeyMapperConstants::TRAYICON_MATCHED_DEFAULT_FILE)},
         });
         trayObj.insert(QStringLiteral("custom_dir"), QString::fromLatin1(QKeyMapperConstants::CUSTOM_TRAYICONS_DIR));
-        trayObj.insert(QStringLiteral("available_icons"), QJsonArray::fromStringList(m_TrayIconSelectDialog->availableTrayIcons()));
-        trayObj.insert(QStringLiteral("custom_icons"), QJsonArray::fromStringList(m_TrayIconSelectDialog->availableCustomTrayIcons()));
+        trayObj.insert(QStringLiteral("available_icons"), QJsonArray::fromStringList(availableIcons));
+        trayObj.insert(QStringLiteral("custom_icons"), QJsonArray::fromStringList(trayScan.customIcons));
+        trayObj.insert(QStringLiteral("custom_icons_truncated"), trayScan.truncated);
+        trayObj.insert(QStringLiteral("custom_icons_count_exact"), trayScan.countExact);
+        trayObj.insert(QStringLiteral("custom_icons_total_count"),
+            trayScan.totalCount.has_value() ? QJsonValue(*trayScan.totalCount) : QJsonValue(QJsonValue::Null));
+        trayObj.insert(QStringLiteral("custom_icons_min_count"), trayScan.minCount);
         result.insert(QStringLiteral("tray_icons"), trayObj);
     }
     {
@@ -39178,9 +39138,10 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         fwObj.insert(QStringLiteral("show_as_floating_window"), tab.TabCustomImage_ShowAsFloatingWindow);
         result.insert(QStringLiteral("tab_floating_window"), fwObj);
     }
-    {
+    if (includeAssetMetadata) {
         const TabCustomImageSettings img = getMappingTabCustomImageSettings(s_KeyMappingTabWidgetCurrentIndex);
-        QJsonObject imgObj = automationTabCustomImage(img, sortedTabCustomImageAvailableSizes(img.imagePath));
+        const QkmAutomation::SafeTabImageSizesProbe imgProbe = m_TabImageSizeCache.probeSafeInAppImageSizes(img.imagePath);
+        QJsonObject imgObj = automationTabCustomImage(img, imgProbe.availableSizes, imgProbe.probed, imgProbe.external);
         imgObj.insert(QStringLiteral("tab_index"), s_KeyMappingTabWidgetCurrentIndex);
         imgObj.insert(QStringLiteral("tab_name"), tab.TabName);
         imgObj.insert(QStringLiteral("is_common"), isCommonMappingTab(tab));
@@ -41657,11 +41618,114 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 QStringLiteral("No safe source context is available for the settings update."));
             return;
         }
+        struct PreparedTrayIconsChange {
+            bool active = false;
+            QTrayIconSelectDialog::TrayIconSelections expectedBefore;
+            QTrayIconSelectDialog::TrayIconSelections after;
+            QHash<QString, QIcon> verifiedIcons;
+        } preparedTray;
+        struct PreparedTabCustomImageChange {
+            bool active = false;
+            int tabIndex = -1;
+            TabCustomImageSettings expectedBefore;
+            TabCustomImageSettings after;
+            QList<QSize> beforeSizes;
+            QList<QSize> afterSizes;
+            bool beforeSizesProbed = false;
+            bool beforeExternal = false;
+            bool afterSizesProbed = false;
+            bool afterExternal = false;
+            bool hasPreloadedAfterIcon = false;
+            QIcon afterIcon;
+        } preparedTabImage;
+        int deferredTabDisplayTab = -1;
+        bool deferredTrayDisplayRefresh = false;
+        if (changingTrayIcons) {
+            preparedTray.active = true;
+            preparedTray.expectedBefore = m_TrayIconSelectDialog->getTrayIconSelections();
+            preparedTray.after = preparedTray.expectedBefore;
+            const auto prepareTrayState = [&](const std::optional<QString> &requestedOpt, const char *defaultFile, QString &targetOut) {
+                const QString defPath = QString::fromLatin1(defaultFile);
+                if (requestedOpt) {
+                    targetOut = (*requestedOpt == QLatin1String("default")) ? defPath : *requestedOpt;
+                }
+                if (QTrayIconSelectDialog::isBuiltinTrayIcon(targetOut)) {
+                    return true;
+                }
+                const QkmAutomation::SafeImageAssetResult asset = QkmAutomation::loadSafeCustomTrayIconAsset(targetOut);
+                if (!asset.ok || QString::compare(asset.relativePath, targetOut, Qt::CaseInsensitive) != 0) {
+                    if (requestedOpt) {
+                        reject(QStringLiteral("invalid_arguments"),
+                            QStringLiteral("Tray icon must be \"default\", a built-in icon resource, or a valid .ico file in custom_trayicons."));
+                    } else {
+                        reject(QStringLiteral("context_busy"),
+                            QStringLiteral("One of the preserved tray icon selections is no longer valid on disk."));
+                    }
+                    return false;
+                }
+                targetOut = asset.relativePath;
+                preparedTray.verifiedIcons.insert(asset.relativePath, asset.icon);
+                return true;
+            };
+            if (!prepareTrayState(update.trayIcons->idle, TRAYICON_IDLE_DEFAULT_FILE, preparedTray.after.idle)
+                || !prepareTrayState(update.trayIcons->monitoring, TRAYICON_MONITORING_DEFAULT_FILE, preparedTray.after.monitoring)
+                || !prepareTrayState(update.trayIcons->global, TRAYICON_GLOBAL_DEFAULT_FILE, preparedTray.after.global)
+                || !prepareTrayState(update.trayIcons->matched, TRAYICON_MATCHED_DEFAULT_FILE, preparedTray.after.matched)) {
+                return;
+            }
+        }
+        if (changingTabCustomImage) {
+            preparedTabImage.active = true;
+            preparedTabImage.tabIndex = tab;
+            preparedTabImage.expectedBefore = getMappingTabCustomImageSettings(tab);
+            const QkmAutomation::SafeTabImageSizesProbe beforeProbe =
+                m_TabImageSizeCache.probeSafeInAppImageSizes(preparedTabImage.expectedBefore.imagePath);
+            preparedTabImage.beforeSizes = beforeProbe.availableSizes;
+            preparedTabImage.beforeSizesProbed = beforeProbe.probed;
+            preparedTabImage.beforeExternal = beforeProbe.external;
+            QString normalizedAfterRel = preparedTabImage.expectedBefore.imagePath;
+            if (update.tabCustomImage->imagePath) {
+                if (update.tabCustomImage->imagePath->isEmpty()) {
+                    normalizedAfterRel.clear();
+                    preparedTabImage.afterSizes.clear();
+                    preparedTabImage.afterSizesProbed = true;
+                    preparedTabImage.afterExternal = false;
+                    preparedTabImage.hasPreloadedAfterIcon = true;
+                    preparedTabImage.afterIcon = QIcon();
+                } else {
+                    const QkmAutomation::SafeImageAssetResult afterAsset =
+                        QkmAutomation::loadSafeInAppImageAsset(*update.tabCustomImage->imagePath);
+                    if (!afterAsset.ok) {
+                        reject(QStringLiteral("invalid_arguments"), afterAsset.errorMessage);
+                        return;
+                    }
+                    normalizedAfterRel = afterAsset.relativePath;
+                    preparedTabImage.afterSizes = afterAsset.availableSizes;
+                    preparedTabImage.afterSizesProbed = true;
+                    preparedTabImage.afterExternal = false;
+                    preparedTabImage.hasPreloadedAfterIcon = true;
+                    preparedTabImage.afterIcon = afterAsset.icon;
+                }
+            } else {
+                preparedTabImage.afterSizes = preparedTabImage.beforeSizes;
+                preparedTabImage.afterSizesProbed = beforeProbe.probed;
+                preparedTabImage.afterExternal = beforeProbe.external;
+            }
+            QString imageError;
+            if (!mergeAndValidateTabCustomImageUpdate(
+                    preparedTabImage.expectedBefore, *update.tabCustomImage, normalizedAfterRel,
+                    preparedTabImage.afterSizes, preparedTabImage.after, imageError)) {
+                reject(QStringLiteral("invalid_arguments"), imageError);
+                return;
+            }
+        }
         QMutexLocker access(&QKeyMapper_Worker::s_SourceReadAccess.mutex());
         const auto contextValid = [&] {
             return !automationSourceReadBasis().isEmpty()
                 && QKeyMapper_Worker::s_SourceReadAccess.runtimeRevision() == runtimeRevision
-                && automationIbInputPreferencesRevision() == preferencesRevision;
+                && automationIbInputPreferencesRevision() == preferencesRevision
+                && (!preparedTray.active || trayIconSelectionsEqual(m_TrayIconSelectDialog->getTrayIconSelections(), preparedTray.expectedBefore))
+                && (!preparedTabImage.active || tabCustomImageSettingsEqual(getMappingTabCustomImageSettings(tab), preparedTabImage.expectedBefore));
         };
         if (!contextValid()) { reject(QStringLiteral("context_busy"), QStringLiteral("The settings context changed during validation.")); return; }
         auto &client = QkmIbInputClient::instance();
@@ -42081,20 +42145,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("initializes_from_global_style"), willInitFromGlobal},
                     {QStringLiteral("persisted"), false}};
             } else if (changingTrayIcons) {
-                const QTrayIconSelectDialog::TrayIconSelections before = m_TrayIconSelectDialog->getTrayIconSelections();
-                const QStringList availableList = m_TrayIconSelectDialog->availableTrayIcons();
-                const QSet<QString> availableSet(availableList.begin(), availableList.end());
-                QTrayIconSelectDialog::TrayIconSelections after = before;
-                if ((update.trayIcons->idle && !resolveTrayIconSelection(*update.trayIcons->idle, QString::fromLatin1(TRAYICON_IDLE_DEFAULT_FILE), availableSet, after.idle))
-                    || (update.trayIcons->monitoring && !resolveTrayIconSelection(*update.trayIcons->monitoring, QString::fromLatin1(TRAYICON_MONITORING_DEFAULT_FILE), availableSet, after.monitoring))
-                    || (update.trayIcons->global && !resolveTrayIconSelection(*update.trayIcons->global, QString::fromLatin1(TRAYICON_GLOBAL_DEFAULT_FILE), availableSet, after.global))
-                    || (update.trayIcons->matched && !resolveTrayIconSelection(*update.trayIcons->matched, QString::fromLatin1(TRAYICON_MATCHED_DEFAULT_FILE), availableSet, after.matched))) {
-                    reject(QStringLiteral("invalid_arguments"),
-                        QStringLiteral("Tray icon must be \"default\", a built-in icon resource, or a valid .ico file in custom_trayicons."));
-                    return;
-                }
-                modified = (before.idle != after.idle) || (before.monitoring != after.monitoring)
-                    || (before.global != after.global) || (before.matched != after.matched);
+                const auto &before = preparedTray.expectedBefore;
+                const auto &after = preparedTray.after;
+                modified = !trayIconSelectionsEqual(before, after);
                 target.insert(QStringLiteral("scope"), QStringLiteral("general"));
                 change = {{QStringLiteral("kind"), QStringLiteral("set_tray_icons")},
                     {QStringLiteral("before"), automationTrayIcons(before)},
@@ -42424,19 +42477,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("show_as_floating_window"), tabInfo.TabCustomImage_ShowAsFloatingWindow},
                     {QStringLiteral("persisted"), false}};
             } else if (changingTabCustomImage) {
-                const TabCustomImageSettings before = getMappingTabCustomImageSettings(tab);
-                const QList<QSize> beforeSizes = sortedTabCustomImageAvailableSizes(before.imagePath);
-                TabCustomImageSettings after;
-                QList<QSize> afterSizes;
-                QString imageError;
-                if (!mergeAndValidateTabCustomImageUpdate(before, *update.tabCustomImage, after, afterSizes, imageError)) {
-                    reject(QStringLiteral("invalid_arguments"), imageError);
-                    return;
-                }
+                const auto &before = preparedTabImage.expectedBefore;
+                const auto &after = preparedTabImage.after;
                 modified = !tabCustomImageSettingsEqual(before, after);
                 change = {{QStringLiteral("kind"), QStringLiteral("set_tab_custom_image")},
-                    {QStringLiteral("before"), automationTabCustomImage(before, beforeSizes)},
-                    {QStringLiteral("after"), automationTabCustomImage(after, afterSizes)},
+                    {QStringLiteral("before"), automationTabCustomImage(before, preparedTabImage.beforeSizes,
+                        preparedTabImage.beforeSizesProbed, preparedTabImage.beforeExternal)},
+                    {QStringLiteral("after"), automationTabCustomImage(after, preparedTabImage.afterSizes,
+                        preparedTabImage.afterSizesProbed, preparedTabImage.afterExternal)},
                     {QStringLiteral("persisted"), false}};
             } else if (changingTabNotification) {
                 modified = tabInfo.TabHideNotification != *update.tabNotificationMode;
@@ -43005,24 +43053,15 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     m_CustomNotificationSetupDialog->applyNotificationSettings(after);
                 }
             } else if (changingTrayIcons) {
-                const QTrayIconSelectDialog::TrayIconSelections before = m_TrayIconSelectDialog->getTrayIconSelections();
-                const QStringList availableList = m_TrayIconSelectDialog->availableTrayIcons();
-                const QSet<QString> availableSet(availableList.begin(), availableList.end());
-                QTrayIconSelectDialog::TrayIconSelections after = before;
-                if ((update.trayIcons->idle && !resolveTrayIconSelection(*update.trayIcons->idle, QString::fromLatin1(TRAYICON_IDLE_DEFAULT_FILE), availableSet, after.idle))
-                    || (update.trayIcons->monitoring && !resolveTrayIconSelection(*update.trayIcons->monitoring, QString::fromLatin1(TRAYICON_MONITORING_DEFAULT_FILE), availableSet, after.monitoring))
-                    || (update.trayIcons->global && !resolveTrayIconSelection(*update.trayIcons->global, QString::fromLatin1(TRAYICON_GLOBAL_DEFAULT_FILE), availableSet, after.global))
-                    || (update.trayIcons->matched && !resolveTrayIconSelection(*update.trayIcons->matched, QString::fromLatin1(TRAYICON_MATCHED_DEFAULT_FILE), availableSet, after.matched))) {
-                    reject(QStringLiteral("invalid_arguments"),
-                        QStringLiteral("Tray icon must be \"default\", a built-in icon resource, or a valid .ico file in custom_trayicons."));
-                    return;
-                }
-                const bool changed = (before.idle != after.idle) || (before.monitoring != after.monitoring)
-                    || (before.global != after.global) || (before.matched != after.matched);
-                if (changed && !m_TrayIconSelectDialog->applyTrayIconSelections(after)) {
-                    reject(QStringLiteral("context_busy"),
-                        QStringLiteral("The tray icon selector could not apply the selected tray icons."));
-                    return;
+                const bool changed = !trayIconSelectionsEqual(preparedTray.expectedBefore, preparedTray.after);
+                if (changed) {
+                    if (!m_TrayIconSelectDialog->applyVerifiedTrayIconSelections(
+                            preparedTray.after, preparedTray.verifiedIcons, true)) {
+                        reject(QStringLiteral("context_busy"),
+                            QStringLiteral("The tray icon selector could not apply the selected tray icons."));
+                        return;
+                    }
+                    deferredTrayDisplayRefresh = true;
                 }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);
@@ -43142,17 +43181,18 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     return;
                 }
             } else if (changingTabCustomImage) {
-                const TabCustomImageSettings before = getMappingTabCustomImageSettings(tab);
-                TabCustomImageSettings after;
-                QList<QSize> afterSizes;
-                QString imageError;
-                if (!mergeAndValidateTabCustomImageUpdate(before, *update.tabCustomImage, after, afterSizes, imageError)) {
-                    reject(QStringLiteral("invalid_arguments"), imageError);
-                    return;
-                }
-                if (!tabCustomImageSettingsEqual(before, after) && !setMappingTabCustomImageSettings(tab, after)) {
-                    reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab no longer accepts custom image changes."));
-                    return;
+                const bool changed = !tabCustomImageSettingsEqual(preparedTabImage.expectedBefore, preparedTabImage.after);
+                if (changed) {
+                    if (!setMappingTabCustomImageSettings(
+                            tab, preparedTabImage.after, &preparedTabImage.afterSizes,
+                            preparedTabImage.hasPreloadedAfterIcon ? &preparedTabImage.afterIcon : Q_NULLPTR,
+                            true)) {
+                        reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab no longer accepts custom image changes."));
+                        return;
+                    }
+                    if (preparedTabImage.expectedBefore.imagePath != preparedTabImage.after.imagePath) {
+                        deferredTabDisplayTab = tab;
+                    }
                 }
             } else if (changingTabNotification) {
                 if (!setMappingTabNotificationMode(tab, *update.tabNotificationMode)) {
@@ -43263,6 +43303,15 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             result.insert(QStringLiteral("source_binding_after"), binding.isEmpty() ? QJsonValue(QJsonValue::Null) : QJsonValue(binding));
         }
         store.finish(owner, validation.id, QStringLiteral("applied"), result);
+        access.unlock();
+        if (deferredTabDisplayTab >= 0) {
+            updateKeyMappingTabWidgetTabDisplay(
+                deferredTabDisplayTab,
+                preparedTabImage.hasPreloadedAfterIcon ? &preparedTabImage.afterIcon : Q_NULLPTR);
+        }
+        if (deferredTrayDisplayRefresh) {
+            updateSystemTrayDisplay();
+        }
         server.reply(request.connectionId, request.requestId, store.operation(owner, validation.id));
         return;
     }
@@ -44133,7 +44182,7 @@ void QKeyMapper::handleAutomationRequest(const QkmAutomation::AutomationRequest 
         server.replyCapabilities(request.connectionId, request.requestId, businessCapabilities);
         return;
     }
-    const QJsonObject state = collectAutomationState();
+    const QJsonObject state = collectAutomationState(true);
     if (state.isEmpty()) {
         server.replyError(request.connectionId, request.requestId, QStringLiteral("context_busy"),
                           QStringLiteral("Configuration is loading or the application is not available."));

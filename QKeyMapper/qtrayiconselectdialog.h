@@ -2,8 +2,12 @@
 #define QTRAYICONSELECTDIALOG_H
 
 #include <QDialog>
+#include <QHash>
+#include <QIcon>
 #include <orderedmap.h>
+#include "automation/qkm_safe_image_asset.h"
 
+class QComboBox;
 class QFileDialog;
 
 namespace Ui {
@@ -31,6 +35,9 @@ public:
     };
 
     static const QStringList &builtinTrayIcons(void);
+    static bool isBuiltinTrayIcon(const QString &trayIconPath);
+    QkmAutomation::SafeTrayIconScanResult cachedCustomTrayIconScan(void) const;
+    void invalidateCustomTrayIconCache(void);
     QStringList availableCustomTrayIcons(void) const;
     QStringList availableTrayIcons(void) const;
 
@@ -39,6 +46,10 @@ public:
     void setUILanguage(int languageindex);
 
     TrayIconSelections getTrayIconSelections(void) const;
+    bool applyVerifiedTrayIconSelections(
+        const TrayIconSelections &selections,
+        const QHash<QString, QIcon> &verifiedIcons,
+        bool deferTrayDisplayRefresh = false);
     bool applyTrayIconSelections(const TrayIconSelections &selections);
 
     QString getTrayIcon_IdleStateIcon(void);
@@ -68,10 +79,15 @@ private:
     void initSelectTrayIconFileDialog(void);
     void refreshTrayIconComboBoxesWithSelections(void);
     QString getTrayIconPathOrDefault(const QString &trayiconpath, const QString &defaultTrayiconpath) const;
+    QIcon getVerifiedStateQIcon(const QString &trayIconPath, const char *defaultFile) const;
+    void ensureTrayIconItemPresent(const QString &trayIconPath, const QIcon &icon);
+    void setTrayIconStateSelection(QComboBox *combo, const QString &trayIconFilename, const char *defaultFile);
 
     static QTrayIconSelectDialog *m_instance;
     QFileDialog *m_SelectTrayIconFileDialog = Q_NULLPTR;
     Ui::QTrayIconSelectDialog *ui;
+    mutable QkmAutomation::SafeTrayIconCatalogCache m_CustomTrayIconCache;
+    mutable QHash<QString, QIcon> m_VerifiedCustomIcons;
 };
 
 #endif // QTRAYICONSELECTDIALOG_H
