@@ -15,7 +15,7 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 | 项目 | 当前记录 |
 |---|---|
 | 当前切片 | SET-GYRO-257 [Gemini]（基于 `dd21d790` 实现 `configuration.set_gyro2mouse_options.{preview,apply}`、`get_state.gyro2mouse_options` 与共用 `QGyro2MouseOptionDialog::setGyro2MouseOptions()`，本机选验完成，待 Codex 复核；按用户指示在本切片完成后暂停交接，待 Antigravity 更新重启后继续） |
-| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (20695a69)、254 (65c33ac0)、255 (e4fb73d6)、256 (ac2cb2ab)、252-内置规则说明保真 (dd21d790)、257 (本提交) |
+| 待 Codex 验收（Gemini 切片） | 239 (e4e95fe5)、240 (16796c96)、241 (3281446d)、242 (f4ce85fc)、243 (fa5536cd)、244 (f9e0aa0b)、245 (88393171)、246 (3cae0d65)、247 (205afd0e)、248 (57238d01)、249 (9c18d9b5)、241/249-P2修复 (e94536d9)、241-空白重置补齐 (781d0965)、241-根区与阈值回退 (02626cc8)、TRAY-MCP-FIX (5db38020)、250 (05360895)、251 (dc0f4609)、252 (922887e7)、253 (20695a69)、254 (65c33ac0)、255 (e4fb73d6)、256 (ac2cb2ab)、252-内置规则说明保真 (dd21d790)、257 (a318d597) |
 | 执行机器 | PC-W11。Win10 正式 Release 和跨系统验收仍待 |
 | 目标分支／接纳点 | codex/qkeymapper-mcp-control，D:/work/mygithub/QKeyMapper/QKeyMapper；仅聚焦本地提交 |
 | 核心基线 | RUST-D4 正式接线 349d889c；154 连带禁用 8f902531；155 同表自禁用 c9283438。IbInput 接纳 e73f719b（MCP94f0bb84＋固定输入 b5b484a6） |
