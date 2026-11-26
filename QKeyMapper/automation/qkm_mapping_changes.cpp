@@ -301,6 +301,96 @@ bool parseGyroGamepadAndPanelUpdates(const QJsonObject &arguments,
     }
     return true;
 }
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+bool parseNotificationStyleUpdate(const QJsonObject &arguments,
+    NotificationStyleUpdate &styleOut, const char *&errorOut)
+{
+    using namespace QKeyMapperConstants;
+    const auto fail = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const auto raw = arguments.value(QStringLiteral("notification_style"));
+    const auto fields = raw.toObject();
+    if (!raw.isObject() || fields.isEmpty())
+        return fail("Provide at least one notification_style field.");
+    const QSet<QString> allowedFields{
+        QStringLiteral("font_color"), QStringLiteral("background_color"),
+        QStringLiteral("font_family"), QStringLiteral("font_size"),
+        QStringLiteral("font_weight"), QStringLiteral("font_italic"),
+        QStringLiteral("display_duration"), QStringLiteral("fade_in_duration"),
+        QStringLiteral("fade_out_duration"), QStringLiteral("border_radius"),
+        QStringLiteral("padding"), QStringLiteral("opacity"),
+        QStringLiteral("x_offset"), QStringLiteral("y_offset")};
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        if (!allowedFields.contains(it.key()))
+            return fail("Unknown notification_style field.");
+    }
+    const auto parseBoundedInt = [&](const QString &key, int minVal, int maxVal, std::optional<int> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        const int parsed = val.toInt(minVal - 1);
+        if (!val.isDouble() || val.toDouble() != parsed || parsed < minVal || parsed > maxVal)
+            return false;
+        target = parsed;
+        return true;
+    };
+    const auto parseColorHex = [&](const QString &key, int digits, std::optional<QString> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        if (!val.isString()) return false;
+        const QString color = val.toString();
+        const QString hex = color.mid(1).toLower();
+        if (!color.startsWith(QLatin1Char('#')) || !isLowerHex(hex, digits))
+            return false;
+        target = QLatin1Char('#') + hex;
+        return true;
+    };
+    if (!parseColorHex(QStringLiteral("font_color"), 6, styleOut.fontColor))
+        return fail("notification_style font_color must be a #RRGGBB hex string.");
+    if (!parseColorHex(QStringLiteral("background_color"), 8, styleOut.backgroundColor))
+        return fail("notification_style background_color must be a #AARRGGBB hex string.");
+    if (fields.contains(QStringLiteral("font_family"))) {
+        const auto val = fields.value(QStringLiteral("font_family"));
+        if (!val.isString()) return fail("notification_style font_family must be a string.");
+        const QString s = val.toString();
+        if (s.size() > 255 || s.contains(QChar(0)) || s.contains(QLatin1Char('\r')) || s.contains(QLatin1Char('\n')))
+            return fail("notification_style font_family must be single-line and at most 255 characters.");
+        styleOut.fontFamily = s.trimmed();
+    }
+    if (!parseBoundedInt(QStringLiteral("font_size"), NOTIFICATION_FONT_SIZE_MIN, NOTIFICATION_FONT_SIZE_MAX, styleOut.fontSize)
+        || !parseBoundedInt(QStringLiteral("font_weight"), NOTIFICATION_FONT_WEIGHT_MIN, NOTIFICATION_FONT_WEIGHT_MAX, styleOut.fontWeight)
+        || !parseBoundedInt(QStringLiteral("display_duration"), NOTIFICATION_DURATION_MIN, NOTIFICATION_DURATION_MAX, styleOut.displayDuration)
+        || !parseBoundedInt(QStringLiteral("fade_in_duration"), NOTIFICATION_DURATION_MIN, NOTIFICATION_DURATION_MAX, styleOut.fadeInDuration)
+        || !parseBoundedInt(QStringLiteral("fade_out_duration"), NOTIFICATION_DURATION_MIN, NOTIFICATION_DURATION_MAX, styleOut.fadeOutDuration)
+        || !parseBoundedInt(QStringLiteral("border_radius"), NOTIFICATION_BORDER_RADIUS_MIN, NOTIFICATION_BORDER_RADIUS_MAX, styleOut.borderRadius)
+        || !parseBoundedInt(QStringLiteral("padding"), NOTIFICATION_PADDING_MIN, NOTIFICATION_PADDING_MAX, styleOut.padding)
+        || !parseBoundedInt(QStringLiteral("x_offset"), NOTIFICATION_OFFSET_MIN, NOTIFICATION_OFFSET_MAX, styleOut.xOffset)
+        || !parseBoundedInt(QStringLiteral("y_offset"), NOTIFICATION_OFFSET_MIN, NOTIFICATION_OFFSET_MAX, styleOut.yOffset)) {
+        return fail("notification_style integer field is invalid or out of range.");
+    }
+    if (fields.contains(QStringLiteral("font_italic"))) {
+        const auto val = fields.value(QStringLiteral("font_italic"));
+        if (!val.isBool()) return fail("notification_style font_italic must be a boolean.");
+        styleOut.fontItalic = val.toBool();
+    }
+    if (fields.contains(QStringLiteral("opacity"))) {
+        const auto val = fields.value(QStringLiteral("opacity"));
+        if (!val.isDouble()) return fail("notification_style opacity must be a number in 0.00..1.00 with at most 2 decimals.");
+        const double d = val.toDouble();
+        if (!std::isfinite(d) || d < NOTIFICATION_OPACITY_MIN || d > NOTIFICATION_OPACITY_MAX
+            || std::abs(d * 100.0 - std::round(d * 100.0)) > 1e-6) {
+            return fail("notification_style opacity must be a finite number in 0.00..1.00 with at most 2 decimal places.");
+        }
+        double canonical = std::round(d * 100.0) / 100.0;
+        if (canonical == 0.0) canonical = 0.0;
+        styleOut.opacity = canonical;
+    }
+    return true;
+}
 }
 
 const char *mappingRowMoveAction(MappingRowMove move)
@@ -690,6 +780,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool gamepadTouchpadPreview = preview && action == QLatin1String("configuration.set_gamepad_touchpad");
     const bool acceptVirtualGamepadInputPreview = preview && action == QLatin1String("configuration.set_accept_virtual_gamepad_input");
     const bool vbuttonPanelPreview = preview && action == QLatin1String("configuration.set_vbutton_panel_settings");
+    const bool generalNotificationStylePreview = preview && action == QLatin1String("general.set_notification_style");
+    const bool customNotificationStylePreview = preview && action == QLatin1String("configuration.set_custom_notification_style");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -713,7 +805,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview || processIconTrayPreview
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview
+        || generalNotificationStylePreview || customNotificationStylePreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -741,6 +834,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : gamepadTouchpadPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_touchpad")}
         : acceptVirtualGamepadInputPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("accept_virtual_gamepad_input")}
         : vbuttonPanelPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("vbutton_panel")}
+        : (generalNotificationStylePreview || customNotificationStylePreview) ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_style")}
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
         : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
@@ -928,6 +1022,18 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                     acceptVirtualGamepadInputPreview, vbuttonPanelPreview,
                     result.update, parseError)) {
                 return fail(parseError);
+            }
+        }
+        if (generalNotificationStylePreview || customNotificationStylePreview) {
+            const char *parseError = nullptr;
+            NotificationStyleUpdate parsedStyle;
+            if (!parseNotificationStyleUpdate(arguments, parsedStyle, parseError)) {
+                return fail(parseError);
+            }
+            if (generalNotificationStylePreview) {
+                result.update.generalNotificationStyle = parsedStyle;
+            } else {
+                result.update.customNotificationStyle = parsedStyle;
             }
         }
         if (processIconTrayPreview) {
@@ -1750,6 +1856,60 @@ void appendVButtonPanelCapabilities(QJsonArray &capabilities, const CapabilitySc
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendNotificationStyleCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    using namespace QKeyMapperConstants;
+    const QJsonObject notificationStyleSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("font_color"), CapabilitySchemaContext::string(QStringLiteral("^#[0-9A-Fa-f]{6}$"), 7)},
+            {QStringLiteral("background_color"), CapabilitySchemaContext::string(QStringLiteral("^#[0-9A-Fa-f]{8}$"), 9)},
+            {QStringLiteral("font_family"), CapabilitySchemaContext::string(QStringLiteral("^[^\\u0000\\r\\n]*$"), 255)},
+            {QStringLiteral("font_size"), CapabilitySchemaContext::boundedInteger(NOTIFICATION_FONT_SIZE_MIN, NOTIFICATION_FONT_SIZE_MAX)},
+            {QStringLiteral("font_weight"), CapabilitySchemaContext::boundedInteger(NOTIFICATION_FONT_WEIGHT_MIN, NOTIFICATION_FONT_WEIGHT_MAX)},
+            {QStringLiteral("font_italic"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("display_duration"), CapabilitySchemaContext::boundedInteger(NOTIFICATION_DURATION_MIN, NOTIFICATION_DURATION_MAX)},
+            {QStringLiteral("fade_in_duration"), CapabilitySchemaContext::boundedInteger(NOTIFICATION_DURATION_MIN, NOTIFICATION_DURATION_MAX)},
+            {QStringLiteral("fade_out_duration"), CapabilitySchemaContext::boundedInteger(NOTIFICATION_DURATION_MIN, NOTIFICATION_DURATION_MAX)},
+            {QStringLiteral("border_radius"), CapabilitySchemaContext::boundedInteger(NOTIFICATION_BORDER_RADIUS_MIN, NOTIFICATION_BORDER_RADIUS_MAX)},
+            {QStringLiteral("padding"), CapabilitySchemaContext::boundedInteger(NOTIFICATION_PADDING_MIN, NOTIFICATION_PADDING_MAX)},
+            {QStringLiteral("opacity"), QJsonObject{{QStringLiteral("type"), QStringLiteral("number")},
+                {QStringLiteral("minimum"), NOTIFICATION_OPACITY_MIN}, {QStringLiteral("maximum"), NOTIFICATION_OPACITY_MAX}}},
+            {QStringLiteral("x_offset"), CapabilitySchemaContext::boundedInteger(NOTIFICATION_OFFSET_MIN, NOTIFICATION_OFFSET_MAX)},
+            {QStringLiteral("y_offset"), CapabilitySchemaContext::boundedInteger(NOTIFICATION_OFFSET_MIN, NOTIFICATION_OFFSET_MAX)}}}};
+    auto generalPreview = CapabilitySchemaContext::capability("general.set_notification_style.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_notification_style")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("notification_style"), notificationStyleSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_style")}));
+    auto generalApply = CapabilitySchemaContext::capability("general.set_notification_style.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&generalPreview, &generalApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("general_settings_scope"),
+            QStringLiteral("isolated_from_custom_notification_style"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto customPreview = CapabilitySchemaContext::capability("configuration.set_custom_notification_style.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_custom_notification_style")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("notification_style"), notificationStyleSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_style")}));
+    auto customApply = CapabilitySchemaContext::capability("configuration.set_custom_notification_style.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&customPreview, &customApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("requires_custom_notification_enabled"), QStringLiteral("initializes_from_general_style_if_uninitialized"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -1880,6 +2040,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
         capabilities.append(*item);
     }
     appendVButtonPanelCapabilities(capabilities, ctx);
+    appendNotificationStyleCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

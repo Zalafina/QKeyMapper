@@ -38252,6 +38252,66 @@ static VButtonPanelSettings mergeVButtonPanelSettings(VButtonPanelSettings targe
     return target;
 }
 
+static QJsonObject automationNotificationStyle(const NotificationStyleSettings &s)
+{
+    const QString family = s.fontFamily.trimmed();
+    return {
+        {QStringLiteral("font_color"), s.fontColor.name(QColor::HexRgb)},
+        {QStringLiteral("background_color"), s.backgroundColor.name(QColor::HexArgb)},
+        {QStringLiteral("font_family"), family},
+        {QStringLiteral("using_default_font"), family.isEmpty()},
+        {QStringLiteral("effective_font_family"), QKeyMapper::resolveConfiguredFontFamily(family)},
+        {QStringLiteral("font_size"), s.fontSize},
+        {QStringLiteral("font_weight"), s.fontWeight},
+        {QStringLiteral("font_italic"), s.fontItalic},
+        {QStringLiteral("display_duration"), s.displayDuration},
+        {QStringLiteral("fade_in_duration"), s.fadeInDuration},
+        {QStringLiteral("fade_out_duration"), s.fadeOutDuration},
+        {QStringLiteral("border_radius"), s.borderRadius},
+        {QStringLiteral("padding"), s.padding},
+        {QStringLiteral("opacity"), canonicalizeTouchpadSpeed(s.opacity)},
+        {QStringLiteral("x_offset"), s.xOffset},
+        {QStringLiteral("y_offset"), s.yOffset},
+    };
+}
+
+static bool notificationStyleSettingsEqual(const NotificationStyleSettings &a, const NotificationStyleSettings &b)
+{
+    return a.fontColor.rgb() == b.fontColor.rgb()
+        && a.backgroundColor.rgba() == b.backgroundColor.rgba()
+        && a.fontFamily.trimmed() == b.fontFamily.trimmed()
+        && a.fontSize == b.fontSize
+        && a.fontWeight == b.fontWeight
+        && a.fontItalic == b.fontItalic
+        && a.displayDuration == b.displayDuration
+        && a.fadeInDuration == b.fadeInDuration
+        && a.fadeOutDuration == b.fadeOutDuration
+        && a.borderRadius == b.borderRadius
+        && a.padding == b.padding
+        && qRound(a.opacity * 100.0) == qRound(b.opacity * 100.0)
+        && a.xOffset == b.xOffset
+        && a.yOffset == b.yOffset;
+}
+
+static NotificationStyleSettings mergeNotificationStyleSettings(NotificationStyleSettings target, const QkmAutomation::NotificationStyleUpdate &u)
+{
+    if (u.fontColor) target.fontColor = QColor(*u.fontColor);
+    if (u.backgroundColor) target.backgroundColor = QColor(*u.backgroundColor);
+    if (u.fontFamily) target.fontFamily = u.fontFamily->trimmed();
+    if (u.fontSize) target.fontSize = *u.fontSize;
+    if (u.fontWeight) target.fontWeight = *u.fontWeight;
+    if (u.fontItalic) target.fontItalic = *u.fontItalic;
+    if (u.displayDuration) target.displayDuration = *u.displayDuration;
+    if (u.fadeInDuration) target.fadeInDuration = *u.fadeInDuration;
+    if (u.fadeOutDuration) target.fadeOutDuration = *u.fadeOutDuration;
+    if (u.borderRadius) target.borderRadius = *u.borderRadius;
+    if (u.padding) target.padding = *u.padding;
+    if (u.opacity) target.opacity = canonicalizeTouchpadSpeed(*u.opacity);
+    if (u.xOffset) target.xOffset = *u.xOffset;
+    if (u.yOffset) target.yOffset = *u.yOffset;
+    return target;
+}
+
 static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QString &screenKey)
 {
     return {{QStringLiteral("window_point_key"), windowKey},
@@ -38433,6 +38493,24 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
     if (m_VButtonPanel) {
         result.insert(QStringLiteral("vbutton_panel"), automationVButtonPanel(
             readCurrentVButtonPanelSettings(m_VButtonPanelSettings, m_VButtonPanel)));
+    }
+    if (m_NotificationSetupDialog) {
+        const NotificationStyleSettings generalStyle = m_NotificationSetupDialog->getNotificationSettings();
+        QJsonObject notificationStyles{
+            {QStringLiteral("general"), automationNotificationStyle(generalStyle)}
+        };
+        if (m_MappingAdvancedDialog && m_CustomNotificationSetupDialog) {
+            const bool customEnabled = m_MappingAdvancedDialog->getCustomNotificationEnabled();
+            const NotificationStyleSettings customSource = m_CustomNotificationStyleInitialized
+                ? m_CustomNotificationSetupDialog->getNotificationSettings()
+                : generalStyle;
+            QJsonObject customStyle = automationNotificationStyle(customSource);
+            customStyle.insert(QStringLiteral("enabled"), customEnabled);
+            customStyle.insert(QStringLiteral("style_initialized"), m_CustomNotificationStyleInitialized);
+            customStyle.insert(QStringLiteral("editable"), customEnabled);
+            notificationStyles.insert(QStringLiteral("custom"), customStyle);
+        }
+        result.insert(QStringLiteral("notification_styles"), notificationStyles);
     }
     if (m_Gyro2MouseOptionDialog) {
         result.insert(QStringLiteral("gyro2mouse_options"), automationGyro2MouseOptions(
@@ -40764,6 +40842,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 || update.gamepadTouchpadInvertX.has_value() || update.gamepadTouchpadInvertY.has_value());
         const bool changingAcceptVirtualGamepadInput = updating && update.acceptVirtualGamepadInput.has_value();
         const bool changingVButtonPanel = updating && update.vbuttonPanel.has_value();
+        const bool changingGeneralNotificationStyle = updating && update.generalNotificationStyle.has_value();
+        const bool changingCustomNotificationStyle = updating && update.customNotificationStyle.has_value();
         const bool changingProcessIconAsTrayIcon = updating && update.processIconAsTrayIcon.has_value();
         const bool changingPointDisplayKeys = updating
             && (update.showWindowPointKey.has_value() || update.showScreenPointKey.has_value());
@@ -40792,7 +40872,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
-            || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel || changingProcessIconAsTrayIcon || changingPointDisplayKeys
+            || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel
+            || changingGeneralNotificationStyle || changingCustomNotificationStyle || changingProcessIconAsTrayIcon || changingPointDisplayKeys
             || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingDisplayScale;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
@@ -40811,13 +40892,16 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || (changingGeneralPreference && !m_GeneralAdvancedDialog)
             || ((changingKey2Mouse || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingProcessIconAsTrayIcon || changingPointDisplayKeys || changingCustomNotification) && !m_MappingAdvancedDialog)
             || (changingGyro2MouseOptions && (!m_Gyro2MouseOptionDialog || m_Gyro2MouseOptionDialog->isVisible()))
-            || (changingVButtonPanel && (!m_VButtonPanel || !m_VButtonPanelSetupDialog || m_VButtonPanelSetupDialog->isVisible()))) {
+            || (changingVButtonPanel && (!m_VButtonPanel || !m_VButtonPanelSetupDialog || m_VButtonPanelSetupDialog->isVisible()))
+            || (changingGeneralNotificationStyle && (!m_NotificationSetupDialog || m_NotificationSetupDialog->isVisible()))
+            || (changingCustomNotificationStyle && (!m_MappingAdvancedDialog || !m_CustomNotificationSetupDialog || !m_NotificationSetupDialog || m_CustomNotificationSetupDialog->isVisible()))) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
-            && !changingWindowDisplayMode && !changingKey2Mouse && !changingGyro2MouseOptions && !changingGamepadThresholds && !changingGamepadTouchpad && !changingAcceptVirtualGamepadInput && !changingVButtonPanel && !changingProcessIconAsTrayIcon
+            && !changingWindowDisplayMode && !changingKey2Mouse && !changingGyro2MouseOptions && !changingGamepadThresholds && !changingGamepadTouchpad && !changingAcceptVirtualGamepadInput && !changingVButtonPanel
+            && !changingGeneralNotificationStyle && !changingCustomNotificationStyle && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale
             && isCommonMappingTabIndex(tab)) {
@@ -40828,7 +40912,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("The display scale control is unavailable or disabled."));
             return;
         }
-        if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel || changingProcessIconAsTrayIcon
+        if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel || changingCustomNotificationStyle || changingProcessIconAsTrayIcon
                 || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria
                 || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
@@ -41276,6 +41360,35 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), QStringLiteral("set_vbutton_panel_settings")},
                     {QStringLiteral("before"), automationVButtonPanel(before)},
                     {QStringLiteral("after"), automationVButtonPanel(after)}};
+            } else if (changingGeneralNotificationStyle) {
+                const NotificationStyleSettings before = m_NotificationSetupDialog->getNotificationSettings();
+                const NotificationStyleSettings after = mergeNotificationStyleSettings(before, *update.generalNotificationStyle);
+                modified = !notificationStyleSettingsEqual(before, after);
+                target.insert(QStringLiteral("scope"), QStringLiteral("general"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_notification_style")},
+                    {QStringLiteral("before"), automationNotificationStyle(before)},
+                    {QStringLiteral("after"), automationNotificationStyle(after)},
+                    {QStringLiteral("persisted"), false}};
+            } else if (changingCustomNotificationStyle) {
+                if (!m_MappingAdvancedDialog->getCustomNotificationEnabled()) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("Enable custom notification before editing custom notification style."));
+                    return;
+                }
+                const NotificationStyleSettings before = m_CustomNotificationStyleInitialized
+                    ? m_CustomNotificationSetupDialog->getNotificationSettings()
+                    : m_NotificationSetupDialog->getNotificationSettings();
+                const NotificationStyleSettings after = mergeNotificationStyleSettings(before, *update.customNotificationStyle);
+                const bool willInitFromGlobal = !m_CustomNotificationStyleInitialized;
+                modified = !notificationStyleSettingsEqual(before, after) || willInitFromGlobal;
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_custom_notification_style")},
+                    {QStringLiteral("before"), automationNotificationStyle(before)},
+                    {QStringLiteral("after"), automationNotificationStyle(after)},
+                    {QStringLiteral("style_initialized_before"), m_CustomNotificationStyleInitialized},
+                    {QStringLiteral("initializes_from_global_style"), willInitFromGlobal},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingProcessIconAsTrayIcon) {
                 const bool before = m_MappingAdvancedDialog->getProcessIconAsTrayIcon();
                 const bool after = *update.processIconAsTrayIcon;
@@ -41978,6 +42091,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingGamepadTouchpad ? QStringLiteral("configuration.set_gamepad_touchpad")
             : changingAcceptVirtualGamepadInput ? QStringLiteral("configuration.set_accept_virtual_gamepad_input")
             : changingVButtonPanel ? QStringLiteral("configuration.set_vbutton_panel_settings")
+            : changingGeneralNotificationStyle ? QStringLiteral("general.set_notification_style")
+            : changingCustomNotificationStyle ? QStringLiteral("configuration.set_custom_notification_style")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -42122,6 +42237,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 const VButtonPanelSettings after = mergeVButtonPanelSettings(before, *update.vbuttonPanel);
                 if (!vbuttonPanelSettingsEqual(before, after)) {
                     applyVButtonPanelSettings(after, true);
+                }
+            } else if (changingGeneralNotificationStyle) {
+                const NotificationStyleSettings before = m_NotificationSetupDialog->getNotificationSettings();
+                const NotificationStyleSettings after = mergeNotificationStyleSettings(before, *update.generalNotificationStyle);
+                if (!notificationStyleSettingsEqual(before, after)) {
+                    m_NotificationSetupDialog->applyNotificationSettings(after);
+                }
+            } else if (changingCustomNotificationStyle) {
+                ensureCustomNotificationStyleInitialized();
+                const NotificationStyleSettings before = m_CustomNotificationSetupDialog->getNotificationSettings();
+                const NotificationStyleSettings after = mergeNotificationStyleSettings(before, *update.customNotificationStyle);
+                if (!notificationStyleSettingsEqual(before, after)) {
+                    m_CustomNotificationSetupDialog->applyNotificationSettings(after);
                 }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);

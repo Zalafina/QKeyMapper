@@ -639,6 +639,47 @@ struct VButtonPanelSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct NotificationStyleFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    background_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_size: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_weight: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_italic: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    display_duration: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fade_in_duration: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    fade_out_duration: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    border_radius: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    padding: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    x_offset: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    y_offset: Option<i64>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct NotificationStyleSettings {
+    action: String,
+    source_tab_ref: String,
+    notification_style: NotificationStyleFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1322,6 +1363,64 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && f.pressed_color.as_deref().is_none_or(|s| valid_hex(s, 6))
                             && f.locked_color.as_deref().is_none_or(|s| valid_hex(s, 6))
                             && f.text_color.as_deref().is_none_or(|s| valid_hex(s, 6))
+                    });
+                }
+                Some("general.set_notification_style")
+                | Some("configuration.set_custom_notification_style") => {
+                    if arguments
+                        .get("notification_style")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &NotificationStyleSettings| {
+                        let f = &v.notification_style;
+                        let any_set = f.font_color.is_some()
+                            || f.background_color.is_some()
+                            || f.font_family.is_some()
+                            || f.font_size.is_some()
+                            || f.font_weight.is_some()
+                            || f.font_italic.is_some()
+                            || f.display_duration.is_some()
+                            || f.fade_in_duration.is_some()
+                            || f.fade_out_duration.is_some()
+                            || f.border_radius.is_some()
+                            || f.padding.is_some()
+                            || f.opacity.is_some()
+                            || f.x_offset.is_some()
+                            || f.y_offset.is_some();
+                        let valid_opacity = |raw: f64| {
+                            raw.is_finite()
+                                && (0.0..=1.0).contains(&raw)
+                                && ((raw * 100.0) - (raw * 100.0).round()).abs() <= 1e-6
+                        };
+                        let valid_font_family = |s: &str| {
+                            s.encode_utf16().count() <= 255
+                                && !s.chars().any(|c| matches!(c, '\0' | '\r' | '\n'))
+                        };
+                        let valid_hex = |s: &str, digits: usize| {
+                            s.starts_with('#')
+                                && s.len() == 1 + digits
+                                && s[1..].bytes().all(|b| b.is_ascii_hexdigit())
+                        };
+                        tab_ref(&v.source_tab_ref)
+                            && any_set
+                            && f.font_color.as_deref().is_none_or(|s| valid_hex(s, 6))
+                            && f.background_color
+                                .as_deref()
+                                .is_none_or(|s| valid_hex(s, 8))
+                            && f.font_family.as_deref().is_none_or(valid_font_family)
+                            && f.font_size.is_none_or(|n| (1..=72).contains(&n))
+                            && f.font_weight.is_none_or(|n| (0..=2).contains(&n))
+                            && f.display_duration.is_none_or(|n| (0..=99999).contains(&n))
+                            && f.fade_in_duration.is_none_or(|n| (0..=99999).contains(&n))
+                            && f.fade_out_duration.is_none_or(|n| (0..=99999).contains(&n))
+                            && f.border_radius.is_none_or(|n| (0..=1000).contains(&n))
+                            && f.padding.is_none_or(|n| (0..=1000).contains(&n))
+                            && f.opacity.is_none_or(valid_opacity)
+                            && f.x_offset.is_none_or(|n| (-5000..=5000).contains(&n))
+                            && f.y_offset.is_none_or(|n| (-5000..=5000).contains(&n))
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -2469,6 +2568,62 @@ mod tests {
             json!({"columns": 3, "extra": 1}),
         ] {
             assert!(preview(&json!({"action": "configuration.set_vbutton_panel_settings", "source_tab_ref": tab, "vbutton_panel": bad})).is_err());
+        }
+    }
+
+    #[test]
+    fn notification_style_checks_all_constraints() {
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let valid_full = json!({
+            "font_color": "#AB1234",
+            "background_color": "#88112233",
+            "font_family": "Consolas",
+            "font_size": 72,
+            "font_weight": 0,
+            "font_italic": true,
+            "display_duration": 0,
+            "fade_in_duration": 99999,
+            "fade_out_duration": 500,
+            "border_radius": 1000,
+            "padding": 0,
+            "opacity": 0.0,
+            "x_offset": -5000,
+            "y_offset": 5000
+        });
+        for action in [
+            "general.set_notification_style",
+            "configuration.set_custom_notification_style",
+        ] {
+            let wire = json!({"action": action, "source_tab_ref": tab, "notification_style": valid_full});
+            assert_eq!(preview(&wire).unwrap(), *wire.as_object().unwrap());
+            let subset = json!({"action": action, "source_tab_ref": tab, "notification_style": {"font_family": "", "opacity": 0.65}});
+            assert_eq!(preview(&subset).unwrap(), *subset.as_object().unwrap());
+            for bad in [
+                json!({}),
+                json!({"font_color": "#88112233"}),
+                json!({"background_color": "#112233"}),
+                json!({"font_size": 0}),
+                json!({"font_size": 73}),
+                json!({"font_weight": 3}),
+                json!({"font_italic": 1}),
+                json!({"display_duration": -1}),
+                json!({"fade_in_duration": 100000}),
+                json!({"border_radius": 1001}),
+                json!({"padding": -1}),
+                json!({"opacity": -0.01}),
+                json!({"opacity": 1.01}),
+                json!({"opacity": 0.123}),
+                json!({"x_offset": -5001}),
+                json!({"y_offset": 5001}),
+                json!({"font_family": "Consolas\n"}),
+                json!({"font_family": "A".repeat(256)}),
+                json!({"font_size": null}),
+                json!({"font_size": 16, "extra": 1}),
+            ] {
+                assert!(preview(&json!({"action": action, "source_tab_ref": tab, "notification_style": bad})).is_err());
+            }
         }
     }
 

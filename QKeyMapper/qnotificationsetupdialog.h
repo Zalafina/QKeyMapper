@@ -95,6 +95,7 @@ public:
     void setNotification_Y_Offset(int offset);
 
     void loadNotificationSettings(const NotificationStyleSettings &settings);
+    bool applyNotificationSettings(const NotificationStyleSettings &settings);
 
 protected:
     bool event(QEvent *event) override;

@@ -358,6 +358,33 @@ void QNotificationSetupDialog::loadNotificationSettings(const NotificationStyleS
     setNotification_Y_Offset(qBound(NOTIFICATION_OFFSET_MIN, settings.yOffset, NOTIFICATION_OFFSET_MAX));
 }
 
+bool QNotificationSetupDialog::applyNotificationSettings(const NotificationStyleSettings &settings)
+{
+    const NotificationStyleSettings before = getNotificationSettings();
+    const bool unchanged = (before.fontColor.rgb() == settings.fontColor.rgb())
+        && (before.backgroundColor.rgba() == settings.backgroundColor.rgba())
+        && (before.fontFamily.trimmed() == settings.fontFamily.trimmed())
+        && (before.fontSize == qBound(NOTIFICATION_FONT_SIZE_MIN, settings.fontSize, NOTIFICATION_FONT_SIZE_MAX))
+        && (before.fontWeight == qBound(NOTIFICATION_FONT_WEIGHT_MIN, settings.fontWeight, NOTIFICATION_FONT_WEIGHT_MAX))
+        && (before.fontItalic == settings.fontItalic)
+        && (before.displayDuration == qBound(NOTIFICATION_DURATION_MIN, settings.displayDuration, NOTIFICATION_DURATION_MAX))
+        && (before.fadeInDuration == qBound(NOTIFICATION_DURATION_MIN, settings.fadeInDuration, NOTIFICATION_DURATION_MAX))
+        && (before.fadeOutDuration == qBound(NOTIFICATION_DURATION_MIN, settings.fadeOutDuration, NOTIFICATION_DURATION_MAX))
+        && (before.borderRadius == qBound(NOTIFICATION_BORDER_RADIUS_MIN, settings.borderRadius, NOTIFICATION_BORDER_RADIUS_MAX))
+        && (before.padding == qBound(NOTIFICATION_PADDING_MIN, settings.padding, NOTIFICATION_PADDING_MAX))
+        && (qRound(before.opacity * 100.0) == qRound(qBound(NOTIFICATION_OPACITY_MIN, settings.opacity, NOTIFICATION_OPACITY_MAX) * 100.0))
+        && (before.xOffset == qBound(NOTIFICATION_OFFSET_MIN, settings.xOffset, NOTIFICATION_OFFSET_MAX))
+        && (before.yOffset == qBound(NOTIFICATION_OFFSET_MIN, settings.yOffset, NOTIFICATION_OFFSET_MAX));
+    if (unchanged) {
+        return false;
+    }
+    loadNotificationSettings(settings);
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+    }
+    return true;
+}
+
 void QNotificationSetupDialog::syncFontFamilyControls()
 {
     const QString previewFamily = QKeyMapper::resolveConfiguredFontFamily(m_FontFamily);

@@ -75,6 +75,23 @@ struct VButtonPanelUpdate {
     std::optional<QString> textColor;
 };
 
+struct NotificationStyleUpdate {
+    std::optional<QString> fontColor;
+    std::optional<QString> backgroundColor;
+    std::optional<QString> fontFamily;
+    std::optional<int> fontSize;
+    std::optional<int> fontWeight;
+    std::optional<bool> fontItalic;
+    std::optional<int> displayDuration;
+    std::optional<int> fadeInDuration;
+    std::optional<int> fadeOutDuration;
+    std::optional<int> borderRadius;
+    std::optional<int> padding;
+    std::optional<double> opacity;
+    std::optional<int> xOffset;
+    std::optional<int> yOffset;
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -136,6 +153,8 @@ struct MappingUpdateArguments {
     std::optional<bool> gamepadTouchpadInvertY;
     std::optional<bool> acceptVirtualGamepadInput;
     std::optional<VButtonPanelUpdate> vbuttonPanel;
+    std::optional<NotificationStyleUpdate> generalNotificationStyle;
+    std::optional<NotificationStyleUpdate> customNotificationStyle;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

@@ -1092,9 +1092,9 @@ __declspec(noinline)
 #endif
 static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabilities)
 {
-    QCOMPARE(capabilities.size(), 130);
+    QCOMPARE(capabilities.size(), 134);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 122);
+    QCOMPARE(demoCapabilities.size(), 126);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1133,8 +1133,12 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QCOMPARE(capabilities.at(120).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_accept_virtual_gamepad_input.apply"));
     QCOMPARE(capabilities.at(121).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_vbutton_panel_settings.preview"));
     QCOMPARE(capabilities.at(122).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_vbutton_panel_settings.apply"));
-    QCOMPARE(capabilities.at(127).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(128).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(123).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_notification_style.preview"));
+    QCOMPARE(capabilities.at(124).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_notification_style.apply"));
+    QCOMPARE(capabilities.at(125).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification_style.preview"));
+    QCOMPARE(capabilities.at(126).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification_style.apply"));
+    QCOMPARE(capabilities.at(131).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(132).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_gyro2mouse_options.apply");
     }));
@@ -1151,6 +1155,12 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_vbutton_panel_settings.apply");
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_notification_style.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_custom_notification_style.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
@@ -1165,6 +1175,432 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_display_scale.apply");
     }));
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyNotificationStyleValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    for (const QString &action : {QStringLiteral("general.set_notification_style"),
+            QStringLiteral("configuration.set_custom_notification_style")}) {
+        const auto validateStyle = [&](const QJsonObject &fields) {
+            return validateMappingChangeRequest(previewMethod,
+                {{QStringLiteral("action"), action},
+                    {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                    {QStringLiteral("notification_style"), fields}});
+        };
+        const auto validAll = validateStyle({
+            {QStringLiteral("font_color"), QStringLiteral("#AB1234")},
+            {QStringLiteral("background_color"), QStringLiteral("#88112233")},
+            {QStringLiteral("font_family"), QStringLiteral("  Consolas  ")},
+            {QStringLiteral("font_size"), 72},
+            {QStringLiteral("font_weight"), 0},
+            {QStringLiteral("font_italic"), true},
+            {QStringLiteral("display_duration"), 0},
+            {QStringLiteral("fade_in_duration"), 99999},
+            {QStringLiteral("fade_out_duration"), 500},
+            {QStringLiteral("border_radius"), 1000},
+            {QStringLiteral("padding"), 0},
+            {QStringLiteral("opacity"), -0.0},
+            {QStringLiteral("x_offset"), -5000},
+            {QStringLiteral("y_offset"), 5000},
+        });
+        QVERIFY(validAll.ok());
+        const auto &opt = (action == QLatin1String("general.set_notification_style"))
+            ? validAll.update.generalNotificationStyle
+            : validAll.update.customNotificationStyle;
+        QVERIFY(opt.has_value());
+        QCOMPARE(opt->fontColor, std::optional<QString>(QStringLiteral("#ab1234")));
+        QCOMPARE(opt->backgroundColor, std::optional<QString>(QStringLiteral("#88112233")));
+        QCOMPARE(opt->fontFamily, std::optional<QString>(QStringLiteral("Consolas")));
+        QVERIFY(opt->opacity.has_value() && *opt->opacity == 0.0 && !std::signbit(*opt->opacity));
+
+        const auto emptyFont = validateStyle({{QStringLiteral("font_family"), QString()}});
+        QVERIFY(emptyFont.ok());
+        for (const QJsonObject &badStyle : {
+            QJsonObject{},
+            QJsonObject{{QStringLiteral("font_color"), QStringLiteral("#88112233")}},
+            QJsonObject{{QStringLiteral("background_color"), QStringLiteral("#112233")}},
+            QJsonObject{{QStringLiteral("font_size"), 0}},
+            QJsonObject{{QStringLiteral("font_size"), 73}},
+            QJsonObject{{QStringLiteral("font_weight"), 3}},
+            QJsonObject{{QStringLiteral("font_italic"), 1}},
+            QJsonObject{{QStringLiteral("display_duration"), -1}},
+            QJsonObject{{QStringLiteral("fade_in_duration"), 100000}},
+            QJsonObject{{QStringLiteral("border_radius"), 1001}},
+            QJsonObject{{QStringLiteral("padding"), -1}},
+            QJsonObject{{QStringLiteral("opacity"), -0.01}},
+            QJsonObject{{QStringLiteral("opacity"), 1.01}},
+            QJsonObject{{QStringLiteral("opacity"), 0.123}},
+            QJsonObject{{QStringLiteral("x_offset"), -5001}},
+            QJsonObject{{QStringLiteral("y_offset"), 5001}},
+            QJsonObject{{QStringLiteral("font_family"), QStringLiteral("Consolas\n")}},
+            QJsonObject{{QStringLiteral("font_family"), QString(256, QLatin1Char('A'))}},
+            QJsonObject{{QStringLiteral("font_size"), QJsonValue::Null}},
+            QJsonObject{{QStringLiteral("font_size"), 16}, {QStringLiteral("extra"), 1}},
+        }) {
+            QVERIFY(!validateStyle(badStyle).ok());
+        }
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyWindowAndTrayArgumentsValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    const auto validateProcessIconTray = [&](const QJsonValue &value) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_process_icon_as_tray_icon")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("process_icon_as_tray_icon"), value}});
+    };
+    for (bool value : {true, false}) {
+        const auto result = validateProcessIconTray(value);
+        QVERIFY(result.ok() && result.update.processIconAsTrayIcon.has_value());
+        QCOMPARE(*result.update.processIconAsTrayIcon, value);
+    }
+    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
+        QVERIFY(!validateProcessIconTray(value).ok());
+
+    const auto validateAutoMatchForeground = [&](const QJsonValue &value) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_auto_match_foreground")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("auto_match_foreground"), value}});
+    };
+    for (bool value : {true, false}) {
+        const auto result = validateAutoMatchForeground(value);
+        QVERIFY(result.ok() && result.update.autoMatchForeground.has_value());
+        QCOMPARE(*result.update.autoMatchForeground, value);
+    }
+    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
+        QVERIFY(!validateAutoMatchForeground(value).ok());
+    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("configuration.set_auto_match_foreground")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))}}).ok());
+    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("configuration.set_auto_match_foreground")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+            {QStringLiteral("auto_match_foreground"), true},
+            {QStringLiteral("extra"), 1}}).ok());
+
+    const auto validateSendToSameWindows = [&](const QJsonValue &value) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_send_to_same_windows")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("send_to_same_windows"), value}});
+    };
+    for (bool value : {true, false}) {
+        const auto result = validateSendToSameWindows(value);
+        QVERIFY(result.ok() && result.update.sendToSameWindows.has_value());
+        QCOMPARE(*result.update.sendToSameWindows, value);
+    }
+    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
+        QVERIFY(!validateSendToSameWindows(value).ok());
+    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("configuration.set_send_to_same_windows")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))}}).ok());
+    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        {{QStringLiteral("action"), QStringLiteral("configuration.set_send_to_same_windows")},
+            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+            {QStringLiteral("send_to_same_windows"), true},
+            {QStringLiteral("extra"), 1}}).ok());
+
+    const auto validatePointDisplayKeys = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_point_display_keys")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("point_display_keys"), fields}});
+    };
+    const auto pointKeysBoth = validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("None")},
+        {QStringLiteral("screen_point_key"), QStringLiteral("F10")}});
+    QVERIFY(pointKeysBoth.ok() && pointKeysBoth.update.showWindowPointKey == QStringLiteral("None")
+        && pointKeysBoth.update.showScreenPointKey == QStringLiteral("F10"));
+    QVERIFY(validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("F8")}}).ok());
+    QVERIFY(validatePointDisplayKeys({{QStringLiteral("screen_point_key"), QString(64, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validatePointDisplayKeys({}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("")}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("screen_point_key"), QString(65, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("A\nB")}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("A\rB")}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("A") + QChar(0)}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), 123}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QJsonValue::Null}}).ok());
+    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("F8")},
+        {QStringLiteral("extra"), QStringLiteral("F9")}}).ok());
+
+    const auto validateCustomNotification = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_custom_notification")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("custom_notification"), fields}});
+    };
+    const auto customNotifyBoth = validateCustomNotification({{QStringLiteral("enabled"), true},
+        {QStringLiteral("position"), 6}});
+    QVERIFY(customNotifyBoth.ok() && customNotifyBoth.update.customNotificationEnabled == std::optional<bool>(true)
+        && customNotifyBoth.update.customNotificationPosition == std::optional<int>(6));
+    QVERIFY(validateCustomNotification({{QStringLiteral("enabled"), false}}).ok());
+    QVERIFY(validateCustomNotification({{QStringLiteral("position"), 0}}).ok());
+    QVERIFY(!validateCustomNotification({}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), 1}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), true}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), 0.5}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), -1}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), 7}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), false}, {QStringLiteral("position"), 3}}).ok());
+    QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), true}, {QStringLiteral("extra"), 1}}).ok());
+
+    const auto validateWindowMatchCriteria = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_window_match_criteria")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("window_match_criteria"), fields}});
+    };
+    const auto winMatchAll = validateWindowMatchCriteria({
+        {QStringLiteral("process_name"), QStringLiteral("DemoApp.exe")},
+        {QStringLiteral("process_match_mode"), 1},
+        {QStringLiteral("window_title"), QString()},
+        {QStringLiteral("window_title_match_mode"), 5},
+        {QStringLiteral("class_name"), QStringLiteral("Qt6QWindow")},
+        {QStringLiteral("class_name_match_mode"), 3}});
+    QVERIFY(winMatchAll.ok()
+        && winMatchAll.update.windowProcessName == std::optional<QString>(QStringLiteral("DemoApp.exe"))
+        && winMatchAll.update.windowProcessMatchMode == std::optional<int>(1)
+        && winMatchAll.update.windowTitleText == std::optional<QString>(QString())
+        && winMatchAll.update.windowTitleMatchMode == std::optional<int>(5)
+        && winMatchAll.update.windowClassName == std::optional<QString>(QStringLiteral("Qt6QWindow"))
+        && winMatchAll.update.windowClassMatchMode == std::optional<int>(3));
+    QVERIFY(validateWindowMatchCriteria({{QStringLiteral("process_name"), QString(1024, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QString(1025, QLatin1Char('A'))}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("window_title"), QStringLiteral("A\nB")}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("class_name"), QStringLiteral("A\rB")}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QStringLiteral("A") + QChar(0)}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), 123}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_match_mode"), true}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("window_title_match_mode"), 0.5}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("class_name_match_mode"), -1}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_match_mode"), 6}}).ok());
+    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QStringLiteral("a")}, {QStringLiteral("extra"), 1}}).ok());
+
+    const auto normalBounded = boundAutomationText(QString(1024, QLatin1Char('A')));
+    QVERIFY(!normalBounded.truncated && normalBounded.value.size() == 1024 && normalBounded.fullCodeUnits == 1024);
+    const QString surrogateBoundary = QString(1023, QLatin1Char('a')) + QString::fromUtf8("\xF0\x9F\x98\x80");
+    const auto boundedSurrogate = boundAutomationText(surrogateBoundary);
+    QVERIFY(boundedSurrogate.truncated && boundedSurrogate.value.size() == 1023
+        && boundedSurrogate.fullCodeUnits == 1025 && boundedSurrogate.fullSha256.size() == 64);
+    const QString longCjk1 = QString(16000, QChar(0x4E2D));
+    const QString longCjk2 = QString(16000, QChar(0x6587));
+    const QString longCjk3 = QString(16000, QChar(0x7A97));
+    const QJsonObject boundedState = buildWindowMatchCriteriaState(
+        true, longCjk1, 1, longCjk2, 2, longCjk3, 3, longCjk1, longCjk2, longCjk3);
+    QVERIFY(boundedState.value(QStringLiteral("text_truncated")).toBool());
+    QCOMPARE(boundedState.value(QStringLiteral("text_max_code_units")).toInt(), WindowMatchStateTextMaxCodeUnits);
+    const QJsonObject truncatedMap = boundedState.value(QStringLiteral("truncated_fields")).toObject();
+    QCOMPARE(truncatedMap.size(), 6);
+    for (const char *key : {"process_name", "window_title", "class_name",
+            "cached.file_name", "cached.window_title", "cached.class_name"}) {
+        const QJsonObject meta = truncatedMap.value(QLatin1String(key)).toObject();
+        QCOMPARE(meta.value(QStringLiteral("full_code_units")).toInt(), 16000);
+        QCOMPARE(meta.value(QStringLiteral("returned_code_units")).toInt(), 1024);
+        QCOMPARE(meta.value(QStringLiteral("full_sha256")).toString().size(), 64);
+    }
+    QVERIFY(QJsonDocument(boundedState).toJson(QJsonDocument::Compact).size() < 24 * 1024);
+    const QJsonObject previewA = buildWindowMatchCriteriaFields(longCjk1, 1, QString(), 2, QString(), 0);
+    const QString longCjk1Tail = QString(15999, QChar(0x4E2D)) + QChar(0x4E2E);
+    const QJsonObject previewB = buildWindowMatchCriteriaFields(longCjk1Tail, 1, QString(), 2, QString(), 0);
+    QVERIFY(previewA.value(QStringLiteral("truncated_fields")).toObject().value(QStringLiteral("process_name"))
+        != previewB.value(QStringLiteral("truncated_fields")).toObject().value(QStringLiteral("process_name")));
+
+    const auto validateStartupPosition = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("startup_position"), fields}});
+    };
+    const QJsonObject point{{QStringLiteral("x"), -50000}, {QStringLiteral("y"), 50000}};
+    for (int mode : {0, 1, 2}) {
+        const auto request = validateStartupPosition({{QStringLiteral("mode"), mode}});
+        QVERIFY(request.ok() && request.update.startupPositionMode.has_value());
+        QCOMPARE(*request.update.startupPositionMode, mode);
+        QVERIFY(!request.update.startupPositionPoint.has_value());
+    }
+    const auto startup = validateStartupPosition({{QStringLiteral("mode"), 2}, {QStringLiteral("point"), point}});
+    QVERIFY(startup.ok() && startup.update.startupPositionPoint.has_value());
+    QCOMPARE(*startup.update.startupPositionPoint, QPoint(-50000, 50000));
+    QVERIFY(validateStartupPosition({{QStringLiteral("point"), point}}).ok());
+    QVERIFY(!validateStartupPosition({}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), true}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), 0.5}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), 3}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), 1}, {QStringLiteral("point"), point}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0}}}}).ok());
+    QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
+        {QStringLiteral("y"), -50001}}}}).ok());
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyCapabilityListContracts()
+{
+    const auto capabilities = mappingChangeCapabilities();
+    verifyExtendedMappingChangeCapabilities(capabilities);
+    if (QTest::currentTestFailed()) return;
+    const auto demoCapabilities = mappingChangeCapabilities(false);
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_fullscreen_global_mapping.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_key2mouse_settings.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_process_icon_as_tray_icon.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_point_display_keys.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_custom_notification.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_window_match_criteria.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_send_to_same_windows.apply");
+    }));
+    for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
+            QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply"),
+            QStringLiteral("configuration.set_auto_match_foreground.preview"), QStringLiteral("configuration.set_auto_match_foreground.apply")}) {
+        const auto matches = [&id](const QJsonValue &item) {
+            return item.toObject().value(QStringLiteral("id")).toString() == id;
+        };
+        QVERIFY(std::any_of(capabilities.begin(), capabilities.end(), matches));
+        QVERIFY(std::none_of(demoCapabilities.begin(), demoCapabilities.end(), matches));
+    }
+    QCOMPARE(capabilities.at(75).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.import.preview"));
+    QCOMPARE(capabilities.at(76).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.import.apply"));
+    QCOMPARE(capabilities.at(77).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save_import.preview"));
+    QCOMPARE(capabilities.at(78).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save_import.apply"));
+    QCOMPARE(capabilities.at(73).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_startup_position.preview"));
+    QCOMPARE(capabilities.at(74).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_startup_position.apply"));
+    QCOMPARE(capabilities.at(71).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_splitter_position.preview"));
+    QCOMPARE(capabilities.at(72).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_splitter_position.apply"));
+    QCOMPARE(capabilities.at(69).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_window_size.preview"));
+    QCOMPARE(capabilities.at(70).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_window_size.apply"));
+    QCOMPARE(capabilities.at(67).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("table.import.preview"));
+    QCOMPARE(capabilities.at(68).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("table.import.apply"));
+    QCOMPARE(capabilities.at(65).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_display_mode.preview"));
+    QCOMPARE(capabilities.at(66).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_display_mode.apply"));
+    QCOMPARE(capabilities.at(63).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_edit_trigger.preview"));
+    QCOMPARE(capabilities.at(64).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_edit_trigger.apply"));
+    QCOMPARE(capabilities.at(61).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_insert_mode.preview"));
+    QCOMPARE(capabilities.at(62).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_insert_mode.apply"));
+    QCOMPARE(capabilities.at(59).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.import.preview"));
+    QCOMPARE(capabilities.at(60).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.import.apply"));
+    QCOMPARE(capabilities.at(57).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.delete.preview"));
+    QCOMPARE(capabilities.at(58).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.delete.apply"));
+    QCOMPARE(capabilities.at(55).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.upsert.preview"));
+    QCOMPARE(capabilities.at(56).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.upsert.apply"));
+    QCOMPARE(capabilities.at(53).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.duplicate.preview"));
+    const auto duplicateApply = capabilities.at(54).toObject();
+    QCOMPARE(duplicateApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.duplicate.apply"));
+    QCOMPARE(duplicateApply.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    const auto duplicateConfirmations = duplicateApply.value(QStringLiteral("arguments_schema")).toObject()
+        .value(QStringLiteral("properties")).toObject();
+    QCOMPARE(duplicateConfirmations.value(QStringLiteral("confirm_conflicts")).toObject()
+        .value(QStringLiteral("type")).toString(), QStringLiteral("boolean"));
+    QCOMPARE(duplicateConfirmations.value(QStringLiteral("confirm_scope")).toObject()
+        .value(QStringLiteral("const")).toBool(true), false);
+    QCOMPARE(capabilities.at(51).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.preview"));
+    QCOMPARE(capabilities.at(52).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.apply"));
+    QCOMPARE(capabilities.at(49).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.preview"));
+    QCOMPARE(capabilities.at(50).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.apply"));
+    QCOMPARE(capabilities.at(47).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_category_filter.preview"));
+    QCOMPARE(capabilities.at(48).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_category_filter.apply"));
+    QCOMPARE(capabilities.at(45).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.preview"));
+    QCOMPARE(capabilities.at(46).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.apply"));
+    QCOMPARE(capabilities.at(43).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_mode.preview"));
+    QCOMPARE(capabilities.at(44).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_mode.apply"));
+    QCOMPARE(capabilities.at(41).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_hotkey.preview"));
+    QCOMPARE(capabilities.at(42).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_hotkey.apply"));
+    QCOMPARE(capabilities.at(39).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.select.preview"));
+    QCOMPARE(capabilities.at(40).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.select.apply"));
+    QCOMPARE(capabilities.at(37).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_common_enabled.preview"));
+    QCOMPARE(capabilities.at(38).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_common_enabled.apply"));
+    QCOMPARE(capabilities.at(35).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_common_collapsed.preview"));
+    QCOMPARE(capabilities.at(36).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_common_collapsed.apply"));
+    QCOMPARE(capabilities.at(33).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_common_inheritance.preview"));
+    QCOMPARE(capabilities.at(34).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_common_inheritance.apply"));
+    QCOMPARE(capabilities.at(31).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.move.preview"));
+    QCOMPARE(capabilities.at(32).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.move.apply"));
+    QCOMPARE(capabilities.at(29).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.clear.preview"));
+    const auto clearTabApply = capabilities.at(30).toObject();
+    QCOMPARE(clearTabApply.value(QStringLiteral("id")).toString(), QStringLiteral("tab.clear.apply"));
+    QCOMPARE(clearTabApply.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(clearTabApply.value(QStringLiteral("arguments_schema")).toObject().value(QStringLiteral("required")).toArray()
+        .contains(QJsonValue(QStringLiteral("confirm_delete"))));
+    QCOMPARE(capabilities.at(27).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.delete.preview"));
+    const auto deleteTabApply = capabilities.at(28).toObject();
+    QCOMPARE(deleteTabApply.value(QStringLiteral("id")).toString(), QStringLiteral("tab.delete.apply"));
+    QVERIFY(deleteTabApply.value(QStringLiteral("arguments_schema")).toObject().value(QStringLiteral("required")).toArray()
+        .contains(QJsonValue(QStringLiteral("confirm_delete"))));
+    QCOMPARE(capabilities.at(25).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.copy.preview"));
+    QCOMPARE(capabilities.at(25).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QCOMPARE(capabilities.at(26).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.copy.apply"));
+    QCOMPARE(capabilities.at(23).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.add_blank.preview"));
+    QCOMPARE(capabilities.at(23).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QCOMPARE(capabilities.at(24).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.add_blank.apply"));
+    QCOMPARE(capabilities.at(21).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.rename.preview"));
+    QCOMPARE(capabilities.at(21).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QCOMPARE(capabilities.at(22).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.rename.apply"));
+    QCOMPARE(capabilities.at(17).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_top.preview"));
+    QCOMPARE(capabilities.at(18).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_top.apply"));
+    QCOMPARE(capabilities.at(19).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_bottom.preview"));
+    QCOMPARE(capabilities.at(20).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_bottom.apply"));
+    const auto downPreview = capabilities.at(15).toObject();
+    QCOMPARE(downPreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_down.preview"));
+    QCOMPARE(downPreview.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QCOMPARE(capabilities.at(16).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_down.apply"));
+    const auto movePreview = capabilities.at(13).toObject();
+    QCOMPARE(movePreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_up.preview"));
+    QCOMPARE(movePreview.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    const auto moveApply = capabilities.at(14).toObject();
+    QCOMPARE(moveApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_up.apply"));
+    QVERIFY(!moveApply.value(QStringLiteral("read_only")).toBool());
+    const auto stop = capabilities.at(11).toObject();
+    QCOMPARE(stop.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.stop"));
+    QCOMPARE(stop.value(QStringLiteral("required_scopes")).toInt(), int(Read | RunMapping));
+    const auto updatePreview = capabilities.at(6).toObject();
+    const auto updateApply = capabilities.at(7).toObject();
+    QCOMPARE(updatePreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.update.preview"));
+    QCOMPARE(updateApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.update.apply"));
+    QCOMPARE(updatePreview.value(QStringLiteral("original_key_conflicts_supported")), QJsonValue(false));
+    const auto conflictSchema = [](const QJsonValue &entry) {
+        return entry.toObject().value(QStringLiteral("arguments_schema")).toObject()
+            .value(QStringLiteral("properties")).toObject().value(QStringLiteral("confirm_conflicts")).toObject();
+    };
+    QCOMPARE(conflictSchema(updateApply).value(QStringLiteral("type")).toString(), QStringLiteral("boolean"));
+    QCOMPARE(conflictSchema(capabilities.at(9)).value(QStringLiteral("const")), QJsonValue(false));
+    for (const auto &update : {updatePreview, updateApply}) {
+        QCOMPARE(update.value(QStringLiteral("original_key_conflict_policy")).toString(),
+            QStringLiteral("disable_current_row_or_confirm_common_changes"));
+        QVERIFY(update.value(QStringLiteral("limitations")).toArray().contains(
+            QStringLiteral("common_update_requires_confirmation_to_disable_normal_rows")));
+    }
+    QCOMPARE(capabilities.first().toObject().value(QStringLiteral("preview_ttl_ms")).toInt(), 120000);
+    QCOMPARE(capabilities.first().toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    const auto start = capabilities.at(12).toObject();
+    QCOMPARE(start.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.start"));
+    QCOMPARE(start.value(QStringLiteral("required_scopes")).toInt(), int(Read | RunMapping));
+    const auto operation = capabilities.last().toObject();
+    QCOMPARE(operation.value(QStringLiteral("required_scopes")).toInt(), int(Read));
+    QVERIFY(!operation.value(QStringLiteral("limitations")).toArray().contains(QStringLiteral("idle_after_cleanup")));
 }
 
 void McpControlTest::mappingChangeArguments()
@@ -1230,7 +1666,6 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     changed = move; changed.insert(QStringLiteral("insert_row"), 0);
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    const auto capabilities = mappingChangeCapabilities();
     for (const auto direction : {MappingRowMove::Top, MappingRowMove::Bottom}) {
         auto edge = move;
         edge.insert(QStringLiteral("action"), QString::fromLatin1(mappingRowMoveAction(direction)));
@@ -1854,199 +2289,9 @@ void McpControlTest::mappingChangeArguments()
     verifyGamepadAndPanelValidation(previewMethod, input);
     if (QTest::currentTestFailed()) return;
 
-    const auto validateProcessIconTray = [&](const QJsonValue &value) {
-        return validateMappingChangeRequest(previewMethod,
-            {{QStringLiteral("action"), QStringLiteral("configuration.set_process_icon_as_tray_icon")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-                {QStringLiteral("process_icon_as_tray_icon"), value}});
-    };
-    for (bool value : {true, false}) {
-        const auto result = validateProcessIconTray(value);
-        QVERIFY(result.ok() && result.update.processIconAsTrayIcon.has_value());
-        QCOMPARE(*result.update.processIconAsTrayIcon, value);
-    }
-    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
-        QVERIFY(!validateProcessIconTray(value).ok());
-
-    const auto validateAutoMatchForeground = [&](const QJsonValue &value) {
-        return validateMappingChangeRequest(previewMethod,
-            {{QStringLiteral("action"), QStringLiteral("configuration.set_auto_match_foreground")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-                {QStringLiteral("auto_match_foreground"), value}});
-    };
-    for (bool value : {true, false}) {
-        const auto result = validateAutoMatchForeground(value);
-        QVERIFY(result.ok() && result.update.autoMatchForeground.has_value());
-        QCOMPARE(*result.update.autoMatchForeground, value);
-    }
-    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
-        QVERIFY(!validateAutoMatchForeground(value).ok());
-    QVERIFY(!validateMappingChangeRequest(previewMethod,
-        {{QStringLiteral("action"), QStringLiteral("configuration.set_auto_match_foreground")},
-            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))}}).ok());
-    QVERIFY(!validateMappingChangeRequest(previewMethod,
-        {{QStringLiteral("action"), QStringLiteral("configuration.set_auto_match_foreground")},
-            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-            {QStringLiteral("auto_match_foreground"), true},
-            {QStringLiteral("extra"), 1}}).ok());
-
-    const auto validateSendToSameWindows = [&](const QJsonValue &value) {
-        return validateMappingChangeRequest(previewMethod,
-            {{QStringLiteral("action"), QStringLiteral("configuration.set_send_to_same_windows")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-                {QStringLiteral("send_to_same_windows"), value}});
-    };
-    for (bool value : {true, false}) {
-        const auto result = validateSendToSameWindows(value);
-        QVERIFY(result.ok() && result.update.sendToSameWindows.has_value());
-        QCOMPARE(*result.update.sendToSameWindows, value);
-    }
-    for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
-        QVERIFY(!validateSendToSameWindows(value).ok());
-    QVERIFY(!validateMappingChangeRequest(previewMethod,
-        {{QStringLiteral("action"), QStringLiteral("configuration.set_send_to_same_windows")},
-            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))}}).ok());
-    QVERIFY(!validateMappingChangeRequest(previewMethod,
-        {{QStringLiteral("action"), QStringLiteral("configuration.set_send_to_same_windows")},
-            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-            {QStringLiteral("send_to_same_windows"), true},
-            {QStringLiteral("extra"), 1}}).ok());
-
-    const auto validatePointDisplayKeys = [&](const QJsonObject &fields) {
-        return validateMappingChangeRequest(previewMethod,
-            {{QStringLiteral("action"), QStringLiteral("configuration.set_point_display_keys")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-                {QStringLiteral("point_display_keys"), fields}});
-    };
-    const auto pointKeysBoth = validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("None")},
-        {QStringLiteral("screen_point_key"), QStringLiteral("F10")}});
-    QVERIFY(pointKeysBoth.ok() && pointKeysBoth.update.showWindowPointKey == QStringLiteral("None")
-        && pointKeysBoth.update.showScreenPointKey == QStringLiteral("F10"));
-    QVERIFY(validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("F8")}}).ok());
-    QVERIFY(validatePointDisplayKeys({{QStringLiteral("screen_point_key"), QString(64, QLatin1Char('A'))}}).ok());
-    QVERIFY(!validatePointDisplayKeys({}).ok());
-    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("")}}).ok());
-    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("screen_point_key"), QString(65, QLatin1Char('A'))}}).ok());
-    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("A\nB")}}).ok());
-    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("A\rB")}}).ok());
-    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("A") + QChar(0)}}).ok());
-    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), 123}}).ok());
-    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QJsonValue::Null}}).ok());
-    QVERIFY(!validatePointDisplayKeys({{QStringLiteral("window_point_key"), QStringLiteral("F8")},
-        {QStringLiteral("extra"), QStringLiteral("F9")}}).ok());
-
-    const auto validateCustomNotification = [&](const QJsonObject &fields) {
-        return validateMappingChangeRequest(previewMethod,
-            {{QStringLiteral("action"), QStringLiteral("configuration.set_custom_notification")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-                {QStringLiteral("custom_notification"), fields}});
-    };
-    const auto customNotifyBoth = validateCustomNotification({{QStringLiteral("enabled"), true},
-        {QStringLiteral("position"), 6}});
-    QVERIFY(customNotifyBoth.ok() && customNotifyBoth.update.customNotificationEnabled == std::optional<bool>(true)
-        && customNotifyBoth.update.customNotificationPosition == std::optional<int>(6));
-    QVERIFY(validateCustomNotification({{QStringLiteral("enabled"), false}}).ok());
-    QVERIFY(validateCustomNotification({{QStringLiteral("position"), 0}}).ok());
-    QVERIFY(!validateCustomNotification({}).ok());
-    QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), 1}}).ok());
-    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), true}}).ok());
-    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), 0.5}}).ok());
-    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), -1}}).ok());
-    QVERIFY(!validateCustomNotification({{QStringLiteral("position"), 7}}).ok());
-    QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), false}, {QStringLiteral("position"), 3}}).ok());
-    QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), true}, {QStringLiteral("extra"), 1}}).ok());
-
-    const auto validateWindowMatchCriteria = [&](const QJsonObject &fields) {
-        return validateMappingChangeRequest(previewMethod,
-            {{QStringLiteral("action"), QStringLiteral("configuration.set_window_match_criteria")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-                {QStringLiteral("window_match_criteria"), fields}});
-    };
-    const auto winMatchAll = validateWindowMatchCriteria({
-        {QStringLiteral("process_name"), QStringLiteral("DemoApp.exe")},
-        {QStringLiteral("process_match_mode"), 1},
-        {QStringLiteral("window_title"), QString()},
-        {QStringLiteral("window_title_match_mode"), 5},
-        {QStringLiteral("class_name"), QStringLiteral("Qt6QWindow")},
-        {QStringLiteral("class_name_match_mode"), 3}});
-    QVERIFY(winMatchAll.ok()
-        && winMatchAll.update.windowProcessName == std::optional<QString>(QStringLiteral("DemoApp.exe"))
-        && winMatchAll.update.windowProcessMatchMode == std::optional<int>(1)
-        && winMatchAll.update.windowTitleText == std::optional<QString>(QString())
-        && winMatchAll.update.windowTitleMatchMode == std::optional<int>(5)
-        && winMatchAll.update.windowClassName == std::optional<QString>(QStringLiteral("Qt6QWindow"))
-        && winMatchAll.update.windowClassMatchMode == std::optional<int>(3));
-    QVERIFY(validateWindowMatchCriteria({{QStringLiteral("process_name"), QString(1024, QLatin1Char('A'))}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QString(1025, QLatin1Char('A'))}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("window_title"), QStringLiteral("A\nB")}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("class_name"), QStringLiteral("A\rB")}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QStringLiteral("A") + QChar(0)}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), 123}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_match_mode"), true}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("window_title_match_mode"), 0.5}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("class_name_match_mode"), -1}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_match_mode"), 6}}).ok());
-    QVERIFY(!validateWindowMatchCriteria({{QStringLiteral("process_name"), QStringLiteral("a")}, {QStringLiteral("extra"), 1}}).ok());
-
-    const auto normalBounded = boundAutomationText(QString(1024, QLatin1Char('A')));
-    QVERIFY(!normalBounded.truncated && normalBounded.value.size() == 1024 && normalBounded.fullCodeUnits == 1024);
-    const QString surrogateBoundary = QString(1023, QLatin1Char('a')) + QString::fromUtf8("\xF0\x9F\x98\x80");
-    const auto boundedSurrogate = boundAutomationText(surrogateBoundary);
-    QVERIFY(boundedSurrogate.truncated && boundedSurrogate.value.size() == 1023
-        && boundedSurrogate.fullCodeUnits == 1025 && boundedSurrogate.fullSha256.size() == 64);
-    const QString longCjk1 = QString(16000, QChar(0x4E2D));
-    const QString longCjk2 = QString(16000, QChar(0x6587));
-    const QString longCjk3 = QString(16000, QChar(0x7A97));
-    const QJsonObject boundedState = buildWindowMatchCriteriaState(
-        true, longCjk1, 1, longCjk2, 2, longCjk3, 3, longCjk1, longCjk2, longCjk3);
-    QVERIFY(boundedState.value(QStringLiteral("text_truncated")).toBool());
-    QCOMPARE(boundedState.value(QStringLiteral("text_max_code_units")).toInt(), WindowMatchStateTextMaxCodeUnits);
-    const QJsonObject truncatedMap = boundedState.value(QStringLiteral("truncated_fields")).toObject();
-    QCOMPARE(truncatedMap.size(), 6);
-    for (const char *key : {"process_name", "window_title", "class_name",
-            "cached.file_name", "cached.window_title", "cached.class_name"}) {
-        const QJsonObject meta = truncatedMap.value(QLatin1String(key)).toObject();
-        QCOMPARE(meta.value(QStringLiteral("full_code_units")).toInt(), 16000);
-        QCOMPARE(meta.value(QStringLiteral("returned_code_units")).toInt(), 1024);
-        QCOMPARE(meta.value(QStringLiteral("full_sha256")).toString().size(), 64);
-    }
-    QVERIFY(QJsonDocument(boundedState).toJson(QJsonDocument::Compact).size() < 24 * 1024);
-    const QJsonObject previewA = buildWindowMatchCriteriaFields(longCjk1, 1, QString(), 2, QString(), 0);
-    const QString longCjk1Tail = QString(15999, QChar(0x4E2D)) + QChar(0x4E2E);
-    const QJsonObject previewB = buildWindowMatchCriteriaFields(longCjk1Tail, 1, QString(), 2, QString(), 0);
-    QVERIFY(previewA.value(QStringLiteral("truncated_fields")).toObject().value(QStringLiteral("process_name"))
-        != previewB.value(QStringLiteral("truncated_fields")).toObject().value(QStringLiteral("process_name")));
-
-    const auto validateStartupPosition = [&](const QJsonObject &fields) {
-        return validateMappingChangeRequest(previewMethod,
-            {{QStringLiteral("action"), QStringLiteral("general.set_startup_position")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
-                {QStringLiteral("startup_position"), fields}});
-    };
-    const QJsonObject point{{QStringLiteral("x"), -50000}, {QStringLiteral("y"), 50000}};
-    for (int mode : {0, 1, 2}) {
-        const auto request = validateStartupPosition({{QStringLiteral("mode"), mode}});
-        QVERIFY(request.ok() && request.update.startupPositionMode.has_value());
-        QCOMPARE(*request.update.startupPositionMode, mode);
-        QVERIFY(!request.update.startupPositionPoint.has_value());
-    }
-    const auto startup = validateStartupPosition({{QStringLiteral("mode"), 2}, {QStringLiteral("point"), point}});
-    QVERIFY(startup.ok() && startup.update.startupPositionPoint.has_value());
-    QCOMPARE(*startup.update.startupPositionPoint, QPoint(-50000, 50000));
-    QVERIFY(validateStartupPosition({{QStringLiteral("point"), point}}).ok());
-    QVERIFY(!validateStartupPosition({}).ok());
-    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), true}}).ok());
-    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), 0.5}}).ok());
-    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), 3}}).ok());
-    QVERIFY(!validateStartupPosition({{QStringLiteral("mode"), 1}, {QStringLiteral("point"), point}}).ok());
-    QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0}}}}).ok());
-    QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
-        {QStringLiteral("y"), -50001}}}}).ok());
-
-    verifyExtendedMappingChangeCapabilities(capabilities);
+    verifyNotificationStyleValidation(previewMethod, input);
+    verifyWindowAndTrayArgumentsValidation(previewMethod, input);
     if (QTest::currentTestFailed()) return;
-    const auto demoCapabilities = mappingChangeCapabilities(false);
 
     for (const int scale : {0, 1, 2, 5, 6, 10}) {
         const auto validScale = validateMappingChangeRequest(previewMethod,
@@ -2180,157 +2425,7 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(ignoreStore.operation({QStringLiteral("inst"), QStringLiteral("pair"), 1}, ignorePreview->id)
         .value(QStringLiteral("target")).toObject().value(QStringLiteral("rule_name")).toString(),
         QStringLiteral("CustomRule"));
-    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
-        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_global_switch_timeout.apply");
-    }));
-    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
-        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_fullscreen_global_mapping.apply");
-    }));
-    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
-        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_key2mouse_settings.apply");
-    }));
-    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
-        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_process_icon_as_tray_icon.apply");
-    }));
-    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
-        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_point_display_keys.apply");
-    }));
-    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
-        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_custom_notification.apply");
-    }));
-    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
-        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_window_match_criteria.apply");
-    }));
-    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
-        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_send_to_same_windows.apply");
-    }));
-    for (const auto &id : {QStringLiteral("configuration.load.preview"), QStringLiteral("configuration.load.apply"),
-            QStringLiteral("configuration.load_empty.preview"), QStringLiteral("configuration.load_empty.apply"),
-            QStringLiteral("configuration.set_auto_match_foreground.preview"), QStringLiteral("configuration.set_auto_match_foreground.apply")}) {
-        const auto matches = [&id](const QJsonValue &item) {
-            return item.toObject().value(QStringLiteral("id")).toString() == id;
-        };
-        QVERIFY(std::any_of(capabilities.begin(), capabilities.end(), matches));
-        QVERIFY(std::none_of(demoCapabilities.begin(), demoCapabilities.end(), matches));
-    }
-    QCOMPARE(capabilities.at(75).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.import.preview"));
-    QCOMPARE(capabilities.at(76).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.import.apply"));
-    QCOMPARE(capabilities.at(77).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save_import.preview"));
-    QCOMPARE(capabilities.at(78).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.save_import.apply"));
-    QCOMPARE(capabilities.at(73).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_startup_position.preview"));
-    QCOMPARE(capabilities.at(74).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_startup_position.apply"));
-    QCOMPARE(capabilities.at(71).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_splitter_position.preview"));
-    QCOMPARE(capabilities.at(72).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_splitter_position.apply"));
-    QCOMPARE(capabilities.at(69).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_window_size.preview"));
-    QCOMPARE(capabilities.at(70).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_save_window_size.apply"));
-    QCOMPARE(capabilities.at(67).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("table.import.preview"));
-    QCOMPARE(capabilities.at(68).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("table.import.apply"));
-    QCOMPARE(capabilities.at(65).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_display_mode.preview"));
-    QCOMPARE(capabilities.at(66).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_window_display_mode.apply"));
-    QCOMPARE(capabilities.at(63).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_edit_trigger.preview"));
-    QCOMPARE(capabilities.at(64).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_edit_trigger.apply"));
-    QCOMPARE(capabilities.at(61).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_insert_mode.preview"));
-    QCOMPARE(capabilities.at(62).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_table_insert_mode.apply"));
-    QCOMPARE(capabilities.at(59).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.import.preview"));
-    QCOMPARE(capabilities.at(60).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.import.apply"));
-    QCOMPARE(capabilities.at(57).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.delete.preview"));
-    QCOMPARE(capabilities.at(58).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.delete.apply"));
-    QCOMPARE(capabilities.at(55).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.upsert.preview"));
-    QCOMPARE(capabilities.at(56).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("macro.upsert.apply"));
-    QCOMPARE(capabilities.at(53).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.duplicate.preview"));
-    const auto duplicateApply = capabilities.at(54).toObject();
-    QCOMPARE(duplicateApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.duplicate.apply"));
-    QCOMPARE(duplicateApply.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
-    const auto duplicateConfirmations = duplicateApply.value(QStringLiteral("arguments_schema")).toObject()
-        .value(QStringLiteral("properties")).toObject();
-    QCOMPARE(duplicateConfirmations.value(QStringLiteral("confirm_conflicts")).toObject()
-        .value(QStringLiteral("type")).toString(), QStringLiteral("boolean"));
-    QCOMPARE(duplicateConfirmations.value(QStringLiteral("confirm_scope")).toObject()
-        .value(QStringLiteral("const")).toBool(true), false);
-    QCOMPARE(capabilities.at(51).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.preview"));
-    QCOMPARE(capabilities.at(52).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_display.apply"));
-    QCOMPARE(capabilities.at(49).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.preview"));
-    QCOMPARE(capabilities.at(50).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_show_disabled_rows.apply"));
-    QCOMPARE(capabilities.at(47).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_category_filter.preview"));
-    QCOMPARE(capabilities.at(48).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_category_filter.apply"));
-    QCOMPARE(capabilities.at(45).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.preview"));
-    QCOMPARE(capabilities.at(46).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_colors.apply"));
-    QCOMPARE(capabilities.at(43).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_mode.preview"));
-    QCOMPARE(capabilities.at(44).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_notification_mode.apply"));
-    QCOMPARE(capabilities.at(41).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_hotkey.preview"));
-    QCOMPARE(capabilities.at(42).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_hotkey.apply"));
-    QCOMPARE(capabilities.at(39).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.select.preview"));
-    QCOMPARE(capabilities.at(40).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.select.apply"));
-    QCOMPARE(capabilities.at(37).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_common_enabled.preview"));
-    QCOMPARE(capabilities.at(38).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_common_enabled.apply"));
-    QCOMPARE(capabilities.at(35).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_common_collapsed.preview"));
-    QCOMPARE(capabilities.at(36).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_common_collapsed.apply"));
-    QCOMPARE(capabilities.at(33).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_common_inheritance.preview"));
-    QCOMPARE(capabilities.at(34).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_common_inheritance.apply"));
-    QCOMPARE(capabilities.at(31).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.move.preview"));
-    QCOMPARE(capabilities.at(32).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.move.apply"));
-    QCOMPARE(capabilities.at(29).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.clear.preview"));
-    const auto clearTabApply = capabilities.at(30).toObject();
-    QCOMPARE(clearTabApply.value(QStringLiteral("id")).toString(), QStringLiteral("tab.clear.apply"));
-    QCOMPARE(clearTabApply.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
-    QVERIFY(clearTabApply.value(QStringLiteral("arguments_schema")).toObject().value(QStringLiteral("required")).toArray()
-        .contains(QJsonValue(QStringLiteral("confirm_delete"))));
-    QCOMPARE(capabilities.at(27).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.delete.preview"));
-    const auto deleteTabApply = capabilities.at(28).toObject();
-    QCOMPARE(deleteTabApply.value(QStringLiteral("id")).toString(), QStringLiteral("tab.delete.apply"));
-    QVERIFY(deleteTabApply.value(QStringLiteral("arguments_schema")).toObject().value(QStringLiteral("required")).toArray()
-        .contains(QJsonValue(QStringLiteral("confirm_delete"))));
-    QCOMPARE(capabilities.at(25).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.copy.preview"));
-    QCOMPARE(capabilities.at(25).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
-    QCOMPARE(capabilities.at(26).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.copy.apply"));
-    QCOMPARE(capabilities.at(23).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.add_blank.preview"));
-    QCOMPARE(capabilities.at(23).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
-    QCOMPARE(capabilities.at(24).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.add_blank.apply"));
-    QCOMPARE(capabilities.at(21).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.rename.preview"));
-    QCOMPARE(capabilities.at(21).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
-    QCOMPARE(capabilities.at(22).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.rename.apply"));
-    QCOMPARE(capabilities.at(17).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_top.preview"));
-    QCOMPARE(capabilities.at(18).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_top.apply"));
-    QCOMPARE(capabilities.at(19).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_bottom.preview"));
-    QCOMPARE(capabilities.at(20).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_to_bottom.apply"));
-    const auto downPreview = capabilities.at(15).toObject();
-    QCOMPARE(downPreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_down.preview"));
-    QCOMPARE(downPreview.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
-    QCOMPARE(capabilities.at(16).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_down.apply"));
-    const auto movePreview = capabilities.at(13).toObject();
-    QCOMPARE(movePreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_up.preview"));
-    QCOMPARE(movePreview.value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
-    const auto moveApply = capabilities.at(14).toObject();
-    QCOMPARE(moveApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_up.apply"));
-    QVERIFY(!moveApply.value(QStringLiteral("read_only")).toBool());
-    const auto stop = capabilities.at(11).toObject();
-    QCOMPARE(stop.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.stop"));
-    QCOMPARE(stop.value(QStringLiteral("required_scopes")).toInt(), int(Read | RunMapping));
-    const auto updatePreview = capabilities.at(6).toObject();
-    const auto updateApply = capabilities.at(7).toObject();
-    QCOMPARE(updatePreview.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.update.preview"));
-    QCOMPARE(updateApply.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.update.apply"));
-    QCOMPARE(updatePreview.value(QStringLiteral("original_key_conflicts_supported")), QJsonValue(false));
-    const auto conflictSchema = [](const QJsonValue &entry) {
-        return entry.toObject().value(QStringLiteral("arguments_schema")).toObject()
-            .value(QStringLiteral("properties")).toObject().value(QStringLiteral("confirm_conflicts")).toObject();
-    };
-    QCOMPARE(conflictSchema(updateApply).value(QStringLiteral("type")).toString(), QStringLiteral("boolean"));
-    QCOMPARE(conflictSchema(capabilities.at(9)).value(QStringLiteral("const")), QJsonValue(false));
-    for (const auto &update : {updatePreview, updateApply}) {
-        QCOMPARE(update.value(QStringLiteral("original_key_conflict_policy")).toString(),
-            QStringLiteral("disable_current_row_or_confirm_common_changes"));
-        QVERIFY(update.value(QStringLiteral("limitations")).toArray().contains(
-            QStringLiteral("common_update_requires_confirmation_to_disable_normal_rows")));
-    }
-    QCOMPARE(capabilities.first().toObject().value(QStringLiteral("preview_ttl_ms")).toInt(), 120000);
-    QCOMPARE(capabilities.first().toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
-    const auto start = capabilities.at(12).toObject();
-    QCOMPARE(start.value(QStringLiteral("id")).toString(), QStringLiteral("mapping.start"));
-    QCOMPARE(start.value(QStringLiteral("required_scopes")).toInt(), int(Read | RunMapping));
-    const auto operation = capabilities.last().toObject();
-    QCOMPARE(operation.value(QStringLiteral("required_scopes")).toInt(), int(Read));
-    QVERIFY(!operation.value(QStringLiteral("limitations")).toArray().contains(QStringLiteral("idle_after_cleanup")));
+    verifyCapabilityListContracts();
 }
 
 void McpControlTest::savePreviewArguments()
