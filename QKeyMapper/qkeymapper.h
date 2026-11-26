@@ -477,6 +477,7 @@ struct KeyMappingTab_Info
     Qt::CheckState TabHideNotification;
     QString TabCustomImage_Path;
     QIcon TabCustomImage_Icon;
+    QList<QSize> TabCustomImage_AvailableSizes;
     int TabCustomImage_ShowPosition;
     int TabCustomImage_Padding;
     bool TabCustomImage_ShowAsTrayIcon;
@@ -1558,7 +1559,7 @@ public:
         const QString &storedPath,
         QList<QSize> *availableSizesOut = Q_NULLPTR,
         QString *normalizedPathOut = Q_NULLPTR);
-    static QIcon loadTabCustomImage(QString &imagepath);
+    static QIcon loadTabCustomImage(QString &imagepath, QList<QSize> *availableSizesOut = Q_NULLPTR);
     static QList<QSize> sortedTabCustomImageAvailableSizes(const QString &imagePath);
     static QList<QSize> sortedTabCustomImageAvailableSizesFromIcon(const QIcon &icon);
     static QSize deriveTabCustomImagePixelAfterImageChange(

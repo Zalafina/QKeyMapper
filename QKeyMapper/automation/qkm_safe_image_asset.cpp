@@ -5,6 +5,7 @@
 #include <QByteArray>
 #include <QCoreApplication>
 #include <QDir>
+#include <QFileInfo>
 #include <QImage>
 #include <QImageReader>
 #include <QPixmap>
@@ -1221,6 +1222,33 @@ void SafeTabImageSizeCache::invalidate(void)
 {
     m_Entries.clear();
     m_UseCounter = 0;
+}
+
+QString classifyTabCustomImagePathForGui(const QString &selectedImagePath, const QString &appDirOverride)
+{
+    if (selectedImagePath.isEmpty()) {
+        return QString();
+    }
+
+    const QString rawAppDir = appDirOverride.isEmpty() ? QCoreApplication::applicationDirPath() : appDirOverride;
+    const QString cleanAppDir = rawAppDir.isEmpty()
+        ? QString()
+        : QDir::cleanPath(QDir::fromNativeSeparators(QDir(rawAppDir).absolutePath()));
+    const QString absInput = (cleanAppDir.isEmpty() || QDir::isAbsolutePath(selectedImagePath))
+        ? selectedImagePath
+        : QDir(cleanAppDir).filePath(selectedImagePath);
+    const QString cleanImgAbs = QDir::cleanPath(QDir::fromNativeSeparators(QFileInfo(absInput).absoluteFilePath()));
+
+    if (!cleanAppDir.isEmpty()) {
+        const QString appDirPrefix = cleanAppDir.endsWith(QLatin1Char('/'))
+            ? cleanAppDir
+            : (cleanAppDir + QLatin1Char('/'));
+        if (cleanImgAbs.startsWith(appDirPrefix, Qt::CaseInsensitive) && cleanImgAbs.size() > appDirPrefix.size()) {
+            return cleanImgAbs.mid(appDirPrefix.size());
+        }
+    }
+
+    return cleanImgAbs;
 }
 
 } // namespace QkmAutomation

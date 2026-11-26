@@ -92,6 +92,8 @@ QSize deriveTabCustomImagePixelAfterImageChange(
 
 bool isSafeInAppRelativeImageSyntax(const QString &rawRelativePath, QString &normalizedRelOut, QString &errorOut);
 bool isSafeCustomTrayIconRelativeSyntax(const QString &rawRelativePath, QString &normalizedRelOut, QString &errorOut);
+QString classifyTabCustomImagePathForGui(
+    const QString &selectedImagePath, const QString &appDirOverride = QString());
 
 SafeImageAssetResult loadSafeCustomTrayIconAsset(
     const QString &rawRelativePath, const QString &appDirOverride = QString());

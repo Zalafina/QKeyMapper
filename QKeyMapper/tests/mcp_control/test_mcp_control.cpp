@@ -5685,6 +5685,7 @@ void McpControlTest::safeImageAssetAndTrayScanSecurity()
     QCOMPARE(pngRes.availableSizes, (QList<QSize>{QSize(24, 24)}));
     const auto svgRes = loadSafeInAppImageAsset(QStringLiteral("icons/badge.svg"), appRoot);
     QVERIFY(svgRes.ok);
+    QVERIFY(!svgRes.icon.isNull());
     QVERIFY(svgRes.availableSizes.isEmpty());
     for (const char *badSvg : {
              "icons/evil_image.svg", "icons/evil_xlink.svg", "icons/evil_feimage.svg",
@@ -5831,6 +5832,30 @@ void McpControlTest::safeImageAssetAndTrayScanSecurity()
     QCOMPARE(deriveTabCustomImagePixelAfterImageChange(QStringLiteral("icons/multi.ico"), QSize(16, 16), QStringLiteral("icons/multi.ico"), {QSize(32, 32)}), QSize(16, 16));
     QCOMPARE(deriveTabCustomImagePixelAfterImageChange(QStringLiteral("icons/multi.ico"), QSize(16, 16), QStringLiteral("icons/other.ico"), {QSize(32, 32), QSize(16, 16)}), QSize(16, 16));
     QCOMPARE(deriveTabCustomImagePixelAfterImageChange(QStringLiteral("icons/multi.ico"), QSize(16, 16), QStringLiteral("icons/single.png"), {QSize(24, 24)}), QSize());
+
+    // TAB-ASSET-R2-GUI-PREFIX: sibling same-prefix dirs stay external absolute paths, while true children become relative.
+    const QString cleanAppRoot = QDir::cleanPath(QDir::fromNativeSeparators(QDir(appRoot).absolutePath()));
+    const QString siblingAssetsDir = cleanAppRoot + QStringLiteral("-assets");
+    const QString siblingExtraDir = cleanAppRoot + QStringLiteral("_extra");
+    QVERIFY(QDir().mkpath(siblingAssetsDir));
+    QVERIFY(QDir().mkpath(siblingExtraDir));
+    QVERIFY(writeAll(siblingAssetsDir + QStringLiteral("/ext.png"), pngBytes));
+    QVERIFY(writeAll(siblingExtraDir + QStringLiteral("/ext.png"), pngBytes));
+
+    QCOMPARE(classifyTabCustomImagePathForGui(appRoot + QStringLiteral("/icons/multi.ico"), appRoot), QStringLiteral("icons/multi.ico"));
+    QCOMPARE(classifyTabCustomImagePathForGui(appRoot + QStringLiteral("\\icons\\multi.ico"), appRoot), QStringLiteral("icons/multi.ico"));
+
+    const QString sibling1 = classifyTabCustomImagePathForGui(siblingAssetsDir + QStringLiteral("/ext.png"), appRoot);
+    QCOMPARE(sibling1, siblingAssetsDir + QStringLiteral("/ext.png"));
+    QVERIFY(QDir::isAbsolutePath(sibling1) && !sibling1.startsWith(QStringLiteral("..")));
+
+    const QString sibling2 = classifyTabCustomImagePathForGui(siblingExtraDir + QStringLiteral("/ext.png"), appRoot);
+    QCOMPARE(sibling2, siblingExtraDir + QStringLiteral("/ext.png"));
+
+    const QString traversalSibling = classifyTabCustomImagePathForGui(
+        appRoot + QStringLiteral("/icons/../../") + QFileInfo(cleanAppRoot).fileName() + QStringLiteral("-assets/ext.png"),
+        appRoot);
+    QCOMPARE(traversalSibling, siblingAssetsDir + QStringLiteral("/ext.png"));
 }
 
 #include "test_mcp_control.moc"

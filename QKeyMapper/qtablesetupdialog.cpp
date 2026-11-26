@@ -221,7 +221,8 @@ void QTableSetupDialog::updateTrayIconPixelSizeWithCurrentText()
     mapper->setMappingTabCustomImageSettings(tabindex, updated);
 }
 
-void QTableSetupDialog::updateTrayIconPixelComboBox(const QIcon &icon, const QSize &targetSize)
+void QTableSetupDialog::updateTrayIconPixelComboBox(
+    const QIcon &icon, const QSize &targetSize, const QList<QSize> *explicitAvailableSizes)
 {
     // 1. If the icon is null, clear all item icons
     if (icon.isNull()) {
@@ -230,7 +231,9 @@ void QTableSetupDialog::updateTrayIconPixelComboBox(const QIcon &icon, const QSi
     }
 
     // 2. Get available icon sizes & sort in descending order
-    QList<QSize> availableSizes = icon.availableSizes();
+    QList<QSize> availableSizes = (explicitAvailableSizes != Q_NULLPTR)
+        ? *explicitAvailableSizes
+        : icon.availableSizes();
     if (availableSizes.isEmpty()) {
 #ifdef DEBUG_LOGOUT_ON
         qDebug() << "[QTableSetupDialog::updateTrayIconPixelComboBox]" << "Icon.availableSizes() is empty. Showing default icon only.";
@@ -451,10 +454,14 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load Custom Image
         QIcon icon_loaded;
+        QList<QSize> availableSizes;
         if (!TabCustomImage_Path.isEmpty()) {
-            icon_loaded = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Icon;
-            if (icon_loaded.isNull()) {
-                icon_loaded = QKeyMapper::loadTabCustomImageForDisplay(TabCustomImage_Path);
+            const KeyMappingTab_Info &tabInfo = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex);
+            if (!tabInfo.TabCustomImage_Icon.isNull()) {
+                icon_loaded = tabInfo.TabCustomImage_Icon;
+                availableSizes = tabInfo.TabCustomImage_AvailableSizes;
+            } else {
+                icon_loaded = QKeyMapper::loadTabCustomImageForDisplay(TabCustomImage_Path, &availableSizes);
             }
             if (!icon_loaded.isNull()) {
                 QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT));
@@ -475,7 +482,7 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
         }
 
         // Update TrayIconPixelComboBox Items & Index without mutating or dirtying stored state on show
-        updateTrayIconPixelComboBox(icon_loaded, TabCustomImage_TrayIconPixel);
+        updateTrayIconPixelComboBox(icon_loaded, TabCustomImage_TrayIconPixel, &availableSizes);
 
         const QSignalBlocker showPositionBlocker(ui->customImageShowPositionComboBox);
         const QSignalBlocker paddingBlocker(ui->customImagePaddingSpinBox);
@@ -739,7 +746,8 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
     qDebug().nospace() << "[on_selectCustomImageButton_clicked]" << "customimage_path from QFileDialog -> TabIndex[" << tabindex << "] : " << customimage_path;
 #endif
 
-    QIcon icon_loaded = QKeyMapper::loadTabCustomImage(customimage_path);
+    QList<QSize> afterSizes;
+    QIcon icon_loaded = QKeyMapper::loadTabCustomImage(customimage_path, &afterSizes);
 
     if (!icon_loaded.isNull()) {
         QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT));
@@ -751,10 +759,9 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
 
         auto *mapper = QKeyMapper::getInstance();
         TabCustomImageSettings updated = mapper->getMappingTabCustomImageSettings(tabindex);
-        const QList<QSize> afterSizes = QKeyMapper::sortedTabCustomImageAvailableSizesFromIcon(icon_loaded);
         const QSize nextTrayIconPixel = QKeyMapper::deriveTabCustomImagePixelAfterImageChange(
             updated.imagePath, updated.trayIconPixel, customimage_path, afterSizes);
-        updateTrayIconPixelComboBox(icon_loaded, nextTrayIconPixel);
+        updateTrayIconPixelComboBox(icon_loaded, nextTrayIconPixel, &afterSizes);
         updated.imagePath = customimage_path;
         updated.trayIconPixel = nextTrayIconPixel;
         mapper->setMappingTabCustomImageSettings(tabindex, updated, &afterSizes, &icon_loaded);
