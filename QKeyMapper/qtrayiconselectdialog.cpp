@@ -298,7 +298,7 @@ void QTrayIconSelectDialog::appendCustomTrayIconsFromDir(const QString &dir)
         return;
     }
 
-    const QkmAutomation::SafeTrayIconScanResult scan = QkmAutomation::scanSafeCustomTrayIcons();
+    const QkmAutomation::SafeTrayIconScanResult scan = QkmAutomation::scanSafeCustomTrayIcons(QString(), 0, 0, 0, 0);
     for (const QkmAutomation::SafeTrayIconScanEntry &entry : scan.entries) {
         if (entry.icon.isNull()) {
             continue;

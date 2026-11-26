@@ -14,6 +14,9 @@
 namespace QkmAutomation {
 
 inline constexpr qint64 MaxSafeImageFileBytes = 4 * 1024 * 1024;
+inline constexpr qint64 MaxSafeSvgFileBytes = 1 * 1024 * 1024;
+inline constexpr int MaxSafeSvgDepth = 64;
+inline constexpr int MaxSafeSvgElements = 4096;
 inline constexpr int MaxSafeImageFrames = 32;
 inline constexpr int MaxSafeImageDimension = 4096;
 inline constexpr int MaxSafeRelativePathChars = 260;
@@ -131,12 +134,15 @@ public:
     SafeTabImageSizesProbe probeSafeInAppImageSizes(
         const QString &storedPath, const QString &appDirOverride = QString());
     void remember(const QString &normalizedRelPath, const SafeImageFileIdentity &identity, const QList<QSize> &sizes);
+    void rememberResult(
+        const QString &cacheKey, const SafeImageFileIdentity &identity, bool probed, const QList<QSize> &sizes);
     void invalidate(void);
 
 private:
     struct CacheEntry {
         QString normalizedRelPath;
         SafeImageFileIdentity identity;
+        bool probed = true;
         QList<QSize> sizes;
         qint64 lastUsedOrder = 0;
     };

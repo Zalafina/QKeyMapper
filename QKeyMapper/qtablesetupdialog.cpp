@@ -451,9 +451,11 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load Custom Image
         QIcon icon_loaded;
-        const QString resolvedImagePath = QKeyMapper::resolveExistingTabCustomImagePath(TabCustomImage_Path);
-        if (!resolvedImagePath.isEmpty()) {
-            icon_loaded = QIcon(resolvedImagePath);
+        if (!TabCustomImage_Path.isEmpty()) {
+            icon_loaded = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_Icon;
+            if (icon_loaded.isNull()) {
+                icon_loaded = QKeyMapper::loadTabCustomImageForDisplay(TabCustomImage_Path);
+            }
             if (!icon_loaded.isNull()) {
                 QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT));
 #ifdef DEBUG_LOGOUT_ON

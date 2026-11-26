@@ -187,6 +187,7 @@ struct PopupNotificationOptions {
     int yOffset = QKeyMapperConstants::NOTIFICATION_Y_OFFSET_DEFAULT;                       // Y offset
 
     QString iconPath;                                                                       // Optional icon path (PNG/ICO)
+    QIcon preloadedIcon;                                                                    // Optional verified icon instance
     int iconPosition = QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_DEFAULT;               // Icon position
     int iconPadding = 0;                                                                    // Padding between icon and text
 };
@@ -200,6 +201,7 @@ struct FloatingWindowOptions {
     bool mousePassThrough = QKeyMapperConstants::FLOATINGWINDOW_MOUSE_PASSTHROUGH_DEFAULT;  // Mouse pass-through
     int borderRadius = QKeyMapperConstants::FLOATINGWINDOW_RADIUS_DEFAULT;                  // Border radius
     QString iconPath;                                                                       // Icon file path (.ico/.png)
+    QIcon preloadedIcon;                                                                    // Optional verified icon instance
     int iconPadding = 0;                                                                    // Padding between icon and window border
 };
 
@@ -474,6 +476,7 @@ struct KeyMappingTab_Info
     bool IsCommonTab = false;
     Qt::CheckState TabHideNotification;
     QString TabCustomImage_Path;
+    QIcon TabCustomImage_Icon;
     int TabCustomImage_ShowPosition;
     int TabCustomImage_Padding;
     bool TabCustomImage_ShowAsTrayIcon;
@@ -1551,6 +1554,10 @@ public:
     static bool isWindowFullscreen(HWND hwnd);
 
     static QString resolveExistingTabCustomImagePath(const QString &storedPath);
+    static QIcon loadTabCustomImageForDisplay(
+        const QString &storedPath,
+        QList<QSize> *availableSizesOut = Q_NULLPTR,
+        QString *normalizedPathOut = Q_NULLPTR);
     static QIcon loadTabCustomImage(QString &imagepath);
     static QList<QSize> sortedTabCustomImageAvailableSizes(const QString &imagePath);
     static QList<QSize> sortedTabCustomImageAvailableSizesFromIcon(const QIcon &icon);

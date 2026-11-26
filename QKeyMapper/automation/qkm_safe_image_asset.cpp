@@ -8,6 +8,7 @@
 #include <QImage>
 #include <QImageReader>
 #include <QPixmap>
+#include <QXmlStreamReader>
 
 #include <algorithm>
 #include <vector>
@@ -349,6 +350,235 @@ void sortAndDeduplicateSizes(QList<QSize> &sizes, int maxCount)
     }
 }
 
+bool isAsciiIdentChar(QChar ch)
+{
+    const ushort c = ch.unicode();
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+        || c == '_' || c == '-';
+}
+
+bool isSafeLocalFragmentOnly(const QString &rawValue)
+{
+    const QString trimmed = rawValue.trimmed();
+    if (trimmed.size() < 2 || trimmed.at(0) != QLatin1Char('#')) {
+        return false;
+    }
+    for (int i = 1; i < trimmed.size(); ++i) {
+        const ushort c = trimmed.at(i).unicode();
+        const bool ok = (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')
+            || c == '_' || c == '-' || c == '.';
+        if (!ok) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool containsUnsafeCssOrUriReference(const QString &rawText, bool blockBackslashes)
+{
+    if (rawText.isEmpty()) {
+        return false;
+    }
+    if (blockBackslashes && rawText.contains(QLatin1Char('\\'))) {
+        return true;
+    }
+
+    // Strip CSS /* ... */ comments before scanning for @import or url(...).
+    QString stripped;
+    stripped.reserve(rawText.size());
+    int pos = 0;
+    while (pos < rawText.size()) {
+        if (pos + 1 < rawText.size() && rawText.at(pos) == QLatin1Char('/') && rawText.at(pos + 1) == QLatin1Char('*')) {
+            const int endComment = rawText.indexOf(QLatin1String("*/"), pos + 2);
+            if (endComment < 0) {
+                return true;
+            }
+            pos = endComment + 2;
+            continue;
+        }
+        stripped.append(rawText.at(pos));
+        ++pos;
+    }
+
+    const QString lower = stripped.toLower();
+    if (lower.contains(QLatin1String("@import"))) {
+        return true;
+    }
+
+    int searchFrom = 0;
+    while (searchFrom < lower.size()) {
+        const int idx = lower.indexOf(QLatin1String("url"), searchFrom);
+        if (idx < 0) {
+            break;
+        }
+        if (idx > 0 && isAsciiIdentChar(lower.at(idx - 1))) {
+            searchFrom = idx + 3;
+            continue;
+        }
+        int afterUrl = idx + 3;
+        while (afterUrl < lower.size() && lower.at(afterUrl).isSpace()) {
+            ++afterUrl;
+        }
+        if (afterUrl >= lower.size() || lower.at(afterUrl) != QLatin1Char('(')) {
+            searchFrom = idx + 3;
+            continue;
+        }
+        const int closeParen = lower.indexOf(QLatin1Char(')'), afterUrl + 1);
+        if (closeParen < 0) {
+            return true;
+        }
+        QString target = stripped.mid(afterUrl + 1, closeParen - (afterUrl + 1)).trimmed();
+        if (target.size() >= 2) {
+            const QChar first = target.at(0);
+            const QChar last = target.at(target.size() - 1);
+            if ((first == QLatin1Char('"') && last == QLatin1Char('"'))
+                || (first == QLatin1Char('\'') && last == QLatin1Char('\''))) {
+                target = target.mid(1, target.size() - 2).trimmed();
+            }
+        }
+        if (!isSafeLocalFragmentOnly(target)) {
+            return true;
+        }
+        searchFrom = closeParen + 1;
+    }
+    return false;
+}
+
+bool isForbiddenSvgElement(const QString &elemLower)
+{
+    return elemLower == QLatin1String("image")
+        || elemLower == QLatin1String("feimage")
+        || elemLower == QLatin1String("script")
+        || elemLower == QLatin1String("foreignobject")
+        || elemLower == QLatin1String("iframe")
+        || elemLower == QLatin1String("embed")
+        || elemLower == QLatin1String("object")
+        || elemLower == QLatin1String("audio")
+        || elemLower == QLatin1String("video")
+        || elemLower == QLatin1String("font-face-uri");
+}
+
+bool validateSelfContainedSvgBytes(const QByteArray &bytes, QString &errorOut)
+{
+    if (bytes.isEmpty() || bytes.size() > MaxSafeSvgFileBytes) {
+        errorOut = QStringLiteral("SVG payload exceeds maximum allowed safe size.");
+        return false;
+    }
+    if (bytes.size() >= 2
+        && static_cast<unsigned char>(bytes.at(0)) == 0x1F
+        && static_cast<unsigned char>(bytes.at(1)) == 0x8B) {
+        errorOut = QStringLiteral("Compressed SVGZ streams are not supported.");
+        return false;
+    }
+
+    QXmlStreamReader xml(bytes);
+    xml.setEntityExpansionLimit(256);
+
+    bool sawRoot = false;
+    int depth = 0;
+    int elementCount = 0;
+    int inStyleDepth = 0;
+    QString styleBuffer;
+
+    while (!xml.atEnd()) {
+        const QXmlStreamReader::TokenType token = xml.readNext();
+        switch (token) {
+        case QXmlStreamReader::DTD:
+            errorOut = QStringLiteral("SVG DOCTYPE/DTD declarations are not allowed.");
+            return false;
+        case QXmlStreamReader::EntityReference:
+            errorOut = QStringLiteral("SVG entity references are not allowed.");
+            return false;
+        case QXmlStreamReader::ProcessingInstruction: {
+            const QString piTarget = xml.processingInstructionTarget().toString().toLower();
+            const QString piData = xml.processingInstructionData().toString().toLower();
+            if (piTarget == QLatin1String("xml-stylesheet")
+                || piData.contains(QLatin1String("href"))
+                || containsUnsafeCssOrUriReference(piData, true)) {
+                errorOut = QStringLiteral("SVG external stylesheet or processing instruction reference is not allowed.");
+                return false;
+            }
+            break;
+        }
+        case QXmlStreamReader::StartElement: {
+            ++depth;
+            ++elementCount;
+            if (depth > MaxSafeSvgDepth || elementCount > MaxSafeSvgElements) {
+                errorOut = QStringLiteral("SVG nesting or element count exceeds safe limits.");
+                return false;
+            }
+            const QString elemLower = xml.name().toString().toLower();
+            if (!sawRoot) {
+                if (elemLower != QLatin1String("svg")) {
+                    errorOut = QStringLiteral("SVG document must have an <svg> root element.");
+                    return false;
+                }
+                sawRoot = true;
+            }
+            if (isForbiddenSvgElement(elemLower)) {
+                errorOut = QStringLiteral("SVG external resource or active content elements are not allowed.");
+                return false;
+            }
+            if (elemLower == QLatin1String("style")) {
+                ++inStyleDepth;
+                if (inStyleDepth == 1) {
+                    styleBuffer.clear();
+                }
+            }
+            const QXmlStreamAttributes attrs = xml.attributes();
+            for (const QXmlStreamAttribute &attr : attrs) {
+                const QString attrLower = attr.name().toString().toLower();
+                const QString attrValue = attr.value().toString();
+                if (attrLower == QLatin1String("href") || attrLower == QLatin1String("src")) {
+                    if (!isSafeLocalFragmentOnly(attrValue)) {
+                        errorOut = QStringLiteral("SVG href/src attributes may only reference same-document fragments (#id).");
+                        return false;
+                    }
+                }
+                const bool isStyleAttr = (attrLower == QLatin1String("style"));
+                if (containsUnsafeCssOrUriReference(attrValue, isStyleAttr)) {
+                    errorOut = QStringLiteral("SVG attribute contains a disallowed external URI or CSS reference.");
+                    return false;
+                }
+            }
+            break;
+        }
+        case QXmlStreamReader::Characters:
+            if (inStyleDepth > 0) {
+                styleBuffer.append(xml.text().toString());
+                if (styleBuffer.size() > MaxSafeSvgFileBytes) {
+                    errorOut = QStringLiteral("SVG <style> content exceeds safe limits.");
+                    return false;
+                }
+            }
+            break;
+        case QXmlStreamReader::EndElement: {
+            const QString elemLower = xml.name().toString().toLower();
+            if (elemLower == QLatin1String("style") && inStyleDepth > 0) {
+                --inStyleDepth;
+                if (inStyleDepth == 0) {
+                    if (containsUnsafeCssOrUriReference(styleBuffer, true)) {
+                        errorOut = QStringLiteral("SVG <style> contains a disallowed external URI or @import rule.");
+                        return false;
+                    }
+                    styleBuffer.clear();
+                }
+            }
+            --depth;
+            break;
+        }
+        default:
+            break;
+        }
+    }
+
+    if (xml.hasError() || !sawRoot || depth != 0) {
+        errorOut = QStringLiteral("SVG XML payload is invalid or incomplete.");
+        return false;
+    }
+    return true;
+}
+
 bool decodeBoundedImageBytes(
     const QByteArray &bytes,
     const QByteArray &format,
@@ -358,6 +588,9 @@ bool decodeBoundedImageBytes(
 {
     if (bytes.isEmpty() || format.isEmpty()) {
         errorOut = QStringLiteral("Unsupported or empty image payload.");
+        return false;
+    }
+    if (format == QByteArrayLiteral("svg") && !validateSelfContainedSvgBytes(bytes, errorOut)) {
         return false;
     }
     QBuffer buffer;
@@ -687,7 +920,7 @@ SafeTrayIconScanResult scanVerifiedTrayDirHandle(
                 entry->FileName, int(entry->FileNameLength / sizeof(WCHAR)));
 
             if (fileName != QLatin1String(".") && fileName != QLatin1String("..")) {
-                if (result.entriesInspected >= maxEntries) {
+                if (maxEntries > 0 && result.entriesInspected >= maxEntries) {
                     hitLimit = true;
                     break;
                 }
@@ -921,7 +1154,7 @@ SafeTabImageSizesProbe SafeTabImageSizeCache::probeSafeInAppImageSizes(
     auto existingIt = m_Entries.find(cacheKey);
     if (existingIt != m_Entries.end() && existingIt->identity == fileIdentity) {
         existingIt->lastUsedOrder = ++m_UseCounter;
-        result.probed = true;
+        result.probed = existingIt->probed;
         result.external = false;
         result.cacheHit = true;
         result.availableSizes = existingIt->sizes;
@@ -931,6 +1164,7 @@ SafeTabImageSizesProbe SafeTabImageSizeCache::probeSafeInAppImageSizes(
     QByteArray bytes;
     QString readError;
     if (!readBoundedBytesFromHandle(scopedFile.get(), fileIdentity.fileSize, bytes, readError)) {
+        rememberResult(cacheKey, fileIdentity, false, {});
         result.probed = false;
         return result;
     }
@@ -938,11 +1172,12 @@ SafeTabImageSizesProbe SafeTabImageSizeCache::probeSafeInAppImageSizes(
     QList<QSize> sizes;
     QString decodeError;
     if (!decodeBoundedImageBytes(bytes, expectedFormatForExtension(normalizedRel.toLower()), icon, sizes, decodeError)) {
+        rememberResult(cacheKey, fileIdentity, false, {});
         result.probed = false;
         return result;
     }
 
-    remember(cacheKey, fileIdentity, sizes);
+    rememberResult(cacheKey, fileIdentity, true, sizes);
     result.probed = true;
     result.external = false;
     result.cacheHit = false;
@@ -952,6 +1187,12 @@ SafeTabImageSizesProbe SafeTabImageSizeCache::probeSafeInAppImageSizes(
 
 void SafeTabImageSizeCache::remember(
     const QString &cacheKey, const SafeImageFileIdentity &identity, const QList<QSize> &sizes)
+{
+    rememberResult(cacheKey, identity, true, sizes);
+}
+
+void SafeTabImageSizeCache::rememberResult(
+    const QString &cacheKey, const SafeImageFileIdentity &identity, bool probed, const QList<QSize> &sizes)
 {
     if (cacheKey.isEmpty() || !identity.valid()) {
         return;
@@ -970,6 +1211,7 @@ void SafeTabImageSizeCache::remember(
     CacheEntry entry;
     entry.normalizedRelPath = cacheKey;
     entry.identity = identity;
+    entry.probed = probed;
     entry.sizes = sizes;
     entry.lastUsedOrder = ++m_UseCounter;
     m_Entries.insert(cacheKey, entry);

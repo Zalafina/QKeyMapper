@@ -5633,11 +5633,46 @@ void McpControlTest::safeImageAssetAndTrayScanSecurity()
         QVERIFY(pngBuf.open(QIODevice::WriteOnly));
         QVERIFY(pngImg.save(&pngBuf, "PNG"));
     }
-    const QByteArray svgBytes = QByteArrayLiteral("<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\"><rect width=\"32\" height=\"32\" fill=\"#2080ff\"/></svg>");
+    const QByteArray svgBytes = QByteArrayLiteral(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\">"
+        "<defs><linearGradient id=\"g1\"><stop offset=\"0%\" stop-color=\"#2080ff\"/></linearGradient></defs>"
+        "<rect id=\"r1\" width=\"32\" height=\"32\" fill=\"url(#g1)\"/>"
+        "<use href=\"#r1\"/></svg>");
+    const QByteArray evilSvgImageBytes = QByteArrayLiteral(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\">"
+        "<image href=\"../outside/ext.ico\" width=\"32\" height=\"32\"/></svg>");
+    const QByteArray evilSvgXlinkBytes = QByteArrayLiteral(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"32\" height=\"32\">"
+        "<image xlink:href=\"C:/Windows/win.ini\" width=\"32\" height=\"32\"/></svg>");
+    const QByteArray evilSvgFeImageBytes = QByteArrayLiteral(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\">"
+        "<defs><filter id=\"f\"><feImage href=\"single.png\"/></filter></defs>"
+        "<rect width=\"32\" height=\"32\" filter=\"url(#f)\"/></svg>");
+    const QByteArray evilSvgDtdBytes = QByteArrayLiteral(
+        "<!DOCTYPE svg SYSTEM \"file:///C:/outside/ext.dtd\">"
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\"/>");
+    const QByteArray evilSvgStyleImportBytes = QByteArrayLiteral(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\">"
+        "<style>@import url(\"ext.css\");</style><rect width=\"32\" height=\"32\"/></svg>");
+    const QByteArray evilSvgAttrUrlBytes = QByteArrayLiteral(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\">"
+        "<rect width=\"32\" height=\"32\" style=\"fill: url(ext.svg#g)\"/></svg>");
+    const QByteArray evilSvgUseExtBytes = QByteArrayLiteral(
+        "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"32\" height=\"32\">"
+        "<use href=\"other.svg#id\"/></svg>");
+    const QByteArray evilSvgzBytes("\x1f\x8b\x08\x00\x00\x00\x00\x00", 8);
 
     QVERIFY(writeAll(subIcons + QStringLiteral("/multi.ico"), multiIcoBytes));
     QVERIFY(writeAll(subIcons + QStringLiteral("/single.png"), pngBytes));
     QVERIFY(writeAll(subIcons + QStringLiteral("/badge.svg"), svgBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/evil_image.svg"), evilSvgImageBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/evil_xlink.svg"), evilSvgXlinkBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/evil_feimage.svg"), evilSvgFeImageBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/evil_dtd.svg"), evilSvgDtdBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/evil_import.svg"), evilSvgStyleImportBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/evil_url.svg"), evilSvgAttrUrlBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/evil_use.svg"), evilSvgUseExtBytes));
+    QVERIFY(writeAll(subIcons + QStringLiteral("/evil_gz.svg"), evilSvgzBytes));
     QVERIFY(writeAll(subIcons + QStringLiteral("/mismatched.ico"), pngBytes));
     QVERIFY(writeAll(subIcons + QStringLiteral("/empty.ico"), QByteArray()));
     QVERIFY(writeAll(outsideRoot + QStringLiteral("/ext.ico"), singleIcoBytes));
@@ -5651,6 +5686,12 @@ void McpControlTest::safeImageAssetAndTrayScanSecurity()
     const auto svgRes = loadSafeInAppImageAsset(QStringLiteral("icons/badge.svg"), appRoot);
     QVERIFY(svgRes.ok);
     QVERIFY(svgRes.availableSizes.isEmpty());
+    for (const char *badSvg : {
+             "icons/evil_image.svg", "icons/evil_xlink.svg", "icons/evil_feimage.svg",
+             "icons/evil_dtd.svg", "icons/evil_import.svg", "icons/evil_url.svg",
+             "icons/evil_use.svg", "icons/evil_gz.svg" }) {
+        QVERIFY2(!loadSafeInAppImageAsset(QLatin1String(badSvg), appRoot).ok, badSvg);
+    }
 
     QVERIFY(!loadSafeInAppImageAsset(QStringLiteral("icons/mismatched.ico"), appRoot).ok);
     QVERIFY(!loadSafeInAppImageAsset(QStringLiteral("icons/empty.ico"), appRoot).ok);
@@ -5732,7 +5773,14 @@ void McpControlTest::safeImageAssetAndTrayScanSecurity()
     QVERIFY(!omitted.isEmpty());
     QVERIFY(loadSafeCustomTrayIconAsset(omitted, appRoot).ok);
 
-    // Tab image cache: external path skips disk probe, in-app path caches sizes.
+    // GUI untruncated scan lists all 303 valid icons while MCP snapshot stays bounded.
+    const auto guiFullScan = scanSafeCustomTrayIcons(appRoot, 0, 0, 0, 0);
+    QVERIFY(!guiFullScan.truncated && guiFullScan.countExact);
+    QCOMPARE(guiFullScan.totalCount, std::optional<int>(303));
+    QCOMPARE(guiFullScan.customIcons.size(), 303);
+    QVERIFY(guiFullScan.customIcons.contains(omitted));
+
+    // Tab image cache: external path skips disk probe, failed decode caches until file changes.
     SafeTabImageSizeCache tabCache;
     const auto extProbe = tabCache.probeSafeInAppImageSizes(outsideRoot + QStringLiteral("/ext.ico"), appRoot);
     QVERIFY(!extProbe.probed && extProbe.external && extProbe.availableSizes.isEmpty());
@@ -5744,6 +5792,39 @@ void McpControlTest::safeImageAssetAndTrayScanSecurity()
     QVERIFY(inProbe1.probed && !inProbe1.external && !inProbe1.cacheHit);
     QCOMPARE(inProbe1.availableSizes, (QList<QSize>{QSize(32, 32), QSize(16, 16)}));
     QVERIFY(tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/multi.ico"), appRoot).cacheHit);
+
+    const auto svgProbe = tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/badge.svg"), appRoot);
+    QVERIFY(svgProbe.probed && !svgProbe.external && svgProbe.availableSizes.isEmpty());
+    const auto evilSvgProbe1 = tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/evil_image.svg"), appRoot);
+    QVERIFY(!evilSvgProbe1.probed && !evilSvgProbe1.external && !evilSvgProbe1.cacheHit);
+    const auto evilSvgProbe2 = tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/evil_image.svg"), appRoot);
+    QVERIFY(!evilSvgProbe2.probed && !evilSvgProbe2.external && evilSvgProbe2.cacheHit);
+
+    // File mutable transition: valid -> corrupt (caches failure) -> repaired (invalidates cache cleanly).
+    const QString mutablePath = subIcons + QStringLiteral("/mutable_probe.png");
+    QVERIFY(writeAll(mutablePath, pngBytes));
+    const auto mutValid = tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/mutable_probe.png"), appRoot);
+    QVERIFY(mutValid.probed && !mutValid.cacheHit);
+    QCOMPARE(mutValid.availableSizes, (QList<QSize>{QSize(24, 24)}));
+
+    QVERIFY(writeAll(mutablePath, QByteArrayLiteral("corrupt-png-bytes")));
+    const auto mutBad1 = tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/mutable_probe.png"), appRoot);
+    QVERIFY(!mutBad1.probed && !mutBad1.external && !mutBad1.cacheHit && mutBad1.availableSizes.isEmpty());
+    const auto mutBad2 = tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/mutable_probe.png"), appRoot);
+    QVERIFY(!mutBad2.probed && !mutBad2.external && mutBad2.cacheHit && mutBad2.availableSizes.isEmpty());
+
+    QImage repairedImg(16, 16, QImage::Format_ARGB32);
+    repairedImg.fill(QColor(80, 200, 120, 255));
+    QByteArray repairedBytes;
+    {
+        QBuffer repBuf(&repairedBytes);
+        QVERIFY(repBuf.open(QIODevice::WriteOnly));
+        QVERIFY(repairedImg.save(&repBuf, "PNG"));
+    }
+    QVERIFY(writeAll(mutablePath, repairedBytes));
+    const auto mutFixed = tabCache.probeSafeInAppImageSizes(QStringLiteral("icons/mutable_probe.png"), appRoot);
+    QVERIFY(mutFixed.probed && !mutFixed.external && !mutFixed.cacheHit);
+    QCOMPARE(mutFixed.availableSizes, (QList<QSize>{QSize(16, 16)}));
 
     // Derive pixel size helper parity across normal & Common Tabs.
     QCOMPARE(deriveTabCustomImagePixelAfterImageChange(QStringLiteral("icons/multi.ico"), QSize(16, 16), QString(), {}), QSize());
