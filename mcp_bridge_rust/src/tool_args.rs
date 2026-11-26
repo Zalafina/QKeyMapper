@@ -732,6 +732,31 @@ struct TabFloatingWindowSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct TabCustomImageFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    image_path: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_position: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    padding: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_as_tray_icon: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_as_floating_window: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tray_icon_pixel: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct TabCustomImageSettings {
+    action: String,
+    source_tab_ref: String,
+    custom_image: TabCustomImageFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct MappingCrosshairFields {
     #[serde(skip_serializing_if = "Option::is_none")]
     center_color: Option<String>,
@@ -1590,6 +1615,63 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && f.mouse_pass_through_switch_key
                                 .as_deref()
                                 .is_none_or(valid_switch_key)
+                    });
+                }
+                Some("tab.set_custom_image") => {
+                    if arguments
+                        .get("custom_image")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    let valid_image_path = |s: &str| {
+                        if s.is_empty() {
+                            return true;
+                        }
+                        if s.encode_utf16().count() > 260
+                            || s.chars().any(|c| matches!(c, '\0' | '\r' | '\n' | ':'))
+                            || s.starts_with('/')
+                            || s.starts_with('\\')
+                        {
+                            return false;
+                        }
+                        let norm = s.replace('\\', "/");
+                        if norm.split('/').any(|part| part.is_empty() || part == "." || part == "..") {
+                            return false;
+                        }
+                        let lower = norm.to_ascii_lowercase();
+                        lower.ends_with(".ico") || lower.ends_with(".png") || lower.ends_with(".svg")
+                    };
+                    let valid_pixel = |s: &str| {
+                        if s == "default" {
+                            return true;
+                        }
+                        let Some((w, h)) = s.split_once('x') else {
+                            return false;
+                        };
+                        let valid_dim = |d: &str| {
+                            !d.is_empty()
+                                && d.len() <= 4
+                                && !d.starts_with('0')
+                                && d.bytes().all(|b| b.is_ascii_digit())
+                        };
+                        valid_dim(w) && valid_dim(h)
+                    };
+                    return typed(arguments, |v: &TabCustomImageSettings| {
+                        let f = &v.custom_image;
+                        let any_set = f.image_path.is_some()
+                            || f.show_position.is_some()
+                            || f.padding.is_some()
+                            || f.show_as_tray_icon.is_some()
+                            || f.show_as_floating_window.is_some()
+                            || f.tray_icon_pixel.is_some();
+                        tab_ref(&v.source_tab_ref)
+                            && any_set
+                            && f.image_path.as_deref().is_none_or(valid_image_path)
+                            && f.show_position.is_none_or(|n| (0..=2).contains(&n))
+                            && f.padding.is_none_or(|n| (0..=1000).contains(&n))
+                            && f.tray_icon_pixel.as_deref().is_none_or(valid_pixel)
                     });
                 }
                 Some("mapping.set_crosshair") => {
@@ -3005,6 +3087,59 @@ mod tests {
                 "action": "mapping.set_crosshair",
                 "source_ref": row,
                 "crosshair": bad
+            }))
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn tab_custom_image_validation() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let wire = json!({
+            "action": "tab.set_custom_image",
+            "source_tab_ref": tab,
+            "custom_image": {
+                "image_path": "icons/Tab_01.ico",
+                "show_position": 2,
+                "padding": 12,
+                "show_as_tray_icon": true,
+                "show_as_floating_window": true,
+                "tray_icon_pixel": "32x32"
+            }
+        });
+        assert_eq!(preview(&wire).unwrap(), *wire.as_object().unwrap());
+
+        let clear_wire = json!({
+            "action": "tab.set_custom_image",
+            "source_tab_ref": tab,
+            "custom_image": {"image_path": "", "tray_icon_pixel": "default"}
+        });
+        assert_eq!(preview(&clear_wire).unwrap(), *clear_wire.as_object().unwrap());
+
+        for bad in [
+            json!({}),
+            json!({"image_path": "C:/temp/a.ico"}),
+            json!({"image_path": "../a.ico"}),
+            json!({"image_path": "/a.ico"}),
+            json!({"image_path": "icons/a.bmp"}),
+            json!({"show_position": -1}),
+            json!({"show_position": 3}),
+            json!({"padding": -1}),
+            json!({"padding": 1001}),
+            json!({"show_as_tray_icon": 1}),
+            json!({"show_as_floating_window": "true"}),
+            json!({"tray_icon_pixel": "32×32"}),
+            json!({"tray_icon_pixel": "0x32"}),
+            json!({"tray_icon_pixel": "032x32"}),
+            json!({"padding": null}),
+            json!({"padding": 4, "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "tab.set_custom_image",
+                "source_tab_ref": tab,
+                "custom_image": bad
             }))
             .is_err());
         }

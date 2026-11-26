@@ -1092,9 +1092,9 @@ __declspec(noinline)
 #endif
 static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabilities)
 {
-    QCOMPARE(capabilities.size(), 140);
+    QCOMPARE(capabilities.size(), 142);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 132);
+    QCOMPARE(demoCapabilities.size(), 134);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1141,14 +1141,23 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QCOMPARE(capabilities.at(128).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_tray_icons.apply"));
     QCOMPARE(capabilities.at(129).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_floating_window.preview"));
     QCOMPARE(capabilities.at(130).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_floating_window.apply"));
-    QCOMPARE(capabilities.at(131).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_crosshair.preview"));
+    QCOMPARE(capabilities.at(131).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_custom_image.preview"));
     QCOMPARE(capabilities.at(131).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     QVERIFY(capabilities.at(131).toObject().value(QStringLiteral("read_only")).toBool());
-    QCOMPARE(capabilities.at(132).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_crosshair.apply"));
+    QCOMPARE(capabilities.at(132).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_custom_image.apply"));
     QCOMPARE(capabilities.at(132).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     QVERIFY(!capabilities.at(132).toObject().value(QStringLiteral("read_only")).toBool());
-    QCOMPARE(capabilities.at(137).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(138).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(133).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_crosshair.preview"));
+    QCOMPARE(capabilities.at(133).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capabilities.at(133).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(134).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_crosshair.apply"));
+    QCOMPARE(capabilities.at(134).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!capabilities.at(134).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(139).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(140).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("tab.set_custom_image.apply");
+    }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_gyro2mouse_options.apply");
     }));
@@ -1722,6 +1731,64 @@ static void verifyTabFloatingWindowValidation(const QString &previewMethod, cons
         QJsonObject{{QStringLiteral("size"), 64}, {QStringLiteral("extra"), 1}},
     }) {
         QVERIFY(!validateFWin(bad).ok());
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyTabCustomImageValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    const auto validateCustomImage = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("tab.set_custom_image")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("custom_image"), fields}});
+    };
+    const auto validFull = validateCustomImage({
+        {QStringLiteral("image_path"), QStringLiteral("icons/tab_01.ico")},
+        {QStringLiteral("show_position"), 2},
+        {QStringLiteral("padding"), 12},
+        {QStringLiteral("show_as_tray_icon"), true},
+        {QStringLiteral("show_as_floating_window"), true},
+        {QStringLiteral("tray_icon_pixel"), QStringLiteral("32x32")}});
+    QVERIFY(validFull.ok() && validFull.update.tabCustomImage.has_value());
+    QCOMPARE(validFull.update.tabCustomImage->imagePath, std::optional<QString>(QStringLiteral("icons/tab_01.ico")));
+    QCOMPARE(validFull.update.tabCustomImage->showPosition, std::optional<int>(2));
+    QCOMPARE(validFull.update.tabCustomImage->padding, std::optional<int>(12));
+    QCOMPARE(validFull.update.tabCustomImage->showAsTrayIcon, std::optional<bool>(true));
+    QCOMPARE(validFull.update.tabCustomImage->showAsFloatingWindow, std::optional<bool>(true));
+    QCOMPARE(validFull.update.tabCustomImage->trayIconPixel, std::optional<QString>(QStringLiteral("32x32")));
+
+    QVERIFY(validateCustomImage({{QStringLiteral("image_path"), QString()}, {QStringLiteral("tray_icon_pixel"), QStringLiteral("default")}}).ok());
+    QVERIFY(validateCustomImage({{QStringLiteral("image_path"), QStringLiteral("a.png")}, {QStringLiteral("show_position"), 0}, {QStringLiteral("padding"), 0}}).ok());
+    QVERIFY(validateCustomImage({{QStringLiteral("image_path"), QStringLiteral("sub/b.SVG")}, {QStringLiteral("padding"), 1000}}).ok());
+
+    for (const auto &bad : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("image_path"), 123}},
+        QJsonObject{{QStringLiteral("image_path"), QStringLiteral("C:/temp/a.ico")}},
+        QJsonObject{{QStringLiteral("image_path"), QStringLiteral("C:\\temp\\a.ico")}},
+        QJsonObject{{QStringLiteral("image_path"), QStringLiteral("../a.ico")}},
+        QJsonObject{{QStringLiteral("image_path"), QStringLiteral("./a.ico")}},
+        QJsonObject{{QStringLiteral("image_path"), QStringLiteral("/a.ico")}},
+        QJsonObject{{QStringLiteral("image_path"), QStringLiteral("\\\\server\\share\\a.ico")}},
+        QJsonObject{{QStringLiteral("image_path"), QStringLiteral("icons/a.bmp")}},
+        QJsonObject{{QStringLiteral("show_position"), -1}},
+        QJsonObject{{QStringLiteral("show_position"), 3}},
+        QJsonObject{{QStringLiteral("show_position"), 1.5}},
+        QJsonObject{{QStringLiteral("padding"), -1}},
+        QJsonObject{{QStringLiteral("padding"), 1001}},
+        QJsonObject{{QStringLiteral("show_as_tray_icon"), 1}},
+        QJsonObject{{QStringLiteral("show_as_floating_window"), QStringLiteral("true")}},
+        QJsonObject{{QStringLiteral("tray_icon_pixel"), QStringLiteral("32\u00D732")}},
+        QJsonObject{{QStringLiteral("tray_icon_pixel"), QStringLiteral("0x32")}},
+        QJsonObject{{QStringLiteral("tray_icon_pixel"), QStringLiteral("032x32")}},
+        QJsonObject{{QStringLiteral("tray_icon_pixel"), QStringLiteral("32x")}},
+        QJsonObject{{QStringLiteral("padding"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("padding"), 4}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!validateCustomImage(bad).ok());
     }
 }
 
@@ -2487,6 +2554,7 @@ void McpControlTest::mappingChangeArguments()
     verifyNotificationStyleValidation(previewMethod, input);
     verifyTrayIconsValidation(previewMethod, input);
     verifyTabFloatingWindowValidation(previewMethod, input);
+    verifyTabCustomImageValidation(previewMethod, input);
     verifyCrosshairValidation(previewMethod, revision);
     verifyWindowAndTrayArgumentsValidation(previewMethod, input);
     verifyWindowMatchAndStartupValidation(previewMethod, input);

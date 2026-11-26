@@ -258,7 +258,7 @@ ENV-38 保留为 PC-W10 的版本／漂移检查历史。ENV-39 已在 PC-W11 �
 | SET-004 | 启动、托盘、窗口尺寸／位置及通用高级 | [通用高级窗口](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 运行值、即时／保存／重启时机、系统启动项副作用 | M2-B／EQ-GENERAL-001 |
 | SET-005 | 开始／停止快捷键、系统筛选键及映射高级 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)、[映射高级](../../QKeyMapper/qmappingadvanceddialog.cpp) | 停止入口、系统筛选键会话恢复、驱动筛选的区别；高风险参数逐项列出 | M2-B／EQ-FILTER-001 |
 | UI-001 | 浮动按钮、样式及同步组 | [浮动按钮设定](../../QKeyMapper/qfloatingbuttonsetupdialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 应用／恢复、三态外观、派生布局、组状态及保存 | M2-B／EQ-FBUTTON-001 |
-| UI-002 | 悬浮窗口、Tab 图片及虚拟按钮面板 | [悬浮窗口](../../QKeyMapper/qfloatingwindowsetupdialog.cpp)、[面板设定](../../QKeyMapper/qvbuttonpanelsetupdialog.cpp) | 显示对象、位置／参考点、鼠标穿透、刷新及配置；拆为独立能力 | M2-B／EQ-PANEL-001；`UI-PANEL-261` 已选验虚拟按钮面板，`UI-FWINDOW-264` 已选验 Tab 悬浮窗口设定 |
+| UI-002 | 悬浮窗口、Tab 图片及虚拟按钮面板 | [悬浮窗口](../../QKeyMapper/qfloatingwindowsetupdialog.cpp)、[面板设定](../../QKeyMapper/qvbuttonpanelsetupdialog.cpp)、[Tab 设定](../../QKeyMapper/qtablesetupdialog.cpp) | 显示对象、位置／参考点、鼠标穿透、刷新及配置；拆为独立能力 | M2-B／EQ-PANEL-001；`UI-PANEL-261` 已选验虚拟按钮面板，`UI-FWINDOW-264` 已选验 Tab 悬浮窗口设定，`UI-TAB-IMAGE-266` 已选验 Tab 自定义图片设定（3/3） |
 | UI-003 | 准星、通知／自定义通知及托盘图标 | [准星](../../QKeyMapper/qcrosshairsetupdialog.cpp)、[通知](../../QKeyMapper/qnotificationsetupdialog.cpp)、[托盘图标](../../QKeyMapper/qtrayiconselectdialog.cpp) | 编辑值与实际叠加／提示／托盘行为、文件依赖及生效时机 | M2-B／EQ-OVERLAY-001；`UI-NOTIFY-262` 已选验通知样式、`UI-TRAY-263` 已选验托盘图标、`UI-CROSSHAIR-265` 已选验准星设定（3/3） |
 | UI-004 | 页面、编辑窗、最小化／显示及必要窗口操作 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)、各相关对话框 | 与常规 GUI 相同限制；实际显示、焦点影响及未提交编辑内容 | M2-B／EQ-UISESSION-001 |
 | INPUT-001 | 原始键／宏录制、序列编辑及坐标采集 | [录制](../../QKeyMapper/qkeyrecord.cpp)、[序列编辑](../../QKeyMapper/qmappingsequenceedit.cpp)、[坐标采集](../../QKeyMapper/qpointpickerdialog.cpp) | 实际采集、编辑草稿、确认／取消、上层更新及真实输入边界 | M2-A／M2-B／EQ-EDITOR-001 |
@@ -842,12 +842,12 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-tab/notificationBackgroundColorPicker` | ColorPickerWidget | `connect colorChanged @70` | 运行约束待核 |
 | `U-tab/hideNotificationCheckBox` | QCheckBox；Hide Notification | `on_hideNotificationCheckBox_stateChanged @930` | 运行约束待核 |
 | `U-tab/appendCommonMappingTableCheckBox` | QCheckBox；Append Common Mapping Table | `on_appendCommonMappingTableCheckBox_stateChanged @947` | 运行约束待核 |
-| `U-tab/selectCustomImageButton` | QPushButton；Select Custom Image | `on_selectCustomImageButton_clicked @710`<br>`connect customContextMenuRequested @67` | 运行约束待核 |
-| `U-tab/customImageShowPositionComboBox` | QComboBox | `on_customImageShowPositionComboBox_currentIndexChanged @831` | 运行约束待核 |
-| `U-tab/customImagePaddingSpinBox` | QSpinBox | `on_customImagePaddingSpinBox_valueChanged @848` | 运行约束待核 |
-| `U-tab/customImageShowAsTrayIconCheckBox` | QCheckBox；Show as TrayIcon | `on_customImageShowAsTrayIconCheckBox_stateChanged @865` | 运行约束待核 |
-| `U-tab/customImageTrayIconPixelComboBox` | QComboBox | `on_customImageTrayIconPixelComboBox_currentIndexChanged @883` | 运行约束待核 |
-| `U-tab/customImageShowAsFloatingWindowCheckBox` | QCheckBox；Show as FloatingWindow | `on_customImageShowAsFloatingWindowCheckBox_stateChanged @893` | 运行约束待核 |
+| `U-tab/selectCustomImageButton` | QPushButton；Select Custom Image | `on_selectCustomImageButton_clicked @710`<br>`connect customContextMenuRequested @67` | 静态见 UI-002；`UI-TAB-IMAGE-266 [Gemini]` 已接入 `tab.set_custom_image`／`get_state.tab_custom_image`（`image_path` 支持 `""` 清除与安全应用目录内 `.ico/.png/.svg` 相对路径；含 Common Tab；Qt6 `34E292CF`／Sidecar `4EDB6880`／双 Qt 组件／私有桌面 `run1` 与双 Qt INI 读回 `577A4166`/`6885F2B6` `changed_other_keys=0` 通过，运行副本禁用 FakerInput 连接，应用外路径 GUI 选择框与 Win10 待验） |
+| `U-tab/customImageShowPositionComboBox` | QComboBox | `on_customImageShowPositionComboBox_currentIndexChanged @831` | `UI-TAB-IMAGE-266 [Gemini]` 已接入（`0..2`，Common Tab 拒为 `unsupported_capability`，私有 GUI 探针/冷启读回通过） |
+| `U-tab/customImagePaddingSpinBox` | QSpinBox | `on_customImagePaddingSpinBox_valueChanged @848` | `UI-TAB-IMAGE-266 [Gemini]` 已接入（`0..1000`，Common Tab 拒为 `unsupported_capability`，私有 GUI 探针/冷启读回通过） |
+| `U-tab/customImageShowAsTrayIconCheckBox` | QCheckBox；Show as TrayIcon | `on_customImageShowAsTrayIconCheckBox_stateChanged @865` | `UI-TAB-IMAGE-266 [Gemini]` 已接入（布尔，Common Tab 拒为 `unsupported_capability`，私有 GUI 探针/冷启读回通过；实际托盘视觉绘制待验） |
+| `U-tab/customImageTrayIconPixelComboBox` | QComboBox | `on_customImageTrayIconPixelComboBox_currentIndexChanged @883` | `UI-TAB-IMAGE-266 [Gemini]` 已接入（`"default"`／生效图标 `available_tray_icon_pixels`，切图不匹配自动回落 `"default"`，Common Tab 拒为 `unsupported_capability`，双 Qt `QSize` 读回通过） |
+| `U-tab/customImageShowAsFloatingWindowCheckBox` | QCheckBox；Show as FloatingWindow | `on_customImageShowAsFloatingWindowCheckBox_stateChanged @893` | `UI-TAB-IMAGE-266 [Gemini]` 已接入（布尔，同步 `get_state.tab_floating_window.show_as_floating_window`，Common Tab 拒为 `unsupported_capability`，私有 GUI 探针/冷启读回通过；实际悬浮窗绘制待验） |
 | `U-tab/floatingWindowSetupButton` | QPushButton；FloatingWindow Setup | `on_floatingWindowSetupButton_clicked @911` | 运行约束待核 |
 
 ### tray（5 项）

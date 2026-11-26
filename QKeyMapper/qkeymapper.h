@@ -503,6 +503,16 @@ struct TabFloatingWindowSettings
     QString mousePassThroughSwitchKey = QString::fromLatin1(QKeyMapperConstants::FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
 };
 
+struct TabCustomImageSettings
+{
+    QString imagePath;
+    int showPosition = QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_DEFAULT;
+    int padding = QKeyMapperConstants::TAB_CUSTOMIMAGE_PADDING_DEFAULT;
+    bool showAsTrayIcon = QKeyMapperConstants::TAB_CUSTOMIMAGE_SHOW_AS_TRAYICON_DEFAULT;
+    bool showAsFloatingWindow = QKeyMapperConstants::TAB_CUSTOMIMAGE_SHOW_AS_FLOATINGWINDOW_DEFAULT;
+    QSize trayIconPixel;
+};
+
 struct MappingCrosshairSettings
 {
     QColor centerColor = QKeyMapperConstants::CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR;
@@ -1539,6 +1549,9 @@ public:
     static bool isSelectColorDialogVisible(void);
     static bool isWindowFullscreen(HWND hwnd);
 
+    static QString resolveExistingTabCustomImagePath(const QString &storedPath);
+    static QIcon loadTabCustomImage(QString &imagepath);
+    static QList<QSize> sortedTabCustomImageAvailableSizes(const QString &imagePath);
     static QIcon setTabCustomImage(int tabindex, QString &imagepath);
     static void clearTabCustomImage(int tabindex);
     static QIcon loadSettingCustomIcon(QString &iconpath);
@@ -2161,6 +2174,8 @@ public:
     bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);
     TabFloatingWindowSettings getMappingTabFloatingWindowSettings(int tabIndex) const;
     bool setMappingTabFloatingWindowSettings(int tabIndex, const TabFloatingWindowSettings &settings);
+    TabCustomImageSettings getMappingTabCustomImageSettings(int tabIndex) const;
+    bool setMappingTabCustomImageSettings(int tabIndex, const TabCustomImageSettings &settings);
     MappingCrosshairSettings getMappingSourceRowCrosshairSettings(int tabIndex, int row) const;
     bool setMappingSourceRowCrosshairSettings(int tabIndex, int row, const MappingCrosshairSettings &settings);
 private:

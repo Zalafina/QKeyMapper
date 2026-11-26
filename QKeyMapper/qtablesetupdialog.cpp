@@ -3,6 +3,8 @@
 #include "ui_qtablesetupdialog.h"
 #include "qstyle_singletons.h"
 
+#include <QSignalBlocker>
+
 using namespace QKeyMapperConstants;
 
 QTableSetupDialog *QTableSetupDialog::m_instance = Q_NULLPTR;
@@ -199,7 +201,6 @@ void QTableSetupDialog::updateTrayIconPixelSizeWithCurrentText()
 
     QString currentText = ui->customImageTrayIconPixelComboBox->currentText();
     QSize trayicon_size = parseComboBoxTextToSize(currentText);
-    const QSize currentTrayIconPixel = QKeyMapper::s_KeyMappingTabInfoList.at(m_TabIndex).TabCustomImage_TrayIconPixel;
 
 #ifdef DEBUG_LOGOUT_ON
     qDebug() << "[updateTrayIconPixelSizeWithCurrentText] Custom Image TrayIcon pixel currentText:" << currentText << ", converted Size: " << trayicon_size;
@@ -214,10 +215,10 @@ void QTableSetupDialog::updateTrayIconPixelSizeWithCurrentText()
     }
 
     int tabindex = m_TabIndex;
-    QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_TrayIconPixel = trayicon_size;
-    if (trayicon_size != currentTrayIconPixel) {
-        QKeyMapper::getInstance()->requestSaveSettingDirty();
-    }
+    auto *mapper = QKeyMapper::getInstance();
+    TabCustomImageSettings updated = mapper->getMappingTabCustomImageSettings(tabindex);
+    updated.trayIconPixel = trayicon_size;
+    mapper->setMappingTabCustomImageSettings(tabindex, updated);
 }
 
 void QTableSetupDialog::updateTrayIconPixelComboBox(const QIcon &icon, const QSize &targetSize)
@@ -470,8 +471,9 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
 
         // Load Custom Image
         QIcon icon_loaded;
-        if (!TabCustomImage_Path.isEmpty()) {
-            icon_loaded = QIcon(TabCustomImage_Path);
+        const QString resolvedImagePath = QKeyMapper::resolveExistingTabCustomImagePath(TabCustomImage_Path);
+        if (!resolvedImagePath.isEmpty()) {
+            icon_loaded = QIcon(resolvedImagePath);
             if (!icon_loaded.isNull()) {
                 QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT));
 #ifdef DEBUG_LOGOUT_ON
@@ -490,9 +492,13 @@ void QTableSetupDialog::showEvent(QShowEvent *event)
             ui->customImageLabel->setToolTip("");
         }
 
-        // Update TrayIconPixelComboBox Items & Index
+        // Update TrayIconPixelComboBox Items & Index without mutating or dirtying stored state on show
         updateTrayIconPixelComboBox(icon_loaded, TabCustomImage_TrayIconPixel);
-        updateTrayIconPixelSizeWithCurrentText();
+
+        const QSignalBlocker showPositionBlocker(ui->customImageShowPositionComboBox);
+        const QSignalBlocker paddingBlocker(ui->customImagePaddingSpinBox);
+        const QSignalBlocker showAsTrayBlocker(ui->customImageShowAsTrayIconCheckBox);
+        const QSignalBlocker showAsFloatingBlocker(ui->customImageShowAsFloatingWindowCheckBox);
 
         // Load Custom Image Show Position
         int showposition_index = TAB_CUSTOMIMAGE_POSITION_DEFAULT;
@@ -751,7 +757,7 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
     qDebug().nospace() << "[on_selectCustomImageButton_clicked]" << "customimage_path from QFileDialog -> TabIndex[" << tabindex << "] : " << customimage_path;
 #endif
 
-    QIcon icon_loaded = QKeyMapper::setTabCustomImage(tabindex, customimage_path);
+    QIcon icon_loaded = QKeyMapper::loadTabCustomImage(customimage_path);
 
     if (!icon_loaded.isNull()) {
         QPixmap scaled_pixmap = icon_loaded.pixmap(QSize(TAB_CUSTOMIMAGE_WIDTH_DEFAULT, TAB_CUSTOMIMAGE_HEIGHT_DEFAULT));
@@ -761,10 +767,15 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         ui->customImageLabel->setPixmap(scaled_pixmap);
         ui->customImageLabel->setToolTip(customimage_path);
 
-        QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
-        if (customimage_path != currentTabCustomImage_Path) {
-            QKeyMapper::getInstance()->requestSaveSettingDirty();
+        updateTrayIconPixelComboBox(icon_loaded);
+        const QSize nextTrayIconPixel = parseComboBoxTextToSize(ui->customImageTrayIconPixelComboBox->currentText());
+        auto *mapper = QKeyMapper::getInstance();
+        TabCustomImageSettings updated = mapper->getMappingTabCustomImageSettings(tabindex);
+        updated.imagePath = customimage_path;
+        if (!QKeyMapper::isCommonMappingTabIndex(tabindex)) {
+            updated.trayIconPixel = nextTrayIconPixel;
         }
+        mapper->setMappingTabCustomImageSettings(tabindex, updated);
     }
     else {
         QString popupMessage;
@@ -774,9 +785,6 @@ void QTableSetupDialog::on_selectCustomImageButton_clicked()
         popupMessage = tr("Unable to load the image!");
         emit QKeyMapper::getInstance()->showPopupMessage_Signal(popupMessage, popupMessageColor, popupMessageDisplayTime);
     }
-
-    updateTrayIconPixelComboBox(icon_loaded);
-    updateTrayIconPixelSizeWithCurrentText();
 }
 
 void QTableSetupDialog::restoreDefaultCustomImage()
@@ -786,18 +794,18 @@ void QTableSetupDialog::restoreDefaultCustomImage()
     }
 
     const int tabindex = m_TabIndex;
-    const QString currentTabCustomImagePath = QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_Path;
-    if (currentTabCustomImagePath.isEmpty()) {
+    auto *mapper = QKeyMapper::getInstance();
+    TabCustomImageSettings updated = mapper->getMappingTabCustomImageSettings(tabindex);
+    if (updated.imagePath.isEmpty()) {
         return;
     }
 
-    QKeyMapper::clearTabCustomImage(tabindex);
+    updated.imagePath.clear();
+    updated.trayIconPixel = QSize();
     ui->customImageLabel->clear();
     ui->customImageLabel->setToolTip(QString());
-    QKeyMapper::getInstance()->updateKeyMappingTabWidgetTabDisplay(tabindex);
     updateTrayIconPixelComboBox(QIcon());
-    updateTrayIconPixelSizeWithCurrentText();
-    QKeyMapper::getInstance()->requestSaveSettingDirty();
+    mapper->setMappingTabCustomImageSettings(tabindex, updated);
 }
 
 void QTableSetupDialog::showSelectCustomImageButtonContextMenu(const QPoint &pos)
@@ -830,11 +838,10 @@ void QTableSetupDialog::on_customImageShowPositionComboBox_currentIndexChanged(i
     qDebug() << "[CustomImageShowPosition] Custom Image show position changed ->" << index;
 #endif
 
-    int tabindex = m_TabIndex;
-    if (index != QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_ShowPosition) {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowPosition = index;
-        QKeyMapper::getInstance()->requestSaveSettingDirty();
-    }
+    auto *mapper = QKeyMapper::getInstance();
+    TabCustomImageSettings updated = mapper->getMappingTabCustomImageSettings(m_TabIndex);
+    updated.showPosition = index;
+    mapper->setMappingTabCustomImageSettings(m_TabIndex, updated);
 }
 
 void QTableSetupDialog::on_customImagePaddingSpinBox_valueChanged(int value)
@@ -847,11 +854,10 @@ void QTableSetupDialog::on_customImagePaddingSpinBox_valueChanged(int value)
     qDebug() << "[CustomImagePadding] Custom Image Padding value changed ->" << value;
 #endif
 
-    int tabindex = m_TabIndex;
-    if (value != QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_Padding) {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_Padding = value;
-        QKeyMapper::getInstance()->requestSaveSettingDirty();
-    }
+    auto *mapper = QKeyMapper::getInstance();
+    TabCustomImageSettings updated = mapper->getMappingTabCustomImageSettings(m_TabIndex);
+    updated.padding = value;
+    mapper->setMappingTabCustomImageSettings(m_TabIndex, updated);
 }
 
 void QTableSetupDialog::on_customImageShowAsTrayIconCheckBox_stateChanged(int state)
@@ -864,12 +870,10 @@ void QTableSetupDialog::on_customImageShowAsTrayIconCheckBox_stateChanged(int st
     qDebug() << "[CustomImageShowAsTrayIcon] Show as TrayIcon state changed ->" << (Qt::CheckState)state;
 #endif
 
-    int tabindex = m_TabIndex;
-    const bool showAsTrayIcon = (Qt::Checked == state);
-    if (showAsTrayIcon != QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_ShowAsTrayIcon) {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsTrayIcon = showAsTrayIcon;
-        QKeyMapper::getInstance()->requestSaveSettingDirty();
-    }
+    auto *mapper = QKeyMapper::getInstance();
+    TabCustomImageSettings updated = mapper->getMappingTabCustomImageSettings(m_TabIndex);
+    updated.showAsTrayIcon = (Qt::Checked == state);
+    mapper->setMappingTabCustomImageSettings(m_TabIndex, updated);
 }
 
 void QTableSetupDialog::on_customImageTrayIconPixelComboBox_currentIndexChanged(int index)
@@ -892,12 +896,10 @@ void QTableSetupDialog::on_customImageShowAsFloatingWindowCheckBox_stateChanged(
     qDebug() << "[CustomImageShowAsFloatingWindow] Show as FloatingWindow state changed ->" << (Qt::CheckState)state;
 #endif
 
-    int tabindex = m_TabIndex;
-    const bool showAsFloatingWindow = (Qt::Checked == state);
-    if (showAsFloatingWindow != QKeyMapper::s_KeyMappingTabInfoList.at(tabindex).TabCustomImage_ShowAsFloatingWindow) {
-        QKeyMapper::s_KeyMappingTabInfoList[tabindex].TabCustomImage_ShowAsFloatingWindow = showAsFloatingWindow;
-        QKeyMapper::getInstance()->requestSaveSettingDirty();
-    }
+    auto *mapper = QKeyMapper::getInstance();
+    TabCustomImageSettings updated = mapper->getMappingTabCustomImageSettings(m_TabIndex);
+    updated.showAsFloatingWindow = (Qt::Checked == state);
+    mapper->setMappingTabCustomImageSettings(m_TabIndex, updated);
 }
 
 void QTableSetupDialog::on_floatingWindowSetupButton_clicked()

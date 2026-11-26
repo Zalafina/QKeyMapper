@@ -514,6 +514,96 @@ bool parseTabFloatingWindowUpdate(const QJsonObject &arguments, TabFloatingWindo
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+bool parseTabCustomImageUpdate(const QJsonObject &arguments, TabCustomImageUpdate &out, const char *&errorOut)
+{
+    const auto fail = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const auto raw = arguments.value(QStringLiteral("custom_image"));
+    const auto fields = raw.toObject();
+    if (!raw.isObject() || fields.isEmpty())
+        return fail("Provide at least one custom_image field.");
+    const QSet<QString> allowedFields{
+        QStringLiteral("image_path"), QStringLiteral("show_position"), QStringLiteral("padding"),
+        QStringLiteral("show_as_tray_icon"), QStringLiteral("show_as_floating_window"),
+        QStringLiteral("tray_icon_pixel")};
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        if (!allowedFields.contains(it.key()))
+            return fail("Unknown custom_image field.");
+    }
+    if (fields.contains(QStringLiteral("image_path"))) {
+        const auto val = fields.value(QStringLiteral("image_path"));
+        if (!val.isString())
+            return fail("custom_image.image_path must be a string.");
+        const QString s = val.toString();
+        if (!s.isEmpty()) {
+            if (s.size() > 260
+                || s.contains(QLatin1Char('\0')) || s.contains(QLatin1Char('\r')) || s.contains(QLatin1Char('\n'))
+                || s.contains(QLatin1Char(':'))) {
+                return fail("custom_image.image_path must be a relative path inside the application directory.");
+            }
+            if (s.startsWith(QLatin1Char('/')) || s.startsWith(QLatin1Char('\\'))) {
+                return fail("custom_image.image_path must be a relative path without a leading slash.");
+            }
+            QString norm = s;
+            norm.replace(QLatin1Char('\\'), QLatin1Char('/'));
+            const QStringList parts = norm.split(QLatin1Char('/'), Qt::KeepEmptyParts);
+            for (const QString &part : parts) {
+                if (part.isEmpty() || part == QLatin1String(".") || part == QLatin1String("..")) {
+                    return fail("custom_image.image_path must not contain empty or traversal segments.");
+                }
+            }
+            const QString lower = norm.toLower();
+            if (!lower.endsWith(QLatin1String(".ico"))
+                && !lower.endsWith(QLatin1String(".png"))
+                && !lower.endsWith(QLatin1String(".svg"))) {
+                return fail("custom_image.image_path must end with .ico, .png, or .svg.");
+            }
+        }
+        out.imagePath = s;
+    }
+    const auto parseIntRange = [&](const QString &key, int minVal, int maxVal, std::optional<int> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        const int parsed = val.toInt(minVal - 1);
+        if (!val.isDouble() || std::floor(val.toDouble()) != val.toDouble()
+            || parsed < minVal || parsed > maxVal) {
+            return false;
+        }
+        target = parsed;
+        return true;
+    };
+    if (!parseIntRange(QStringLiteral("show_position"), QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_MIN, QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_MAX, out.showPosition)
+        || !parseIntRange(QStringLiteral("padding"), QKeyMapperConstants::TAB_CUSTOMIMAGE_PADDING_MIN, QKeyMapperConstants::TAB_CUSTOMIMAGE_PADDING_MAX, out.padding)) {
+        return fail("A custom_image integer field is invalid or out of range.");
+    }
+    if (fields.contains(QStringLiteral("show_as_tray_icon"))) {
+        const auto val = fields.value(QStringLiteral("show_as_tray_icon"));
+        if (!val.isBool()) return fail("custom_image.show_as_tray_icon must be a boolean.");
+        out.showAsTrayIcon = val.toBool();
+    }
+    if (fields.contains(QStringLiteral("show_as_floating_window"))) {
+        const auto val = fields.value(QStringLiteral("show_as_floating_window"));
+        if (!val.isBool()) return fail("custom_image.show_as_floating_window must be a boolean.");
+        out.showAsFloatingWindow = val.toBool();
+    }
+    if (fields.contains(QStringLiteral("tray_icon_pixel"))) {
+        const auto val = fields.value(QStringLiteral("tray_icon_pixel"));
+        if (!val.isString())
+            return fail("custom_image.tray_icon_pixel must be \"default\" or \"<W>x<H>\".");
+        const QString pixel = val.toString();
+        static const QRegularExpression re(QStringLiteral("^(default|[1-9][0-9]{0,3}x[1-9][0-9]{0,3})$"));
+        if (!re.match(pixel).hasMatch())
+            return fail("custom_image.tray_icon_pixel must be \"default\" or \"<W>x<H>\".");
+        out.trayIconPixel = pixel;
+    }
+    return true;
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 bool parseMappingCrosshairUpdate(const QJsonValue &rawValue, MappingCrosshairUpdate &out, const char *&errorOut)
 {
     const auto fail = [&](const char *msg) {
@@ -614,6 +704,943 @@ bool isMappingChangeMethod(const QString &method)
         || method == QStringLiteral("qkm_stop_mapping") || method == QStringLiteral("qkm_start_mapping");
 }
 
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static bool validateConfigMacroAndIgnorePreview(const QJsonValue &action, const QJsonObject &arguments,
+    MappingChangeRequest &result, const char *&errorOut)
+{
+    const auto failMsg = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    if (action == QLatin1String("configuration.import")) {
+        auto &binding = result.configurationImport;
+        binding.catalogRevision = arguments.value(QStringLiteral("catalog_revision")).toString();
+        const auto groups = arguments.value(QStringLiteral("groups")).toArray();
+        const auto conflict = arguments.value(QStringLiteral("on_conflict"));
+        if (arguments.size() != 5 || !isLowerHex(binding.catalogRevision, 64)
+            || groups.isEmpty() || groups.size() > MaxConfigurationBackupGroups
+            || (conflict != QLatin1String("keep") && conflict != QLatin1String("overwrite")))
+            return failMsg("Select up to 100 ordinary groups, a current catalog revision, a backup, and a conflict policy.");
+        QSet<QString> distinct;
+        for (const auto &item : groups) {
+            const QString group = item.toString();
+            if (group.isEmpty() || group != group.trimmed() || group.size() > 32767 || group.contains(QLatin1Char('\0'))
+                || group.contains(QLatin1Char('\r')) || group.contains(QLatin1Char('\n')) || distinct.contains(group))
+                return failMsg("Use distinct, nonempty single-line group names.");
+            distinct.insert(group);
+            binding.groups.append(group);
+        }
+        binding.document = decodeBackupDocument(arguments.value(QStringLiteral("document_base64")), MaxConfigurationBackupBytes);
+        if (binding.document.isEmpty()) return failMsg("Provide a valid bounded base64 configuration backup.");
+        binding.overwrite = conflict == QLatin1String("overwrite");
+        result.action = MappingChangeAction::ImportConfiguration;
+        return true;
+    }
+    if (action == QLatin1String("configuration.save_import")) {
+        auto &binding = result.configurationImport;
+        binding.draftId = arguments.value(QStringLiteral("import_draft_id")).toString();
+        if (arguments.size() != 2 || !isLowerHex(binding.draftId, 32))
+            return failMsg("Provide the exact configuration import draft ID.");
+        result.action = MappingChangeAction::SaveConfigurationImport;
+        return true;
+    }
+    if ((action == QLatin1String("configuration.move") || action == QLatin1String("configuration.reset_order")
+            || action == QLatin1String("configuration.remove") || action == QLatin1String("configuration.load")
+            || action == QLatin1String("configuration.load_empty"))) {
+        auto &binding = result.configurationList;
+        binding.catalogRevision = arguments.value(QStringLiteral("catalog_revision")).toString();
+        const bool move = action == QLatin1String("configuration.move");
+        const bool remove = action == QLatin1String("configuration.remove");
+        const bool loadEmpty = action == QLatin1String("configuration.load_empty");
+        if (move) binding.action = ConfigurationListAction::Move;
+        else if (remove) binding.action = ConfigurationListAction::Remove;
+        else if (action == QLatin1String("configuration.load")) binding.action = ConfigurationListAction::Load;
+        else if (loadEmpty) binding.action = ConfigurationListAction::LoadEmpty;
+        const bool needsGroup = !binding.reset() && !loadEmpty;
+        const int expectedFields = move ? 4 : needsGroup ? 3 : 2;
+        if (!isLowerHex(binding.catalogRevision, 64) || arguments.size() != expectedFields)
+            return failMsg("Provide the current configuration catalog revision and the exact groups required by this action.");
+        if (needsGroup) {
+            const auto validName = [](const QString &name) {
+                return !name.isEmpty() && name == name.trimmed() && name.size() <= 32767 && !name.contains(QChar::Null)
+                    && !name.contains(QLatin1Char('\r')) && !name.contains(QLatin1Char('\n'));
+            };
+            binding.group = arguments.value(QStringLiteral("group")).toString();
+            if (move) binding.targetGroup = arguments.value(QStringLiteral("target_group")).toString();
+            if (!validName(binding.group) || (move && !validName(binding.targetGroup)))
+                return failMsg("Provide the exact single-line group names.");
+        }
+        result.action = MappingChangeAction::ChangeConfigurationList;
+        return true;
+    }
+    if (action == QLatin1String("table.import")) {
+        auto &table = result.update;
+        table.sourceTabRef = arguments.value(QStringLiteral("source_tab_ref")).toString();
+        table.sourceRevision = table.sourceTabRef.left(64);
+        const auto source = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
+            {QStringLiteral("source_revision"), table.sourceRevision}, {QStringLiteral("source_tab_ref"), table.sourceTabRef}});
+        if (arguments.size() != 3 || !source.ok())
+            return failMsg("Provide the attached source Tab reference and a bounded table backup.");
+        table.tableImportDocument = decodeBackupDocument(arguments.value(QStringLiteral("document_base64")), MaxTableBackupBytes);
+        if (table.tableImportDocument.isEmpty()) return failMsg("Provide a valid bounded base64 document.");
+        result.action = MappingChangeAction::UpdateMapping;
+        return true;
+    }
+    const bool macroDelete = action == QLatin1String("macro.delete");
+    const bool macroImport = action == QLatin1String("macro.import");
+    if ((macroDelete || macroImport || action == QLatin1String("macro.upsert"))) {
+        const auto value = arguments.value(QStringLiteral("macro"));
+        if (arguments.size() != 2 || !value.isObject()) return failMsg("Macro changes require only action and macro.");
+        const auto fields = value.toObject();
+        const auto allowed = macroDelete
+            ? QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("names")}
+            : macroImport ? QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"),
+                QStringLiteral("on_conflict"), QStringLiteral("document_base64")}
+            : QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("name"),
+                QStringLiteral("content"), QStringLiteral("category"), QStringLiteral("note"), QStringLiteral("insert_at"),
+                QStringLiteral("segment_comments")};
+        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+            if (!allowed.contains(it.key())) return failMsg("Unknown macro argument.");
+        }
+        auto &macro = result.macro;
+        macro.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
+        macro.scope = fields.value(QStringLiteral("scope")).toString();
+        if (!isLowerHex(macro.catalogRevision, 64)
+            || (macro.scope != QLatin1String("configuration") && macro.scope != QLatin1String("universal"))) {
+            return failMsg("Provide the current macro catalog revision and an explicit scope.");
+        }
+        if (macroImport) {
+            const auto policy = fields.value(QStringLiteral("on_conflict"));
+            if (policy != QLatin1String("keep") && policy != QLatin1String("overwrite")) {
+                return failMsg("Macro import requires keep or overwrite and a bounded backup document.");
+            }
+            macro.importDocument = decodeBackupDocument(fields.value(QStringLiteral("document_base64")), MaxMacroBackupBytes);
+            if (macro.importDocument.isEmpty()) {
+                return failMsg("Provide a valid bounded base64 document.");
+            }
+            macro.overwriteImportDuplicates = policy == QLatin1String("overwrite");
+            result.action = MappingChangeAction::ImportMacro;
+            return true;
+        }
+        if (macroDelete) {
+            const auto names = fields.value(QStringLiteral("names")).toArray();
+            if (names.isEmpty() || names.size() > 100) return failMsg("Provide one to 100 macro names to delete.");
+            QSet<QString> distinct;
+            for (const auto &value : names) {
+                const auto name = value.toString();
+                if (name.isEmpty() || name.size() > 32767 || name.contains(QChar::Null) || distinct.contains(name))
+                    return failMsg("Macro names must be distinct, non-empty strings.");
+                distinct.insert(name);
+                macro.namesToDelete.append(name);
+            }
+            result.action = MappingChangeAction::DeleteMacro;
+            return true;
+        }
+        macro.name = fields.value(QStringLiteral("name")).toString();
+        macro.content = fields.value(QStringLiteral("content")).toString();
+        const auto optionalText = [&](const QString &key, std::optional<QString> &output) {
+            const auto text = fields.value(key);
+            if (text.isUndefined() || text.isNull()) return true;
+            if (!text.isString() || text.toString().size() > 32767 || text.toString().contains(QChar::Null)) return false;
+            output = text.toString();
+            return true;
+        };
+        if (macro.name.isEmpty() || macro.name.size() > 32767 || macro.name.contains(QChar::Null)
+            || macro.content.isEmpty() || macro.content.size() > QKeyMapperConstants::MAPPINGKEY_LINE_EDIT_MAX_LENGTH
+            || macro.content.contains(QChar::Null)
+            || !optionalText(QStringLiteral("category"), macro.category) || !optionalText(QStringLiteral("note"), macro.note)) {
+            return failMsg("Provide the macro catalog revision, scope, name and content. Category and note are optional strings.");
+        }
+        const auto placement = fields.value(QStringLiteral("insert_at"));
+        if (!placement.isUndefined() && !placement.isNull()) {
+            const auto object = placement.toObject();
+            const auto position = object.value(QStringLiteral("position")).toString();
+            macro.anchorName = object.value(QStringLiteral("anchor_name")).toString();
+            if (object.size() != 2 || (position != QLatin1String("above") && position != QLatin1String("below"))
+                || macro.anchorName.isEmpty() || macro.anchorName.size() > 32767 || macro.anchorName.contains(QChar::Null)) {
+                return failMsg("Macro insertion needs above or below and an exact anchor name.");
+            }
+            macro.insertBelow = position == QLatin1String("below");
+        }
+        const auto comments = fields.value(QStringLiteral("segment_comments"));
+        if (!comments.isUndefined() && !comments.isNull()) {
+            const auto array = comments.toArray();
+            if (array.isEmpty()) return failMsg("Segment comments require a non-empty array of strings.");
+            QStringList parsed;
+            parsed.reserve(array.size());
+            for (const auto &item : array) {
+                const auto text = item.toString();
+                if (!item.isString() || text.size() > 32767 || text.contains(QChar::Null))
+                    return failMsg("Invalid macro segment comment.");
+                parsed.append(text);
+            }
+            macro.segmentComments = std::move(parsed);
+        }
+        result.action = MappingChangeAction::UpsertMacro;
+        return true;
+    }
+    if (action == QLatin1String("ignore_rules.upsert")) {
+        const auto value = arguments.value(QStringLiteral("ignore_rule"));
+        if (arguments.size() != 2 || !value.isObject()) {
+            return failMsg("Ignore rule updates require only action and ignore_rule.");
+        }
+        const auto fields = value.toObject();
+        const QSet<QString> allowedKeys{
+            QStringLiteral("catalog_revision"), QStringLiteral("rule_name"),
+            QStringLiteral("process_name"), QStringLiteral("process_match_mode"),
+            QStringLiteral("window_title"), QStringLiteral("window_title_match_mode"),
+            QStringLiteral("class_name"), QStringLiteral("class_name_match_mode"),
+            QStringLiteral("description"), QStringLiteral("disabled")};
+        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+            if (!allowedKeys.contains(it.key())) {
+                return failMsg("Unknown ignore_rule argument.");
+            }
+        }
+        auto &rule = result.ignoreRule;
+        rule.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
+        const auto rawRuleName = fields.value(QStringLiteral("rule_name"));
+        const QString ruleNameText = rawRuleName.toString();
+        const QString trimmedRuleName = ruleNameText.trimmed();
+        if (!isLowerHex(rule.catalogRevision, 64)
+            || !rawRuleName.isString()
+            || ruleNameText.size() > WindowMatchTextMaxLength
+            || ruleNameText.contains(QChar::Null)
+            || ruleNameText.contains(QLatin1Char('\r'))
+            || ruleNameText.contains(QLatin1Char('\n'))
+            || trimmedRuleName.isEmpty()) {
+            return failMsg("Ignore rule upsert requires a current catalog_revision and non-empty single-line rule_name of at most 1024 UTF-16 code units.");
+        }
+        rule.ruleName = trimmedRuleName;
+        const auto parseOptionalText = [](const QJsonObject &obj, const QString &key, std::optional<QString> &target) -> bool {
+            if (!obj.contains(key)) return true;
+            const auto val = obj.value(key);
+            const QString text = val.toString();
+            if (!val.isString() || text.size() > WindowMatchTextMaxLength || text.contains(QChar::Null)
+                || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n'))) {
+                return false;
+            }
+            target = text;
+            return true;
+        };
+        const auto parseOptionalMode = [](const QJsonObject &obj, const QString &key, std::optional<int> &target) -> bool {
+            if (!obj.contains(key)) return true;
+            const auto val = obj.value(key);
+            const int parsed = val.toInt(WindowMatchModeMin - 1);
+            if (!val.isDouble() || val.toDouble() != parsed
+                || parsed < WindowMatchModeMin || parsed > WindowMatchModeMax) {
+                return false;
+            }
+            target = parsed;
+            return true;
+        };
+        if (!parseOptionalText(fields, QStringLiteral("process_name"), rule.processName)
+            || !parseOptionalText(fields, QStringLiteral("window_title"), rule.windowTitle)
+            || !parseOptionalText(fields, QStringLiteral("class_name"), rule.className)
+            || !parseOptionalText(fields, QStringLiteral("description"), rule.description)) {
+            return failMsg("Ignore rule text fields must be single-line strings of at most 1024 UTF-16 code units.");
+        }
+        if (!parseOptionalMode(fields, QStringLiteral("process_match_mode"), rule.processMatchMode)
+            || !parseOptionalMode(fields, QStringLiteral("window_title_match_mode"), rule.windowTitleMatchMode)
+            || !parseOptionalMode(fields, QStringLiteral("class_name_match_mode"), rule.classNameMatchMode)) {
+            return failMsg("Ignore rule match mode fields must be integers between 0 and 5.");
+        }
+        if (fields.contains(QStringLiteral("disabled"))) {
+            const auto disabledVal = fields.value(QStringLiteral("disabled"));
+            if (!disabledVal.isBool()) {
+                return failMsg("Ignore rule disabled field must be a boolean.");
+            }
+            rule.disabled = disabledVal.toBool();
+        }
+        result.action = MappingChangeAction::UpsertIgnoreRule;
+        return true;
+    }
+    if (action == QLatin1String("ignore_rules.delete")) {
+        const auto value = arguments.value(QStringLiteral("ignore_rule"));
+        if (arguments.size() != 2 || !value.isObject()) {
+            return failMsg("Ignore rule deletion requires only action and ignore_rule.");
+        }
+        const auto fields = value.toObject();
+        const QSet<QString> allowedKeys{QStringLiteral("catalog_revision"), QStringLiteral("rule_names")};
+        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+            if (!allowedKeys.contains(it.key())) {
+                return failMsg("Unknown ignore_rule deletion argument.");
+            }
+        }
+        auto &rule = result.ignoreRule;
+        rule.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
+        const auto namesVal = fields.value(QStringLiteral("rule_names"));
+        const auto names = namesVal.toArray();
+        if (!isLowerHex(rule.catalogRevision, 64) || !namesVal.isArray() || names.isEmpty() || names.size() > 100) {
+            return failMsg("Provide the current ignore rules catalog_revision and 1 to 100 rule names to delete.");
+        }
+        QSet<QString> distinct;
+        for (const auto &entry : names) {
+            const QString name = entry.toString();
+            if (!entry.isString() || name.isEmpty() || name.size() > WindowMatchTextMaxLength
+                || name.contains(QChar::Null) || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n'))
+                || distinct.contains(name)) {
+                return failMsg("Ignore rule names to delete must be distinct, non-empty single-line strings of at most 1024 UTF-16 code units.");
+            }
+            distinct.insert(name);
+            rule.namesToDelete.append(name);
+        }
+        result.action = MappingChangeAction::DeleteIgnoreRule;
+        return true;
+    }
+    if (action == QLatin1String("ignore_rules.restore_defaults")) {
+        const auto value = arguments.value(QStringLiteral("ignore_rule"));
+        if (arguments.size() != 2 || !value.isObject()) {
+            return failMsg("Restoring default ignore rules requires only action and ignore_rule.");
+        }
+        const auto fields = value.toObject();
+        if (fields.size() != 1 || !fields.value(QStringLiteral("catalog_revision")).isString()) {
+            return failMsg("Restoring default ignore rules accepts only catalog_revision inside ignore_rule.");
+        }
+        auto &rule = result.ignoreRule;
+        rule.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
+        if (!isLowerHex(rule.catalogRevision, 64)) {
+            return failMsg("Provide the current 64-character hex ignore rules catalog_revision.");
+        }
+        rule.restoreDefaults = true;
+        result.action = MappingChangeAction::RestoreDefaultIgnoreRules;
+        return true;
+    }
+    errorOut = nullptr;
+    return false;
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJsonObject &arguments,
+    const QJsonValue &reference, const QString &revision, MappingUpdateArguments &update, const char *&errorOut)
+{
+    const auto failMsg = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const bool insertModePreview = action == QLatin1String("general.set_table_insert_mode");
+    const bool editTriggerPreview = action == QLatin1String("general.set_table_edit_trigger");
+    const bool displayScalePreview = action == QLatin1String("general.set_display_scale");
+    const bool windowDisplayModePreview = action == QLatin1String("configuration.set_window_display_mode");
+    const bool saveWindowSizePreview = action == QLatin1String("general.set_save_window_size");
+    const bool saveSplitterPositionPreview = action == QLatin1String("general.set_save_splitter_position");
+    const bool playSoundEffectPreview = action == QLatin1String("general.set_sound_effect");
+    const bool globalSwitchTimeoutPreview = action == QLatin1String("general.set_global_switch_timeout");
+    const bool fullscreenGlobalMappingPreview = action == QLatin1String("general.set_fullscreen_global_mapping");
+    const bool key2MousePreview = action == QLatin1String("configuration.set_key2mouse_settings");
+    const bool gyro2MouseOptionsPreview = action == QLatin1String("configuration.set_gyro2mouse_options");
+    const bool gamepadThresholdsPreview = action == QLatin1String("configuration.set_gamepad_thresholds");
+    const bool gamepadTouchpadPreview = action == QLatin1String("configuration.set_gamepad_touchpad");
+    const bool acceptVirtualGamepadInputPreview = action == QLatin1String("configuration.set_accept_virtual_gamepad_input");
+    const bool vbuttonPanelPreview = action == QLatin1String("configuration.set_vbutton_panel_settings");
+    const bool generalNotificationStylePreview = action == QLatin1String("general.set_notification_style");
+    const bool customNotificationStylePreview = action == QLatin1String("configuration.set_custom_notification_style");
+    const bool trayIconsPreview = action == QLatin1String("general.set_tray_icons");
+    const bool tabFloatingWindowPreview = action == QLatin1String("tab.set_floating_window");
+    const bool tabCustomImagePreview = action == QLatin1String("tab.set_custom_image");
+    const bool processIconTrayPreview = action == QLatin1String("configuration.set_process_icon_as_tray_icon");
+    const bool pointDisplayKeysPreview = action == QLatin1String("configuration.set_point_display_keys");
+    const bool customNotificationPreview = action == QLatin1String("configuration.set_custom_notification");
+    const bool windowMatchCriteriaPreview = action == QLatin1String("configuration.set_window_match_criteria");
+    const bool autoMatchForegroundPreview = action == QLatin1String("configuration.set_auto_match_foreground");
+    const bool sendToSameWindowsPreview = action == QLatin1String("configuration.set_send_to_same_windows");
+    const bool startupPositionPreview = action == QLatin1String("general.set_startup_position");
+    const bool tabHotkeyPreview = action == QLatin1String("tab.set_hotkey");
+    const bool tabNotificationPreview = action == QLatin1String("tab.set_notification_mode");
+    const bool mappingDisplayPreview = action == QLatin1String("configuration.set_mapping_display");
+    const bool disabledVisibilityPreview = action == QLatin1String("configuration.set_show_disabled_rows");
+    const bool categoryFilterPreview = action == QLatin1String("tab.set_category_filter");
+    const bool tabNotificationColorsPreview = action == QLatin1String("tab.set_notification_colors");
+    const bool addBlankTabPreview = action == QLatin1String("tab.add_blank");
+    const bool copyTabPreview = action == QLatin1String("tab.copy");
+    const bool deleteTabPreview = action == QLatin1String("tab.delete");
+    const bool clearTabPreview = action == QLatin1String("tab.clear");
+    const bool restoreProcessPathPreview = action == QLatin1String("configuration.restore_process_path");
+    const bool moveTabPreview = action == QLatin1String("tab.move");
+    const bool selectTabPreview = action == QLatin1String("tab.select");
+    const bool tabCommonPreview = action == QLatin1String("tab.set_common_inheritance");
+    const bool tabCollapsePreview = action == QLatin1String("tab.set_common_collapsed");
+    const bool commonFeaturePreview = action == QLatin1String("configuration.set_common_enabled");
+        if (insertModePreview) {
+            const int mode = arguments.value(QStringLiteral("table_insert_mode")).toInt(-1);
+            if (mode != QKeyMapperConstants::TABLE_INSERT_MODE_ABOVE
+                && mode != QKeyMapperConstants::TABLE_INSERT_MODE_BELOW) {
+                return failMsg("Table insert mode must be 0 (above) or 1 (below).");
+            }
+            update.tableInsertMode = mode;
+        }
+        if (editTriggerPreview) {
+            const int trigger = arguments.value(QStringLiteral("table_edit_trigger")).toInt(-1);
+            if (trigger != QKeyMapperConstants::EDITMODE_RIGHT_DOUBLECLICK
+                && trigger != QKeyMapperConstants::EDITMODE_LEFT_DOUBLECLICK) {
+                return failMsg("Table edit trigger must be 0 (right double-click) or 1 (left double-click).");
+            }
+            update.tableEditTrigger = trigger;
+        }
+        if (displayScalePreview) {
+            using namespace QKeyMapperConstants;
+            const auto value = arguments.value(QStringLiteral("display_scale"));
+            const int scaleEnum = value.toInt(-1);
+            if (!value.isDouble() || value.toDouble() != scaleEnum
+                || scaleEnum < DISPLAY_SCALE_MIN || scaleEnum > DISPLAY_SCALE_MAX) {
+                return failMsg("Display scale must be an integer between 0 (default) and 10 (90%).");
+            }
+            update.displayScale = scaleEnum;
+        }
+        if (windowDisplayModePreview) {
+            const int mode = arguments.value(QStringLiteral("window_display_mode")).toInt(-1);
+            if (mode < QKeyMapperConstants::WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MIN
+                || mode > QKeyMapperConstants::WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MAX) {
+                return failMsg("Window display mode must be 0 (ignore), 1 (fullscreen), or 2 (windowed).");
+            }
+            update.windowDisplayMode = mode;
+        }
+        if (saveWindowSizePreview) {
+            const auto value = arguments.value(QStringLiteral("save_window_size"));
+            if (!value.isBool()) return failMsg("Provide an explicit boolean save_window_size.");
+            update.saveWindowSize = value.toBool();
+        }
+        if (saveSplitterPositionPreview) {
+            const auto value = arguments.value(QStringLiteral("save_splitter_position"));
+            if (!value.isBool()) return failMsg("Provide an explicit boolean save_splitter_position.");
+            update.saveSplitterPosition = value.toBool();
+        }
+        if (playSoundEffectPreview) {
+            const auto value = arguments.value(QStringLiteral("play_sound_effect"));
+            if (!value.isBool()) return failMsg("Provide an explicit boolean play_sound_effect.");
+            update.playSoundEffect = value.toBool();
+        }
+        if (globalSwitchTimeoutPreview) {
+            using namespace QKeyMapperConstants;
+            const auto value = arguments.value(QStringLiteral("timeout_ms"));
+            const int timeout = value.toInt(-1);
+            if (!value.isDouble() || value.toDouble() != timeout
+                || timeout < GLOBALSETTING_SWITCH_TIMEOUT_MIN || timeout > GLOBALSETTING_SWITCH_TIMEOUT_MAX)
+                return failMsg("Global setting switch timeout must be an integer between 0 and 999999999 milliseconds.");
+            update.globalSwitchTimeoutMs = timeout;
+        }
+        if (fullscreenGlobalMappingPreview) {
+            const auto raw = arguments.value(QStringLiteral("fullscreen_global_mapping"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return failMsg("Provide at least one fullscreen global mapping field.");
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (it.key() != QStringLiteral("disable_in_fullscreen")
+                    && it.key() != QStringLiteral("allowed_processes"))
+                    return failMsg("Only disable_in_fullscreen and allowed_processes are allowed.");
+            }
+            if (fields.contains(QStringLiteral("disable_in_fullscreen"))) {
+                const auto value = fields.value(QStringLiteral("disable_in_fullscreen"));
+                if (!value.isBool())
+                    return failMsg("Provide an explicit boolean disable_in_fullscreen.");
+                update.disableGlobalMappingInFullscreen = value.toBool();
+            }
+            if (fields.contains(QStringLiteral("allowed_processes"))) {
+                const auto value = fields.value(QStringLiteral("allowed_processes"));
+                const QString processes = value.toString();
+                if (!value.isString() || processes.size() > 32767 || processes.contains(QLatin1Char('\0'))
+                    || processes.contains(QLatin1Char('\r')) || processes.contains(QLatin1Char('\n')))
+                    return failMsg("A single-line allowed_processes string of at most 32767 UTF-16 code units is required.");
+                if (update.disableGlobalMappingInFullscreen == false)
+                    return failMsg("Allowed processes require disabling global mapping in fullscreen.");
+                update.fullscreenAllowedProcesses = processes;
+            }
+        }
+        if (key2MousePreview) {
+            using namespace QKeyMapperConstants;
+            const auto raw = arguments.value(QStringLiteral("key2mouse"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return failMsg("Provide at least one key2mouse setting.");
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (it.key() != QStringLiteral("x_speed") && it.key() != QStringLiteral("y_speed")
+                    && it.key() != QStringLiteral("polling_interval_ms"))
+                    return failMsg("Only x_speed, y_speed, and polling_interval_ms are allowed.");
+            }
+            const auto parseIntInRange = [](const QJsonObject &obj, const QString &key, int minVal, int maxVal,
+                                            std::optional<int> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                const int parsed = val.toInt(minVal - 1);
+                if (!val.isDouble() || val.toDouble() != parsed || parsed < minVal || parsed > maxVal)
+                    return false;
+                target = parsed;
+                return true;
+            };
+            if (!parseIntInRange(fields, QStringLiteral("x_speed"), MOUSE_SPEED_MIN, MOUSE_SPEED_MAX, update.mouseXSpeed)
+                || !parseIntInRange(fields, QStringLiteral("y_speed"), MOUSE_SPEED_MIN, MOUSE_SPEED_MAX, update.mouseYSpeed))
+                return failMsg("key2mouse x_speed and y_speed must be integers between 1 and 99.");
+            if (!parseIntInRange(fields, QStringLiteral("polling_interval_ms"), MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX, update.mousePollingIntervalMs))
+                return failMsg("key2mouse polling_interval_ms must be an integer between 1 and 99 milliseconds.");
+        }
+        if (gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview
+            || acceptVirtualGamepadInputPreview || vbuttonPanelPreview) {
+            const char *parseError = nullptr;
+            if (!parseGyroGamepadAndPanelUpdates(arguments, gyro2MouseOptionsPreview,
+                    gamepadThresholdsPreview, gamepadTouchpadPreview,
+                    acceptVirtualGamepadInputPreview, vbuttonPanelPreview,
+                    update, parseError)) {
+                return failMsg(parseError);
+            }
+        }
+        if (generalNotificationStylePreview || customNotificationStylePreview) {
+            const char *parseError = nullptr;
+            NotificationStyleUpdate parsedStyle;
+            if (!parseNotificationStyleUpdate(arguments, parsedStyle, parseError)) {
+                return failMsg(parseError);
+            }
+            if (generalNotificationStylePreview) {
+                update.generalNotificationStyle = parsedStyle;
+            } else {
+                update.customNotificationStyle = parsedStyle;
+            }
+        }
+        if (trayIconsPreview) {
+            const char *parseError = nullptr;
+            TrayIconsUpdate parsedTray;
+            if (!parseTrayIconsUpdate(arguments, parsedTray, parseError)) {
+                return failMsg(parseError);
+            }
+            update.trayIcons = parsedTray;
+        }
+        if (tabFloatingWindowPreview) {
+            const char *parseError = nullptr;
+            TabFloatingWindowUpdate parsedFWin;
+            if (!parseTabFloatingWindowUpdate(arguments, parsedFWin, parseError)) {
+                return failMsg(parseError);
+            }
+            update.tabFloatingWindow = parsedFWin;
+        }
+        if (tabCustomImagePreview) {
+            const char *parseError = nullptr;
+            TabCustomImageUpdate parsedCustomImage;
+            if (!parseTabCustomImageUpdate(arguments, parsedCustomImage, parseError)) {
+                return failMsg(parseError);
+            }
+            update.tabCustomImage = parsedCustomImage;
+        }
+        if (processIconTrayPreview) {
+            const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
+            if (!value.isBool()) return failMsg("Provide an explicit boolean process_icon_as_tray_icon.");
+            update.processIconAsTrayIcon = value.toBool();
+        }
+        if (pointDisplayKeysPreview) {
+            const auto raw = arguments.value(QStringLiteral("point_display_keys"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return failMsg("Provide at least one point display key field.");
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (it.key() != QStringLiteral("window_point_key")
+                    && it.key() != QStringLiteral("screen_point_key"))
+                    return failMsg("Only window_point_key and screen_point_key are allowed.");
+            }
+            const auto parseKeyName = [](const QJsonObject &obj, const QString &key, std::optional<QString> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                const QString name = val.toString();
+                if (!val.isString() || name.isEmpty() || name.size() > 64 || name.contains(QLatin1Char('\0'))
+                    || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n')))
+                    return false;
+                target = name;
+                return true;
+            };
+            if (!parseKeyName(fields, QStringLiteral("window_point_key"), update.showWindowPointKey)
+                || !parseKeyName(fields, QStringLiteral("screen_point_key"), update.showScreenPointKey))
+                return failMsg("Point display keys must be non-empty single-line strings of at most 64 UTF-16 code units.");
+        }
+        if (customNotificationPreview) {
+            const auto raw = arguments.value(QStringLiteral("custom_notification"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return failMsg("Provide at least one custom notification field.");
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (it.key() != QStringLiteral("enabled") && it.key() != QStringLiteral("position"))
+                    return failMsg("Only enabled and position are allowed.");
+            }
+            if (fields.contains(QStringLiteral("enabled"))) {
+                const auto enabled = fields.value(QStringLiteral("enabled"));
+                if (!enabled.isBool()) return failMsg("custom_notification enabled must be a boolean.");
+                update.customNotificationEnabled = enabled.toBool();
+            }
+            if (fields.contains(QStringLiteral("position"))) {
+                const auto position = fields.value(QStringLiteral("position"));
+                const int parsed = position.toInt(CustomNotificationPositionMin - 1);
+                if (!position.isDouble() || position.toDouble() != parsed
+                    || parsed < CustomNotificationPositionMin || parsed > CustomNotificationPositionMax)
+                    return failMsg("custom_notification position must be an integer between 0 and 6.");
+                update.customNotificationPosition = parsed;
+            }
+            if (update.customNotificationEnabled && !*update.customNotificationEnabled
+                && update.customNotificationPosition)
+                return failMsg("custom_notification position cannot be set while disabling custom notification.");
+        }
+        if (windowMatchCriteriaPreview) {
+            const auto raw = arguments.value(QStringLiteral("window_match_criteria"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return failMsg("Provide at least one window match criteria field.");
+            const QSet<QString> allowedKeys{
+                QStringLiteral("process_name"), QStringLiteral("process_match_mode"),
+                QStringLiteral("window_title"), QStringLiteral("window_title_match_mode"),
+                QStringLiteral("class_name"), QStringLiteral("class_name_match_mode")};
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (!allowedKeys.contains(it.key()))
+                    return failMsg("Unknown window_match_criteria field.");
+            }
+            const auto parseMatchText = [](const QJsonObject &obj, const QString &key, std::optional<QString> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                const QString text = val.toString();
+                if (!val.isString() || text.size() > WindowMatchTextMaxLength || text.contains(QLatin1Char('\0'))
+                    || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n')))
+                    return false;
+                target = text;
+                return true;
+            };
+            const auto parseMatchMode = [](const QJsonObject &obj, const QString &key, std::optional<int> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                const int parsed = val.toInt(WindowMatchModeMin - 1);
+                if (!val.isDouble() || val.toDouble() != parsed
+                    || parsed < WindowMatchModeMin || parsed > WindowMatchModeMax)
+                    return false;
+                target = parsed;
+                return true;
+            };
+            if (!parseMatchText(fields, QStringLiteral("process_name"), update.windowProcessName)
+                || !parseMatchText(fields, QStringLiteral("window_title"), update.windowTitleText)
+                || !parseMatchText(fields, QStringLiteral("class_name"), update.windowClassName))
+                return failMsg("Window match text fields must be single-line strings of at most 1024 UTF-16 code units.");
+            if (!parseMatchMode(fields, QStringLiteral("process_match_mode"), update.windowProcessMatchMode)
+                || !parseMatchMode(fields, QStringLiteral("window_title_match_mode"), update.windowTitleMatchMode)
+                || !parseMatchMode(fields, QStringLiteral("class_name_match_mode"), update.windowClassMatchMode))
+                return failMsg("Window match mode fields must be integers between 0 and 5.");
+        }
+        if (autoMatchForegroundPreview) {
+            const auto value = arguments.value(QStringLiteral("auto_match_foreground"));
+            if (!value.isBool()) return failMsg("Provide an explicit boolean auto_match_foreground.");
+            update.autoMatchForeground = value.toBool();
+        }
+        if (sendToSameWindowsPreview) {
+            const auto value = arguments.value(QStringLiteral("send_to_same_windows"));
+            if (!value.isBool()) return failMsg("Provide an explicit boolean send_to_same_windows.");
+            update.sendToSameWindows = value.toBool();
+        }
+        if (startupPositionPreview) {
+            using namespace QKeyMapperConstants;
+            const auto fields = arguments.value(QStringLiteral("startup_position")).toObject();
+            const auto mode = fields.value(QStringLiteral("mode"));
+            const auto point = fields.value(QStringLiteral("point"));
+            if (fields.isEmpty() || fields.size() != int(!mode.isUndefined()) + int(!point.isUndefined()))
+                return failMsg("Provide at least one startup position field, mode or point.");
+            if (!mode.isUndefined()) {
+                const int index = mode.toInt(-1);
+                if (index < STARTUP_POSITION_MIN || index > STARTUP_POSITION_MAX)
+                    return failMsg("Startup position mode must be 0 (default), 1 (last saved), or 2 (specified).");
+                update.startupPositionMode = index;
+            }
+            if (!point.isUndefined()) {
+                const auto coordinates = point.toObject();
+                const int x = coordinates.value(QStringLiteral("x")).toInt(STARTUP_SPECIFY_POSITION_MIN_X - 1);
+                const int y = coordinates.value(QStringLiteral("y")).toInt(STARTUP_SPECIFY_POSITION_MIN_Y - 1);
+                if (coordinates.size() != 2 || x < STARTUP_SPECIFY_POSITION_MIN_X || x > STARTUP_SPECIFY_POSITION_MAX_X
+                    || y < STARTUP_SPECIFY_POSITION_MIN_Y || y > STARTUP_SPECIFY_POSITION_MAX_Y)
+                    return failMsg("Provide both integer coordinates within -50000 to 50000.");
+                if (update.startupPositionMode.value_or(STARTUP_POSITION_SPECIFY) != STARTUP_POSITION_SPECIFY)
+                    return failMsg("Coordinates require the specified startup position mode.");
+                update.startupPositionPoint = QPoint(x, y);
+            }
+        }
+        if (tabHotkeyPreview) {
+            const auto hotkey = arguments.value(QStringLiteral("tab_hotkey"));
+            const QString value = hotkey.toString();
+            if (!hotkey.isString() || value.size() > 32767 || value.contains(QLatin1Char('\0'))
+                || value.contains(QLatin1Char('\r')) || value.contains(QLatin1Char('\n')))
+                return failMsg("A single-line tab_hotkey of at most 32767 UTF-16 code units is required.");
+            update.tabHotkey = value;
+        }
+        if (tabNotificationPreview) {
+            const auto value = arguments.value(QStringLiteral("notification_mode"));
+            const int mode = value.toInt(-1);
+            if (!value.isDouble() || value.toDouble() != mode || mode < Qt::Unchecked || mode > Qt::Checked)
+                return failMsg("notification_mode must be 0, 1, or 2.");
+            update.tabNotificationMode = static_cast<Qt::CheckState>(mode);
+        }
+        if (mappingDisplayPreview) {
+            const auto change = arguments.value(QStringLiteral("mapping_display")).toObject();
+            if (change.isEmpty()) return failMsg("Provide at least one mapping display preference.");
+            for (auto it = change.constBegin(); it != change.constEnd(); ++it) {
+                if (!it.value().isBool() || (it.key() != QStringLiteral("category_column")
+                    && it.key() != QStringLiteral("notes") && it.key() != QStringLiteral("floating_column")))
+                    return failMsg("Only category_column, notes and floating_column booleans are allowed.");
+            }
+            update.mappingDisplay = change;
+        }
+        if (disabledVisibilityPreview) {
+            const auto value = arguments.value(QStringLiteral("show_disabled_rows"));
+            if (!value.isBool()) return failMsg("A boolean show_disabled_rows is required.");
+            update.showDisabledRows = value.toBool();
+        }
+        if (categoryFilterPreview) {
+            const auto filter = arguments.value(QStringLiteral("category_filter"));
+            if (filter != QJsonValue(QStringLiteral("all"))) {
+                const auto names = filter.toArray();
+                if (!filter.isArray() || names.size() > 100)
+                    return failMsg("Use all or a list of up to 100 category names.");
+                QSet<QString> selected;
+                for (const auto &value : names) {
+                    const QString name = value.toString();
+                    if (!value.isString() || name.size() > 32767 || name.contains(QLatin1Char('\0'))
+                        || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n')) || selected.contains(name))
+                        return failMsg("Category filter names must be distinct single-line strings.");
+                    selected.insert(name);
+                }
+            }
+            update.tabCategoryFilter = filter;
+        }
+        if (tabNotificationColorsPreview) {
+            const auto font = arguments.value(QStringLiteral("notification_font_color"));
+            const auto background = arguments.value(QStringLiteral("notification_background_color"));
+            const auto colorValid = [](const QJsonValue &value, int digits) {
+                if (value.isUndefined()) return true;
+                if (!value.isString()) return false;
+                const QString color = value.toString();
+                return color == QStringLiteral("default")
+                    || (color.startsWith(QLatin1Char('#')) && isLowerHex(color.mid(1).toLower(), digits));
+            };
+            if ((font.isUndefined() && background.isUndefined()) || !colorValid(font, 6) || !colorValid(background, 8))
+                return failMsg("Provide a #RRGGBB font color, a #AARRGGBB background color, or default for either.");
+            update.tabNotificationFontColor = font.toString();
+            update.tabNotificationBackgroundColor = background.toString();
+        }
+        update.addBlankTab = addBlankTabPreview;
+        update.copyTab = copyTabPreview;
+        update.deleteTab = deleteTabPreview;
+        update.clearTab = clearTabPreview;
+        update.restoreProcessPath = restoreProcessPathPreview;
+        if (moveTabPreview || selectTabPreview) {
+            const auto target = arguments.value(QStringLiteral("target_tab_ref"));
+            const auto targetQuery = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
+                {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), target}});
+            if (!targetQuery.ok() || (moveTabPreview && target == reference))
+                return failMsg("A canonical destination from the same revision is required. Tab moves need a different destination.");
+            update.targetTabRef = target.toString();
+            update.selectTab = selectTabPreview;
+        }
+        if (tabCommonPreview) {
+            const auto includeCommon = arguments.value(QStringLiteral("include_common"));
+            if (!includeCommon.isBool()) return failMsg("A boolean include_common is required.");
+            update.tabIncludeCommon = includeCommon.toBool();
+        }
+        if (tabCollapsePreview) {
+            const auto collapsed = arguments.value(QStringLiteral("common_collapsed"));
+            if (!collapsed.isBool()) return failMsg("A boolean common_collapsed is required.");
+            update.tabCommonCollapsed = collapsed.toBool();
+        }
+        if (commonFeaturePreview) {
+            const auto enabled = arguments.value(QStringLiteral("common_feature_enabled"));
+            if (!enabled.isBool()) return failMsg("A boolean common_feature_enabled is required.");
+            update.commonFeatureEnabled = enabled.toBool();
+        }
+    return true;
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static bool validateRowUpdateMoveOrDuplicate(const QJsonObject &arguments, MappingRowMove rowMove,
+    bool updatePreview, bool movePreview, bool duplicatePreview, MappingChangeRequest &result, const char *&errorOut)
+{
+    const auto failMsg = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const auto sendMethod = [&]() -> int {
+        const auto value = arguments.value(QStringLiteral("send_method"));
+        if (value.isUndefined()) return updatePreview ? -1 : 0;
+        if (!value.isDouble() || value.toDouble() < 0 || value.toDouble() > 3
+            || value.toDouble() != value.toInt(-1)) return -1;
+        return value.toInt();
+    };
+    const auto basicKey = [](const QJsonValue &value) { return isBasicMappingKey(value.toString()); };
+        const auto singleReference = arguments.value(QStringLiteral("source_ref"));
+        const auto batch = arguments.value(QStringLiteral("source_refs"));
+        const auto references = batch.toArray();
+        const auto category = arguments.value(QStringLiteral("category"));
+        const auto rowModes = arguments.value(QStringLiteral("row_modes"));
+        const bool triggerBatch = !batch.isUndefined() && rowModes.toObject().contains(QStringLiteral("original_trigger"));
+        if (!batch.isUndefined() && ((!movePreview && !duplicatePreview && category.isUndefined() && !triggerBatch)
+            || !singleReference.isUndefined() || references.size() < 2 || references.size() > 100))
+            return failMsg("Only moves, duplication, category and trigger updates accept 2 to 100 source_refs instead of source_ref.");
+        const auto reference = references.isEmpty() ? singleReference : references.first();
+        const auto original = arguments.value(QStringLiteral("original_key"));
+        const auto mapping = arguments.value(QStringLiteral("mapping_key"));
+        const auto keyUp = arguments.value(QStringLiteral("key_up_mapping_key"));
+        const auto disabled = arguments.value(QStringLiteral("disabled"));
+        const auto note = arguments.value(QStringLiteral("note"));
+        const auto timing = arguments.value(QStringLiteral("send_timing"));
+        if (!timing.isUndefined()) {
+            const int mode = timing.toInt(-1);
+            if (arguments.size() != 3 || !singleReference.isString() || !timing.isDouble() || timing.toDouble() != mode
+                || mode < QKeyMapperConstants::SENDTIMING_NORMAL || mode > QKeyMapperConstants::SENDTIMING_NORMAL_AND_KEYUP)
+                return failMsg("Provide one source_ref and an integer send_timing from 0 to 4.");
+        }
+        if (!rowModes.isUndefined()) {
+            const auto modes = rowModes.toObject();
+            if (modes.isEmpty() || arguments.size() != 3 || (!singleReference.isString() && !triggerBatch))
+                return failMsg("Provide row_modes and an eligible source reference, without other changed fields.");
+            for (auto it = modes.constBegin(); it != modes.constEnd(); ++it) {
+                const QString key = it.key();
+                const auto value = it.value();
+                if (key == QStringLiteral("burst") || key == QStringLiteral("lock")
+                    || key == QStringLiteral("mapping_key_unlock") || key == QStringLiteral("disable_original_key_unlock")
+                    || key == QStringLiteral("sequence_hold_down") || key == QStringLiteral("pass_through")
+                    || key == QStringLiteral("check_combo_order") || key == QStringLiteral("unbreakable")
+                    || key == QStringLiteral("disable_fn_key_switch")) {
+                    if (!value.isBool()) return failMsg("Row toggles must be booleans.");
+                } else if (key == QStringLiteral("burst_press_ms") || key == QStringLiteral("burst_release_ms")) {
+                    const int ms = value.toInt(-1);
+                    if (!value.isDouble() || value.toDouble() != ms || ms < QKeyMapperConstants::BURST_TIME_MIN
+                        || ms > QKeyMapperConstants::BURST_TIME_MAX)
+                        return failMsg("Burst timings must be integer milliseconds within the supported range.");
+                } else if (key == QStringLiteral("repeat_mode") || key == QStringLiteral("repeat_times")) {
+                    const int number = value.toInt(-1);
+                    const bool mode = key == QStringLiteral("repeat_mode");
+                    const int minimum = mode ? QKeyMapperConstants::REPEAT_MODE_NONE : QKeyMapperConstants::REPEAT_TIMES_MIN;
+                    const int maximum = mode ? QKeyMapperConstants::REPEAT_MODE_BYTIMES : QKeyMapperConstants::REPEAT_TIMES_MAX;
+                    if (!value.isDouble() || value.toDouble() != number || number < minimum || number > maximum)
+                        return failMsg("Repeat mode and count must be integers within the supported range.");
+                } else if (key == QStringLiteral("fixed_vkey_code") || key == QStringLiteral("paste_text_mode")) {
+                    const int number = value.toInt(-1);
+                    const bool fixed = key == QStringLiteral("fixed_vkey_code");
+                    const int minimum = fixed ? QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MIN : QKeyMapperConstants::PASTETEXT_MODE_SHIFTINSERT;
+                    const int maximum = fixed ? QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MAX : QKeyMapperConstants::PASTETEXT_MODE_CTRLV;
+                    if (!value.isDouble() || value.toDouble() != number || number < minimum || number > maximum)
+                        return failMsg("Fixed virtual key code and paste mode must be integers within the supported range.");
+                } else if (key == QStringLiteral("original_trigger")) {
+                    const auto trigger = value.toObject();
+                    const QString type = trigger.value(QStringLiteral("type")).toString();
+                    const auto duration = trigger.value(QStringLiteral("duration_ms"));
+                    const bool normal = type == QStringLiteral("normal");
+                    const int time = duration.toInt(-1);
+                    if (modes.size() != 1 || trigger.size() != (duration.isUndefined() ? 1 : 2)
+                        || (triggerBatch && !duration.isUndefined())
+                        || (!normal && type != QStringLiteral("long_press") && type != QStringLiteral("double_press"))
+                        || (!duration.isUndefined() && (normal || !duration.isDouble() || duration.toDouble() != time
+                            || time < QKeyMapperConstants::PRESSTIME_MIN || time > QKeyMapperConstants::PRESSTIME_MAX)))
+                        return failMsg("Provide only original_trigger with type normal, long_press or double_press and an optional timed duration from 1 to 9999 ms.");
+                } else {
+                    return failMsg("Unsupported row mode field.");
+                }
+            }
+        }
+        if (!note.isUndefined() || !category.isUndefined()) {
+            const auto &value = note.isUndefined() ? category : note;
+            const QString text = value.toString();
+            if (!value.isString() || (!note.isUndefined() && !category.isUndefined())
+                || text.size() > 32767 || text.contains(QLatin1Char('\0'))
+                || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n'))
+                || !original.isUndefined() || !mapping.isUndefined() || !keyUp.isUndefined() || !disabled.isUndefined()
+                || arguments.contains(QStringLiteral("send_method")))
+                return failMsg("Provide one single-line note or category of at most 32767 UTF-16 code units without other changed mapping fields.");
+        }
+        if (!disabled.isUndefined() && (!disabled.isBool() || !original.isUndefined() || !mapping.isUndefined()
+            || !keyUp.isUndefined() || arguments.contains(QStringLiteral("send_method"))))
+            return failMsg("Disabled must be a boolean updated separately from key and send method fields.");
+        if ((!original.isUndefined() && !basicKey(original)) || (!mapping.isUndefined() && !basicKey(mapping))
+            || (!keyUp.isUndefined() && !(keyUp.isString() && keyUp.toString().isEmpty()) && !basicKey(keyUp))
+            || (arguments.contains(QStringLiteral("send_method")) && sendMethod() < 0))
+            return failMsg("Updates accept uppercase single keys, an optional empty key-up key, and send method 0 to 3.");
+        if (updatePreview && original.isUndefined() && mapping.isUndefined() && keyUp.isUndefined() && sendMethod() < 0
+            && disabled.isUndefined() && note.isUndefined() && category.isUndefined() && rowModes.isUndefined() && timing.isUndefined())
+            return failMsg("At least one mapping field must be specified.");
+        const auto parts = reference.toString().split(QLatin1Char(':'));
+        bool tabOk = false, rowOk = false;
+        const int tab = parts.size() == 4 ? parts.at(2).toInt(&tabOk) : -1;
+        const int row = parts.size() == 4 ? parts.at(3).toInt(&rowOk) : -1;
+        if (!reference.isString() || reference.toString().size() > 128 || parts.size() != 4
+            || !isLowerHex(parts.at(0), 64) || parts.at(1) != QStringLiteral("row") || !tabOk || !rowOk
+            || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3))
+            return failMsg("A canonical current source row is required.");
+        const int rowCount = qMax(1, int(references.size()));
+        const QString prefix = reference.toString().section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
+        QString copyPosition;
+        QString copyAnchorRef;
+        QString copyTargetTabRef;
+        if (duplicatePreview) {
+            const auto destination = arguments.value(QStringLiteral("copy_to")).toObject();
+            const QString position = destination.value(QStringLiteral("position")).toString();
+            const auto anchor = destination.value(QStringLiteral("anchor_ref"));
+            const auto target = destination.value(QStringLiteral("target_tab_ref"));
+            const bool relative = position == QLatin1String("above") || position == QLatin1String("below");
+            if (destination.size() != (relative ? 2 : 1) + (target.isUndefined() ? 0 : 1)
+                || (!relative && position != QLatin1String("top") && position != QLatin1String("bottom"))
+                || (!relative && !anchor.isUndefined()))
+                return failMsg("Provide copy_to position top, bottom, above or below. Only above and below require anchor_ref.");
+            QString anchorPrefix = prefix;
+            if (!target.isUndefined()) {
+                const auto targetQuery = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
+                    {QStringLiteral("source_revision"), parts.at(0)}, {QStringLiteral("source_tab_ref"), target}});
+                if (!targetQuery.ok()) return failMsg("The copy target must be a canonical Tab of the same revision.");
+                copyTargetTabRef = target.toString();
+                anchorPrefix = parts.at(0) + QStringLiteral(":row:") + copyTargetTabRef.section(QLatin1Char(':'), 2, 2) + QLatin1Char(':');
+            }
+            if (relative) {
+                const QString anchorRef = anchor.toString();
+                bool indexOk = false;
+                const int index = anchorRef.mid(anchorPrefix.size()).toInt(&indexOk);
+                if (!anchor.isString() || !indexOk || index < 0 || anchorRef != anchorPrefix + QString::number(index))
+                    return failMsg("The insert anchor must be a canonical row of the target Tab and revision.");
+            }
+            copyPosition = position;
+            copyAnchorRef = anchor.toString();
+        }
+        QList<int> batchRows;
+        if (movePreview) {
+            if (row > std::numeric_limits<int>::max() - (rowCount - 1))
+                return failMsg("The contiguous source range exceeds the row index limit.");
+            for (int i = 1; i < rowCount; ++i) {
+                if (references.at(i) != prefix + QString::number(row + i))
+                    return failMsg("Batch moves require contiguous, ascending row references of the same source and revision.");
+            }
+        } else if (!references.isEmpty()) {
+            for (const auto &value : references) {
+                const QString ref = value.toString();
+                bool indexOk = false;
+                const int index = ref.mid(prefix.size()).toInt(&indexOk);
+                if (!indexOk || index < 0 || ref != prefix + QString::number(index) || batchRows.contains(index))
+                    return failMsg("Batch references must be distinct rows of the same source and revision.");
+                batchRows.append(index);
+            }
+            std::sort(batchRows.begin(), batchRows.end());
+        }
+        const int firstRow = batchRows.isEmpty() ? row : batchRows.constFirst();
+        result.action = MappingChangeAction::UpdateMapping;
+        result.update.sourceReference = prefix + QString::number(firstRow);
+        result.update.sourceRevision = parts.at(0);
+        result.update.sourceTabRef = parts.at(0) + QStringLiteral(":source:") + parts.at(2);
+        result.update.sourceRow = firstRow;
+        result.update.sendMethod = updatePreview ? sendMethod() : -1;
+        result.update.move = rowMove;
+        if (movePreview) result.update.rowCount = rowCount;
+        result.update.batchRows = std::move(batchRows);
+        result.update.copyPosition = copyPosition;
+        result.update.copyAnchorRef = copyAnchorRef;
+        result.update.copyTargetTabRef = copyTargetTabRef;
+        if (!original.isUndefined()) result.update.originalKey = original.toString();
+        if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
+        if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
+        if (!disabled.isUndefined()) result.update.disabled = disabled.toBool();
+        if (!note.isUndefined()) result.update.note = note.toString();
+        if (!category.isUndefined()) result.update.category = category.toString();
+        result.update.rowModes = rowModes.toObject();
+        if (!timing.isUndefined()) result.update.sendTiming = timing.toInt();
+        return true;
+}
+
 MappingChangeRequest validateMappingChangeRequest(const QString &method, const QJsonObject &arguments)
 {
     MappingChangeRequest result;
@@ -648,298 +1675,14 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     result.method = preview ? MappingChangeMethod::Preview : apply ? MappingChangeMethod::Apply
         : query ? MappingChangeMethod::Operation : MappingChangeMethod::Cancel;
     const auto action = arguments.value(QStringLiteral("action"));
-    if (preview && action == QLatin1String("configuration.import")) {
-        auto &binding = result.configurationImport;
-        binding.catalogRevision = arguments.value(QStringLiteral("catalog_revision")).toString();
-        const auto groups = arguments.value(QStringLiteral("groups")).toArray();
-        const auto conflict = arguments.value(QStringLiteral("on_conflict"));
-        if (arguments.size() != 5 || !isLowerHex(binding.catalogRevision, 64)
-            || groups.isEmpty() || groups.size() > MaxConfigurationBackupGroups
-            || (conflict != QLatin1String("keep") && conflict != QLatin1String("overwrite")))
-            return fail("Select up to 100 ordinary groups, a current catalog revision, a backup, and a conflict policy.");
-        QSet<QString> distinct;
-        for (const auto &item : groups) {
-            const QString group = item.toString();
-            if (group.isEmpty() || group != group.trimmed() || group.size() > 32767 || group.contains(QLatin1Char('\0'))
-                || group.contains(QLatin1Char('\r')) || group.contains(QLatin1Char('\n')) || distinct.contains(group))
-                return fail("Use distinct, nonempty single-line group names.");
-            distinct.insert(group);
-            binding.groups.append(group);
-        }
-        binding.document = decodeBackupDocument(arguments.value(QStringLiteral("document_base64")), MaxConfigurationBackupBytes);
-        if (binding.document.isEmpty()) return fail("Provide a valid bounded base64 configuration backup.");
-        binding.overwrite = conflict == QLatin1String("overwrite");
-        result.action = MappingChangeAction::ImportConfiguration;
-        return result;
-    }
-    if (preview && action == QLatin1String("configuration.save_import")) {
-        auto &binding = result.configurationImport;
-        binding.draftId = arguments.value(QStringLiteral("import_draft_id")).toString();
-        if (arguments.size() != 2 || !isLowerHex(binding.draftId, 32))
-            return fail("Provide the exact configuration import draft ID.");
-        result.action = MappingChangeAction::SaveConfigurationImport;
-        return result;
-    }
-    if (preview && (action == QLatin1String("configuration.move") || action == QLatin1String("configuration.reset_order")
-            || action == QLatin1String("configuration.remove") || action == QLatin1String("configuration.load")
-            || action == QLatin1String("configuration.load_empty"))) {
-        auto &binding = result.configurationList;
-        binding.catalogRevision = arguments.value(QStringLiteral("catalog_revision")).toString();
-        const bool move = action == QLatin1String("configuration.move");
-        const bool remove = action == QLatin1String("configuration.remove");
-        const bool loadEmpty = action == QLatin1String("configuration.load_empty");
-        if (move) binding.action = ConfigurationListAction::Move;
-        else if (remove) binding.action = ConfigurationListAction::Remove;
-        else if (action == QLatin1String("configuration.load")) binding.action = ConfigurationListAction::Load;
-        else if (loadEmpty) binding.action = ConfigurationListAction::LoadEmpty;
-        const bool needsGroup = !binding.reset() && !loadEmpty;
-        const int expectedFields = move ? 4 : needsGroup ? 3 : 2;
-        if (!isLowerHex(binding.catalogRevision, 64) || arguments.size() != expectedFields)
-            return fail("Provide the current configuration catalog revision and the exact groups required by this action.");
-        if (needsGroup) {
-            const auto validName = [](const QString &name) {
-                return !name.isEmpty() && name == name.trimmed() && name.size() <= 32767 && !name.contains(QChar::Null)
-                    && !name.contains(QLatin1Char('\r')) && !name.contains(QLatin1Char('\n'));
-            };
-            binding.group = arguments.value(QStringLiteral("group")).toString();
-            if (move) binding.targetGroup = arguments.value(QStringLiteral("target_group")).toString();
-            if (!validName(binding.group) || (move && !validName(binding.targetGroup)))
-                return fail("Provide the exact single-line group names.");
-        }
-        result.action = MappingChangeAction::ChangeConfigurationList;
-        return result;
-    }
-    if (preview && action == QLatin1String("table.import")) {
-        auto &table = result.update;
-        table.sourceTabRef = arguments.value(QStringLiteral("source_tab_ref")).toString();
-        table.sourceRevision = table.sourceTabRef.left(64);
-        const auto source = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
-            {QStringLiteral("source_revision"), table.sourceRevision}, {QStringLiteral("source_tab_ref"), table.sourceTabRef}});
-        if (arguments.size() != 3 || !source.ok())
-            return fail("Provide the attached source Tab reference and a bounded table backup.");
-        table.tableImportDocument = decodeBackupDocument(arguments.value(QStringLiteral("document_base64")), MaxTableBackupBytes);
-        if (table.tableImportDocument.isEmpty()) return fail("Provide a valid bounded base64 document.");
-        result.action = MappingChangeAction::UpdateMapping;
-        return result;
-    }
-    const bool macroDelete = action == QLatin1String("macro.delete");
-    const bool macroImport = action == QLatin1String("macro.import");
-    if (preview && (macroDelete || macroImport || action == QLatin1String("macro.upsert"))) {
-        const auto value = arguments.value(QStringLiteral("macro"));
-        if (arguments.size() != 2 || !value.isObject()) return fail("Macro changes require only action and macro.");
-        const auto fields = value.toObject();
-        const auto allowed = macroDelete
-            ? QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("names")}
-            : macroImport ? QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"),
-                QStringLiteral("on_conflict"), QStringLiteral("document_base64")}
-            : QSet<QString>{QStringLiteral("catalog_revision"), QStringLiteral("scope"), QStringLiteral("name"),
-                QStringLiteral("content"), QStringLiteral("category"), QStringLiteral("note"), QStringLiteral("insert_at"),
-                QStringLiteral("segment_comments")};
-        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-            if (!allowed.contains(it.key())) return fail("Unknown macro argument.");
-        }
-        auto &macro = result.macro;
-        macro.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
-        macro.scope = fields.value(QStringLiteral("scope")).toString();
-        if (!isLowerHex(macro.catalogRevision, 64)
-            || (macro.scope != QLatin1String("configuration") && macro.scope != QLatin1String("universal"))) {
-            return fail("Provide the current macro catalog revision and an explicit scope.");
-        }
-        if (macroImport) {
-            const auto policy = fields.value(QStringLiteral("on_conflict"));
-            if (policy != QLatin1String("keep") && policy != QLatin1String("overwrite")) {
-                return fail("Macro import requires keep or overwrite and a bounded backup document.");
-            }
-            macro.importDocument = decodeBackupDocument(fields.value(QStringLiteral("document_base64")), MaxMacroBackupBytes);
-            if (macro.importDocument.isEmpty()) {
-                return fail("Provide a valid bounded base64 document.");
-            }
-            macro.overwriteImportDuplicates = policy == QLatin1String("overwrite");
-            result.action = MappingChangeAction::ImportMacro;
+    if (preview) {
+        const char *handledError = nullptr;
+        if (validateConfigMacroAndIgnorePreview(action, arguments, result, handledError)) {
             return result;
         }
-        if (macroDelete) {
-            const auto names = fields.value(QStringLiteral("names")).toArray();
-            if (names.isEmpty() || names.size() > 100) return fail("Provide one to 100 macro names to delete.");
-            QSet<QString> distinct;
-            for (const auto &value : names) {
-                const auto name = value.toString();
-                if (name.isEmpty() || name.size() > 32767 || name.contains(QChar::Null) || distinct.contains(name))
-                    return fail("Macro names must be distinct, non-empty strings.");
-                distinct.insert(name);
-                macro.namesToDelete.append(name);
-            }
-            result.action = MappingChangeAction::DeleteMacro;
-            return result;
+        if (handledError != nullptr) {
+            return fail(handledError);
         }
-        macro.name = fields.value(QStringLiteral("name")).toString();
-        macro.content = fields.value(QStringLiteral("content")).toString();
-        const auto optionalText = [&](const QString &key, std::optional<QString> &output) {
-            const auto text = fields.value(key);
-            if (text.isUndefined() || text.isNull()) return true;
-            if (!text.isString() || text.toString().size() > 32767 || text.toString().contains(QChar::Null)) return false;
-            output = text.toString();
-            return true;
-        };
-        if (macro.name.isEmpty() || macro.name.size() > 32767 || macro.name.contains(QChar::Null)
-            || macro.content.isEmpty() || macro.content.size() > QKeyMapperConstants::MAPPINGKEY_LINE_EDIT_MAX_LENGTH
-            || macro.content.contains(QChar::Null)
-            || !optionalText(QStringLiteral("category"), macro.category) || !optionalText(QStringLiteral("note"), macro.note)) {
-            return fail("Provide the macro catalog revision, scope, name and content. Category and note are optional strings.");
-        }
-        const auto placement = fields.value(QStringLiteral("insert_at"));
-        if (!placement.isUndefined() && !placement.isNull()) {
-            const auto object = placement.toObject();
-            const auto position = object.value(QStringLiteral("position")).toString();
-            macro.anchorName = object.value(QStringLiteral("anchor_name")).toString();
-            if (object.size() != 2 || (position != QLatin1String("above") && position != QLatin1String("below"))
-                || macro.anchorName.isEmpty() || macro.anchorName.size() > 32767 || macro.anchorName.contains(QChar::Null)) {
-                return fail("Macro insertion needs above or below and an exact anchor name.");
-            }
-            macro.insertBelow = position == QLatin1String("below");
-        }
-        const auto comments = fields.value(QStringLiteral("segment_comments"));
-        if (!comments.isUndefined() && !comments.isNull()) {
-            const auto array = comments.toArray();
-            if (array.isEmpty()) return fail("Segment comments require a non-empty array of strings.");
-            QStringList parsed;
-            parsed.reserve(array.size());
-            for (const auto &item : array) {
-                const auto text = item.toString();
-                if (!item.isString() || text.size() > 32767 || text.contains(QChar::Null))
-                    return fail("Invalid macro segment comment.");
-                parsed.append(text);
-            }
-            macro.segmentComments = std::move(parsed);
-        }
-        result.action = MappingChangeAction::UpsertMacro;
-        return result;
-    }
-    if (preview && action == QLatin1String("ignore_rules.upsert")) {
-        const auto value = arguments.value(QStringLiteral("ignore_rule"));
-        if (arguments.size() != 2 || !value.isObject()) {
-            return fail("Ignore rule updates require only action and ignore_rule.");
-        }
-        const auto fields = value.toObject();
-        const QSet<QString> allowedKeys{
-            QStringLiteral("catalog_revision"), QStringLiteral("rule_name"),
-            QStringLiteral("process_name"), QStringLiteral("process_match_mode"),
-            QStringLiteral("window_title"), QStringLiteral("window_title_match_mode"),
-            QStringLiteral("class_name"), QStringLiteral("class_name_match_mode"),
-            QStringLiteral("description"), QStringLiteral("disabled")};
-        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-            if (!allowedKeys.contains(it.key())) {
-                return fail("Unknown ignore_rule argument.");
-            }
-        }
-        auto &rule = result.ignoreRule;
-        rule.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
-        const auto rawRuleName = fields.value(QStringLiteral("rule_name"));
-        const QString ruleNameText = rawRuleName.toString();
-        const QString trimmedRuleName = ruleNameText.trimmed();
-        if (!isLowerHex(rule.catalogRevision, 64)
-            || !rawRuleName.isString()
-            || ruleNameText.size() > WindowMatchTextMaxLength
-            || ruleNameText.contains(QChar::Null)
-            || ruleNameText.contains(QLatin1Char('\r'))
-            || ruleNameText.contains(QLatin1Char('\n'))
-            || trimmedRuleName.isEmpty()) {
-            return fail("Ignore rule upsert requires a current catalog_revision and non-empty single-line rule_name of at most 1024 UTF-16 code units.");
-        }
-        rule.ruleName = trimmedRuleName;
-        const auto parseOptionalText = [](const QJsonObject &obj, const QString &key, std::optional<QString> &target) -> bool {
-            if (!obj.contains(key)) return true;
-            const auto val = obj.value(key);
-            const QString text = val.toString();
-            if (!val.isString() || text.size() > WindowMatchTextMaxLength || text.contains(QChar::Null)
-                || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n'))) {
-                return false;
-            }
-            target = text;
-            return true;
-        };
-        const auto parseOptionalMode = [](const QJsonObject &obj, const QString &key, std::optional<int> &target) -> bool {
-            if (!obj.contains(key)) return true;
-            const auto val = obj.value(key);
-            const int parsed = val.toInt(WindowMatchModeMin - 1);
-            if (!val.isDouble() || val.toDouble() != parsed
-                || parsed < WindowMatchModeMin || parsed > WindowMatchModeMax) {
-                return false;
-            }
-            target = parsed;
-            return true;
-        };
-        if (!parseOptionalText(fields, QStringLiteral("process_name"), rule.processName)
-            || !parseOptionalText(fields, QStringLiteral("window_title"), rule.windowTitle)
-            || !parseOptionalText(fields, QStringLiteral("class_name"), rule.className)
-            || !parseOptionalText(fields, QStringLiteral("description"), rule.description)) {
-            return fail("Ignore rule text fields must be single-line strings of at most 1024 UTF-16 code units.");
-        }
-        if (!parseOptionalMode(fields, QStringLiteral("process_match_mode"), rule.processMatchMode)
-            || !parseOptionalMode(fields, QStringLiteral("window_title_match_mode"), rule.windowTitleMatchMode)
-            || !parseOptionalMode(fields, QStringLiteral("class_name_match_mode"), rule.classNameMatchMode)) {
-            return fail("Ignore rule match mode fields must be integers between 0 and 5.");
-        }
-        if (fields.contains(QStringLiteral("disabled"))) {
-            const auto disabledVal = fields.value(QStringLiteral("disabled"));
-            if (!disabledVal.isBool()) {
-                return fail("Ignore rule disabled field must be a boolean.");
-            }
-            rule.disabled = disabledVal.toBool();
-        }
-        result.action = MappingChangeAction::UpsertIgnoreRule;
-        return result;
-    }
-    if (preview && action == QLatin1String("ignore_rules.delete")) {
-        const auto value = arguments.value(QStringLiteral("ignore_rule"));
-        if (arguments.size() != 2 || !value.isObject()) {
-            return fail("Ignore rule deletion requires only action and ignore_rule.");
-        }
-        const auto fields = value.toObject();
-        const QSet<QString> allowedKeys{QStringLiteral("catalog_revision"), QStringLiteral("rule_names")};
-        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-            if (!allowedKeys.contains(it.key())) {
-                return fail("Unknown ignore_rule deletion argument.");
-            }
-        }
-        auto &rule = result.ignoreRule;
-        rule.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
-        const auto namesVal = fields.value(QStringLiteral("rule_names"));
-        const auto names = namesVal.toArray();
-        if (!isLowerHex(rule.catalogRevision, 64) || !namesVal.isArray() || names.isEmpty() || names.size() > 100) {
-            return fail("Provide the current ignore rules catalog_revision and 1 to 100 rule names to delete.");
-        }
-        QSet<QString> distinct;
-        for (const auto &entry : names) {
-            const QString name = entry.toString();
-            if (!entry.isString() || name.isEmpty() || name.size() > WindowMatchTextMaxLength
-                || name.contains(QChar::Null) || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n'))
-                || distinct.contains(name)) {
-                return fail("Ignore rule names to delete must be distinct, non-empty single-line strings of at most 1024 UTF-16 code units.");
-            }
-            distinct.insert(name);
-            rule.namesToDelete.append(name);
-        }
-        result.action = MappingChangeAction::DeleteIgnoreRule;
-        return result;
-    }
-    if (preview && action == QLatin1String("ignore_rules.restore_defaults")) {
-        const auto value = arguments.value(QStringLiteral("ignore_rule"));
-        if (arguments.size() != 2 || !value.isObject()) {
-            return fail("Restoring default ignore rules requires only action and ignore_rule.");
-        }
-        const auto fields = value.toObject();
-        if (fields.size() != 1 || !fields.value(QStringLiteral("catalog_revision")).isString()) {
-            return fail("Restoring default ignore rules accepts only catalog_revision inside ignore_rule.");
-        }
-        auto &rule = result.ignoreRule;
-        rule.catalogRevision = fields.value(QStringLiteral("catalog_revision")).toString();
-        if (!isLowerHex(rule.catalogRevision, 64)) {
-            return fail("Provide the current 64-character hex ignore rules catalog_revision.");
-        }
-        rule.restoreDefaults = true;
-        result.action = MappingChangeAction::RestoreDefaultIgnoreRules;
-        return result;
     }
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
@@ -981,6 +1724,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool customNotificationStylePreview = preview && action == QLatin1String("configuration.set_custom_notification_style");
     const bool trayIconsPreview = preview && action == QLatin1String("general.set_tray_icons");
     const bool tabFloatingWindowPreview = preview && action == QLatin1String("tab.set_floating_window");
+    const bool tabCustomImagePreview = preview && action == QLatin1String("tab.set_custom_image");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -1005,7 +1749,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview
-        || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || tabFloatingWindowPreview || processIconTrayPreview
+        || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || tabFloatingWindowPreview || tabCustomImagePreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -1033,6 +1777,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : (generalNotificationStylePreview || customNotificationStylePreview) ? "notification_style"
         : trayIconsPreview ? "tray_icons"
         : tabFloatingWindowPreview ? "floating_window"
+        : tabCustomImagePreview ? "custom_image"
         : processIconTrayPreview ? "process_icon_as_tray_icon"
         : pointDisplayKeysPreview ? "point_display_keys"
         : customNotificationPreview ? "custom_notification"
@@ -1122,378 +1867,11 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         result.update.sourceRevision = revision;
         result.update.sourceTabRef = reference.toString();
         if (renamePreview) result.update.tabName = text;
-        if (insertModePreview) {
-            const int mode = arguments.value(QStringLiteral("table_insert_mode")).toInt(-1);
-            if (mode != QKeyMapperConstants::TABLE_INSERT_MODE_ABOVE
-                && mode != QKeyMapperConstants::TABLE_INSERT_MODE_BELOW) {
-                return fail("Table insert mode must be 0 (above) or 1 (below).");
-            }
-            result.update.tableInsertMode = mode;
-        }
-        if (editTriggerPreview) {
-            const int trigger = arguments.value(QStringLiteral("table_edit_trigger")).toInt(-1);
-            if (trigger != QKeyMapperConstants::EDITMODE_RIGHT_DOUBLECLICK
-                && trigger != QKeyMapperConstants::EDITMODE_LEFT_DOUBLECLICK) {
-                return fail("Table edit trigger must be 0 (right double-click) or 1 (left double-click).");
-            }
-            result.update.tableEditTrigger = trigger;
-        }
-        if (displayScalePreview) {
-            using namespace QKeyMapperConstants;
-            const auto value = arguments.value(QStringLiteral("display_scale"));
-            const int scaleEnum = value.toInt(-1);
-            if (!value.isDouble() || value.toDouble() != scaleEnum
-                || scaleEnum < DISPLAY_SCALE_MIN || scaleEnum > DISPLAY_SCALE_MAX) {
-                return fail("Display scale must be an integer between 0 (default) and 10 (90%).");
-            }
-            result.update.displayScale = scaleEnum;
-        }
-        if (windowDisplayModePreview) {
-            const int mode = arguments.value(QStringLiteral("window_display_mode")).toInt(-1);
-            if (mode < QKeyMapperConstants::WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MIN
-                || mode > QKeyMapperConstants::WINDOWINFO_DISPLAYMODE_MATCH_INDEX_MAX) {
-                return fail("Window display mode must be 0 (ignore), 1 (fullscreen), or 2 (windowed).");
-            }
-            result.update.windowDisplayMode = mode;
-        }
-        if (saveWindowSizePreview) {
-            const auto value = arguments.value(QStringLiteral("save_window_size"));
-            if (!value.isBool()) return fail("Provide an explicit boolean save_window_size.");
-            result.update.saveWindowSize = value.toBool();
-        }
-        if (saveSplitterPositionPreview) {
-            const auto value = arguments.value(QStringLiteral("save_splitter_position"));
-            if (!value.isBool()) return fail("Provide an explicit boolean save_splitter_position.");
-            result.update.saveSplitterPosition = value.toBool();
-        }
-        if (playSoundEffectPreview) {
-            const auto value = arguments.value(QStringLiteral("play_sound_effect"));
-            if (!value.isBool()) return fail("Provide an explicit boolean play_sound_effect.");
-            result.update.playSoundEffect = value.toBool();
-        }
-        if (globalSwitchTimeoutPreview) {
-            using namespace QKeyMapperConstants;
-            const auto value = arguments.value(QStringLiteral("timeout_ms"));
-            const int timeout = value.toInt(-1);
-            if (!value.isDouble() || value.toDouble() != timeout
-                || timeout < GLOBALSETTING_SWITCH_TIMEOUT_MIN || timeout > GLOBALSETTING_SWITCH_TIMEOUT_MAX)
-                return fail("Global setting switch timeout must be an integer between 0 and 999999999 milliseconds.");
-            result.update.globalSwitchTimeoutMs = timeout;
-        }
-        if (fullscreenGlobalMappingPreview) {
-            const auto raw = arguments.value(QStringLiteral("fullscreen_global_mapping"));
-            const auto fields = raw.toObject();
-            if (!raw.isObject() || fields.isEmpty())
-                return fail("Provide at least one fullscreen global mapping field.");
-            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-                if (it.key() != QStringLiteral("disable_in_fullscreen")
-                    && it.key() != QStringLiteral("allowed_processes"))
-                    return fail("Only disable_in_fullscreen and allowed_processes are allowed.");
-            }
-            if (fields.contains(QStringLiteral("disable_in_fullscreen"))) {
-                const auto value = fields.value(QStringLiteral("disable_in_fullscreen"));
-                if (!value.isBool())
-                    return fail("Provide an explicit boolean disable_in_fullscreen.");
-                result.update.disableGlobalMappingInFullscreen = value.toBool();
-            }
-            if (fields.contains(QStringLiteral("allowed_processes"))) {
-                const auto value = fields.value(QStringLiteral("allowed_processes"));
-                const QString processes = value.toString();
-                if (!value.isString() || processes.size() > 32767 || processes.contains(QLatin1Char('\0'))
-                    || processes.contains(QLatin1Char('\r')) || processes.contains(QLatin1Char('\n')))
-                    return fail("A single-line allowed_processes string of at most 32767 UTF-16 code units is required.");
-                if (result.update.disableGlobalMappingInFullscreen == false)
-                    return fail("Allowed processes require disabling global mapping in fullscreen.");
-                result.update.fullscreenAllowedProcesses = processes;
-            }
-        }
-        if (key2MousePreview) {
-            using namespace QKeyMapperConstants;
-            const auto raw = arguments.value(QStringLiteral("key2mouse"));
-            const auto fields = raw.toObject();
-            if (!raw.isObject() || fields.isEmpty())
-                return fail("Provide at least one key2mouse setting.");
-            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-                if (it.key() != QStringLiteral("x_speed") && it.key() != QStringLiteral("y_speed")
-                    && it.key() != QStringLiteral("polling_interval_ms"))
-                    return fail("Only x_speed, y_speed, and polling_interval_ms are allowed.");
-            }
-            const auto parseIntInRange = [](const QJsonObject &obj, const QString &key, int minVal, int maxVal,
-                                            std::optional<int> &target) -> bool {
-                if (!obj.contains(key)) return true;
-                const auto val = obj.value(key);
-                const int parsed = val.toInt(minVal - 1);
-                if (!val.isDouble() || val.toDouble() != parsed || parsed < minVal || parsed > maxVal)
-                    return false;
-                target = parsed;
-                return true;
-            };
-            if (!parseIntInRange(fields, QStringLiteral("x_speed"), MOUSE_SPEED_MIN, MOUSE_SPEED_MAX, result.update.mouseXSpeed)
-                || !parseIntInRange(fields, QStringLiteral("y_speed"), MOUSE_SPEED_MIN, MOUSE_SPEED_MAX, result.update.mouseYSpeed))
-                return fail("key2mouse x_speed and y_speed must be integers between 1 and 99.");
-            if (!parseIntInRange(fields, QStringLiteral("polling_interval_ms"), MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX, result.update.mousePollingIntervalMs))
-                return fail("key2mouse polling_interval_ms must be an integer between 1 and 99 milliseconds.");
-        }
-        if (gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview
-            || acceptVirtualGamepadInputPreview || vbuttonPanelPreview) {
+        {
             const char *parseError = nullptr;
-            if (!parseGyroGamepadAndPanelUpdates(arguments, gyro2MouseOptionsPreview,
-                    gamepadThresholdsPreview, gamepadTouchpadPreview,
-                    acceptVirtualGamepadInputPreview, vbuttonPanelPreview,
-                    result.update, parseError)) {
+            if (!parseTabAndSettingsPreviewUpdates(action, arguments, reference, revision, result.update, parseError)) {
                 return fail(parseError);
             }
-        }
-        if (generalNotificationStylePreview || customNotificationStylePreview) {
-            const char *parseError = nullptr;
-            NotificationStyleUpdate parsedStyle;
-            if (!parseNotificationStyleUpdate(arguments, parsedStyle, parseError)) {
-                return fail(parseError);
-            }
-            if (generalNotificationStylePreview) {
-                result.update.generalNotificationStyle = parsedStyle;
-            } else {
-                result.update.customNotificationStyle = parsedStyle;
-            }
-        }
-        if (trayIconsPreview) {
-            const char *parseError = nullptr;
-            TrayIconsUpdate parsedTray;
-            if (!parseTrayIconsUpdate(arguments, parsedTray, parseError)) {
-                return fail(parseError);
-            }
-            result.update.trayIcons = parsedTray;
-        }
-        if (tabFloatingWindowPreview) {
-            const char *parseError = nullptr;
-            TabFloatingWindowUpdate parsedFWin;
-            if (!parseTabFloatingWindowUpdate(arguments, parsedFWin, parseError)) {
-                return fail(parseError);
-            }
-            result.update.tabFloatingWindow = parsedFWin;
-        }
-        if (processIconTrayPreview) {
-            const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
-            if (!value.isBool()) return fail("Provide an explicit boolean process_icon_as_tray_icon.");
-            result.update.processIconAsTrayIcon = value.toBool();
-        }
-        if (pointDisplayKeysPreview) {
-            const auto raw = arguments.value(QStringLiteral("point_display_keys"));
-            const auto fields = raw.toObject();
-            if (!raw.isObject() || fields.isEmpty())
-                return fail("Provide at least one point display key field.");
-            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-                if (it.key() != QStringLiteral("window_point_key")
-                    && it.key() != QStringLiteral("screen_point_key"))
-                    return fail("Only window_point_key and screen_point_key are allowed.");
-            }
-            const auto parseKeyName = [](const QJsonObject &obj, const QString &key, std::optional<QString> &target) -> bool {
-                if (!obj.contains(key)) return true;
-                const auto val = obj.value(key);
-                const QString name = val.toString();
-                if (!val.isString() || name.isEmpty() || name.size() > 64 || name.contains(QLatin1Char('\0'))
-                    || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n')))
-                    return false;
-                target = name;
-                return true;
-            };
-            if (!parseKeyName(fields, QStringLiteral("window_point_key"), result.update.showWindowPointKey)
-                || !parseKeyName(fields, QStringLiteral("screen_point_key"), result.update.showScreenPointKey))
-                return fail("Point display keys must be non-empty single-line strings of at most 64 UTF-16 code units.");
-        }
-        if (customNotificationPreview) {
-            const auto raw = arguments.value(QStringLiteral("custom_notification"));
-            const auto fields = raw.toObject();
-            if (!raw.isObject() || fields.isEmpty())
-                return fail("Provide at least one custom notification field.");
-            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-                if (it.key() != QStringLiteral("enabled") && it.key() != QStringLiteral("position"))
-                    return fail("Only enabled and position are allowed.");
-            }
-            if (fields.contains(QStringLiteral("enabled"))) {
-                const auto enabled = fields.value(QStringLiteral("enabled"));
-                if (!enabled.isBool()) return fail("custom_notification enabled must be a boolean.");
-                result.update.customNotificationEnabled = enabled.toBool();
-            }
-            if (fields.contains(QStringLiteral("position"))) {
-                const auto position = fields.value(QStringLiteral("position"));
-                const int parsed = position.toInt(CustomNotificationPositionMin - 1);
-                if (!position.isDouble() || position.toDouble() != parsed
-                    || parsed < CustomNotificationPositionMin || parsed > CustomNotificationPositionMax)
-                    return fail("custom_notification position must be an integer between 0 and 6.");
-                result.update.customNotificationPosition = parsed;
-            }
-            if (result.update.customNotificationEnabled && !*result.update.customNotificationEnabled
-                && result.update.customNotificationPosition)
-                return fail("custom_notification position cannot be set while disabling custom notification.");
-        }
-        if (windowMatchCriteriaPreview) {
-            const auto raw = arguments.value(QStringLiteral("window_match_criteria"));
-            const auto fields = raw.toObject();
-            if (!raw.isObject() || fields.isEmpty())
-                return fail("Provide at least one window match criteria field.");
-            const QSet<QString> allowedKeys{
-                QStringLiteral("process_name"), QStringLiteral("process_match_mode"),
-                QStringLiteral("window_title"), QStringLiteral("window_title_match_mode"),
-                QStringLiteral("class_name"), QStringLiteral("class_name_match_mode")};
-            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-                if (!allowedKeys.contains(it.key()))
-                    return fail("Unknown window_match_criteria field.");
-            }
-            const auto parseMatchText = [](const QJsonObject &obj, const QString &key, std::optional<QString> &target) -> bool {
-                if (!obj.contains(key)) return true;
-                const auto val = obj.value(key);
-                const QString text = val.toString();
-                if (!val.isString() || text.size() > WindowMatchTextMaxLength || text.contains(QLatin1Char('\0'))
-                    || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n')))
-                    return false;
-                target = text;
-                return true;
-            };
-            const auto parseMatchMode = [](const QJsonObject &obj, const QString &key, std::optional<int> &target) -> bool {
-                if (!obj.contains(key)) return true;
-                const auto val = obj.value(key);
-                const int parsed = val.toInt(WindowMatchModeMin - 1);
-                if (!val.isDouble() || val.toDouble() != parsed
-                    || parsed < WindowMatchModeMin || parsed > WindowMatchModeMax)
-                    return false;
-                target = parsed;
-                return true;
-            };
-            if (!parseMatchText(fields, QStringLiteral("process_name"), result.update.windowProcessName)
-                || !parseMatchText(fields, QStringLiteral("window_title"), result.update.windowTitleText)
-                || !parseMatchText(fields, QStringLiteral("class_name"), result.update.windowClassName))
-                return fail("Window match text fields must be single-line strings of at most 1024 UTF-16 code units.");
-            if (!parseMatchMode(fields, QStringLiteral("process_match_mode"), result.update.windowProcessMatchMode)
-                || !parseMatchMode(fields, QStringLiteral("window_title_match_mode"), result.update.windowTitleMatchMode)
-                || !parseMatchMode(fields, QStringLiteral("class_name_match_mode"), result.update.windowClassMatchMode))
-                return fail("Window match mode fields must be integers between 0 and 5.");
-        }
-        if (autoMatchForegroundPreview) {
-            const auto value = arguments.value(QStringLiteral("auto_match_foreground"));
-            if (!value.isBool()) return fail("Provide an explicit boolean auto_match_foreground.");
-            result.update.autoMatchForeground = value.toBool();
-        }
-        if (sendToSameWindowsPreview) {
-            const auto value = arguments.value(QStringLiteral("send_to_same_windows"));
-            if (!value.isBool()) return fail("Provide an explicit boolean send_to_same_windows.");
-            result.update.sendToSameWindows = value.toBool();
-        }
-        if (startupPositionPreview) {
-            using namespace QKeyMapperConstants;
-            const auto fields = arguments.value(QStringLiteral("startup_position")).toObject();
-            const auto mode = fields.value(QStringLiteral("mode"));
-            const auto point = fields.value(QStringLiteral("point"));
-            if (fields.isEmpty() || fields.size() != int(!mode.isUndefined()) + int(!point.isUndefined()))
-                return fail("Provide at least one startup position field, mode or point.");
-            if (!mode.isUndefined()) {
-                const int index = mode.toInt(-1);
-                if (index < STARTUP_POSITION_MIN || index > STARTUP_POSITION_MAX)
-                    return fail("Startup position mode must be 0 (default), 1 (last saved), or 2 (specified).");
-                result.update.startupPositionMode = index;
-            }
-            if (!point.isUndefined()) {
-                const auto coordinates = point.toObject();
-                const int x = coordinates.value(QStringLiteral("x")).toInt(STARTUP_SPECIFY_POSITION_MIN_X - 1);
-                const int y = coordinates.value(QStringLiteral("y")).toInt(STARTUP_SPECIFY_POSITION_MIN_Y - 1);
-                if (coordinates.size() != 2 || x < STARTUP_SPECIFY_POSITION_MIN_X || x > STARTUP_SPECIFY_POSITION_MAX_X
-                    || y < STARTUP_SPECIFY_POSITION_MIN_Y || y > STARTUP_SPECIFY_POSITION_MAX_Y)
-                    return fail("Provide both integer coordinates within -50000 to 50000.");
-                if (result.update.startupPositionMode.value_or(STARTUP_POSITION_SPECIFY) != STARTUP_POSITION_SPECIFY)
-                    return fail("Coordinates require the specified startup position mode.");
-                result.update.startupPositionPoint = QPoint(x, y);
-            }
-        }
-        if (tabHotkeyPreview) {
-            const auto hotkey = arguments.value(QStringLiteral("tab_hotkey"));
-            const QString value = hotkey.toString();
-            if (!hotkey.isString() || value.size() > 32767 || value.contains(QLatin1Char('\0'))
-                || value.contains(QLatin1Char('\r')) || value.contains(QLatin1Char('\n')))
-                return fail("A single-line tab_hotkey of at most 32767 UTF-16 code units is required.");
-            result.update.tabHotkey = value;
-        }
-        if (tabNotificationPreview) {
-            const auto value = arguments.value(QStringLiteral("notification_mode"));
-            const int mode = value.toInt(-1);
-            if (!value.isDouble() || value.toDouble() != mode || mode < Qt::Unchecked || mode > Qt::Checked)
-                return fail("notification_mode must be 0, 1, or 2.");
-            result.update.tabNotificationMode = static_cast<Qt::CheckState>(mode);
-        }
-        if (mappingDisplayPreview) {
-            const auto change = arguments.value(QStringLiteral("mapping_display")).toObject();
-            if (change.isEmpty()) return fail("Provide at least one mapping display preference.");
-            for (auto it = change.constBegin(); it != change.constEnd(); ++it) {
-                if (!it.value().isBool() || (it.key() != QStringLiteral("category_column")
-                    && it.key() != QStringLiteral("notes") && it.key() != QStringLiteral("floating_column")))
-                    return fail("Only category_column, notes and floating_column booleans are allowed.");
-            }
-            result.update.mappingDisplay = change;
-        }
-        if (disabledVisibilityPreview) {
-            const auto value = arguments.value(QStringLiteral("show_disabled_rows"));
-            if (!value.isBool()) return fail("A boolean show_disabled_rows is required.");
-            result.update.showDisabledRows = value.toBool();
-        }
-        if (categoryFilterPreview) {
-            const auto filter = arguments.value(QStringLiteral("category_filter"));
-            if (filter != QJsonValue(QStringLiteral("all"))) {
-                const auto names = filter.toArray();
-                if (!filter.isArray() || names.size() > 100)
-                    return fail("Use all or a list of up to 100 category names.");
-                QSet<QString> selected;
-                for (const auto &value : names) {
-                    const QString name = value.toString();
-                    if (!value.isString() || name.size() > 32767 || name.contains(QLatin1Char('\0'))
-                        || name.contains(QLatin1Char('\r')) || name.contains(QLatin1Char('\n')) || selected.contains(name))
-                        return fail("Category filter names must be distinct single-line strings.");
-                    selected.insert(name);
-                }
-            }
-            result.update.tabCategoryFilter = filter;
-        }
-        if (tabNotificationColorsPreview) {
-            const auto font = arguments.value(QStringLiteral("notification_font_color"));
-            const auto background = arguments.value(QStringLiteral("notification_background_color"));
-            const auto colorValid = [](const QJsonValue &value, int digits) {
-                if (value.isUndefined()) return true;
-                if (!value.isString()) return false;
-                const QString color = value.toString();
-                return color == QStringLiteral("default")
-                    || (color.startsWith(QLatin1Char('#')) && isLowerHex(color.mid(1).toLower(), digits));
-            };
-            if ((font.isUndefined() && background.isUndefined()) || !colorValid(font, 6) || !colorValid(background, 8))
-                return fail("Provide a #RRGGBB font color, a #AARRGGBB background color, or default for either.");
-            result.update.tabNotificationFontColor = font.toString();
-            result.update.tabNotificationBackgroundColor = background.toString();
-        }
-        result.update.addBlankTab = addBlankTabPreview;
-        result.update.copyTab = copyTabPreview;
-        result.update.deleteTab = deleteTabPreview;
-        result.update.clearTab = clearTabPreview;
-        result.update.restoreProcessPath = restoreProcessPathPreview;
-        if (moveTabPreview || selectTabPreview) {
-            const auto target = arguments.value(QStringLiteral("target_tab_ref"));
-            const auto targetQuery = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
-                {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), target}});
-            if (!targetQuery.ok() || (moveTabPreview && target == reference))
-                return fail("A canonical destination from the same revision is required. Tab moves need a different destination.");
-            result.update.targetTabRef = target.toString();
-            result.update.selectTab = selectTabPreview;
-        }
-        if (tabCommonPreview) {
-            const auto includeCommon = arguments.value(QStringLiteral("include_common"));
-            if (!includeCommon.isBool()) return fail("A boolean include_common is required.");
-            result.update.tabIncludeCommon = includeCommon.toBool();
-        }
-        if (tabCollapsePreview) {
-            const auto collapsed = arguments.value(QStringLiteral("common_collapsed"));
-            if (!collapsed.isBool()) return fail("A boolean common_collapsed is required.");
-            result.update.tabCommonCollapsed = collapsed.toBool();
-        }
-        if (commonFeaturePreview) {
-            const auto enabled = arguments.value(QStringLiteral("common_feature_enabled"));
-            if (!enabled.isBool()) return fail("A boolean common_feature_enabled is required.");
-            result.update.commonFeatureEnabled = enabled.toBool();
         }
         return result;
     }
@@ -1514,180 +1892,19 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             return fail(parseError);
         }
         result.action = MappingChangeAction::UpdateMapping;
-        result.update = {refStr, parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, -1};
+        result.update.sourceReference = refStr;
+        result.update.sourceRevision = parts.at(0);
+        result.update.sourceTabRef = parts.at(0) + QStringLiteral(":source:") + parts.at(2);
+        result.update.sourceRow = row;
+        result.update.sendMethod = -1;
         result.update.crosshair = parsedCrosshair;
         return result;
     }
     if (updatePreview || movePreview || duplicatePreview) {
-        const auto singleReference = arguments.value(QStringLiteral("source_ref"));
-        const auto batch = arguments.value(QStringLiteral("source_refs"));
-        const auto references = batch.toArray();
-        const auto category = arguments.value(QStringLiteral("category"));
-        const auto rowModes = arguments.value(QStringLiteral("row_modes"));
-        const bool triggerBatch = !batch.isUndefined() && rowModes.toObject().contains(QStringLiteral("original_trigger"));
-        if (!batch.isUndefined() && ((!movePreview && !duplicatePreview && category.isUndefined() && !triggerBatch)
-            || !singleReference.isUndefined() || references.size() < 2 || references.size() > 100))
-            return fail("Only moves, duplication, category and trigger updates accept 2 to 100 source_refs instead of source_ref.");
-        const auto reference = references.isEmpty() ? singleReference : references.first();
-        const auto original = arguments.value(QStringLiteral("original_key"));
-        const auto mapping = arguments.value(QStringLiteral("mapping_key"));
-        const auto keyUp = arguments.value(QStringLiteral("key_up_mapping_key"));
-        const auto disabled = arguments.value(QStringLiteral("disabled"));
-        const auto note = arguments.value(QStringLiteral("note"));
-        const auto timing = arguments.value(QStringLiteral("send_timing"));
-        if (!timing.isUndefined()) {
-            const int mode = timing.toInt(-1);
-            if (arguments.size() != 3 || !singleReference.isString() || !timing.isDouble() || timing.toDouble() != mode
-                || mode < QKeyMapperConstants::SENDTIMING_NORMAL || mode > QKeyMapperConstants::SENDTIMING_NORMAL_AND_KEYUP)
-                return fail("Provide one source_ref and an integer send_timing from 0 to 4.");
+        const char *updateError = nullptr;
+        if (!validateRowUpdateMoveOrDuplicate(arguments, rowMove, updatePreview, movePreview, duplicatePreview, result, updateError)) {
+            return fail(updateError);
         }
-        if (!rowModes.isUndefined()) {
-            const auto modes = rowModes.toObject();
-            if (modes.isEmpty() || arguments.size() != 3 || (!singleReference.isString() && !triggerBatch))
-                return fail("Provide row_modes and an eligible source reference, without other changed fields.");
-            for (auto it = modes.constBegin(); it != modes.constEnd(); ++it) {
-                const QString key = it.key();
-                const auto value = it.value();
-                if (key == QStringLiteral("burst") || key == QStringLiteral("lock")
-                    || key == QStringLiteral("mapping_key_unlock") || key == QStringLiteral("disable_original_key_unlock")
-                    || key == QStringLiteral("sequence_hold_down") || key == QStringLiteral("pass_through")
-                    || key == QStringLiteral("check_combo_order") || key == QStringLiteral("unbreakable")
-                    || key == QStringLiteral("disable_fn_key_switch")) {
-                    if (!value.isBool()) return fail("Row toggles must be booleans.");
-                } else if (key == QStringLiteral("burst_press_ms") || key == QStringLiteral("burst_release_ms")) {
-                    const int ms = value.toInt(-1);
-                    if (!value.isDouble() || value.toDouble() != ms || ms < QKeyMapperConstants::BURST_TIME_MIN
-                        || ms > QKeyMapperConstants::BURST_TIME_MAX)
-                        return fail("Burst timings must be integer milliseconds within the supported range.");
-                } else if (key == QStringLiteral("repeat_mode") || key == QStringLiteral("repeat_times")) {
-                    const int number = value.toInt(-1);
-                    const bool mode = key == QStringLiteral("repeat_mode");
-                    const int minimum = mode ? QKeyMapperConstants::REPEAT_MODE_NONE : QKeyMapperConstants::REPEAT_TIMES_MIN;
-                    const int maximum = mode ? QKeyMapperConstants::REPEAT_MODE_BYTIMES : QKeyMapperConstants::REPEAT_TIMES_MAX;
-                    if (!value.isDouble() || value.toDouble() != number || number < minimum || number > maximum)
-                        return fail("Repeat mode and count must be integers within the supported range.");
-                } else if (key == QStringLiteral("fixed_vkey_code") || key == QStringLiteral("paste_text_mode")) {
-                    const int number = value.toInt(-1);
-                    const bool fixed = key == QStringLiteral("fixed_vkey_code");
-                    const int minimum = fixed ? QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MIN : QKeyMapperConstants::PASTETEXT_MODE_SHIFTINSERT;
-                    const int maximum = fixed ? QKeyMapperConstants::FIXED_VIRTUAL_KEY_CODE_MAX : QKeyMapperConstants::PASTETEXT_MODE_CTRLV;
-                    if (!value.isDouble() || value.toDouble() != number || number < minimum || number > maximum)
-                        return fail("Fixed virtual key code and paste mode must be integers within the supported range.");
-                } else if (key == QStringLiteral("original_trigger")) {
-                    const auto trigger = value.toObject();
-                    const QString type = trigger.value(QStringLiteral("type")).toString();
-                    const auto duration = trigger.value(QStringLiteral("duration_ms"));
-                    const bool normal = type == QStringLiteral("normal");
-                    const int time = duration.toInt(-1);
-                    if (modes.size() != 1 || trigger.size() != (duration.isUndefined() ? 1 : 2)
-                        || (triggerBatch && !duration.isUndefined())
-                        || (!normal && type != QStringLiteral("long_press") && type != QStringLiteral("double_press"))
-                        || (!duration.isUndefined() && (normal || !duration.isDouble() || duration.toDouble() != time
-                            || time < QKeyMapperConstants::PRESSTIME_MIN || time > QKeyMapperConstants::PRESSTIME_MAX)))
-                        return fail("Provide only original_trigger with type normal, long_press or double_press and an optional timed duration from 1 to 9999 ms.");
-                } else {
-                    return fail("Unsupported row mode field.");
-                }
-            }
-        }
-        if (!note.isUndefined() || !category.isUndefined()) {
-            const auto &value = note.isUndefined() ? category : note;
-            const QString text = value.toString();
-            if (!value.isString() || (!note.isUndefined() && !category.isUndefined())
-                || text.size() > 32767 || text.contains(QLatin1Char('\0'))
-                || text.contains(QLatin1Char('\r')) || text.contains(QLatin1Char('\n'))
-                || !original.isUndefined() || !mapping.isUndefined() || !keyUp.isUndefined() || !disabled.isUndefined()
-                || arguments.contains(QStringLiteral("send_method")))
-                return fail("Provide one single-line note or category of at most 32767 UTF-16 code units without other changed mapping fields.");
-        }
-        if (!disabled.isUndefined() && (!disabled.isBool() || !original.isUndefined() || !mapping.isUndefined()
-            || !keyUp.isUndefined() || arguments.contains(QStringLiteral("send_method"))))
-            return fail("Disabled must be a boolean updated separately from key and send method fields.");
-        if ((!original.isUndefined() && !basicKey(original)) || (!mapping.isUndefined() && !basicKey(mapping))
-            || (!keyUp.isUndefined() && !(keyUp.isString() && keyUp.toString().isEmpty()) && !basicKey(keyUp))
-            || (arguments.contains(QStringLiteral("send_method")) && sendMethod() < 0))
-            return fail("Updates accept uppercase single keys, an optional empty key-up key, and send method 0 to 3.");
-        if (updatePreview && original.isUndefined() && mapping.isUndefined() && keyUp.isUndefined() && sendMethod() < 0
-            && disabled.isUndefined() && note.isUndefined() && category.isUndefined() && rowModes.isUndefined() && timing.isUndefined())
-            return fail("At least one mapping field must be specified.");
-        const auto parts = reference.toString().split(QLatin1Char(':'));
-        bool tabOk = false, rowOk = false;
-        const int tab = parts.size() == 4 ? parts.at(2).toInt(&tabOk) : -1;
-        const int row = parts.size() == 4 ? parts.at(3).toInt(&rowOk) : -1;
-        if (!reference.isString() || reference.toString().size() > 128 || parts.size() != 4
-            || !isLowerHex(parts.at(0), 64) || parts.at(1) != QStringLiteral("row") || !tabOk || !rowOk
-            || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3))
-            return fail("A canonical current source row is required.");
-        const int rowCount = qMax(1, int(references.size()));
-        const QString prefix = reference.toString().section(QLatin1Char(':'), 0, 2) + QLatin1Char(':');
-        QString copyPosition;
-        QString copyAnchorRef;
-        QString copyTargetTabRef;
-        if (duplicatePreview) {
-            const auto destination = arguments.value(QStringLiteral("copy_to")).toObject();
-            const QString position = destination.value(QStringLiteral("position")).toString();
-            const auto anchor = destination.value(QStringLiteral("anchor_ref"));
-            const auto target = destination.value(QStringLiteral("target_tab_ref"));
-            const bool relative = position == QLatin1String("above") || position == QLatin1String("below");
-            if (destination.size() != (relative ? 2 : 1) + (target.isUndefined() ? 0 : 1)
-                || (!relative && position != QLatin1String("top") && position != QLatin1String("bottom"))
-                || (!relative && !anchor.isUndefined()))
-                return fail("Provide copy_to position top, bottom, above or below. Only above and below require anchor_ref.");
-            QString anchorPrefix = prefix;
-            if (!target.isUndefined()) {
-                const auto targetQuery = validateSourceQueryArguments({{QStringLiteral("entity"), QStringLiteral("mappings")},
-                    {QStringLiteral("source_revision"), parts.at(0)}, {QStringLiteral("source_tab_ref"), target}});
-                if (!targetQuery.ok()) return fail("The copy target must be a canonical Tab of the same revision.");
-                copyTargetTabRef = target.toString();
-                anchorPrefix = parts.at(0) + QStringLiteral(":row:") + copyTargetTabRef.section(QLatin1Char(':'), 2, 2) + QLatin1Char(':');
-            }
-            if (relative) {
-                const QString anchorRef = anchor.toString();
-                bool indexOk = false;
-                const int index = anchorRef.mid(anchorPrefix.size()).toInt(&indexOk);
-                if (!anchor.isString() || !indexOk || index < 0 || anchorRef != anchorPrefix + QString::number(index))
-                    return fail("The insert anchor must be a canonical row of the target Tab and revision.");
-            }
-            copyPosition = position;
-            copyAnchorRef = anchor.toString();
-        }
-        QList<int> batchRows;
-        if (movePreview) {
-            if (row > std::numeric_limits<int>::max() - (rowCount - 1))
-                return fail("The contiguous source range exceeds the row index limit.");
-            for (int i = 1; i < rowCount; ++i) {
-                if (references.at(i) != prefix + QString::number(row + i))
-                    return fail("Batch moves require contiguous, ascending row references of the same source and revision.");
-            }
-        } else if (!references.isEmpty()) {
-            for (const auto &value : references) {
-                const QString ref = value.toString();
-                bool indexOk = false;
-                const int index = ref.mid(prefix.size()).toInt(&indexOk);
-                if (!indexOk || index < 0 || ref != prefix + QString::number(index) || batchRows.contains(index))
-                    return fail("Batch references must be distinct rows of the same source and revision.");
-                batchRows.append(index);
-            }
-            std::sort(batchRows.begin(), batchRows.end());
-        }
-        const int firstRow = batchRows.isEmpty() ? row : batchRows.constFirst();
-        result.action = MappingChangeAction::UpdateMapping;
-        result.update = {prefix + QString::number(firstRow), parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2),
-            firstRow, updatePreview ? sendMethod() : -1};
-        result.update.move = rowMove;
-        if (movePreview) result.update.rowCount = rowCount;
-        result.update.batchRows = std::move(batchRows);
-        result.update.copyPosition = copyPosition;
-        result.update.copyAnchorRef = copyAnchorRef;
-        result.update.copyTargetTabRef = copyTargetTabRef;
-        if (!original.isUndefined()) result.update.originalKey = original.toString();
-        if (!mapping.isUndefined()) result.update.mappingKey = mapping.toString();
-        if (!keyUp.isUndefined()) result.update.keyUpMappingKey = keyUp.toString();
-        if (!disabled.isUndefined()) result.update.disabled = disabled.toBool();
-        if (!note.isUndefined()) result.update.note = note.toString();
-        if (!category.isUndefined()) result.update.category = category.toString();
-        result.update.rowModes = rowModes.toObject();
-        if (!timing.isUndefined()) result.update.sendTiming = timing.toInt();
         return result;
     }
     if (savePreview) {
@@ -2251,6 +2468,42 @@ void appendTabFloatingWindowCapabilities(QJsonArray &capabilities, const Capabil
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendTabCustomImageCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    using namespace QKeyMapperConstants;
+    const QJsonObject customImageSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("image_path"), QJsonObject{
+                {QStringLiteral("type"), QStringLiteral("string")},
+                {QStringLiteral("maxLength"), 260}}},
+            {QStringLiteral("show_position"), CapabilitySchemaContext::boundedInteger(TAB_CUSTOMIMAGE_POSITION_MIN, TAB_CUSTOMIMAGE_POSITION_MAX)},
+            {QStringLiteral("padding"), CapabilitySchemaContext::boundedInteger(TAB_CUSTOMIMAGE_PADDING_MIN, TAB_CUSTOMIMAGE_PADDING_MAX)},
+            {QStringLiteral("show_as_tray_icon"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("show_as_floating_window"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("tray_icon_pixel"), CapabilitySchemaContext::string(
+                QStringLiteral("^(default|[1-9][0-9]{0,3}x[1-9][0-9]{0,3})$"), 16)}}}};
+    auto imagePreview = CapabilitySchemaContext::capability("tab.set_custom_image.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("tab.set_custom_image")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("custom_image"), customImageSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_image")}));
+    auto imageApply = CapabilitySchemaContext::capability("tab.set_custom_image.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&imagePreview, &imageApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_attached_source_only"),
+            QStringLiteral("in_app_dir_image_or_clear_only"), QStringLiteral("common_tab_allows_image_path_only"),
+            QStringLiteral("tray_icon_pixel_must_match_available_sizes_or_default"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendMappingCrosshairCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
 {
     using namespace QKeyMapperConstants;
@@ -2428,6 +2681,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     appendNotificationStyleCapabilities(capabilities, ctx);
     appendTrayIconCapabilities(capabilities, ctx);
     appendTabFloatingWindowCapabilities(capabilities, ctx);
+    appendTabCustomImageCapabilities(capabilities, ctx);
     appendMappingCrosshairCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,

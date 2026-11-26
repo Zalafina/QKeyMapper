@@ -15279,51 +15279,106 @@ QString QKeyMapper::resolveConfiguredFontFamily(const QString &configuredFamily)
     return QFontDatabase::systemFont(QFontDatabase::GeneralFont).family().trimmed();
 }
 
+QString QKeyMapper::resolveExistingTabCustomImagePath(const QString &storedPath)
+{
+    if (storedPath.isEmpty()) {
+        return QString();
+    }
+
+    const QFileInfo storedInfo(storedPath);
+    if (storedInfo.isRelative()) {
+        const QString appRelative = QDir(QCoreApplication::applicationDirPath()).filePath(storedPath);
+        if (QFileInfo::exists(appRelative)) {
+            return appRelative;
+        }
+    }
+
+    if (QFileInfo::exists(storedPath)) {
+        return storedPath;
+    }
+
+    return QString();
+}
+
+QList<QSize> QKeyMapper::sortedTabCustomImageAvailableSizes(const QString &imagePath)
+{
+    QList<QSize> availableSizes;
+    const QString resolved = resolveExistingTabCustomImagePath(imagePath);
+    if (resolved.isEmpty()) {
+        return availableSizes;
+    }
+
+    const QIcon icon(resolved);
+    if (icon.isNull()) {
+        return availableSizes;
+    }
+
+    const QList<QSize> rawSizes = icon.availableSizes();
+    for (const QSize &size : rawSizes) {
+        if (size.width() > 0 && size.height() > 0 && !availableSizes.contains(size)) {
+            availableSizes.append(size);
+        }
+    }
+
+    std::sort(availableSizes.begin(), availableSizes.end(), [](const QSize &a, const QSize &b) {
+        if (a.width() != b.width()) {
+            return a.width() > b.width();
+        }
+        return a.height() > b.height();
+    });
+    return availableSizes;
+}
+
+QIcon QKeyMapper::loadTabCustomImage(QString &imagepath)
+{
+    if (!QFileInfo::exists(imagepath)) {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug().nospace() << "[QKeyMapper::loadTabCustomImage]" << " QFileInfo::exists(" << imagepath << ") = false";
+#endif
+        return QIcon();
+    }
+
+#ifdef DEBUG_LOGOUT_ON
+    qDebug() << "[QKeyMapper::loadTabCustomImage]" << "Set Custom Image Path =" << imagepath;
+#endif
+
+    const QString appDir = QCoreApplication::applicationDirPath();
+    const QFileInfo imgInfo(imagepath);
+    const QString imgAbsPath = imgInfo.absoluteFilePath();
+
+    QString pathToLoad;
+    if (imgAbsPath.startsWith(appDir, Qt::CaseInsensitive)) {
+        pathToLoad = QDir(appDir).relativeFilePath(imgAbsPath);
+    } else {
+        pathToLoad = imgAbsPath;
+    }
+
+    const QString loadTarget = QFileInfo(pathToLoad).isRelative() ? QDir(appDir).filePath(pathToLoad) : pathToLoad;
+    QIcon icon_loaded(loadTarget);
+    if (!icon_loaded.isNull()) {
+        imagepath = pathToLoad;
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::loadTabCustomImage] Store path:" << pathToLoad;
+#endif
+    }
+    else {
+#ifdef DEBUG_LOGOUT_ON
+        qDebug() << "[QKeyMapper::loadTabCustomImage] Failed to load image from path:" << pathToLoad;
+#endif
+    }
+
+    return icon_loaded;
+}
+
 QIcon QKeyMapper::setTabCustomImage(int tabindex, QString &imagepath)
 {
     if (tabindex < 0 || tabindex >= s_KeyMappingTabInfoList.size()) {
         return QIcon();
     }
 
-    if (!QFileInfo::exists(imagepath)) {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug().nospace() << "[QKeyMapper::setTabCustomImage]" << " QFileInfo::exists(" << imagepath << ") = false";
-#endif
-        return QIcon();
-    }
-
-#ifdef DEBUG_LOGOUT_ON
-    qDebug() << "[QKeyMapper::setTabCustomImage]" << "Set Custom Image Path =" << imagepath;
-#endif
-
-    // First, try to load the image using the original path
-    QString appDir = QCoreApplication::applicationDirPath();
-    QFileInfo imgInfo(imagepath);
-    QString imgAbsPath = imgInfo.absoluteFilePath();
-
-    QString pathToLoad;
-
-    // Check if the image is in the application directory or its subdirectory, and prepare the relative path
-    if (imgAbsPath.startsWith(appDir, Qt::CaseInsensitive)) {
-        QString relPath = QDir(appDir).relativeFilePath(imgAbsPath);
-        pathToLoad = relPath;
-    } else {
-        pathToLoad = imgAbsPath;
-    }
-
-    // Try to load the image using the converted path
-    QIcon icon_loaded(pathToLoad);
+    QIcon icon_loaded = loadTabCustomImage(imagepath);
     if (!icon_loaded.isNull()) {
-        s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path = pathToLoad;
-        imagepath = pathToLoad;
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper::setTabCustomImage] Store path:" << pathToLoad;
-#endif
-    }
-    else {
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[QKeyMapper::setTabCustomImage] Failed to load image from path:" << pathToLoad;
-#endif
+        s_KeyMappingTabInfoList[tabindex].TabCustomImage_Path = imagepath;
     }
 
     return icon_loaded;
@@ -18577,6 +18632,84 @@ bool QKeyMapper::setMappingTabFloatingWindowSettings(int tabIndex, const TabFloa
     tab.FloatingWindow_Position = QPoint(settings.positionX, settings.positionY);
     tab.FloatingWindow_MousePassThrough = settings.mousePassThrough;
     tab.FloatingWindow_MousePassThroughSwitchKey = settings.mousePassThroughSwitchKey;
+    ++m_AutomationSourceEpoch;
+    requestSaveSettingDirty();
+    return true;
+}
+
+TabCustomImageSettings QKeyMapper::getMappingTabCustomImageSettings(int tabIndex) const
+{
+    TabCustomImageSettings settings;
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
+        return settings;
+    }
+
+    const KeyMappingTab_Info &tab = s_KeyMappingTabInfoList.at(tabIndex);
+    settings.imagePath = tab.TabCustomImage_Path;
+    settings.showPosition = (tab.TabCustomImage_ShowPosition >= QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_MIN
+            && tab.TabCustomImage_ShowPosition <= QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_MAX)
+        ? tab.TabCustomImage_ShowPosition
+        : QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_DEFAULT;
+    settings.padding = (tab.TabCustomImage_Padding >= QKeyMapperConstants::TAB_CUSTOMIMAGE_PADDING_MIN
+            && tab.TabCustomImage_Padding <= QKeyMapperConstants::TAB_CUSTOMIMAGE_PADDING_MAX)
+        ? tab.TabCustomImage_Padding
+        : QKeyMapperConstants::TAB_CUSTOMIMAGE_PADDING_DEFAULT;
+    settings.showAsTrayIcon = tab.TabCustomImage_ShowAsTrayIcon;
+    settings.showAsFloatingWindow = tab.TabCustomImage_ShowAsFloatingWindow;
+    if (tab.TabCustomImage_TrayIconPixel.width() > 0 && tab.TabCustomImage_TrayIconPixel.height() > 0) {
+        settings.trayIconPixel = tab.TabCustomImage_TrayIconPixel;
+    }
+    return settings;
+}
+
+bool QKeyMapper::setMappingTabCustomImageSettings(int tabIndex, const TabCustomImageSettings &settings)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+    if (settings.showPosition < QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_MIN
+        || settings.showPosition > QKeyMapperConstants::TAB_CUSTOMIMAGE_POSITION_MAX
+        || settings.padding < QKeyMapperConstants::TAB_CUSTOMIMAGE_PADDING_MIN
+        || settings.padding > QKeyMapperConstants::TAB_CUSTOMIMAGE_PADDING_MAX) {
+        return false;
+    }
+    if (!settings.trayIconPixel.isEmpty()
+        && (settings.trayIconPixel.width() <= 0 || settings.trayIconPixel.height() <= 0)) {
+        return false;
+    }
+
+    const TabCustomImageSettings before = getMappingTabCustomImageSettings(tabIndex);
+    if (isCommonMappingTabIndex(tabIndex)) {
+        const QSize expectedCommonPixel = settings.imagePath.isEmpty() ? QSize() : before.trayIconPixel;
+        if (settings.showPosition != before.showPosition
+            || settings.padding != before.padding
+            || settings.showAsTrayIcon != before.showAsTrayIcon
+            || settings.showAsFloatingWindow != before.showAsFloatingWindow
+            || settings.trayIconPixel != expectedCommonPixel) {
+            return false;
+        }
+    }
+
+    if (before.imagePath == settings.imagePath
+        && before.showPosition == settings.showPosition
+        && before.padding == settings.padding
+        && before.showAsTrayIcon == settings.showAsTrayIcon
+        && before.showAsFloatingWindow == settings.showAsFloatingWindow
+        && before.trayIconPixel == settings.trayIconPixel) {
+        return false;
+    }
+
+    KeyMappingTab_Info &tab = s_KeyMappingTabInfoList[tabIndex];
+    const bool imageChanged = (tab.TabCustomImage_Path != settings.imagePath);
+    tab.TabCustomImage_Path = settings.imagePath;
+    tab.TabCustomImage_ShowPosition = settings.showPosition;
+    tab.TabCustomImage_Padding = settings.padding;
+    tab.TabCustomImage_ShowAsTrayIcon = settings.showAsTrayIcon;
+    tab.TabCustomImage_ShowAsFloatingWindow = settings.showAsFloatingWindow;
+    tab.TabCustomImage_TrayIconPixel = settings.trayIconPixel;
+    if (imageChanged) {
+        updateKeyMappingTabWidgetTabDisplay(tabIndex);
+    }
     ++m_AutomationSourceEpoch;
     requestSaveSettingDirty();
     return true;
@@ -23105,6 +23238,7 @@ bool QKeyMapper::hasOpenMappingEditor(const QWidget *allowedEditor) const
             && m_ItemSetupDialog->m_CrosshairSetupDialog->isVisible())
         || (m_TableSetupDialog && m_TableSetupDialog->isVisible())
         || (m_TableSetupDialog && m_TableSetupDialog->isFloatingWindowSetupDialogVisible())
+        || (m_TableSetupDialog && m_TableSetupDialog->isSelectImageFileDialogVisible())
         || (m_MacroListDialog && m_MacroListDialog->isVisible())
         || (m_MappingSequenceEdit && m_MappingSequenceEdit->isVisible())
         || (m_MappingAdvancedDialog && m_MappingAdvancedDialog != allowedEditor && m_MappingAdvancedDialog->isVisible());
@@ -37000,7 +37134,8 @@ void QKeyMapper::updateKeyMappingTabWidgetTabDisplay(int tabindex)
     // ui->keyMappingTabWidget->tabBar()->setTabTextColor(tabindex, tab_color);
     QIcon icon_loaded;
     if (!tab_customimage_path.isEmpty()) {
-        icon_loaded = QIcon(tab_customimage_path);
+        const QString resolvedImagePath = resolveExistingTabCustomImagePath(tab_customimage_path);
+        icon_loaded = QIcon(resolvedImagePath.isEmpty() ? tab_customimage_path : resolvedImagePath);
     }
     ui->keyMappingTabWidget->tabBar()->setTabIcon(tabindex, icon_loaded);
 
@@ -38590,6 +38725,169 @@ static bool tabFloatingWindowSettingsEqual(
         && a.mousePassThroughSwitchKey == b.mousePassThroughSwitchKey;
 }
 
+static QString formatTabCustomImagePixel(const QSize &size)
+{
+    if (size.width() > 0 && size.height() > 0) {
+        return QStringLiteral("%1x%2").arg(size.width()).arg(size.height());
+    }
+    return QStringLiteral("default");
+}
+
+static bool parseTabCustomImagePixel(const QString &text, QSize &out)
+{
+    if (text == QLatin1String("default")) {
+        out = QSize();
+        return true;
+    }
+    const QStringList parts = text.split(QLatin1Char('x'));
+    if (parts.size() != 2) {
+        return false;
+    }
+    bool okW = false;
+    bool okH = false;
+    const int w = parts.at(0).toInt(&okW);
+    const int h = parts.at(1).toInt(&okH);
+    if (!okW || !okH || w <= 0 || h <= 0) {
+        return false;
+    }
+    out = QSize(w, h);
+    return true;
+}
+
+static bool resolveSafeInAppTabCustomImagePath(
+    const QString &rawRelativePath, QString &normalizedRelOut, QString &errorOut)
+{
+    if (rawRelativePath.isEmpty()) {
+        normalizedRelOut.clear();
+        return true;
+    }
+
+    QString norm = rawRelativePath;
+    norm.replace(QLatin1Char('\\'), QLatin1Char('/'));
+    if (norm.size() > 260 || norm.contains(QLatin1Char(':')) || norm.startsWith(QLatin1Char('/'))) {
+        errorOut = QStringLiteral("custom_image.image_path must be a relative path inside the application directory.");
+        return false;
+    }
+    const QStringList parts = norm.split(QLatin1Char('/'), Qt::KeepEmptyParts);
+    for (const QString &part : parts) {
+        if (part.isEmpty() || part == QLatin1String(".") || part == QLatin1String("..")) {
+            errorOut = QStringLiteral("custom_image.image_path must not contain empty or traversal segments.");
+            return false;
+        }
+    }
+    const QString lower = norm.toLower();
+    if (!lower.endsWith(QLatin1String(".ico"))
+        && !lower.endsWith(QLatin1String(".png"))
+        && !lower.endsWith(QLatin1String(".svg"))) {
+        errorOut = QStringLiteral("custom_image.image_path must end with .ico, .png, or .svg.");
+        return false;
+    }
+
+    const QString appDirRaw = QCoreApplication::applicationDirPath();
+    const QString appDirCanonical = QFileInfo(appDirRaw).canonicalFilePath();
+    if (appDirCanonical.isEmpty()) {
+        errorOut = QStringLiteral("Application directory could not be resolved.");
+        return false;
+    }
+    QString appPrefix = appDirCanonical;
+    if (!appPrefix.endsWith(QLatin1Char('/'))) {
+        appPrefix.append(QLatin1Char('/'));
+    }
+
+    const QString candidatePath = QDir(appDirRaw).filePath(norm);
+    const QFileInfo info(candidatePath);
+    if (!info.exists() || !info.isFile() || info.isSymLink()) {
+        errorOut = QStringLiteral("custom_image.image_path does not point to an existing regular image file.");
+        return false;
+    }
+
+    const QString canonicalFile = info.canonicalFilePath();
+    if (canonicalFile.isEmpty() || !canonicalFile.startsWith(appPrefix, Qt::CaseInsensitive)) {
+        errorOut = QStringLiteral("custom_image.image_path must stay inside the application directory.");
+        return false;
+    }
+
+    const QIcon icon(canonicalFile);
+    const QPixmap testPixmap = icon.isNull()
+        ? QPixmap()
+        : icon.pixmap(QSize(QKeyMapperConstants::TAB_CUSTOMIMAGE_WIDTH_DEFAULT, QKeyMapperConstants::TAB_CUSTOMIMAGE_HEIGHT_DEFAULT));
+    if (icon.isNull() || testPixmap.isNull()) {
+        errorOut = QStringLiteral("Unable to load custom_image.image_path as a valid image.");
+        return false;
+    }
+
+    normalizedRelOut = QDir(appDirCanonical).relativeFilePath(canonicalFile);
+    return true;
+}
+
+static QJsonObject automationTabCustomImage(const TabCustomImageSettings &s, const QList<QSize> &availableSizes)
+{
+    QJsonArray pixels;
+    for (const QSize &sz : availableSizes) {
+        pixels.append(formatTabCustomImagePixel(sz));
+    }
+    return {
+        {QStringLiteral("has_image"), !s.imagePath.isEmpty()},
+        {QStringLiteral("image_path"), s.imagePath},
+        {QStringLiteral("available_tray_icon_pixels"), pixels},
+        {QStringLiteral("show_position"), s.showPosition},
+        {QStringLiteral("padding"), s.padding},
+        {QStringLiteral("show_as_tray_icon"), s.showAsTrayIcon},
+        {QStringLiteral("show_as_floating_window"), s.showAsFloatingWindow},
+        {QStringLiteral("tray_icon_pixel"), formatTabCustomImagePixel(s.trayIconPixel)},
+    };
+}
+
+static bool tabCustomImageSettingsEqual(const TabCustomImageSettings &a, const TabCustomImageSettings &b)
+{
+    return a.imagePath == b.imagePath
+        && a.showPosition == b.showPosition
+        && a.padding == b.padding
+        && a.showAsTrayIcon == b.showAsTrayIcon
+        && a.showAsFloatingWindow == b.showAsFloatingWindow
+        && a.trayIconPixel == b.trayIconPixel;
+}
+
+static bool mergeAndValidateTabCustomImageUpdate(
+    const TabCustomImageSettings &before, const QkmAutomation::TabCustomImageUpdate &u,
+    TabCustomImageSettings &afterOut, QList<QSize> &afterSizesOut, QString &errorOut)
+{
+    afterOut = before;
+    if (u.imagePath) {
+        if (u.imagePath->isEmpty()) {
+            afterOut.imagePath.clear();
+        } else {
+            QString normalizedRel;
+            if (!resolveSafeInAppTabCustomImagePath(*u.imagePath, normalizedRel, errorOut)) {
+                return false;
+            }
+            afterOut.imagePath = normalizedRel;
+        }
+    }
+    afterSizesOut = QKeyMapper::sortedTabCustomImageAvailableSizes(afterOut.imagePath);
+    if (u.showPosition) afterOut.showPosition = *u.showPosition;
+    if (u.padding) afterOut.padding = *u.padding;
+    if (u.showAsTrayIcon) afterOut.showAsTrayIcon = *u.showAsTrayIcon;
+    if (u.showAsFloatingWindow) afterOut.showAsFloatingWindow = *u.showAsFloatingWindow;
+    if (u.trayIconPixel) {
+        QSize requestedPixel;
+        if (!parseTabCustomImagePixel(*u.trayIconPixel, requestedPixel)) {
+            errorOut = QStringLiteral("custom_image.tray_icon_pixel must be \"default\" or \"<W>x<H>\".");
+            return false;
+        }
+        if (!requestedPixel.isEmpty() && !afterSizesOut.contains(requestedPixel)) {
+            errorOut = QStringLiteral("custom_image.tray_icon_pixel must be \"default\" or one of the active image available_tray_icon_pixels.");
+            return false;
+        }
+        afterOut.trayIconPixel = requestedPixel;
+    } else if (afterOut.imagePath.isEmpty()) {
+        afterOut.trayIconPixel = QSize();
+    } else if (afterOut.imagePath != before.imagePath && !afterOut.trayIconPixel.isEmpty() && !afterSizesOut.contains(afterOut.trayIconPixel)) {
+        afterOut.trayIconPixel = QSize();
+    }
+    return true;
+}
+
 static QJsonObject automationCrosshair(const MappingCrosshairSettings &s)
 {
     return {
@@ -38879,6 +39177,16 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
         fwObj.insert(QStringLiteral("editable"), !isCommonMappingTab(tab));
         fwObj.insert(QStringLiteral("show_as_floating_window"), tab.TabCustomImage_ShowAsFloatingWindow);
         result.insert(QStringLiteral("tab_floating_window"), fwObj);
+    }
+    {
+        const TabCustomImageSettings img = getMappingTabCustomImageSettings(s_KeyMappingTabWidgetCurrentIndex);
+        QJsonObject imgObj = automationTabCustomImage(img, sortedTabCustomImageAvailableSizes(img.imagePath));
+        imgObj.insert(QStringLiteral("tab_index"), s_KeyMappingTabWidgetCurrentIndex);
+        imgObj.insert(QStringLiteral("tab_name"), tab.TabName);
+        imgObj.insert(QStringLiteral("is_common"), isCommonMappingTab(tab));
+        imgObj.insert(QStringLiteral("editable_image"), true);
+        imgObj.insert(QStringLiteral("editable_display"), !isCommonMappingTab(tab));
+        result.insert(QStringLiteral("tab_custom_image"), imgObj);
     }
     if (m_Gyro2MouseOptionDialog) {
         result.insert(QStringLiteral("gyro2mouse_options"), automationGyro2MouseOptions(
@@ -41229,6 +41537,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingTabNotificationColors = updating
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool changingTabFloatingWindow = updating && update.tabFloatingWindow.has_value();
+        const bool changingTabCustomImage = updating && update.tabCustomImage.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
@@ -41239,7 +41548,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
-        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || addingBlankTab || copyingTab || removingTabData
+        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel
@@ -41274,9 +41583,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && !changingWindowDisplayMode && !changingKey2Mouse && !changingGyro2MouseOptions && !changingGamepadThresholds && !changingGamepadTouchpad && !changingAcceptVirtualGamepadInput && !changingVButtonPanel
             && !changingGeneralNotificationStyle && !changingCustomNotificationStyle && !changingTrayIcons && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
-            && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale
+            && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale && !changingTabCustomImage
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
+            return;
+        }
+        if (changingTabCustomImage && isCommonMappingTabIndex(tab)
+            && (update.tabCustomImage->showPosition.has_value()
+                || update.tabCustomImage->padding.has_value()
+                || update.tabCustomImage->showAsTrayIcon.has_value()
+                || update.tabCustomImage->showAsFloatingWindow.has_value()
+                || update.tabCustomImage->trayIconPixel.has_value())) {
+            reject(QStringLiteral("unsupported_capability"),
+                QStringLiteral("Tab custom image display options require a normal Tab; only image_path is editable on the Common Tab."));
             return;
         }
         if (changingDisplayScale && (!ui || !ui->scaleComboBox || !ui->scaleComboBox->isEnabled())) {
@@ -42104,6 +42423,21 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("after"), automationTabFloatingWindow(after)},
                     {QStringLiteral("show_as_floating_window"), tabInfo.TabCustomImage_ShowAsFloatingWindow},
                     {QStringLiteral("persisted"), false}};
+            } else if (changingTabCustomImage) {
+                const TabCustomImageSettings before = getMappingTabCustomImageSettings(tab);
+                const QList<QSize> beforeSizes = sortedTabCustomImageAvailableSizes(before.imagePath);
+                TabCustomImageSettings after;
+                QList<QSize> afterSizes;
+                QString imageError;
+                if (!mergeAndValidateTabCustomImageUpdate(before, *update.tabCustomImage, after, afterSizes, imageError)) {
+                    reject(QStringLiteral("invalid_arguments"), imageError);
+                    return;
+                }
+                modified = !tabCustomImageSettingsEqual(before, after);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_tab_custom_image")},
+                    {QStringLiteral("before"), automationTabCustomImage(before, beforeSizes)},
+                    {QStringLiteral("after"), automationTabCustomImage(after, afterSizes)},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingTabNotification) {
                 modified = tabInfo.TabHideNotification != *update.tabNotificationMode;
                 change = {{QStringLiteral("kind"), QStringLiteral("set_tab_notification_mode")},
@@ -42522,6 +42856,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : filteringCategories ? QStringLiteral("tab.set_category_filter")
             : changingTabNotificationColors ? QStringLiteral("tab.set_notification_colors")
             : changingTabFloatingWindow ? QStringLiteral("tab.set_floating_window")
+            : changingTabCustomImage ? QStringLiteral("tab.set_custom_image")
             : changingTabNotification ? QStringLiteral("tab.set_notification_mode")
             : changingTabHotkey ? QStringLiteral("tab.set_hotkey")
             : renamingTab ? QStringLiteral("tab.rename")
@@ -42804,6 +43139,19 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 if (!setMappingTabFloatingWindowSettings(tab, after)) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab no longer accepts floating window changes."));
+                    return;
+                }
+            } else if (changingTabCustomImage) {
+                const TabCustomImageSettings before = getMappingTabCustomImageSettings(tab);
+                TabCustomImageSettings after;
+                QList<QSize> afterSizes;
+                QString imageError;
+                if (!mergeAndValidateTabCustomImageUpdate(before, *update.tabCustomImage, after, afterSizes, imageError)) {
+                    reject(QStringLiteral("invalid_arguments"), imageError);
+                    return;
+                }
+                if (!tabCustomImageSettingsEqual(before, after) && !setMappingTabCustomImageSettings(tab, after)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current Tab no longer accepts custom image changes."));
                     return;
                 }
             } else if (changingTabNotification) {

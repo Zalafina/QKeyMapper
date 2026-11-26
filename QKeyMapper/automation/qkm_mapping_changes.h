@@ -111,6 +111,15 @@ struct TabFloatingWindowUpdate {
     std::optional<QString> mousePassThroughSwitchKey;
 };
 
+struct TabCustomImageUpdate {
+    std::optional<QString> imagePath;
+    std::optional<int> showPosition;
+    std::optional<int> padding;
+    std::optional<bool> showAsTrayIcon;
+    std::optional<bool> showAsFloatingWindow;
+    std::optional<QString> trayIconPixel;
+};
+
 struct MappingCrosshairUpdate {
     std::optional<QString> centerColor;
     std::optional<int> centerSize;
@@ -193,6 +202,7 @@ struct MappingUpdateArguments {
     std::optional<NotificationStyleUpdate> customNotificationStyle;
     std::optional<TrayIconsUpdate> trayIcons;
     std::optional<TabFloatingWindowUpdate> tabFloatingWindow;
+    std::optional<TabCustomImageUpdate> tabCustomImage;
     std::optional<MappingCrosshairUpdate> crosshair;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
