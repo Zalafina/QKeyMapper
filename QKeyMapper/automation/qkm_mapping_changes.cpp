@@ -391,6 +391,47 @@ bool parseNotificationStyleUpdate(const QJsonObject &arguments,
     }
     return true;
 }
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+bool parseTrayIconsUpdate(const QJsonObject &arguments, TrayIconsUpdate &trayOut, const char *&errorOut)
+{
+    const auto fail = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const auto raw = arguments.value(QStringLiteral("tray_icons"));
+    const auto fields = raw.toObject();
+    if (!raw.isObject() || fields.isEmpty())
+        return fail("Provide at least one tray_icons state field (idle, monitoring, global, matched).");
+    const QSet<QString> allowedFields{
+        QStringLiteral("idle"), QStringLiteral("monitoring"),
+        QStringLiteral("global"), QStringLiteral("matched")};
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        if (!allowedFields.contains(it.key()))
+            return fail("Unknown tray_icons field.");
+    }
+    const auto parseIconName = [&](const QString &key, std::optional<QString> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        if (!val.isString()) return false;
+        const QString s = val.toString();
+        if (s.isEmpty() || s.size() > 255 || s.contains(QChar(0))
+            || s.contains(QLatin1Char('\r')) || s.contains(QLatin1Char('\n'))) {
+            return false;
+        }
+        target = s;
+        return true;
+    };
+    if (!parseIconName(QStringLiteral("idle"), trayOut.idle)
+        || !parseIconName(QStringLiteral("monitoring"), trayOut.monitoring)
+        || !parseIconName(QStringLiteral("global"), trayOut.global)
+        || !parseIconName(QStringLiteral("matched"), trayOut.matched)) {
+        return fail("Each tray icon entry must be a non-empty single-line string of at most 255 characters.");
+    }
+    return true;
+}
 }
 
 const char *mappingRowMoveAction(MappingRowMove move)
@@ -782,6 +823,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool vbuttonPanelPreview = preview && action == QLatin1String("configuration.set_vbutton_panel_settings");
     const bool generalNotificationStylePreview = preview && action == QLatin1String("general.set_notification_style");
     const bool customNotificationStylePreview = preview && action == QLatin1String("configuration.set_custom_notification_style");
+    const bool trayIconsPreview = preview && action == QLatin1String("general.set_tray_icons");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -806,7 +848,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview
-        || generalNotificationStylePreview || customNotificationStylePreview || processIconTrayPreview
+        || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -835,6 +877,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : acceptVirtualGamepadInputPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("accept_virtual_gamepad_input")}
         : vbuttonPanelPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("vbutton_panel")}
         : (generalNotificationStylePreview || customNotificationStylePreview) ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("notification_style")}
+        : trayIconsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tray_icons")}
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
         : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
@@ -1035,6 +1078,14 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             } else {
                 result.update.customNotificationStyle = parsedStyle;
             }
+        }
+        if (trayIconsPreview) {
+            const char *parseError = nullptr;
+            TrayIconsUpdate parsedTray;
+            if (!parseTrayIconsUpdate(arguments, parsedTray, parseError)) {
+                return fail(parseError);
+            }
+            result.update.trayIcons = parsedTray;
         }
         if (processIconTrayPreview) {
             const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
@@ -1910,6 +1961,36 @@ void appendNotificationStyleCapabilities(QJsonArray &capabilities, const Capabil
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendTrayIconCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    const QJsonObject iconEntrySchema = CapabilitySchemaContext::string(QStringLiteral("^[^\\u0000\\r\\n]+$"), 255);
+    const QJsonObject trayIconsSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("idle"), iconEntrySchema},
+            {QStringLiteral("monitoring"), iconEntrySchema},
+            {QStringLiteral("global"), iconEntrySchema},
+            {QStringLiteral("matched"), iconEntrySchema}}}};
+    auto trayPreview = CapabilitySchemaContext::capability("general.set_tray_icons.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_tray_icons")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("tray_icons"), trayIconsSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("tray_icons")}));
+    auto trayApply = CapabilitySchemaContext::capability("general.set_tray_icons.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&trayPreview, &trayApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("general_settings_scope"),
+            QStringLiteral("builtin_or_existing_custom_trayicons_only"), QStringLiteral("no_external_file_import"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -2041,6 +2122,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     }
     appendVButtonPanelCapabilities(capabilities, ctx);
     appendNotificationStyleCapabilities(capabilities, ctx);
+    appendTrayIconCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

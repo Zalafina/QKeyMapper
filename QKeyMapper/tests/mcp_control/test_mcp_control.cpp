@@ -1092,9 +1092,9 @@ __declspec(noinline)
 #endif
 static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabilities)
 {
-    QCOMPARE(capabilities.size(), 134);
+    QCOMPARE(capabilities.size(), 136);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 126);
+    QCOMPARE(demoCapabilities.size(), 128);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1137,8 +1137,10 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QCOMPARE(capabilities.at(124).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_notification_style.apply"));
     QCOMPARE(capabilities.at(125).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification_style.preview"));
     QCOMPARE(capabilities.at(126).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_custom_notification_style.apply"));
-    QCOMPARE(capabilities.at(131).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(132).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(127).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_tray_icons.preview"));
+    QCOMPARE(capabilities.at(128).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_tray_icons.apply"));
+    QCOMPARE(capabilities.at(133).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(134).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_gyro2mouse_options.apply");
     }));
@@ -1159,6 +1161,9 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_custom_notification_style.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("general.set_tray_icons.apply");
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
@@ -1601,6 +1606,41 @@ static void verifyCapabilityListContracts()
     const auto operation = capabilities.last().toObject();
     QCOMPARE(operation.value(QStringLiteral("required_scopes")).toInt(), int(Read));
     QVERIFY(!operation.value(QStringLiteral("limitations")).toArray().contains(QStringLiteral("idle_after_cleanup")));
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyTrayIconsValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    const auto validateTray = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("general.set_tray_icons")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("tray_icons"), fields}});
+    };
+    const auto valid = validateTray({
+        {QStringLiteral("idle"), QStringLiteral(":/Black.ico")},
+        {QStringLiteral("monitoring"), QStringLiteral("default")},
+        {QStringLiteral("global"), QStringLiteral("custom_trayicons/mcp.ico")},
+        {QStringLiteral("matched"), QStringLiteral(":/Yellow.ico")},
+    });
+    QVERIFY(valid.ok() && valid.update.trayIcons.has_value());
+    QCOMPARE(valid.update.trayIcons->idle, std::optional<QString>(QStringLiteral(":/Black.ico")));
+    QCOMPARE(valid.update.trayIcons->monitoring, std::optional<QString>(QStringLiteral("default")));
+    QCOMPARE(valid.update.trayIcons->global, std::optional<QString>(QStringLiteral("custom_trayicons/mcp.ico")));
+    QCOMPARE(valid.update.trayIcons->matched, std::optional<QString>(QStringLiteral(":/Yellow.ico")));
+    for (const QJsonObject &bad : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("idle"), QString()}},
+        QJsonObject{{QStringLiteral("monitoring"), QStringLiteral("a\nb")}},
+        QJsonObject{{QStringLiteral("global"), QString(256, QLatin1Char('a'))}},
+        QJsonObject{{QStringLiteral("matched"), 123}},
+        QJsonObject{{QStringLiteral("idle"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("idle"), QStringLiteral("default")}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!validateTray(bad).ok());
+    }
 }
 
 void McpControlTest::mappingChangeArguments()
@@ -2290,6 +2330,7 @@ void McpControlTest::mappingChangeArguments()
     if (QTest::currentTestFailed()) return;
 
     verifyNotificationStyleValidation(previewMethod, input);
+    verifyTrayIconsValidation(previewMethod, input);
     verifyWindowAndTrayArgumentsValidation(previewMethod, input);
     if (QTest::currentTestFailed()) return;
 

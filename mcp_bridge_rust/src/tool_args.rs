@@ -680,6 +680,27 @@ struct NotificationStyleSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct TrayIconsFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    idle: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    monitoring: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    global: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    matched: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct TrayIconsSettings {
+    action: String,
+    source_tab_ref: String,
+    tray_icons: TrayIconsFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1421,6 +1442,33 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && f.opacity.is_none_or(valid_opacity)
                             && f.x_offset.is_none_or(|n| (-5000..=5000).contains(&n))
                             && f.y_offset.is_none_or(|n| (-5000..=5000).contains(&n))
+                    });
+                }
+                Some("general.set_tray_icons") => {
+                    if arguments
+                        .get("tray_icons")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &TrayIconsSettings| {
+                        let f = &v.tray_icons;
+                        let any_set = f.idle.is_some()
+                            || f.monitoring.is_some()
+                            || f.global.is_some()
+                            || f.matched.is_some();
+                        let valid_icon = |s: &str| {
+                            !s.is_empty()
+                                && s.encode_utf16().count() <= 255
+                                && !s.chars().any(|c| matches!(c, '\0' | '\r' | '\n'))
+                        };
+                        tab_ref(&v.source_tab_ref)
+                            && any_set
+                            && f.idle.as_deref().is_none_or(valid_icon)
+                            && f.monitoring.as_deref().is_none_or(valid_icon)
+                            && f.global.as_deref().is_none_or(valid_icon)
+                            && f.matched.as_deref().is_none_or(valid_icon)
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -2624,6 +2672,47 @@ mod tests {
             ] {
                 assert!(preview(&json!({"action": action, "source_tab_ref": tab, "notification_style": bad})).is_err());
             }
+        }
+    }
+
+    #[test]
+    fn general_tray_icons_checks_constraints() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let full = json!({
+            "action": "general.set_tray_icons",
+            "source_tab_ref": tab,
+            "tray_icons": {
+                "idle": ":/Black.ico",
+                "monitoring": "default",
+                "global": "custom_trayicons/custom.ico",
+                "matched": ":/Yellow.ico",
+            }
+        });
+        assert_eq!(preview(&full).unwrap(), *full.as_object().unwrap());
+
+        for field in ["idle", "monitoring", "global", "matched"] {
+            let subset = json!({
+                "action": "general.set_tray_icons",
+                "source_tab_ref": tab,
+                "tray_icons": {field: ":/Blue1.ico"}
+            });
+            assert_eq!(preview(&subset).unwrap(), *subset.as_object().unwrap());
+        }
+
+        for bad in [
+            json!({}),
+            json!({"idle": ""}),
+            json!({"monitoring": null}),
+            json!({"global": ":/Black.ico\n"}),
+            json!({"matched": ":/Black.ico\r"}),
+            json!({"idle": ":/Black.ico\0"}),
+            json!({"idle": "A".repeat(256)}),
+            json!({"idle": 123}),
+            json!({"idle": ":/Black.ico", "extra": 1}),
+        ] {
+            assert!(preview(&json!({"action": "general.set_tray_icons", "source_tab_ref": tab, "tray_icons": bad})).is_err());
         }
     }
 

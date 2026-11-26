@@ -23,9 +23,23 @@ public:
         return m_instance;
     }
 
+    struct TrayIconSelections {
+        QString idle;
+        QString monitoring;
+        QString global;
+        QString matched;
+    };
+
+    static const QStringList &builtinTrayIcons(void);
+    QStringList availableCustomTrayIcons(void) const;
+    QStringList availableTrayIcons(void) const;
+
     void initTrayIconComboBoxes(void);
     void appendCustomTrayIconsFromDir(const QString &dir);
     void setUILanguage(int languageindex);
+
+    TrayIconSelections getTrayIconSelections(void) const;
+    bool applyTrayIconSelections(const TrayIconSelections &selections);
 
     QString getTrayIcon_IdleStateIcon(void);
     QString getTrayIcon_MonitoringStateIcon(void);

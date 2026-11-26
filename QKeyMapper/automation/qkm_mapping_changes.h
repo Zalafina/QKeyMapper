@@ -92,6 +92,13 @@ struct NotificationStyleUpdate {
     std::optional<int> yOffset;
 };
 
+struct TrayIconsUpdate {
+    std::optional<QString> idle;
+    std::optional<QString> monitoring;
+    std::optional<QString> global;
+    std::optional<QString> matched;
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -155,6 +162,7 @@ struct MappingUpdateArguments {
     std::optional<VButtonPanelUpdate> vbuttonPanel;
     std::optional<NotificationStyleUpdate> generalNotificationStyle;
     std::optional<NotificationStyleUpdate> customNotificationStyle;
+    std::optional<TrayIconsUpdate> trayIcons;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

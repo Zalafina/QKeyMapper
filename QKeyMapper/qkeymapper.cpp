@@ -38312,6 +38312,23 @@ static NotificationStyleSettings mergeNotificationStyleSettings(NotificationStyl
     return target;
 }
 
+static QJsonObject automationTrayIcons(const QTrayIconSelectDialog::TrayIconSelections &s)
+{
+    return {
+        {QStringLiteral("idle"), s.idle},
+        {QStringLiteral("monitoring"), s.monitoring},
+        {QStringLiteral("global"), s.global},
+        {QStringLiteral("matched"), s.matched},
+    };
+}
+
+static bool resolveTrayIconSelection(const QString &raw, const QString &defaultPath,
+    const QSet<QString> &available, QString &resolvedOut)
+{
+    resolvedOut = (raw == QLatin1String("default")) ? defaultPath : raw;
+    return available.contains(resolvedOut);
+}
+
 static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QString &screenKey)
 {
     return {{QStringLiteral("window_point_key"), windowKey},
@@ -38511,6 +38528,19 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             notificationStyles.insert(QStringLiteral("custom"), customStyle);
         }
         result.insert(QStringLiteral("notification_styles"), notificationStyles);
+    }
+    if (m_TrayIconSelectDialog) {
+        QJsonObject trayObj = automationTrayIcons(m_TrayIconSelectDialog->getTrayIconSelections());
+        trayObj.insert(QStringLiteral("defaults"), QJsonObject{
+            {QStringLiteral("idle"), QString::fromLatin1(QKeyMapperConstants::TRAYICON_IDLE_DEFAULT_FILE)},
+            {QStringLiteral("monitoring"), QString::fromLatin1(QKeyMapperConstants::TRAYICON_MONITORING_DEFAULT_FILE)},
+            {QStringLiteral("global"), QString::fromLatin1(QKeyMapperConstants::TRAYICON_GLOBAL_DEFAULT_FILE)},
+            {QStringLiteral("matched"), QString::fromLatin1(QKeyMapperConstants::TRAYICON_MATCHED_DEFAULT_FILE)},
+        });
+        trayObj.insert(QStringLiteral("custom_dir"), QString::fromLatin1(QKeyMapperConstants::CUSTOM_TRAYICONS_DIR));
+        trayObj.insert(QStringLiteral("available_icons"), QJsonArray::fromStringList(m_TrayIconSelectDialog->availableTrayIcons()));
+        trayObj.insert(QStringLiteral("custom_icons"), QJsonArray::fromStringList(m_TrayIconSelectDialog->availableCustomTrayIcons()));
+        result.insert(QStringLiteral("tray_icons"), trayObj);
     }
     if (m_Gyro2MouseOptionDialog) {
         result.insert(QStringLiteral("gyro2mouse_options"), automationGyro2MouseOptions(
@@ -40844,6 +40874,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingVButtonPanel = updating && update.vbuttonPanel.has_value();
         const bool changingGeneralNotificationStyle = updating && update.generalNotificationStyle.has_value();
         const bool changingCustomNotificationStyle = updating && update.customNotificationStyle.has_value();
+        const bool changingTrayIcons = updating && update.trayIcons.has_value();
         const bool changingProcessIconAsTrayIcon = updating && update.processIconAsTrayIcon.has_value();
         const bool changingPointDisplayKeys = updating
             && (update.showWindowPointKey.has_value() || update.showScreenPointKey.has_value());
@@ -40873,7 +40904,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel
-            || changingGeneralNotificationStyle || changingCustomNotificationStyle || changingProcessIconAsTrayIcon || changingPointDisplayKeys
+            || changingGeneralNotificationStyle || changingCustomNotificationStyle || changingTrayIcons || changingProcessIconAsTrayIcon || changingPointDisplayKeys
             || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingDisplayScale;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
@@ -40894,14 +40925,15 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || (changingGyro2MouseOptions && (!m_Gyro2MouseOptionDialog || m_Gyro2MouseOptionDialog->isVisible()))
             || (changingVButtonPanel && (!m_VButtonPanel || !m_VButtonPanelSetupDialog || m_VButtonPanelSetupDialog->isVisible()))
             || (changingGeneralNotificationStyle && (!m_NotificationSetupDialog || m_NotificationSetupDialog->isVisible()))
-            || (changingCustomNotificationStyle && (!m_MappingAdvancedDialog || !m_CustomNotificationSetupDialog || !m_NotificationSetupDialog || m_CustomNotificationSetupDialog->isVisible()))) {
+            || (changingCustomNotificationStyle && (!m_MappingAdvancedDialog || !m_CustomNotificationSetupDialog || !m_NotificationSetupDialog || m_CustomNotificationSetupDialog->isVisible()))
+            || (changingTrayIcons && (!m_TrayIconSelectDialog || m_TrayIconSelectDialog->isVisible()))) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
             && !changingWindowDisplayMode && !changingKey2Mouse && !changingGyro2MouseOptions && !changingGamepadThresholds && !changingGamepadTouchpad && !changingAcceptVirtualGamepadInput && !changingVButtonPanel
-            && !changingGeneralNotificationStyle && !changingCustomNotificationStyle && !changingProcessIconAsTrayIcon
+            && !changingGeneralNotificationStyle && !changingCustomNotificationStyle && !changingTrayIcons && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale
             && isCommonMappingTabIndex(tab)) {
@@ -41388,6 +41420,26 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("after"), automationNotificationStyle(after)},
                     {QStringLiteral("style_initialized_before"), m_CustomNotificationStyleInitialized},
                     {QStringLiteral("initializes_from_global_style"), willInitFromGlobal},
+                    {QStringLiteral("persisted"), false}};
+            } else if (changingTrayIcons) {
+                const QTrayIconSelectDialog::TrayIconSelections before = m_TrayIconSelectDialog->getTrayIconSelections();
+                const QStringList availableList = m_TrayIconSelectDialog->availableTrayIcons();
+                const QSet<QString> availableSet(availableList.begin(), availableList.end());
+                QTrayIconSelectDialog::TrayIconSelections after = before;
+                if ((update.trayIcons->idle && !resolveTrayIconSelection(*update.trayIcons->idle, QString::fromLatin1(TRAYICON_IDLE_DEFAULT_FILE), availableSet, after.idle))
+                    || (update.trayIcons->monitoring && !resolveTrayIconSelection(*update.trayIcons->monitoring, QString::fromLatin1(TRAYICON_MONITORING_DEFAULT_FILE), availableSet, after.monitoring))
+                    || (update.trayIcons->global && !resolveTrayIconSelection(*update.trayIcons->global, QString::fromLatin1(TRAYICON_GLOBAL_DEFAULT_FILE), availableSet, after.global))
+                    || (update.trayIcons->matched && !resolveTrayIconSelection(*update.trayIcons->matched, QString::fromLatin1(TRAYICON_MATCHED_DEFAULT_FILE), availableSet, after.matched))) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("Tray icon must be \"default\", a built-in icon resource, or a valid .ico file in custom_trayicons."));
+                    return;
+                }
+                modified = (before.idle != after.idle) || (before.monitoring != after.monitoring)
+                    || (before.global != after.global) || (before.matched != after.matched);
+                target.insert(QStringLiteral("scope"), QStringLiteral("general"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_tray_icons")},
+                    {QStringLiteral("before"), automationTrayIcons(before)},
+                    {QStringLiteral("after"), automationTrayIcons(after)},
                     {QStringLiteral("persisted"), false}};
             } else if (changingProcessIconAsTrayIcon) {
                 const bool before = m_MappingAdvancedDialog->getProcessIconAsTrayIcon();
@@ -42093,6 +42145,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingVButtonPanel ? QStringLiteral("configuration.set_vbutton_panel_settings")
             : changingGeneralNotificationStyle ? QStringLiteral("general.set_notification_style")
             : changingCustomNotificationStyle ? QStringLiteral("configuration.set_custom_notification_style")
+            : changingTrayIcons ? QStringLiteral("general.set_tray_icons")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -42250,6 +42303,26 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 const NotificationStyleSettings after = mergeNotificationStyleSettings(before, *update.customNotificationStyle);
                 if (!notificationStyleSettingsEqual(before, after)) {
                     m_CustomNotificationSetupDialog->applyNotificationSettings(after);
+                }
+            } else if (changingTrayIcons) {
+                const QTrayIconSelectDialog::TrayIconSelections before = m_TrayIconSelectDialog->getTrayIconSelections();
+                const QStringList availableList = m_TrayIconSelectDialog->availableTrayIcons();
+                const QSet<QString> availableSet(availableList.begin(), availableList.end());
+                QTrayIconSelectDialog::TrayIconSelections after = before;
+                if ((update.trayIcons->idle && !resolveTrayIconSelection(*update.trayIcons->idle, QString::fromLatin1(TRAYICON_IDLE_DEFAULT_FILE), availableSet, after.idle))
+                    || (update.trayIcons->monitoring && !resolveTrayIconSelection(*update.trayIcons->monitoring, QString::fromLatin1(TRAYICON_MONITORING_DEFAULT_FILE), availableSet, after.monitoring))
+                    || (update.trayIcons->global && !resolveTrayIconSelection(*update.trayIcons->global, QString::fromLatin1(TRAYICON_GLOBAL_DEFAULT_FILE), availableSet, after.global))
+                    || (update.trayIcons->matched && !resolveTrayIconSelection(*update.trayIcons->matched, QString::fromLatin1(TRAYICON_MATCHED_DEFAULT_FILE), availableSet, after.matched))) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("Tray icon must be \"default\", a built-in icon resource, or a valid .ico file in custom_trayicons."));
+                    return;
+                }
+                const bool changed = (before.idle != after.idle) || (before.monitoring != after.monitoring)
+                    || (before.global != after.global) || (before.matched != after.matched);
+                if (changed && !m_TrayIconSelectDialog->applyTrayIconSelections(after)) {
+                    reject(QStringLiteral("context_busy"),
+                        QStringLiteral("The tray icon selector could not apply the selected tray icons."));
+                    return;
                 }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);

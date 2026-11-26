@@ -63,6 +63,148 @@ void QTrayIconSelectDialog::initSelectTrayIconFileDialog()
     // m_SelectTrayIconFileDialog->setDirectory(QDir());
 }
 
+const QStringList &QTrayIconSelectDialog::builtinTrayIcons()
+{
+    static const QStringList list{
+        ":/Black.ico",
+        ":/Blue1.ico",
+        ":/Blue2.ico",
+        ":/Cyan.ico",
+        ":/Gray1.ico",
+        ":/Gray2.ico",
+        ":/Green1.ico",
+        ":/Green2.ico",
+        ":/Orange.ico",
+        ":/Pink.ico",
+        ":/Purple.ico",
+        ":/Red.ico",
+        ":/White.ico",
+        ":/Yellow.ico",
+        ":/Tray_Q1_01_Blue.ico",
+        ":/Tray_Q1_02_SkyBlue.ico",
+        ":/Tray_Q1_03_Cyan.ico",
+        ":/Tray_Q1_04_Purple.ico",
+        ":/Tray_Q1_05_Green.ico",
+        ":/Tray_Q1_06_Orange.ico",
+        ":/Tray_Q1_07_Pink.ico",
+        ":/Tray_Q1_08_Red.ico",
+        ":/Tray_Q1_09_DarkGray.ico",
+        ":/Tray_Q1_10_White.ico",
+        ":/Tray_Q1_11_Yellow.ico",
+        ":/Tray_Q1_12_Lime.ico",
+        ":/Tray_Q1_13_Indigo.ico",
+        ":/Tray_Q1_14_SilverGray.ico",
+        ":/Tray_Q2_01_Blue.ico",
+        ":/Tray_Q2_02_SkyBlue.ico",
+        ":/Tray_Q2_03_Cyan.ico",
+        ":/Tray_Q2_04_Purple.ico",
+        ":/Tray_Q2_05_Green.ico",
+        ":/Tray_Q2_06_Orange.ico",
+        ":/Tray_Q2_07_Pink.ico",
+        ":/Tray_Q2_08_Red.ico",
+        ":/Tray_Q2_09_DarkGray.ico",
+        ":/Tray_Q2_10_White.ico",
+        ":/Tray_Q2_11_Yellow.ico",
+        ":/Tray_Q2_12_Lime.ico",
+        ":/Tray_Q2_13_Indigo.ico",
+        ":/Tray_Q2_14_SilverGray.ico",
+        ":/Tray_Q3_01_Blue.ico",
+        ":/Tray_Q3_02_SkyBlue.ico",
+        ":/Tray_Q3_03_Cyan.ico",
+        ":/Tray_Q3_04_Purple.ico",
+        ":/Tray_Q3_05_Green.ico",
+        ":/Tray_Q3_06_Orange.ico",
+        ":/Tray_Q3_06b_Orange_BlackQ.ico",
+        ":/Tray_Q3_07_Pink.ico",
+        ":/Tray_Q3_08_Red.ico",
+        ":/Tray_Q3_09_DarkGray.ico",
+        ":/Tray_Q3_10_White.ico",
+        ":/Tray_Q3_11_Yellow.ico",
+        ":/Tray_Q3_12_Lime.ico",
+        ":/Tray_Q3_13_Indigo.ico",
+        ":/Tray_Q3_14_SilverGray.ico"
+    };
+    return list;
+}
+
+QStringList QTrayIconSelectDialog::availableCustomTrayIcons() const
+{
+    QStringList customIcons;
+    QDir iconDir(CUSTOM_TRAYICONS_DIR);
+    if (!iconDir.exists()) {
+        return customIcons;
+    }
+
+    QStringList iconFilters;
+    iconFilters << "*.ico";
+    iconDir.setNameFilters(iconFilters);
+    iconDir.setFilter(QDir::Files | QDir::NoDotAndDotDot);
+
+    const QFileInfoList iconFiles = iconDir.entryInfoList();
+    for (const QFileInfo &fileInfo : iconFiles) {
+        const QString absolutePath = fileInfo.absoluteFilePath();
+        const QString relativePath = QString::fromLatin1(CUSTOM_TRAYICONS_DIR) + QLatin1Char('/') + fileInfo.fileName();
+        QIcon icon(absolutePath);
+        if (!icon.isNull()) {
+            customIcons.append(relativePath);
+        }
+    }
+    return customIcons;
+}
+
+QStringList QTrayIconSelectDialog::availableTrayIcons() const
+{
+    QStringList icons = builtinTrayIcons();
+    icons.append(availableCustomTrayIcons());
+    return icons;
+}
+
+QTrayIconSelectDialog::TrayIconSelections QTrayIconSelectDialog::getTrayIconSelections() const
+{
+    return {
+        ui->idleStateTrayIconSelectComboBox->currentText(),
+        ui->monitoringStateTrayIconSelectComboBox->currentText(),
+        ui->globalStateTrayIconSelectComboBox->currentText(),
+        ui->matchedStateTrayIconSelectComboBox->currentText()
+    };
+}
+
+bool QTrayIconSelectDialog::applyTrayIconSelections(const TrayIconSelections &selections)
+{
+    if (ui->idleStateTrayIconSelectComboBox->findText(selections.idle) < 0
+        || ui->monitoringStateTrayIconSelectComboBox->findText(selections.monitoring) < 0
+        || ui->globalStateTrayIconSelectComboBox->findText(selections.global) < 0
+        || ui->matchedStateTrayIconSelectComboBox->findText(selections.matched) < 0) {
+        refreshTrayIconComboBoxesWithSelections();
+    }
+
+    if (ui->idleStateTrayIconSelectComboBox->findText(selections.idle) < 0
+        || ui->monitoringStateTrayIconSelectComboBox->findText(selections.monitoring) < 0
+        || ui->globalStateTrayIconSelectComboBox->findText(selections.global) < 0
+        || ui->matchedStateTrayIconSelectComboBox->findText(selections.matched) < 0) {
+        return false;
+    }
+
+    const TrayIconSelections before = getTrayIconSelections();
+    if (before.idle == selections.idle
+        && before.monitoring == selections.monitoring
+        && before.global == selections.global
+        && before.matched == selections.matched) {
+        return false;
+    }
+
+    setTrayIcon_IdleStateIcon(selections.idle);
+    setTrayIcon_MonitoringStateIcon(selections.monitoring);
+    setTrayIcon_GlobalStateIcon(selections.global);
+    setTrayIcon_MatchedStateIcon(selections.matched);
+
+    if (QKeyMapper *keyMapper = QKeyMapper::getInstance()) {
+        keyMapper->requestSaveSettingDirty();
+        keyMapper->updateSystemTrayDisplay();
+    }
+    return true;
+}
+
 void QTrayIconSelectDialog::initTrayIconComboBoxes()
 {
     ui->idleStateTrayIconSelectComboBox->clear();
@@ -70,67 +212,8 @@ void QTrayIconSelectDialog::initTrayIconComboBoxes()
     ui->globalStateTrayIconSelectComboBox->clear();
     ui->matchedStateTrayIconSelectComboBox->clear();
 
-    QStringList builtinTrayIconsList = QStringList() \
-        << ":/Black.ico"
-        << ":/Blue1.ico"
-        << ":/Blue2.ico"
-        << ":/Cyan.ico"
-        << ":/Gray1.ico"
-        << ":/Gray2.ico"
-        << ":/Green1.ico"
-        << ":/Green2.ico"
-        << ":/Orange.ico"
-        << ":/Pink.ico"
-        << ":/Purple.ico"
-        << ":/Red.ico"
-        << ":/White.ico"
-        << ":/Yellow.ico"
-        << ":/Tray_Q1_01_Blue.ico"
-        << ":/Tray_Q1_02_SkyBlue.ico"
-        << ":/Tray_Q1_03_Cyan.ico"
-        << ":/Tray_Q1_04_Purple.ico"
-        << ":/Tray_Q1_05_Green.ico"
-        << ":/Tray_Q1_06_Orange.ico"
-        << ":/Tray_Q1_07_Pink.ico"
-        << ":/Tray_Q1_08_Red.ico"
-        << ":/Tray_Q1_09_DarkGray.ico"
-        << ":/Tray_Q1_10_White.ico"
-        << ":/Tray_Q1_11_Yellow.ico"
-        << ":/Tray_Q1_12_Lime.ico"
-        << ":/Tray_Q1_13_Indigo.ico"
-        << ":/Tray_Q1_14_SilverGray.ico"
-        << ":/Tray_Q2_01_Blue.ico"
-        << ":/Tray_Q2_02_SkyBlue.ico"
-        << ":/Tray_Q2_03_Cyan.ico"
-        << ":/Tray_Q2_04_Purple.ico"
-        << ":/Tray_Q2_05_Green.ico"
-        << ":/Tray_Q2_06_Orange.ico"
-        << ":/Tray_Q2_07_Pink.ico"
-        << ":/Tray_Q2_08_Red.ico"
-        << ":/Tray_Q2_09_DarkGray.ico"
-        << ":/Tray_Q2_10_White.ico"
-        << ":/Tray_Q2_11_Yellow.ico"
-        << ":/Tray_Q2_12_Lime.ico"
-        << ":/Tray_Q2_13_Indigo.ico"
-        << ":/Tray_Q2_14_SilverGray.ico"
-        << ":/Tray_Q3_01_Blue.ico"
-        << ":/Tray_Q3_02_SkyBlue.ico"
-        << ":/Tray_Q3_03_Cyan.ico"
-        << ":/Tray_Q3_04_Purple.ico"
-        << ":/Tray_Q3_05_Green.ico"
-        << ":/Tray_Q3_06_Orange.ico"
-        << ":/Tray_Q3_06b_Orange_BlackQ.ico"
-        << ":/Tray_Q3_07_Pink.ico"
-        << ":/Tray_Q3_08_Red.ico"
-        << ":/Tray_Q3_09_DarkGray.ico"
-        << ":/Tray_Q3_10_White.ico"
-        << ":/Tray_Q3_11_Yellow.ico"
-        << ":/Tray_Q3_12_Lime.ico"
-        << ":/Tray_Q3_13_Indigo.ico"
-        << ":/Tray_Q3_14_SilverGray.ico"
-        ;
-
-    for (const QString &iconfile : std::as_const(builtinTrayIconsList)) {
+    const QStringList &builtinTrayIconsList = builtinTrayIcons();
+    for (const QString &iconfile : builtinTrayIconsList) {
         QIcon icon(iconfile);
         ui->idleStateTrayIconSelectComboBox->addItem(icon, iconfile);
         ui->monitoringStateTrayIconSelectComboBox->addItem(icon, iconfile);
