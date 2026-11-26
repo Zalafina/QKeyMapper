@@ -38170,6 +38170,88 @@ static QJsonObject automationGamepadTouchpad(double xSpeed, double ySpeed, bool 
     };
 }
 
+static VButtonPanelSettings readCurrentVButtonPanelSettings(const VButtonPanelSettings &settings, const QVButtonPanel *panel)
+{
+    VButtonPanelSettings current = settings;
+    if (panel) {
+        current.offsetX = panel->panelOffsets().x();
+        current.offsetY = panel->panelOffsets().y();
+    }
+    current.opacity = canonicalizeTouchpadSpeed(current.opacity);
+    current.btnFontFamily = current.btnFontFamily.trimmed();
+    return current;
+}
+
+static QJsonObject automationVButtonPanel(const VButtonPanelSettings &s)
+{
+    return {
+        {QStringLiteral("columns"), s.columns},
+        {QStringLiteral("max_rows"), s.maxRows},
+        {QStringLiteral("button_width"), s.btnWidth},
+        {QStringLiteral("button_height"), s.btnHeight},
+        {QStringLiteral("opacity"), canonicalizeTouchpadSpeed(s.opacity)},
+        {QStringLiteral("always_on_top"), s.alwaysOnTop},
+        {QStringLiteral("default_show"), s.defaultShow},
+        {QStringLiteral("margin"), s.margin},
+        {QStringLiteral("radius"), s.radius},
+        {QStringLiteral("drag_enabled"), s.dragEnabled},
+        {QStringLiteral("reference_point"), s.referencePoint},
+        {QStringLiteral("offset_x"), s.offsetX},
+        {QStringLiteral("offset_y"), s.offsetY},
+        {QStringLiteral("font_size"), s.btnFontSize},
+        {QStringLiteral("font_weight"), s.btnFontWeight},
+        {QStringLiteral("font_family"), s.btnFontFamily},
+        {QStringLiteral("bg_color"), s.bgColor.name(QColor::HexArgb)},
+        {QStringLiteral("button_color"), s.btnColor.name(QColor::HexRgb)},
+        {QStringLiteral("pressed_color"), s.pressedColor.name(QColor::HexRgb)},
+        {QStringLiteral("locked_color"), s.lockedColor.name(QColor::HexRgb)},
+        {QStringLiteral("text_color"), s.textColor.name(QColor::HexRgb)},
+    };
+}
+
+static bool vbuttonPanelSettingsEqual(const VButtonPanelSettings &a, const VButtonPanelSettings &b)
+{
+    return a.columns == b.columns && a.maxRows == b.maxRows
+        && a.btnWidth == b.btnWidth && a.btnHeight == b.btnHeight
+        && qRound(a.opacity * 100.0) == qRound(b.opacity * 100.0)
+        && a.alwaysOnTop == b.alwaysOnTop && a.defaultShow == b.defaultShow
+        && a.margin == b.margin && a.radius == b.radius && a.dragEnabled == b.dragEnabled
+        && a.referencePoint == b.referencePoint && a.offsetX == b.offsetX && a.offsetY == b.offsetY
+        && a.btnFontSize == b.btnFontSize && a.btnFontWeight == b.btnFontWeight
+        && a.btnFontFamily.trimmed() == b.btnFontFamily.trimmed()
+        && a.bgColor.rgba() == b.bgColor.rgba()
+        && a.btnColor.rgb() == b.btnColor.rgb()
+        && a.pressedColor.rgb() == b.pressedColor.rgb()
+        && a.lockedColor.rgb() == b.lockedColor.rgb()
+        && a.textColor.rgb() == b.textColor.rgb();
+}
+
+static VButtonPanelSettings mergeVButtonPanelSettings(VButtonPanelSettings target, const QkmAutomation::VButtonPanelUpdate &u)
+{
+    if (u.columns) target.columns = *u.columns;
+    if (u.maxRows) target.maxRows = *u.maxRows;
+    if (u.buttonWidth) target.btnWidth = *u.buttonWidth;
+    if (u.buttonHeight) target.btnHeight = *u.buttonHeight;
+    if (u.opacity) target.opacity = canonicalizeTouchpadSpeed(*u.opacity);
+    if (u.alwaysOnTop) target.alwaysOnTop = *u.alwaysOnTop;
+    if (u.defaultShow) target.defaultShow = *u.defaultShow;
+    if (u.margin) target.margin = *u.margin;
+    if (u.radius) target.radius = *u.radius;
+    if (u.dragEnabled) target.dragEnabled = *u.dragEnabled;
+    if (u.referencePoint) target.referencePoint = *u.referencePoint;
+    if (u.offsetX) target.offsetX = *u.offsetX;
+    if (u.offsetY) target.offsetY = *u.offsetY;
+    if (u.fontSize) target.btnFontSize = *u.fontSize;
+    if (u.fontWeight) target.btnFontWeight = *u.fontWeight;
+    if (u.fontFamily) target.btnFontFamily = u.fontFamily->trimmed();
+    if (u.bgColor) target.bgColor = QColor(*u.bgColor);
+    if (u.buttonColor) target.btnColor = QColor(*u.buttonColor);
+    if (u.pressedColor) target.pressedColor = QColor(*u.pressedColor);
+    if (u.lockedColor) target.lockedColor = QColor(*u.lockedColor);
+    if (u.textColor) target.textColor = QColor(*u.textColor);
+    return target;
+}
+
 static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QString &screenKey)
 {
     return {{QStringLiteral("window_point_key"), windowKey},
@@ -38347,6 +38429,10 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             m_MappingAdvancedDialog->getGamepadTouchpadInvertY()));
         result.insert(QStringLiteral("accept_virtual_gamepad_input"),
             m_MappingAdvancedDialog->getAcceptVirtualGamepadInput());
+    }
+    if (m_VButtonPanel) {
+        result.insert(QStringLiteral("vbutton_panel"), automationVButtonPanel(
+            readCurrentVButtonPanelSettings(m_VButtonPanelSettings, m_VButtonPanel)));
     }
     if (m_Gyro2MouseOptionDialog) {
         result.insert(QStringLiteral("gyro2mouse_options"), automationGyro2MouseOptions(
@@ -40677,6 +40763,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && (update.gamepadTouchpadXSpeed.has_value() || update.gamepadTouchpadYSpeed.has_value()
                 || update.gamepadTouchpadInvertX.has_value() || update.gamepadTouchpadInvertY.has_value());
         const bool changingAcceptVirtualGamepadInput = updating && update.acceptVirtualGamepadInput.has_value();
+        const bool changingVButtonPanel = updating && update.vbuttonPanel.has_value();
         const bool changingProcessIconAsTrayIcon = updating && update.processIconAsTrayIcon.has_value();
         const bool changingPointDisplayKeys = updating
             && (update.showWindowPointKey.has_value() || update.showScreenPointKey.has_value());
@@ -40705,7 +40792,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
-            || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingProcessIconAsTrayIcon || changingPointDisplayKeys
+            || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel || changingProcessIconAsTrayIcon || changingPointDisplayKeys
             || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingDisplayScale;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
@@ -40723,13 +40810,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || m_KeyMappingDataTable->hasActiveEditor()
             || (changingGeneralPreference && !m_GeneralAdvancedDialog)
             || ((changingKey2Mouse || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingProcessIconAsTrayIcon || changingPointDisplayKeys || changingCustomNotification) && !m_MappingAdvancedDialog)
-            || (changingGyro2MouseOptions && (!m_Gyro2MouseOptionDialog || m_Gyro2MouseOptionDialog->isVisible()))) {
+            || (changingGyro2MouseOptions && (!m_Gyro2MouseOptionDialog || m_Gyro2MouseOptionDialog->isVisible()))
+            || (changingVButtonPanel && (!m_VButtonPanel || !m_VButtonPanelSetupDialog || m_VButtonPanelSetupDialog->isVisible()))) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
-            && !changingWindowDisplayMode && !changingKey2Mouse && !changingGyro2MouseOptions && !changingGamepadThresholds && !changingGamepadTouchpad && !changingAcceptVirtualGamepadInput && !changingProcessIconAsTrayIcon
+            && !changingWindowDisplayMode && !changingKey2Mouse && !changingGyro2MouseOptions && !changingGamepadThresholds && !changingGamepadTouchpad && !changingAcceptVirtualGamepadInput && !changingVButtonPanel && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale
             && isCommonMappingTabIndex(tab)) {
@@ -40740,7 +40828,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("The display scale control is unavailable or disabled."));
             return;
         }
-        if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingProcessIconAsTrayIcon
+        if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel || changingProcessIconAsTrayIcon
                 || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria
                 || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
@@ -41179,6 +41267,15 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), QStringLiteral("set_accept_virtual_gamepad_input")},
                     {QStringLiteral("before"), before},
                     {QStringLiteral("after"), after}};
+            } else if (changingVButtonPanel) {
+                const VButtonPanelSettings before = readCurrentVButtonPanelSettings(m_VButtonPanelSettings, m_VButtonPanel);
+                const VButtonPanelSettings after = mergeVButtonPanelSettings(before, *update.vbuttonPanel);
+                modified = !vbuttonPanelSettingsEqual(before, after);
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_vbutton_panel_settings")},
+                    {QStringLiteral("before"), automationVButtonPanel(before)},
+                    {QStringLiteral("after"), automationVButtonPanel(after)}};
             } else if (changingProcessIconAsTrayIcon) {
                 const bool before = m_MappingAdvancedDialog->getProcessIconAsTrayIcon();
                 const bool after = *update.processIconAsTrayIcon;
@@ -41880,6 +41977,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingGamepadThresholds ? QStringLiteral("configuration.set_gamepad_thresholds")
             : changingGamepadTouchpad ? QStringLiteral("configuration.set_gamepad_touchpad")
             : changingAcceptVirtualGamepadInput ? QStringLiteral("configuration.set_accept_virtual_gamepad_input")
+            : changingVButtonPanel ? QStringLiteral("configuration.set_vbutton_panel_settings")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -42018,6 +42116,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (changingAcceptVirtualGamepadInput) {
                 if (m_MappingAdvancedDialog->getAcceptVirtualGamepadInput() != *update.acceptVirtualGamepadInput) {
                     m_MappingAdvancedDialog->setAcceptVirtualGamepadInput(*update.acceptVirtualGamepadInput);
+                }
+            } else if (changingVButtonPanel) {
+                const VButtonPanelSettings before = readCurrentVButtonPanelSettings(m_VButtonPanelSettings, m_VButtonPanel);
+                const VButtonPanelSettings after = mergeVButtonPanelSettings(before, *update.vbuttonPanel);
+                if (!vbuttonPanelSettingsEqual(before, after)) {
+                    applyVButtonPanelSettings(after, true);
                 }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);
@@ -52574,10 +52678,22 @@ void QKeyMapper::onVButtonPanelSettingsAccepted()
     if (Q_NULLPTR == m_VButtonPanelSetupDialog || Q_NULLPTR == m_VButtonPanel) {
         return;
     }
+    applyVButtonPanelSettings(m_VButtonPanelSetupDialog->getSettings(), false);
+}
+
+void QKeyMapper::applyVButtonPanelSettings(const VButtonPanelSettings &settings, bool syncDialog)
+{
+    if (Q_NULLPTR == m_VButtonPanel) {
+        return;
+    }
     // Preserve visibility before applySettings because setWindowFlags may temporarily hide the window.
     const bool panelWasVisible = m_VButtonPanel->isVisible();
 
-    m_VButtonPanelSettings = m_VButtonPanelSetupDialog->getSettings();
+    m_VButtonPanelSettings = settings;
+    m_VButtonPanelSettings.btnFontFamily = m_VButtonPanelSettings.btnFontFamily.trimmed();
+    if (syncDialog && m_VButtonPanelSetupDialog) {
+        m_VButtonPanelSetupDialog->loadSettings(m_VButtonPanelSettings);
+    }
     // Apply layout and appearance settings to the panel
     m_VButtonPanel->applySettings(m_VButtonPanelSettings.columns,
                                   m_VButtonPanelSettings.maxRows,

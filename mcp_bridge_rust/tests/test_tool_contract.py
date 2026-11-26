@@ -340,6 +340,27 @@ async def check_contract(exe):
                 assert not validator.is_valid(bad), bad
                 denied = await client.call_tool("qkm_preview_changes", bad)
                 assert denied.is_error is True and denied.structured_content is None
+            vbutton_panel = {"action": "configuration.set_vbutton_panel_settings", "source_tab_ref": tab}
+            for fields in ({"columns": 6, "opacity": 0.65, "default_show": False, "bg_color": "#aa112233", "button_color": "#224466"},
+                           {"max_rows": 2, "button_width": 640, "button_height": 4, "margin": 50, "radius": 100,
+                            "reference_point": 11, "offset_x": -50000, "offset_y": 50000,
+                            "font_size": 72, "font_weight": 2, "font_family": "",
+                            "always_on_top": False, "drag_enabled": False,
+                            "pressed_color": "#112233", "locked_color": "#445566", "text_color": "#ddeeff"}):
+                request = vbutton_panel | {"vbutton_panel": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for bad_fields in ({}, {"columns": 0}, {"columns": 21}, {"max_rows": 1}, {"max_rows": 1000},
+                               {"button_width": 3}, {"opacity": 0.09}, {"opacity": 1.01}, {"opacity": 0.555},
+                               {"margin": -1}, {"radius": 101}, {"reference_point": 12}, {"offset_x": 50001},
+                               {"font_size": 0}, {"font_weight": 3}, {"font_family": "Consolas\nX"},
+                               {"bg_color": "#112233"}, {"button_color": "#ff112233"},
+                               {"columns": None}, {"columns": 3, "extra": 1}):
+                request = vbutton_panel | {"vbutton_panel": bad_fields}
+                if "opacity" not in bad_fields or bad_fields["opacity"] != 0.555:
+                    assert not validator.is_valid(request), bad_fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -529,7 +550,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

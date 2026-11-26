@@ -584,6 +584,61 @@ struct AcceptVirtualGamepadInput {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct VButtonPanelFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    columns: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_rows: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    button_width: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    button_height: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    always_on_top: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    default_show: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    margin: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    radius: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    drag_enabled: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reference_point: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    offset_x: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    offset_y: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_size: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_weight: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    bg_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    button_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pressed_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    locked_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text_color: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct VButtonPanelSettings {
+    action: String,
+    source_tab_ref: String,
+    vbutton_panel: VButtonPanelFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1200,6 +1255,73 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 Some("configuration.set_accept_virtual_gamepad_input") => {
                     return typed(arguments, |v: &AcceptVirtualGamepadInput| {
                         tab_ref(&v.source_tab_ref)
+                    });
+                }
+                Some("configuration.set_vbutton_panel_settings") => {
+                    if arguments
+                        .get("vbutton_panel")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &VButtonPanelSettings| {
+                        let f = &v.vbutton_panel;
+                        let any_set = f.columns.is_some()
+                            || f.max_rows.is_some()
+                            || f.button_width.is_some()
+                            || f.button_height.is_some()
+                            || f.opacity.is_some()
+                            || f.always_on_top.is_some()
+                            || f.default_show.is_some()
+                            || f.margin.is_some()
+                            || f.radius.is_some()
+                            || f.drag_enabled.is_some()
+                            || f.reference_point.is_some()
+                            || f.offset_x.is_some()
+                            || f.offset_y.is_some()
+                            || f.font_size.is_some()
+                            || f.font_weight.is_some()
+                            || f.font_family.is_some()
+                            || f.bg_color.is_some()
+                            || f.button_color.is_some()
+                            || f.pressed_color.is_some()
+                            || f.locked_color.is_some()
+                            || f.text_color.is_some();
+                        let valid_opacity = |raw: f64| {
+                            raw.is_finite()
+                                && (0.10..=1.00).contains(&raw)
+                                && ((raw * 100.0) - (raw * 100.0).round()).abs() <= 1e-6
+                        };
+                        let valid_font_family = |s: &str| {
+                            s.encode_utf16().count() <= 255
+                                && !s.chars().any(|c| matches!(c, '\0' | '\r' | '\n'))
+                        };
+                        let valid_hex = |s: &str, digits: usize| {
+                            s.starts_with('#')
+                                && s.len() == 1 + digits
+                                && s[1..].bytes().all(|b| b.is_ascii_hexdigit())
+                        };
+                        tab_ref(&v.source_tab_ref)
+                            && any_set
+                            && f.columns.is_none_or(|n| (1..=20).contains(&n))
+                            && f.max_rows.is_none_or(|n| (2..=999).contains(&n))
+                            && f.button_width.is_none_or(|n| (4..=640).contains(&n))
+                            && f.button_height.is_none_or(|n| (4..=640).contains(&n))
+                            && f.opacity.is_none_or(valid_opacity)
+                            && f.margin.is_none_or(|n| (0..=50).contains(&n))
+                            && f.radius.is_none_or(|n| (0..=100).contains(&n))
+                            && f.reference_point.is_none_or(|n| (0..=11).contains(&n))
+                            && f.offset_x.is_none_or(|n| (-50000..=50000).contains(&n))
+                            && f.offset_y.is_none_or(|n| (-50000..=50000).contains(&n))
+                            && f.font_size.is_none_or(|n| (1..=72).contains(&n))
+                            && f.font_weight.is_none_or(|n| (0..=2).contains(&n))
+                            && f.font_family.as_deref().is_none_or(valid_font_family)
+                            && f.bg_color.as_deref().is_none_or(|s| valid_hex(s, 8))
+                            && f.button_color.as_deref().is_none_or(|s| valid_hex(s, 6))
+                            && f.pressed_color.as_deref().is_none_or(|s| valid_hex(s, 6))
+                            && f.locked_color.as_deref().is_none_or(|s| valid_hex(s, 6))
+                            && f.text_color.as_deref().is_none_or(|s| valid_hex(s, 6))
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -2297,6 +2419,56 @@ mod tests {
             json!({"action": "configuration.set_accept_virtual_gamepad_input", "source_tab_ref": tab, "accept_virtual_gamepad_input": true, "extra": 1}),
         ] {
             assert!(preview(&bad).is_err());
+        }
+    }
+
+    #[test]
+    fn configuration_vbutton_panel_checks_all_constraints() {
+        let revision = "a".repeat(64);
+        let tab = format!("{revision}:source:0");
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let valid_full = json!({
+            "columns": 1, "max_rows": 999, "button_width": 4, "button_height": 640,
+            "opacity": 0.75, "always_on_top": false, "default_show": true,
+            "margin": 0, "radius": 100, "drag_enabled": false,
+            "reference_point": 11, "offset_x": -50000, "offset_y": 50000,
+            "font_size": 72, "font_weight": 2, "font_family": "Consolas",
+            "bg_color": "#AA112233", "button_color": "#224466",
+            "pressed_color": "#112233", "locked_color": "#445566", "text_color": "#DDEEFF"
+        });
+        let wire = json!({"action": "configuration.set_vbutton_panel_settings", "source_tab_ref": tab, "vbutton_panel": valid_full});
+        assert_eq!(preview(&wire).unwrap(), *wire.as_object().unwrap());
+        let subset = json!({"action": "configuration.set_vbutton_panel_settings", "source_tab_ref": tab, "vbutton_panel": {"columns": 4, "font_family": ""}});
+        assert_eq!(preview(&subset).unwrap(), *subset.as_object().unwrap());
+        for bad in [
+            json!({}),
+            json!({"columns": 0}),
+            json!({"columns": 21}),
+            json!({"max_rows": 1}),
+            json!({"max_rows": 1000}),
+            json!({"button_width": 3}),
+            json!({"button_height": 641}),
+            json!({"opacity": 0.09}),
+            json!({"opacity": 1.01}),
+            json!({"opacity": 0.555}),
+            json!({"margin": -1}),
+            json!({"radius": 101}),
+            json!({"reference_point": -1}),
+            json!({"reference_point": 12}),
+            json!({"offset_x": -50001}),
+            json!({"offset_y": 50001}),
+            json!({"font_size": 0}),
+            json!({"font_size": 73}),
+            json!({"font_weight": 3}),
+            json!({"font_family": "Consolas\n"}),
+            json!({"font_family": "A".repeat(256)}),
+            json!({"bg_color": "#112233"}),
+            json!({"button_color": "#ff112233"}),
+            json!({"columns": null}),
+            json!({"columns": 3, "extra": 1}),
+        ] {
+            assert!(preview(&json!({"action": "configuration.set_vbutton_panel_settings", "source_tab_ref": tab, "vbutton_panel": bad})).is_err());
         }
     }
 

@@ -53,6 +53,254 @@ QByteArray decodeBackupDocument(const QJsonValue &value, int maxBytes)
         return {};
     return std::move(decoded.decoded);
 }
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+bool parseGyroGamepadAndPanelUpdates(const QJsonObject &arguments,
+    bool gyro2MouseOptionsPreview, bool gamepadThresholdsPreview,
+    bool gamepadTouchpadPreview, bool acceptVirtualGamepadInputPreview,
+    bool vbuttonPanelPreview, MappingUpdateArguments &update, const char *&errorOut)
+{
+    const auto fail = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    if (gyro2MouseOptionsPreview) {
+        using namespace QKeyMapperConstants;
+        const auto raw = arguments.value(QStringLiteral("gyro2mouse_options"));
+        const auto fields = raw.toObject();
+        if (!raw.isObject() || fields.isEmpty())
+            return fail("Provide at least one gyro2mouse option.");
+        const QSet<QString> allowedGyroKeys{
+            QStringLiteral("mouse_x_source"), QStringLiteral("mouse_y_source"),
+            QStringLiteral("mouse_x_revert"), QStringLiteral("mouse_y_revert")};
+        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+            if (!allowedGyroKeys.contains(it.key()))
+                return fail("Unknown gyro2mouse_options field.");
+        }
+        const auto parseSource = [](const QJsonObject &obj, const QString &key, std::optional<int> &target) -> bool {
+            if (!obj.contains(key)) return true;
+            const auto val = obj.value(key);
+            const int parsed = val.toInt(GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X - 1);
+            if (!val.isDouble() || val.toDouble() != parsed
+                || parsed < GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X
+                || parsed > GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z) {
+                return false;
+            }
+            target = parsed;
+            return true;
+        };
+        const auto parseBoolField = [](const QJsonObject &obj, const QString &key, std::optional<bool> &target) -> bool {
+            if (!obj.contains(key)) return true;
+            const auto val = obj.value(key);
+            if (!val.isBool()) return false;
+            target = val.toBool();
+            return true;
+        };
+        if (!parseSource(fields, QStringLiteral("mouse_x_source"), update.gyro2MouseXSource)
+            || !parseSource(fields, QStringLiteral("mouse_y_source"), update.gyro2MouseYSource))
+            return fail("gyro2mouse axis sources must be integers between 0 and 2.");
+        if (!parseBoolField(fields, QStringLiteral("mouse_x_revert"), update.gyro2MouseXRevert)
+            || !parseBoolField(fields, QStringLiteral("mouse_y_revert"), update.gyro2MouseYRevert))
+            return fail("gyro2mouse revert flags must be booleans.");
+    }
+    if (gamepadThresholdsPreview) {
+        using namespace QKeyMapperConstants;
+        const auto raw = arguments.value(QStringLiteral("gamepad_thresholds"));
+        const auto groups = raw.toObject();
+        if (!raw.isObject() || groups.isEmpty())
+            return fail("Provide at least one gamepad threshold group (lt, rt, ls, rs).");
+        const QSet<QString> allowedGroups{
+            QStringLiteral("lt"), QStringLiteral("rt"), QStringLiteral("ls"), QStringLiteral("rs")};
+        for (auto it = groups.constBegin(); it != groups.constEnd(); ++it) {
+            if (!allowedGroups.contains(it.key()))
+                return fail("Unknown gamepad threshold group.");
+        }
+        const auto parseThresholdGroup = [&](const QString &groupKey, const QString &pressKey, const QString &lightKey,
+                                             std::optional<int> &pressTarget, std::optional<int> &lightTarget,
+                                             std::optional<int> &releaseTarget) -> bool {
+            if (!groups.contains(groupKey)) return true;
+            const auto groupVal = groups.value(groupKey);
+            const auto fields = groupVal.toObject();
+            if (!groupVal.isObject() || fields.isEmpty()) return false;
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (it.key() != pressKey && it.key() != lightKey && it.key() != QStringLiteral("release"))
+                    return false;
+            }
+            const auto parsePct = [&](const QString &fieldKey, std::optional<int> &target) -> bool {
+                if (!fields.contains(fieldKey)) return true;
+                const auto val = fields.value(fieldKey);
+                const int parsed = val.toInt(GAMEPAD_THRESHOLD_PERCENT_MIN - 1);
+                if (!val.isDouble() || val.toDouble() != parsed
+                    || parsed < GAMEPAD_THRESHOLD_PERCENT_MIN || parsed > GAMEPAD_THRESHOLD_PERCENT_MAX)
+                    return false;
+                target = parsed;
+                return true;
+            };
+            if (!parsePct(pressKey, pressTarget) || !parsePct(lightKey, lightTarget)
+                || !parsePct(QStringLiteral("release"), releaseTarget))
+                return false;
+            if (releaseTarget && lightTarget && *releaseTarget > *lightTarget) return false;
+            if (lightTarget && pressTarget && *lightTarget > *pressTarget) return false;
+            if (releaseTarget && pressTarget && *releaseTarget > *pressTarget) return false;
+            return true;
+        };
+        if (!parseThresholdGroup(QStringLiteral("lt"), QStringLiteral("press"), QStringLiteral("light_press"),
+                update.gamepadLtPress, update.gamepadLtLightPress, update.gamepadLtRelease)
+            || !parseThresholdGroup(QStringLiteral("rt"), QStringLiteral("press"), QStringLiteral("light_press"),
+                update.gamepadRtPress, update.gamepadRtLightPress, update.gamepadRtRelease)
+            || !parseThresholdGroup(QStringLiteral("ls"), QStringLiteral("push"), QStringLiteral("light_push"),
+                update.gamepadLsPush, update.gamepadLsLightPush, update.gamepadLsRelease)
+            || !parseThresholdGroup(QStringLiteral("rs"), QStringLiteral("push"), QStringLiteral("light_push"),
+                update.gamepadRsPush, update.gamepadRsLightPush, update.gamepadRsRelease)) {
+            return fail("Each gamepad threshold group must contain valid 0..100 integer fields with release <= light <= press/push.");
+        }
+    }
+    if (gamepadTouchpadPreview) {
+        using namespace QKeyMapperConstants;
+        const auto raw = arguments.value(QStringLiteral("gamepad_touchpad"));
+        const auto fields = raw.toObject();
+        if (!raw.isObject() || fields.isEmpty())
+            return fail("Provide at least one gamepad touchpad field (x_speed, y_speed, invert_x, invert_y).");
+        const QSet<QString> allowedFields{
+            QStringLiteral("x_speed"), QStringLiteral("y_speed"),
+            QStringLiteral("invert_x"), QStringLiteral("invert_y")};
+        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+            if (!allowedFields.contains(it.key()))
+                return fail("Unknown gamepad touchpad field.");
+        }
+        const auto parseSpeed = [&](const QString &key, std::optional<double> &target) -> bool {
+            if (!fields.contains(key)) return true;
+            const auto val = fields.value(key);
+            if (!val.isDouble()) return false;
+            const double d = val.toDouble();
+            if (!std::isfinite(d) || d < GAMEPAD_TOUCHPAD_SPEED_MIN || d > GAMEPAD_TOUCHPAD_SPEED_MAX)
+                return false;
+            if (std::abs(d * 100.0 - std::round(d * 100.0)) > 1e-6)
+                return false;
+            double canonical = std::round(d * 100.0) / 100.0;
+            if (canonical == 0.0) canonical = 0.0;
+            target = canonical;
+            return true;
+        };
+        const auto parseBoolField = [&](const QString &key, std::optional<bool> &target) -> bool {
+            if (!fields.contains(key)) return true;
+            const auto val = fields.value(key);
+            if (!val.isBool()) return false;
+            target = val.toBool();
+            return true;
+        };
+        if (!parseSpeed(QStringLiteral("x_speed"), update.gamepadTouchpadXSpeed)
+            || !parseSpeed(QStringLiteral("y_speed"), update.gamepadTouchpadYSpeed)) {
+            return fail("Gamepad touchpad speeds must be finite numbers in 0..200 with at most 2 decimal places.");
+        }
+        if (!parseBoolField(QStringLiteral("invert_x"), update.gamepadTouchpadInvertX)
+            || !parseBoolField(QStringLiteral("invert_y"), update.gamepadTouchpadInvertY)) {
+            return fail("Gamepad touchpad invert flags must be booleans.");
+        }
+    }
+    if (acceptVirtualGamepadInputPreview) {
+        const auto value = arguments.value(QStringLiteral("accept_virtual_gamepad_input"));
+        if (!value.isBool()) return fail("Provide an explicit boolean accept_virtual_gamepad_input.");
+        update.acceptVirtualGamepadInput = value.toBool();
+    }
+    if (vbuttonPanelPreview) {
+        using namespace QKeyMapperConstants;
+        const auto raw = arguments.value(QStringLiteral("vbutton_panel"));
+        const auto fields = raw.toObject();
+        if (!raw.isObject() || fields.isEmpty())
+            return fail("Provide at least one VButton panel setting field.");
+        const QSet<QString> allowedFields{
+            QStringLiteral("columns"), QStringLiteral("max_rows"),
+            QStringLiteral("button_width"), QStringLiteral("button_height"),
+            QStringLiteral("opacity"), QStringLiteral("always_on_top"),
+            QStringLiteral("default_show"), QStringLiteral("margin"),
+            QStringLiteral("radius"), QStringLiteral("drag_enabled"),
+            QStringLiteral("reference_point"), QStringLiteral("offset_x"),
+            QStringLiteral("offset_y"), QStringLiteral("font_size"),
+            QStringLiteral("font_weight"), QStringLiteral("font_family"),
+            QStringLiteral("bg_color"), QStringLiteral("button_color"),
+            QStringLiteral("pressed_color"), QStringLiteral("locked_color"),
+            QStringLiteral("text_color")};
+        for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+            if (!allowedFields.contains(it.key()))
+                return fail("Unknown VButton panel field.");
+        }
+        const auto parseBoundedInt = [&](const QString &key, int minVal, int maxVal, std::optional<int> &target) -> bool {
+            if (!fields.contains(key)) return true;
+            const auto val = fields.value(key);
+            const int parsed = val.toInt(minVal - 1);
+            if (!val.isDouble() || val.toDouble() != parsed || parsed < minVal || parsed > maxVal)
+                return false;
+            target = parsed;
+            return true;
+        };
+        const auto parseBoolField = [&](const QString &key, std::optional<bool> &target) -> bool {
+            if (!fields.contains(key)) return true;
+            const auto val = fields.value(key);
+            if (!val.isBool()) return false;
+            target = val.toBool();
+            return true;
+        };
+        const auto parseColorHex = [&](const QString &key, int digits, std::optional<QString> &target) -> bool {
+            if (!fields.contains(key)) return true;
+            const auto val = fields.value(key);
+            if (!val.isString()) return false;
+            const QString color = val.toString();
+            const QString hex = color.mid(1).toLower();
+            if (!color.startsWith(QLatin1Char('#')) || !isLowerHex(hex, digits))
+                return false;
+            target = QLatin1Char('#') + hex;
+            return true;
+        };
+        VButtonPanelUpdate panel;
+        if (!parseBoundedInt(QStringLiteral("columns"), 1, 20, panel.columns)
+            || !parseBoundedInt(QStringLiteral("max_rows"), 2, 999, panel.maxRows)
+            || !parseBoundedInt(QStringLiteral("button_width"), 4, 640, panel.buttonWidth)
+            || !parseBoundedInt(QStringLiteral("button_height"), 4, 640, panel.buttonHeight)
+            || !parseBoundedInt(QStringLiteral("margin"), 0, 50, panel.margin)
+            || !parseBoundedInt(QStringLiteral("radius"), 0, 100, panel.radius)
+            || !parseBoundedInt(QStringLiteral("reference_point"), FLOATINGWINDOW_REFERENCEPOINT_MIN, FLOATINGWINDOW_REFERENCEPOINT_MAX, panel.referencePoint)
+            || !parseBoundedInt(QStringLiteral("offset_x"), -50000, 50000, panel.offsetX)
+            || !parseBoundedInt(QStringLiteral("offset_y"), -50000, 50000, panel.offsetY)
+            || !parseBoundedInt(QStringLiteral("font_size"), VBTNPANEL_BTNFONTSIZE_MIN, VBTNPANEL_BTNFONTSIZE_MAX, panel.fontSize)
+            || !parseBoundedInt(QStringLiteral("font_weight"), VBTNPANEL_FONT_WEIGHT_MIN, VBTNPANEL_FONT_WEIGHT_MAX, panel.fontWeight)) {
+            return fail("VButton panel integer field is invalid or out of range.");
+        }
+        if (fields.contains(QStringLiteral("opacity"))) {
+            const auto val = fields.value(QStringLiteral("opacity"));
+            if (!val.isDouble()) return fail("VButton panel opacity must be a number between 0.10 and 1.00 with at most 2 decimals.");
+            const double d = val.toDouble();
+            if (!std::isfinite(d) || d < 0.10 || d > 1.00 || std::abs(d * 100.0 - std::round(d * 100.0)) > 1e-6)
+                return fail("VButton panel opacity must be a finite number in 0.10..1.00 with at most 2 decimal places.");
+            panel.opacity = std::round(d * 100.0) / 100.0;
+        }
+        if (!parseBoolField(QStringLiteral("always_on_top"), panel.alwaysOnTop)
+            || !parseBoolField(QStringLiteral("default_show"), panel.defaultShow)
+            || !parseBoolField(QStringLiteral("drag_enabled"), panel.dragEnabled)) {
+            return fail("VButton panel boolean fields must be booleans.");
+        }
+        if (fields.contains(QStringLiteral("font_family"))) {
+            const auto val = fields.value(QStringLiteral("font_family"));
+            if (!val.isString()) return fail("VButton panel font_family must be a string.");
+            const QString s = val.toString();
+            if (s.size() > 255 || s.contains(QChar(0)) || s.contains(QLatin1Char('\r')) || s.contains(QLatin1Char('\n')))
+                return fail("VButton panel font_family must be single-line and at most 255 characters.");
+            panel.fontFamily = s.trimmed();
+        }
+        if (!parseColorHex(QStringLiteral("bg_color"), 8, panel.bgColor))
+            return fail("VButton panel bg_color must be a #AARRGGBB hex string.");
+        if (!parseColorHex(QStringLiteral("button_color"), 6, panel.buttonColor)
+            || !parseColorHex(QStringLiteral("pressed_color"), 6, panel.pressedColor)
+            || !parseColorHex(QStringLiteral("locked_color"), 6, panel.lockedColor)
+            || !parseColorHex(QStringLiteral("text_color"), 6, panel.textColor)) {
+            return fail("VButton panel button/pressed/locked/text colors must be #RRGGBB hex strings.");
+        }
+        update.vbuttonPanel = panel;
+    }
+    return true;
+}
 }
 
 const char *mappingRowMoveAction(MappingRowMove move)
@@ -441,6 +689,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool gamepadThresholdsPreview = preview && action == QLatin1String("configuration.set_gamepad_thresholds");
     const bool gamepadTouchpadPreview = preview && action == QLatin1String("configuration.set_gamepad_touchpad");
     const bool acceptVirtualGamepadInputPreview = preview && action == QLatin1String("configuration.set_accept_virtual_gamepad_input");
+    const bool vbuttonPanelPreview = preview && action == QLatin1String("configuration.set_vbutton_panel_settings");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -464,7 +713,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || processIconTrayPreview
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -491,6 +740,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : gamepadThresholdsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_thresholds")}
         : gamepadTouchpadPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_touchpad")}
         : acceptVirtualGamepadInputPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("accept_virtual_gamepad_input")}
+        : vbuttonPanelPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("vbutton_panel")}
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
         : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
@@ -670,144 +920,15 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             if (!parseIntInRange(fields, QStringLiteral("polling_interval_ms"), MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX, result.update.mousePollingIntervalMs))
                 return fail("key2mouse polling_interval_ms must be an integer between 1 and 99 milliseconds.");
         }
-        if (gyro2MouseOptionsPreview) {
-            using namespace QKeyMapperConstants;
-            const auto raw = arguments.value(QStringLiteral("gyro2mouse_options"));
-            const auto fields = raw.toObject();
-            if (!raw.isObject() || fields.isEmpty())
-                return fail("Provide at least one gyro2mouse option.");
-            const QSet<QString> allowedGyroKeys{
-                QStringLiteral("mouse_x_source"), QStringLiteral("mouse_y_source"),
-                QStringLiteral("mouse_x_revert"), QStringLiteral("mouse_y_revert")};
-            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-                if (!allowedGyroKeys.contains(it.key()))
-                    return fail("Unknown gyro2mouse_options field.");
+        if (gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview
+            || acceptVirtualGamepadInputPreview || vbuttonPanelPreview) {
+            const char *parseError = nullptr;
+            if (!parseGyroGamepadAndPanelUpdates(arguments, gyro2MouseOptionsPreview,
+                    gamepadThresholdsPreview, gamepadTouchpadPreview,
+                    acceptVirtualGamepadInputPreview, vbuttonPanelPreview,
+                    result.update, parseError)) {
+                return fail(parseError);
             }
-            const auto parseSource = [](const QJsonObject &obj, const QString &key, std::optional<int> &target) -> bool {
-                if (!obj.contains(key)) return true;
-                const auto val = obj.value(key);
-                const int parsed = val.toInt(GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X - 1);
-                if (!val.isDouble() || val.toDouble() != parsed
-                    || parsed < GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X
-                    || parsed > GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z) {
-                    return false;
-                }
-                target = parsed;
-                return true;
-            };
-            const auto parseBoolField = [](const QJsonObject &obj, const QString &key, std::optional<bool> &target) -> bool {
-                if (!obj.contains(key)) return true;
-                const auto val = obj.value(key);
-                if (!val.isBool()) return false;
-                target = val.toBool();
-                return true;
-            };
-            if (!parseSource(fields, QStringLiteral("mouse_x_source"), result.update.gyro2MouseXSource)
-                || !parseSource(fields, QStringLiteral("mouse_y_source"), result.update.gyro2MouseYSource))
-                return fail("gyro2mouse axis sources must be integers between 0 and 2.");
-            if (!parseBoolField(fields, QStringLiteral("mouse_x_revert"), result.update.gyro2MouseXRevert)
-                || !parseBoolField(fields, QStringLiteral("mouse_y_revert"), result.update.gyro2MouseYRevert))
-                return fail("gyro2mouse revert flags must be booleans.");
-        }
-        if (gamepadThresholdsPreview) {
-            using namespace QKeyMapperConstants;
-            const auto raw = arguments.value(QStringLiteral("gamepad_thresholds"));
-            const auto groups = raw.toObject();
-            if (!raw.isObject() || groups.isEmpty())
-                return fail("Provide at least one gamepad threshold group (lt, rt, ls, rs).");
-            const QSet<QString> allowedGroups{
-                QStringLiteral("lt"), QStringLiteral("rt"), QStringLiteral("ls"), QStringLiteral("rs")};
-            for (auto it = groups.constBegin(); it != groups.constEnd(); ++it) {
-                if (!allowedGroups.contains(it.key()))
-                    return fail("Unknown gamepad threshold group.");
-            }
-            const auto parseThresholdGroup = [&](const QString &groupKey, const QString &pressKey, const QString &lightKey,
-                                                 std::optional<int> &pressTarget, std::optional<int> &lightTarget,
-                                                 std::optional<int> &releaseTarget) -> bool {
-                if (!groups.contains(groupKey)) return true;
-                const auto groupVal = groups.value(groupKey);
-                const auto fields = groupVal.toObject();
-                if (!groupVal.isObject() || fields.isEmpty()) return false;
-                for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-                    if (it.key() != pressKey && it.key() != lightKey && it.key() != QStringLiteral("release"))
-                        return false;
-                }
-                const auto parsePct = [&](const QString &fieldKey, std::optional<int> &target) -> bool {
-                    if (!fields.contains(fieldKey)) return true;
-                    const auto val = fields.value(fieldKey);
-                    const int parsed = val.toInt(GAMEPAD_THRESHOLD_PERCENT_MIN - 1);
-                    if (!val.isDouble() || val.toDouble() != parsed
-                        || parsed < GAMEPAD_THRESHOLD_PERCENT_MIN || parsed > GAMEPAD_THRESHOLD_PERCENT_MAX)
-                        return false;
-                    target = parsed;
-                    return true;
-                };
-                if (!parsePct(pressKey, pressTarget) || !parsePct(lightKey, lightTarget)
-                    || !parsePct(QStringLiteral("release"), releaseTarget))
-                    return false;
-                if (releaseTarget && lightTarget && *releaseTarget > *lightTarget) return false;
-                if (lightTarget && pressTarget && *lightTarget > *pressTarget) return false;
-                if (releaseTarget && pressTarget && *releaseTarget > *pressTarget) return false;
-                return true;
-            };
-            if (!parseThresholdGroup(QStringLiteral("lt"), QStringLiteral("press"), QStringLiteral("light_press"),
-                    result.update.gamepadLtPress, result.update.gamepadLtLightPress, result.update.gamepadLtRelease)
-                || !parseThresholdGroup(QStringLiteral("rt"), QStringLiteral("press"), QStringLiteral("light_press"),
-                    result.update.gamepadRtPress, result.update.gamepadRtLightPress, result.update.gamepadRtRelease)
-                || !parseThresholdGroup(QStringLiteral("ls"), QStringLiteral("push"), QStringLiteral("light_push"),
-                    result.update.gamepadLsPush, result.update.gamepadLsLightPush, result.update.gamepadLsRelease)
-                || !parseThresholdGroup(QStringLiteral("rs"), QStringLiteral("push"), QStringLiteral("light_push"),
-                    result.update.gamepadRsPush, result.update.gamepadRsLightPush, result.update.gamepadRsRelease)) {
-                return fail("Each gamepad threshold group must contain valid 0..100 integer fields with release <= light <= press/push.");
-            }
-        }
-        if (gamepadTouchpadPreview) {
-            using namespace QKeyMapperConstants;
-            const auto raw = arguments.value(QStringLiteral("gamepad_touchpad"));
-            const auto fields = raw.toObject();
-            if (!raw.isObject() || fields.isEmpty())
-                return fail("Provide at least one gamepad touchpad field (x_speed, y_speed, invert_x, invert_y).");
-            const QSet<QString> allowedFields{
-                QStringLiteral("x_speed"), QStringLiteral("y_speed"),
-                QStringLiteral("invert_x"), QStringLiteral("invert_y")};
-            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
-                if (!allowedFields.contains(it.key()))
-                    return fail("Unknown gamepad touchpad field.");
-            }
-            const auto parseSpeed = [&](const QString &key, std::optional<double> &target) -> bool {
-                if (!fields.contains(key)) return true;
-                const auto val = fields.value(key);
-                if (!val.isDouble()) return false;
-                const double d = val.toDouble();
-                if (!std::isfinite(d) || d < GAMEPAD_TOUCHPAD_SPEED_MIN || d > GAMEPAD_TOUCHPAD_SPEED_MAX)
-                    return false;
-                if (std::abs(d * 100.0 - std::round(d * 100.0)) > 1e-6)
-                    return false;
-                double canonical = std::round(d * 100.0) / 100.0;
-                if (canonical == 0.0) canonical = 0.0;
-                target = canonical;
-                return true;
-            };
-            const auto parseBoolField = [&](const QString &key, std::optional<bool> &target) -> bool {
-                if (!fields.contains(key)) return true;
-                const auto val = fields.value(key);
-                if (!val.isBool()) return false;
-                target = val.toBool();
-                return true;
-            };
-            if (!parseSpeed(QStringLiteral("x_speed"), result.update.gamepadTouchpadXSpeed)
-                || !parseSpeed(QStringLiteral("y_speed"), result.update.gamepadTouchpadYSpeed)) {
-                return fail("Gamepad touchpad speeds must be finite numbers in 0..200 with at most 2 decimal places.");
-            }
-            if (!parseBoolField(QStringLiteral("invert_x"), result.update.gamepadTouchpadInvertX)
-                || !parseBoolField(QStringLiteral("invert_y"), result.update.gamepadTouchpadInvertY)) {
-                return fail("Gamepad touchpad invert flags must be booleans.");
-            }
-        }
-        if (acceptVirtualGamepadInputPreview) {
-            const auto value = arguments.value(QStringLiteral("accept_virtual_gamepad_input"));
-            if (!value.isBool()) return fail("Provide an explicit boolean accept_virtual_gamepad_input.");
-            result.update.acceptVirtualGamepadInput = value.toBool();
         }
         if (processIconTrayPreview) {
             const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
@@ -1581,6 +1702,54 @@ void appendPreferencesAndIgnoreCapabilities(QJsonArray &capabilities, const Capa
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendVButtonPanelCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    using namespace QKeyMapperConstants;
+    const QJsonObject vbuttonPanelSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("columns"), CapabilitySchemaContext::boundedInteger(1, 20)},
+            {QStringLiteral("max_rows"), CapabilitySchemaContext::boundedInteger(2, 999)},
+            {QStringLiteral("button_width"), CapabilitySchemaContext::boundedInteger(4, 640)},
+            {QStringLiteral("button_height"), CapabilitySchemaContext::boundedInteger(4, 640)},
+            {QStringLiteral("opacity"), QJsonObject{{QStringLiteral("type"), QStringLiteral("number")},
+                {QStringLiteral("minimum"), 0.10}, {QStringLiteral("maximum"), 1.00}}},
+            {QStringLiteral("always_on_top"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("default_show"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("margin"), CapabilitySchemaContext::boundedInteger(0, 50)},
+            {QStringLiteral("radius"), CapabilitySchemaContext::boundedInteger(0, 100)},
+            {QStringLiteral("drag_enabled"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("reference_point"), CapabilitySchemaContext::boundedInteger(FLOATINGWINDOW_REFERENCEPOINT_MIN, FLOATINGWINDOW_REFERENCEPOINT_MAX)},
+            {QStringLiteral("offset_x"), CapabilitySchemaContext::boundedInteger(-50000, 50000)},
+            {QStringLiteral("offset_y"), CapabilitySchemaContext::boundedInteger(-50000, 50000)},
+            {QStringLiteral("font_size"), CapabilitySchemaContext::boundedInteger(VBTNPANEL_BTNFONTSIZE_MIN, VBTNPANEL_BTNFONTSIZE_MAX)},
+            {QStringLiteral("font_weight"), CapabilitySchemaContext::boundedInteger(VBTNPANEL_FONT_WEIGHT_MIN, VBTNPANEL_FONT_WEIGHT_MAX)},
+            {QStringLiteral("font_family"), CapabilitySchemaContext::string(QStringLiteral("^[^\\u0000\\r\\n]*$"), 255)},
+            {QStringLiteral("bg_color"), CapabilitySchemaContext::string(QStringLiteral("^#[0-9A-Fa-f]{8}$"), 9)},
+            {QStringLiteral("button_color"), CapabilitySchemaContext::string(QStringLiteral("^#[0-9A-Fa-f]{6}$"), 7)},
+            {QStringLiteral("pressed_color"), CapabilitySchemaContext::string(QStringLiteral("^#[0-9A-Fa-f]{6}$"), 7)},
+            {QStringLiteral("locked_color"), CapabilitySchemaContext::string(QStringLiteral("^#[0-9A-Fa-f]{6}$"), 7)},
+            {QStringLiteral("text_color"), CapabilitySchemaContext::string(QStringLiteral("^#[0-9A-Fa-f]{6}$"), 7)}}}};
+    auto previewCap = CapabilitySchemaContext::capability("configuration.set_vbutton_panel_settings.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_vbutton_panel_settings")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("vbutton_panel"), vbuttonPanelSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("vbutton_panel")}));
+    auto applyCap = CapabilitySchemaContext::capability("configuration.set_vbutton_panel_settings.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&previewCap, &applyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("applies_panel_worker_and_syncs_setup_dialog"), QStringLiteral("preserves_current_panel_visibility"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -1710,6 +1879,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }
+    appendVButtonPanelCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

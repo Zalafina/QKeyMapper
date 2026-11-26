@@ -51,6 +51,30 @@ struct MappingRemovalArguments {
 enum class MappingRowMove { None, Up, Down, Top, Bottom };
 const char *mappingRowMoveAction(MappingRowMove move);
 
+struct VButtonPanelUpdate {
+    std::optional<int> columns;
+    std::optional<int> maxRows;
+    std::optional<int> buttonWidth;
+    std::optional<int> buttonHeight;
+    std::optional<double> opacity;
+    std::optional<bool> alwaysOnTop;
+    std::optional<bool> defaultShow;
+    std::optional<int> margin;
+    std::optional<int> radius;
+    std::optional<bool> dragEnabled;
+    std::optional<int> referencePoint;
+    std::optional<int> offsetX;
+    std::optional<int> offsetY;
+    std::optional<int> fontSize;
+    std::optional<int> fontWeight;
+    std::optional<QString> fontFamily;
+    std::optional<QString> bgColor;
+    std::optional<QString> buttonColor;
+    std::optional<QString> pressedColor;
+    std::optional<QString> lockedColor;
+    std::optional<QString> textColor;
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -111,6 +135,7 @@ struct MappingUpdateArguments {
     std::optional<bool> gamepadTouchpadInvertX;
     std::optional<bool> gamepadTouchpadInvertY;
     std::optional<bool> acceptVirtualGamepadInput;
+    std::optional<VButtonPanelUpdate> vbuttonPanel;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

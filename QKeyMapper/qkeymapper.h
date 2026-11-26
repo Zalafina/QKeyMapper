@@ -1797,6 +1797,7 @@ private slots:
 
     void on_vButtonPanelSetupButton_clicked();
     void onVButtonPanelSettingsAccepted();
+    void applyVButtonPanelSettings(const VButtonPanelSettings &settings, bool syncDialog);
     void onShowVButtonPanelRequested(bool visible);
     void onSyncVButtonPanel(bool showPanel);
     void onShowFloatingButtonStartFromCurrentKeyMappingRow(int rowindex, const QString &floatingbutton_keystr);
