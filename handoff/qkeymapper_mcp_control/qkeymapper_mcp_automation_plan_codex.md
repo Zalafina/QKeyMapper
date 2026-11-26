@@ -14,16 +14,22 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | `REVIEW-FIX-257-266-R3 [Gemini]`（基于 `6981cb3b`，代码修复 `9560d278`，收口 `06_codex_recheck_r2.md` 全部 2 项；状态：**已补验，待 Codex r3 复审**；暂停条件：复审通过并完成评审状态收口后即暂停等待用户推送与后续指令，不自动开启 `100～249` 或 `UI-FLOAT-267`） |
-| 同步与评审锚点 | **上次已审／远端基线**：`dd21d790`（`origin/codex/qkeymapper-mcp-control`）。<br>**冻结待审代码范围**：`dd21d790..9560d278`（含 `257～266`、r1 `d2c742aa`、r2 `5db982a9`、r3 `9560d278`；最新 docs 提交与同步状态见 `out/codex_review/LATEST.md`，状态 **已补验，待 Codex r3 复审**） |
+| 当前切片 | `DOC-TRIM-266 [Gemini]`（基于已推远端基线 `8cbf5eb3` 独立纯文档精简切片；无源码改动，代码沿用 `9560d278`；状态：**已完成精简验收，待 Codex 轻量只读复审**；暂停条件：复审通过后暂停等待用户推送与后续指示，不自动开启 `UI-FLOAT-267`） |
+| 同步与评审锚点 | **上次已审／远端基线**：`8cbf5eb3`（`origin/codex/qkeymapper-mcp-control`，`dd21d790..8cbf5eb3` 共 18 条提交已由 Codex r3 PASS 收口并推送，代码终点 `9560d278`）。<br>**当前待审纯文档切片**：`8cbf5eb3..<HEAD>`（仅压缩 `104～133`／`135～136A`／`138～256` 历史明细；送审与复审入口见 `out/codex_review/LATEST.md`） |
 | 执行机器 | `PC-W11`（Qt 6.8.3／Qt 5.15.2、MSVC、Rust Sidecar）。Win10 正式 Release 与跨系统验收仍待 |
-| 目标分支／接纳点 | `codex/qkeymapper-mcp-control`，`D:/work/mygithub/QKeyMapper/QKeyMapper`；仅聚焦本地提交（未推送） |
-| 核心基线 | `RUST-D4` `349d889c`；`154` `8f902531`；`155` `c9283438`；`IbInput` `e73f719b`（`MCP 94f0bb84` ＋ 固定输入 `b5b484a6`） |
-| 当前已完成 | 按里程碑汇总（维持 **M2-A 进行中**；`UI-002 3/3`、`UI-003 3/3` 仅计设置能力，视觉与外设单列，见 [capability_matrix.md](capability_matrix.md)）：<br>- **M2-A（进行中）**：排序 `162～167`、Tab 与行属性 `168～194`、触发 `195～196`、复制 `197～201`、宏与导入 `202～212`、单表／普通组传输 `215/216/218～220/222～224/226/228～231`；<br>- **M2-B（进行中）**：设置 `213/214/217/221/225/227/232/234～257`、`261`（面板）、`262`（双通知）、`263`（托盘）、`264`（悬浮窗）、`265`（准星 `UI-003`）、`266`（Tab 图片 `UI-002`），含 r1～r3 修复 `d2c742aa`/`5db982a9`/`9560d278`；<br>- **M3-A（进行中，仅配置子项）**：阈值 `258`、触摸板 `259`、接受虚拟手柄输入 `260` |
-| 当前验证／证据 | `REVIEW-FIX-257-266-R3 [Gemini]`（代码 `9560d278`，PC-W11）：Qt6 Release `QKeyMapper.exe` `71E69EE6` 零警告；Rust Sidecar `4EDB6880`（未改代码，沿用 `cargo test` 23+30/1 ignored 与合同 6/6 PASS）；组件 `QKeyMapperMcpControlTest.exe` Qt6 `E4EA7AD3`（全套 `90 passed` 零警告）／Qt5 `48BE2252`（定向 `5 passed` 零警告）；隔离产品 `D0D50D37` 零警告（禁用 FakerInput）；双 Qt 读回器 `975A2ADB`/`4209A751`；私有桌面 `run3`（PID `33224`）3 阶段与双 Qt INI `unchanged_other_keys=252, changed_other_keys=0` 全通，详证见下 `REVIEW-FIX-257-266-R3` 与 `out/codex_review/LATEST.md`。未验：开启 FakerInput 连接、OS 文件 symlink 创建实测、真实视觉绘制、Qt5 整体产品、Win10 Release 及外设/跨登录待办 |
-| 当前控制器 | 11-26 外部 gsudo 控制器 PID `33224` 当前活跃且已清零（有效至今日 19:00，Medium；`scope/registered_targets/owned_targets/unresolved_starts` 全空；按技能只读核验） |
-| 下一项动作 | 待 Codex 完成 `out/codex_review/20261126_257_266/08_codex_recheck_r3.md` 复审；通过后完成本仓库评审状态收口并暂停等待用户推送与后续指令（不自动开启 `100～249` 或 `UI-FLOAT-267`） |
-| 剩余估算与外部待办 | 剩余有效作业时间沿用第 3 节（原 60–106 小时，预留 75–135 小时 ＋ DEMO 待估）。外部待办：开启 FakerInput 连接、Win10 Release／三包、真实外设输入与虚拟手柄反馈、托盘/通知/悬浮窗/面板/准星实际视觉渲染与热键、137 跨登录／重启、主动试发、多实例前台绑定及 Win10 QQ 联调 |
+| 目标分支／接纳点 | `codex/qkeymapper-mcp-control`，`D:/work/mygithub/QKeyMapper/QKeyMapper`；仅聚焦本地文档提交（未推送） |
+| 核心基线 | `RUST-D4` `349d889c`；`154` `8f902531`；`155` `c9283438`；`IbInput` `e73f719b`（`MCP 94f0bb84` ＋ 固定输入 `b5b484a6`）；**历史全文固定回溯基线 `8cbf5eb3`**（代码终点 `9560d278`） |
+| 当前已完成 | 按里程碑汇总（维持 **M2-A 进行中**；`UI-002 3/3`、`UI-003 3/3` 仅计设置能力，视觉与外设单列；终验时按 [capability_matrix.md](capability_matrix.md) 逐项核对本地代码完成度）：<br>- **M1／DEMO／PERSIST 已选验基线**：`104～133`、`135～137B`（同登录）、`149～161`、`UI-73`（详见下方与锚点 `8cbf5eb3`）；<br>- **M2-A（进行中）**：排序 `162～167`、Tab 与行属性 `168～194`、触发 `195～196`、复制 `197～201`、宏与导入 `202～212`、单表／普通组传输 `215/216/218～220/222～224/226/228～231`；<br>- **M2-B（进行中）**：设置 `213/214/217/221/225/227/232/234～257`、`261`（面板）、`262`（双通知）、`263`（托盘）、`264`（悬浮窗）、`265`（准星 `UI-003`）、`266`（Tab 图片 `UI-002`），含 r1～r3 修复 `d2c742aa`/`5db982a9`/`9560d278`；<br>- **M3-A（进行中，仅配置子项）**：阈值 `258`、触摸板 `259`、接受虚拟手柄输入 `260` |
+| 当前验证／证据 | 本切片仅纯文档精简（未改源码、未构建、未启动产品）：产品与源码验证沿用 Codex r3 PASS `9560d278`／`8cbf5eb3`（Qt6 Release `71E69EE6`、Rust `4EDB6880` 6/6 合同、Qt6/Qt5 组件 `E4EA7AD3`/`48BE2252`、隔离产品 `D0D50D37` + `run3` 全通，见下 `REVIEW-FIX-257-266-R3` 与 `out/codex_review/20261126_257_266/08_codex_recheck_r3.md`）。文档检查覆盖防遗漏对照、`git show 8cbf5eb3:...` 回溯抽检、全量出站／入站锚点 0 断链、`capability_matrix.md` 未改动、UTF-8 无 BOM／LF 及单文件 `< 256 KiB` |
+| 当前控制器 | r3 收尾时外部控制器 PID `33224` 已清零；本纯文档切片未调用 gsudo、未启动产品（后续特权测试前先按技能只读检查实时状态） |
+| 下一项动作 | 待 Codex 完成 `out/codex_review/20261126_doc_trim_100_256/02_codex_review_r1.md` 轻量只读复审；通过后暂停等待用户推送与后续指示（下一功能候选 `UI-FLOAT-267` 及剩余 M2-B 对话框） |
+| 剩余估算与外部待办 | 剩余有效作业时间沿用第 3 节（原 60–106 小时，预留 75–135 小时 ＋ DEMO 待估）。外部待办：**PC-W11**：开启 FakerInput 连接、OS 文件级 symlink、实际视觉绘制与托盘/通知/悬浮窗/面板/准星渲染及穿透热键、原生文件选择器、Qt5 全量组件及整体产品、真实物理外设与虚拟手柄反馈、`PERSIST-137` 跨登录／重启、`TARGET-DESIGN-47`/`DESIGN-58` 多实例前台绑定与整窗提示、`IbInput` 主动连接检查／试发、`AGY-160` 整包与同轮图像消费；**PC-W10**：Win10 正式 Release／三包与 PE 烟测、跨系统等价性复验、hermes／QQBot gateway 联调 |
+
+### DOC-TRIM-266 [Gemini]：历史正文压缩与固定 Git 锚点收口（2026-11-26）
+
+- **基线与压缩范围**：以已核实远端固定检查点 `8cbf5eb3` 为历史全文回溯锚点（代码终点 `9560d278`），按第 5 节精简约定将 `138～256`（含 `FORZA-MERGE-20261031`、`TRAY-MCP-FIX`、`REVIEW-FIX-241-*`、`CACHE-REGISTRY-233`、`ORDERED-MAP-209`、`DOC-140`、`CACHE-139A`）、`DEMO-104～133` 与 `PERSIST-135～136A` 历史执行明细压缩为结构化索引，保持总文件体积回归 `handoff/README.md` 建议的 `256 KiB` 以内；原件全文随时可通过 `git show 8cbf5eb3:handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md` 完整取回。
+- **原样保留内容**：全文保留最近业务切片 `257～266`（含 `IGNORE-BUILTIN-DESC-FIX` 与 `REVIEW-FIX-257-266` r1～r3）、`UI-73`、第 1 节全部架构与防跑偏契约（`REVIEW-59`、`TARGET-DESIGN-47`、`DEMO-SESSION` 设计规则、`M1 v0.1`、`PERSIST-134`、`PERSIST-137-A/B`、`M0.3b` 摘要与必备矩阵）、第 2～5 节操作等价性／阶段排期／任务队列／管理规则／交叉决定、`capability_matrix.md`、`validation.md` 及其他证据页；`RUST-D4`、`EDIT-GUI-141`、`EDIT-142` 三处被外部引用锚点标题原字面保留；文中所有 `out/` 路径均标明为 `PC-W11` 本机 `.gitignore` 忽略产物（不随 Git 同步），可按仓库既有脚本重新生成。
+- **文档验收口径**：不修改源码、不构建或运行产品；完成精简前后活跃状态／未闭环／外部待办对照、`git show 8cbf5eb3:...` 回溯抽读、全文件出站与跨文件入站锚点校验、`capability_matrix.md` 未改动校验、UTF-8 无 BOM／纯 LF／`git diff --check` 与单文件／目录大小核对，详证见 `out/codex_review/20261126_doc_trim_100_256/01_gemini_submission.md`。
 
 ### REVIEW-FIX-257-266-R3 [Gemini]：Codex r2 复审（`06_codex_recheck_r2.md`）全部 2 项发现收口
 
@@ -137,683 +143,63 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 - **实测与重试记录**：私有桌面 `out/mcp_product/ignore_upsert_252_20261125/run7_builtin_desc/`（桌面 `QkmProduct_28bbdb8ce33d4a28873e90e9b7b238cb`）通过 GUI 运行时 `ZH->EN->JA->ZH` 语言切换、MCP 改写/清空内置规则保存与双 Qt 6.8.3/5.15.2 读回（`changed_other_keys=0`、`unchanged_other_keys=261`）、`LanguageIndex=0/1/2` 三语言冷启动读回（自定义与空说明均保留、未改动的 `"Qt tool window"` 随语言切换刷新）及 `ignore_rules.restore_defaults` 恢复当前语言默认说明。重试记录：仅测试夹具先后调整 4 次（`run3` 列表单击未命中双击加载槽、`run4` 补 `mouseDClick`/`itemDoubleClicked`、`run5` 遗漏 `restore_defaults` 的 `catalog_revision`、`run6` 运行目录旧 Sidecar 与 `confirm_scope` 参数对齐），正式产品源码一次修复通过。
 - **未验范围**：开启 FakerInput 连接的运行、Win10 正式 Release 及其余 5 条内置规则同路径逐一抽查（与受测规则走同一循环表）。本机选验完成，待 Codex 复核。
 
-### SET-SCALE-256 [Gemini]：全局显示缩放 `general.set_display_scale` 与 `get_state.display_scale`
-
-- **源码基线**：`e4fb73d6`；实现 `QKeyMapper::setDisplayScaleEnum(int)` 共用路径并重构 `initScaleMenu()` 复用该函数，同时补齐 `general.set_display_scale.{preview,apply}`（120/112 能力项）、`get_state.display_scale` 与 Rust Sidecar 参数校验／工具契约。
-- **变更文件**：`QKeyMapper/qkeymapper.{h,cpp}`、`QKeyMapper/automation/qkm_mapping_changes.{h,cpp}`、`QKeyMapper/tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/{tool_args.rs,tool_catalog.json}`、`mcp_bridge_rust/tests/test_tool_contract.py`、`handoff/qkeymapper_mcp_control/{qkeymapper_mcp_automation_plan_codex.md,capability_matrix.md}`。
-- **构建产物（SHA256 前 8 位）**：Qt6 Release `QKeyMapper.exe` `4811ED24`（`scripts\build_qt6.ps1` 零警告）、Rust Sidecar `qkeymapper-mcp-rust.exe` `428232C4`、Qt6 组件 `test_mcp_control.exe` `E5FA00E6`（4 passed, 0 failed）、Qt5 组件 `test_mcp_control.exe` `C8B7EF2A`（4 passed, 0 failed）、隔离产品 `QKeyMapperMcpAcceptance_SetScale.exe` `004A4FEE`（零警告，ALL_NON_SYSTEM_DLLS_PRESENT；运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验）、双 Qt INI 读回器 `read_display_scale.exe`（Qt 6.8.3 `D499E7DE`／Qt 5.15.2 `5D825297`）。
-- **测试与验证覆盖**：`cargo test`（lib `23 passed; 0 failed; 1 ignored` + bin `20 passed; 0 failed; 0 ignored`）；`test_tool_contract.py` 6 组全通过；私有桌面 `QkmProduct_f9ef637579174a46b5609655cdffd350` `run2`（PID 40116）覆盖 GUI 组合框/托盘或视图缩放菜单联动、只读守卫、Schema 边界、未选中常规页签 `context_busy`、`tab.select` 后实时缩放与重启生效枚举切换、保存/冷启/双 Qt INI 读回（`display_scale=9`，`unchanged_other_keys=261, changed_other_keys=0`）及 `--demo-configuration-only`。重试记录：构建读回器时修复 1 次 `QVariant::toInt(&ok)` 参数类型；产品测试脚本 `run1` 修正 1 次未切换常规页签直接修改全局缩放导致预期内的 `context_busy`。
-- **未验范围**：Win10 正式 Release／跨 DPI 多显示器实体物理拖拽与开启 FakerInput 连接的运行待验。本机选验完成，待 Codex 复核。
-
-### WIN-RESTORE-PATH-255 [Gemini]：窗口进程绝对路径恢复 `configuration.restore_process_path` 与 GUI dirty 同步修正
-
-- 源码基线：`65c33ac0`。
-- 变更范围：
-  - `QKeyMapper/qkeymapper.{h,cpp}`：提取共用 `QKeyMapper::restoreProcessPathToProcessLineEdit()`，在 `ui->restoreProcessPathButton` 与 `ui->processLineEdit` 启用且 `m_MapProcessInfo.FilePath` 非空并不同于当前输入时恢复绝对路径并同步调用 `markSaveSettingDirty()`；重构 `on_restoreProcessPathButton_clicked()` 确认 `Yes` 后复用该函数，消除原 `setText` 不触发 `textEdited` 导致 GUI 恢复路径后漏标 dirty 的信号差异；在 `collectAutomationState` 新增 `restore_process_path` 状态块（含 `editable`/`has_stored_path`/`differs_from_process_name`/`can_restore`/`stored_file_path`/`current_process_name` 及 1024 UTF-16 有界截断元数据）。
-  - `QKeyMapper/automation/qkm_mapping_changes.{h,cpp}`、`QKeyMapper/qkeymapper.cpp` & `QKeyMapper/tests/mcp_control/test_mcp_control.cpp`：新增 `configuration.restore_process_path.{preview,apply}`（标准 118 / demo 110 项），接收 `source_tab_ref`，按禁用状态拒绝 `unsupported_capability`、按空存储路径拒绝 `invalid_target`、按未配置保存组切回/一致组校验拒绝 `stale_source`，预览严格区分编辑框值变化与未立即修改 `m_MapProcessInfo.FileName` 缓存（`updates_cached_process_info_immediately=false`）、无变更时 `will_modify=false`／提交返回 `modified=false`，严格校验 `confirm_scope=true` 门禁；`test_mcp_control.cpp` 同步更新能力基线与参数校验。
-  - `mcp_bridge_rust/src/{tool_args.rs,tool_catalog.json}` & `mcp_bridge_rust/tests/test_tool_contract.py`：新增 `PreviewAction::RestoreProcessPath`、`configuration.restore_process_path` Schema（独立 `oneOf` 仅允许 `action` 与 `source_tab_ref`）、工具描述及双协议契约测试。
-- 关键产物 SHA256 前 8 位：正式 `Qt6 Release` (`out/build_qt6/release/QKeyMapper.exe`) `9B606FB3`；Rust Sidecar (`qkeymapper-mcp-rust.exe`) `3310AD10`；双 Qt 组件 (`QKeyMapperMcpControlTest.exe`) Qt6 `568835D0`／Qt5 `B7955C2C`；隔离验证包 `QKeyMapperMcpAcceptance_WinRestorePath.exe` `1E56ABBC`；双 Qt 读回器 (`read_process_info.exe`) `9317E5D7`／`4ACA411E`。
-- 实测与重试记录：
-  - 构建与单元／契约：`scripts\build_qt6.ps1` 零警告（`EXIT=0, WARN_LINES=0`）；`cargo test`（23 + 19 passed, 1 ignored）与 `test_tool_contract.py`（双协议 6 组 PASS）；Qt6／Qt5 组件各 4 passed（0 warnings）；隔离包及双 Qt 读回器全部 0 warnings 且 `ALL_NON_SYSTEM_DLLS_PRESENT`。
-  - 私有桌面真实产品 `run4`（`verify_win_restore_path.py`，桌面 `QkmProduct_6a54419f84b04810b934e79c3433f793`）：`gui_baseline`（取消 No 保持 `"demo.exe"` 与 clean；确认 Yes 设为 `"C:/Program Files/DemoApp/demo.exe"` 且 `dirty=true`、未改 INI；再点不弹确认窗）、`readonly`（只读拦截）、`standard_flow`（先物化 `baseline_saved.ini`、Schema/取消/`confirm_overwrite`/`confirm_delete`/缺 `confirm_scope` 拦截、`confirm_scope=true` 恢复编辑框并置 dirty 同时保持 `cached.file_name="demo.exe"`、用新 `source_tab_ref` 二次恢复返回 `modified=false`、显式保存重载刷新缓存为完整路径、切至无路径 `McpSecond` 返回 `invalid_target`、切至 `QKeyMapperGlobalSetting` 返回 `unsupported_capability`）、`cold_restored`（冷启校验完整路径与缓存）、双 Qt 6.8.3／5.15.2 读回（`saved_restored.ini` 对比 `baseline_saved.ini` 均 `changed_other_keys=0, unchanged_other_keys=261`）、`demo`（仅改内存置 dirty，INI 不变）全部通过，控制器已清零且无残留进程。
-  - 重试过程：仅验证脚本 `verify_win_restore_path.py` 调整 3 次（`run1` 误用 `it["active"]`、`run2` 二次无变更未用 `source_binding_after` 新 `source_tab_ref`、`run3` 未先物化 `baseline_saved.ini` 导致对照了精简种子缺省 172 键），正式 C++／Rust 代码一次构建零修改通过 `run4`。
-  - 已知环境差异与未验项：**运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验**；Win10 正式 Release、以及与真实目标进程实际窗口匹配联动及超过 1024 字符超长路径截图展示未在本轮单测范围。
-  - 本机选验完成，待 Codex 复核。
-
-### IGNORE-DEFAULTS-254 [Gemini]：全局忽略规则恢复默认 `ignore_rules.restore_defaults` 与运行期三语言描述同步
-
-- 源码基线：`20695a69`。
-- 变更范围：
-  - `QKeyMapper/qkeymapper.{h,cpp}` & `QKeyMapper/qignorewindowinfolistdialog.cpp`：提取 `applyDefaultIgnoreWindowInfoDescriptions`、`QKeyMapper::buildDefaultIgnoreWindowInfoList()`、`QKeyMapper::ignoreWindowInfoMapsEqual()` 与共用 `QKeyMapper::restoreDefaultIgnoreWindowInfoRules(dialog)`；`buildDefaultIgnoreWindowInfoList()` 构造全部 9 条内置默认规则并立即按当前语言 `tr(...)` 填充 7 条内置描述（冷启时 `setUILanguage()` 仍同步调用 `updateIgnoreWindowInfoListDescriptionTranslation()` 刷新）；`restoreDefaultIgnoreWindowInfoRules()` 按内容与顺序精准判别是否发生真实变化（`changed`），并刷新 `updateRulesListWidget()` 与 `initRuleWindowInfoArea()`；重构 `on_restoreDefaultRulesButton_clicked()` 复用该函数并仅在 `changed` 时置 dirty。
-  - `QKeyMapper/automation/qkm_mapping_changes.{h,cpp}` & `QKeyMapper/tests/mcp_control/test_mcp_control.cpp`：新增 `ignore_rules.restore_defaults.{preview,apply}`（标准 116 / demo 108 项），仅接受 `ignore_rule.catalog_revision`（64 位小写 hex），拒绝多余字段，预览返回 `replace_all_ignore_rules` 差异（`removed_custom_rule_names`/`restored_missing_rule_names`/`reset_modified_rule_names`/`order_changed`）、完整 9 条 `default_rules` 与 `will_modify`，严格校验 `confirm_scope=true` 门禁并拒绝 `confirm_overwrite`/`confirm_delete`/`confirm_conflicts`；`test_mcp_control.cpp` 同步更新能力基线与参数校验。
-  - `mcp_bridge_rust/src/{tool_args.rs,tool_catalog.json}` & `mcp_bridge_rust/tests/test_tool_contract.py`：补齐 `IgnoreRuleRestoreDefaults`、`ignore_rules.restore_defaults` Schema（拒绝 `null` 与多余属性）、工具描述及双协议契约测试。
-- 关键产物 SHA256 前 8 位：正式 `Qt6 Release` (`out/build_qt6/release/QKeyMapper.exe`) `6390162F`；Rust Sidecar (`qkeymapper-mcp-rust.exe`) `8C059B96`；双 Qt 组件 (`QKeyMapperMcpControlTest.exe`) Qt6 `ADB9E2EF`／Qt5 `0A363708`；隔离验证包 `QKeyMapperMcpAcceptance_IgnoreDefaults.exe` `E649BD7B`；双 Qt UTF-8 读回器 (`read_ignore_rules.exe`) `6C356B54`／`81BB7231`。
-- 实测与重试记录：
-  - 构建与单元／契约：`scripts\build_qt6.ps1` 零警告（`EXIT=0, WARN_LINES=0`）；`cargo test`（23 + 18 passed, 1 ignored）与 `test_tool_contract.py`（双协议 6 组 PASS）；Qt6／Qt5 组件各 4 passed（0 warnings）；隔离包构建 0 warnings 且 `ALL_NON_SYSTEM_DLLS_PRESENT`。
-  - 私有桌面真实产品 `run1`（`verify_ignore_defaults.py`，桌面 `QkmProduct_b55a0db45e604fdb82d8dd1ceb341349`）：`gui_baseline`（删 `"Qt tooltip window"` + 添 `"McpGuiCustom"` 并双击加载入编辑区后，点 `RestoreDefault`→No 保持自定义规则与编辑草稿；再点→Yes 恢复 9 条默认规则、`disabled=false`、当前中文描述非空、清空编辑草稿、置 dirty、`isWindowInIgnoreList` 恢复匹配且 INI 未改）、`readonly`（只读拦截）、`standard_flow`（Schema/陈旧版本拦截、增 1 自定义＋改 1 内置描述/禁用＋删 1 内置后预览取消保持、错误确认标志与缺 `confirm_scope` 拦截、准确列出移除/补回/重置清单后 `confirm_scope=true` 提交并置 dirty、再次恢复确认 `will_modify=false`/`modified=false` 与保存）、`cold_defaults` + `cold_match`（9 条全部 `disabled=false` 且实时匹配恢复）、双 Qt 6.8.3 / 5.15.2 读回（`saved_defaults.ini` 9 条且 `changed_other_keys=0, unchanged_other_keys=261`）、`lang_0`/`1`/`2` 三语言恢复默认（分别测得 `'Qt的tooltip显示。'` / `'Tooltip display of Qt.'` / `'Qt のツールチップ表示。'`）、`demo`（仅内存恢复不写盘）全部一次通过；控制器已清零且无残留进程。
-  - 重试过程：仅验证夹具 `ignore_defaults_gui.cpp` 初次编排时 `isWindowInIgnoreList` 参数多加了 `const` 导致 1 次编译失败，去掉 `const` 后重编并通过；正式源码、Rust 契约与私有桌面产品 `run1` 均一次通过。
-  - 已知环境差异与未验项：**运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验**；Win10 正式 Release、以及先增删空规则列表后再触发语言热切换刷新未在本轮单测范围（静态 `setUILanguage()` 已有 `updateIgnoreWindowInfoListDescriptionTranslation()` 刷新逻辑）。
-  - 本机选验完成，待 Codex 复核。
-
-### IGNORE-DELETE-253 [Gemini]：全局忽略规则删除 `ignore_rules.delete` 与空／单条列表冷启持久化修正
-
-- 源码基线：`922887e7`。
-- 变更范围：
-  - `QKeyMapper/qkeymapper.{h,cpp}` & `QKeyMapper/qignorewindowinfolistdialog.{h,cpp}`：提取共用 `QKeyMapper::removeIgnoreWindowInfoRules(ruleNames, dialog)`（规范校验 `OrderedMap` 精确名称、有序删除、触发 `refreshIgnoreRules`／`updateRulesListWidget`／`clearEditorIfDisplayingRuleNames` 与 `requestSaveSettingDirty()`），重构 `on_deleteRuleButton_clicked()` 复用该函数；同步修正 `loadIgnoreRulesFromINI()`，改为基于 `rulesVar.userType()` 精确分派——`!rulesVar.isValid()`（`@Invalid()` 空 `QVariantList`）保留空列表 `0` 条、`QMetaType::QVariantList` 读取多条、`QMetaType::QVariantMap` 兼容 `QSettings::IniFormat` 单元素列表反序列化为单个 Map 的情况、其余损坏标量／非列表类型（如 `invalid_scalar_value`）触发 `initIgnoreWindowInfoList()` 回退 9 条默认规则。
-  - `QKeyMapper/automation/qkm_mapping_changes.{h,cpp}` & `QKeyMapper/tests/mcp_control/test_mcp_control.cpp`：新增 `ignore_rules.delete.{preview,apply}`（标准 114 / demo 106 项），校验 `catalog_revision`、1..100 个去重非空单行规则名、严格 `confirm_delete=true` 门禁、`invalid_target`/`stale_catalog`/`stale_preview` 错误码与规范 `OrderedMap` 顺序的预览 `changes`/`remaining_count`；`test_mcp_control.cpp` 同步更新能力基线与参数校验。
-  - `mcp_bridge_rust/src/{tool_args.rs,tool_catalog.json}` & `mcp_bridge_rust/tests/test_tool_contract.py`：补齐 `ignore_rules.delete` Schema、`additionalProperties=false`、`null` 拒绝、工具描述及双协议契约测试。
-- 关键产物 SHA256 前 8 位：正式 `Qt6 Release` (`out/build_qt6/release/QKeyMapper.exe`) `B854C19D`；Rust Sidecar (`qkeymapper-mcp-rust.exe`) `56F850C1`；双 Qt 组件 (`QKeyMapperMcpControlTest.exe`) Qt6 `D8840D5F`／Qt5 `6CE533BC`；隔离验证包 `QKeyMapperMcpAcceptance_IgnoreDelete.exe` `ED74BAC4`；双 Qt UTF-8 读回器 (`read_ignore_rules.exe`) `6C356B54`／`81BB7231`。
-- 实测与重试记录：
-  - 构建与单元／契约：`scripts\build_qt6.ps1` 零警告（`EXIT=0, WARN_LINES=0`）；`cargo test`（23 + 17 passed, 1 ignored）与 `test_tool_contract.py`（双协议 6 组 PASS）；Qt6／Qt5 组件各 4 passed（0 warnings）；隔离包构建 0 warnings 且 `ALL_NON_SYSTEM_DLLS_PRESENT`。
-  - 私有桌面真实产品 `run4`（`verify_ignore_delete.py`，桌面 `QkmProduct_0d75b22cdd3543668033a39cba104482`）：`gui_baseline`（双击加载 `"Multitask view Staging"`，删除 `"Qt tooltip window"` 保持编辑草稿且实时 `isWindowInIgnoreList` 转 `false`，再删展示规则后清空草稿且无写入 INI）、`readonly`（只读拦截）、`standard_partial`（Schema/不存在/陈旧版本号/取消/`confirm_overwrite` 拒绝/`confirm_delete` 缺失拦截/逆序双删规范序与保存）、`cold_partial`（7 条冷启重查）、`cold_single`（删余 1 条冷启保留）、`cold_empty` + `cold_empty_match`（删尽保存 `@Invalid()` 冷启保持 0 条且 `match_tooltip=false`）、双 Qt 6.8.3 / 5.15.2 读回（`saved_partial.ini` 7 条与 `saved_empty.ini` 0 条均 `changed_other_keys=0, unchanged_other_keys=261`）、`corrupt_fallback`（`invalid_scalar_value` 回退 9 条默认规则）、`demo`（仅内存删除不写盘）全部通过，控制器已清零且无残留进程。
-  - 重试过程：源码括号闭合笔误 1 次（当即修正）；私有桌面 GUI 探针在视口外双击与私有桌面 QPA 命中定位调整 2 次（`run1`／`run2`）；`run3` 实测发现 `QVariant(QString).canConvert<QVariantList>()` 在 Qt 下返回 `true` 导致损坏标量未回退，修正为 `userType()` 精确分派并加测 `cold_single` 后 `run4` 一次全通。
-  - 已知环境差异与未验项：**运行副本禁用 FakerInput 分配与连接，开启 FakerInput 连接的运行待验**；Win10 正式 Release、GUI 可见选择 vs `currentItem` 同步交互及多实例／并发映射下删除未在本轮单测范围。
-  - 本机选验完成，待 Codex 复核。
-
-### IGNORE-UPSERT-252 [Gemini]：全局忽略规则目录查询 `ignore_rules` 与增改 `ignore_rules.upsert`
-
-- **源码基线**：`dc0f4609`。
-- **变更范围**：
-  1. `QKeyMapper/QKeyMapper.h/.cpp` 与 `QKeyMapper/qignorewindowinfolistdialog.cpp` 提取共用 `QKeyMapper::ignoreWindowInfoEquals()` 与 `QKeyMapper::upsertIgnoreWindowInfoRule()`（规范 `ruleName.trimmed()`、空串拒绝、原地覆盖保持 `OrderedMap` 位置、内容变更才标记改变并刷新规则列表；GUI `on_saveRuleButton_clicked()` 与 MCP `ignore_rules.upsert` 共用同一写入路径）。
-  2. `QKeyMapper/qkeymapper.cpp` 新增 `automationIgnoreRuleDiagnostics()`（与 `isWindowInIgnoreList()` 一致的 `has_effective_criteria`/`effective`/`invalid_regex_fields` 诊断）、`automationIgnoreRuleRow()`（对 `rule_name`/`process_name`/`window_title`/`class_name`/`description` 统一走 `boundAutomationText(..., 1024)` 有界截断并附 `truncated_fields` 与全量 UTF-8 SHA-256）及 `addAutomationIgnoreRulesCatalog()`；在 `handleAutomationCatalogQuery()` 与 `catalog.read` 能力声明接入 `entity="ignore_rules"`（与 `macros` 共享当前空闲源锁与分页修订校验）；在 `handleAutomationMappingChange()` 新增 `UpsertIgnoreRule`（守卫 `m_IgnoreRulesListDialog` 未打开且当前空闲、校验 `catalog_revision`、按名追加或原地部分覆盖保留省略字段、同名替换要求 `confirm_overwrite=true`、变更后置 `requestSaveSettingDirty()` 且不直接写 INI）。
-  3. `QKeyMapper/automation/qkm_mapping_changes.h/.cpp` 新增 `IgnoreRuleChangeArguments`、`UpsertIgnoreRule`、`MappingChangeStore::createIgnoreRule()` 及标准/演示双模式能力 `ignore_rules.upsert.{preview,apply}`（当前能力总数 112 标准 / 104 演示）；同步为 `QKeyMapper/QKeyMapper.pro` 的 `win32-msvc*` 补充 `QMAKE_CXXFLAGS *= /bigobj` 以解除 `qkeymapper.cpp` 超 65,536 COFF 节数的 `C1128` 编译上限；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`mcp_bridge_rust/src/tool_catalog.json` 与 `mcp_bridge_rust/tests/test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`8B957AD4`，零警告）；Rust Sidecar `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`2D12C58A`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`327EE24B`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`957E7465`）；新建双 Qt 忽略规则读回器 `out/mcp_ignore_rules_252_20261125/{qt6,qt5}-reader/release/read_ignore_rules.exe`（`6C356B54` / `81BB7231`，均零警告）；隔离产品 `out/mcp_product/ignore_upsert_252_20261125/runtime/QKeyMapperMcpAcceptance_IgnoreUpsert.exe`（`500E5849`，零警告，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/ignore_upsert_252_20261125/run2/`（含 `gui-probe-result.json`、`ignore-match-probe-result.json`、`baseline_saved.ini`、`saved.ini` 与 `readback-{qt6,qt5}.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 与隔离产品均零警告；`cargo test`（23+16 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt6/Qt5 增量构建均 0 warnings）；私有桌面 `run2` 全部 8 场景退出 0：GUI 探针验证初值 9 条、全空白拒添不脏、添加 `"  GuiRule  "` 规范化追加至索引 9 并命中且置 dirty、改设 `disabled=true` 原地保留索引 9 且停止命中且 INI 不变；只读配对验证 `ignore_rules` 枚举、全量 9 条＋分页（`offset=4,limit=3 -> next_offset=7`）、陈旧 `catalog_revision` 拒为 `stale_catalog` 与预览拒为 `permission_denied`；`McpSaved` 验证 Schema 非法参数拒绝、预览取消、新增传 `confirm_overwrite=true` 拒为 `invalid_arguments`、新增 `"  McpCustomRule  "`（保持 `description="  exact desc  "`、`effective=true`、`has_unsaved_changes=true`）、新增 `"McpEmptyCriteriaRule"`（`has_effective_criteria=false`）、新增 `"McpBadRegexRule"`（`invalid_regex_fields=["window_title"]`）、同名替换缺确认拒为 `confirmation_required`、带 `confirm_overwrite=true` 部分覆盖 `disabled=true` 保持索引 9 与原字段、无变化覆盖 `modified=false`、重新启用并显式 `configuration.save("McpSaved")`；冷启动 MCP 读回与 `--ignore-match-probe` 实测 12 条加载及正例命中／大小写敏感不命中／非法正则与空条件不命中；双 Qt 6.8.3／5.15.2 读回 12 条 `IgnoreWindowInfo_Rules` 字段与顺序完全一致（`changed_other_keys=0`、`unchanged_other_keys=261`）；`--demo-configuration-only`（104 能力）内存查询＋新增无写盘；2×16,000 汉字超长 `McpOversizedRule` 验证有界返回（`text_truncated=true` 与准确 `full_sha256`）并可短值覆盖恢复。控制器 PID `40116` 已清零。
-- **失败重试轮次**：主仓首次 Qt6 Release 编译因 `qkeymapper.cpp` 超 COFF 节上限触发 MSVC `C1128` 失败，经在 `QKeyMapper.pro` 为 `win32-msvc*` 增加 `/bigobj` 并修正 `tool_args.rs` 显式拒绝 `ignore_rule` 内 `null` 字段后，主仓、Rust、双 Qt 组件及隔离运行副本均零警告编过；私有桌面 `run1` 在前 5 场景全部通过后因 `read_ignore_rules.cpp` 的 `QTextStream(stdout)` 按 Windows ANSI 编码输出中文导致 Python UTF-8 解码异常，改为直接输出 UTF-8 字节后 `run2` 全部 8 场景一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、忽略规则编辑器“双击载入/清空草稿”、忽略列表实时打开态交互删除/恢复默认（归属 `253`/`254`）、真实前台枚举 `isWindowInIgnoreList` 对系统/多开窗口过滤跳过行为、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### WIN-SAME-WINDOWS-251 [Gemini]：发送到相同窗口 `configuration.set_send_to_same_windows`
-
-- **源码基线**：`05360895`。
-- **变更范围**：`QKeyMapper/automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::sendToSameWindows`、`configuration.set_send_to_same_windows` 严格布尔参数校验及标准/演示双模式能力（110 标准 / 102 演示，`sendToSameTitleWindowsCheckBox` 在 `--demo-configuration-only` 下保持可用）；`QKeyMapper/qkeymapper.cpp` 在 `collectAutomationState` 输出 `send_to_same_windows`（`enabled`、`effective_enabled` 对齐 `getSendToSameTitleWindowsStatus()`、`editable`、`blocked_by_auto_match`、`blocked_by_global_setting`），并在 `handleAutomationMappingChange` 处理 `changingSendToSameWindows`（允许当前普通或 Common Tab、普通或空白配置，复用 `!isEnabled()` 拒绝“自动匹配前台开启或 `QKeyMapperGlobalSetting`”为 `unsupported_capability`，预览对比 `enabled` 与 `effective_enabled`，应用调用 `setChecked` 触发 `toggled -> dirty` 并在切换 `auto_match_foreground` 时保留底层勾选值）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`mcp_bridge_rust/src/tool_catalog.json` 与 `mcp_bridge_rust/tests/test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`99573006`，零警告）；Rust Sidecar `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`3B62D60B`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`F81D9F5D`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`E2910E42`）；复用双 Qt INI 读回器 `out/mcp_win_criteria_249_20261124/{qt6,qt5}-reader/release/read_window_match.exe`（`25D21FE6` / `9B2A787D`）；隔离产品 `out/mcp_product/win_same_windows_251_20261125/runtime/QKeyMapperMcpAcceptance_WinSameWindows.exe`（`FB57E803`，零警告，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/win_same_windows_251_20261125/run1/`（含 `gui-probe-result.json`、`baseline_saved.ini`、`saved.ini` 与 `readback-{qt6,qt5}.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 与隔离产品均零警告；`cargo test`（23+15 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 仅白名单 `qtmain` LNK4099）；私有桌面 `run1` 全部 7 场景一次性全绿退出 0：GUI 探针验证初值禁用/未勾选、`autoStart` 解锁后左键点击置 `checked/effective/dirty` 且重勾 `autoStart` 后保持 `checked=true` 而 `effective=false` 且 INI 不变；只读配对验证 `permission_denied` 与完整状态；`McpSaved` 验证 Schema 非法参数拒绝、自动匹配开启时拒为 `unsupported_capability`、关闭自动匹配后预览取消、`false->true`（`effective_enabled=true`）、无操作、重开自动匹配后验证 `{enabled:true, effective_enabled:false, editable:false, blocked_by_auto_match:true}` 与拒绝更新、再关自动匹配验证恢复 `effective_enabled=true`、显式保存 `McpSaved`、冷启动恢复及双 Qt 6.8.3／5.15.2 读回（`SendToSameWindowsChecked=true`、`_raw="true"`、`AutoStartMappingChecked=0`，相对 `baseline_saved.ini` 排除该两键后 `unchanged_other_keys=260`、`changed_other_keys=0`）；`[QKeyMapperGlobalSetting]`（即使 `AutoStartMappingChecked=0`）验证 `blocked_by_global_setting=true`、`editable=false` 与 `unsupported_capability` 拒绝；`--demo-configuration-only`（`McpSaved` 且 `AutoStartMappingChecked=0`）验证内存 `false->true` 无写盘。控制器 PID `40116` 已清零。
-- **失败重试轮次**：全套构建、双 Qt 组件、契约单测与私有桌面 `run1` 均一次性全绿通过，零重试。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、映射运行期间多个真实同标题目标窗口的 `s_last_HWNDList` 枚举及不同后台发送方式广播投递与释放清理、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### WIN-AUTOSTART-250 [Gemini]：自动匹配前台 `configuration.set_auto_match_foreground` 与切换联动启用态修正
-
-- **源码基线**：`5db38020`。
-- **变更范围**：
-  1. `QKeyMapper/automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::autoMatchForeground`、`configuration.set_auto_match_foreground` 严格布尔参数校验及标准模式专属能力（因 `main.cpp:593-599` 在 `--demo-configuration-only` 下主动禁用 `autoStartMappingCheckBox`，对齐 `configuration.load`/`load_empty` 将其放入 `standardMode` 分支，总能力 108 标准 / 100 演示）。
-  2. `QKeyMapper/qkeymapper.cpp` 在 `collectAutomationState` 输出 `auto_match_foreground`（`enabled`、`check_state` `0..2`、`editable`、`global_saved_auto_start`、`send_to_same_windows_editable`），并在 `handleAutomationMappingChange` 处理 `changingAutoMatchForeground`（支持当前选中的普通或 Common Tab、普通/空白/全局配置组、`PartiallyChecked (1) -> Checked (2)/Unchecked (0)` 均以 `beforeState != afterState` 判定 `modified` 并走末尾 `requestSaveSettingDirty()`、预览附带 `send_to_same_windows_editable` 联动变化、`!isEnabled()` 拒绝 `unsupported_capability`、不直接写盘或更改磁盘 `matchAutoStartSaveSettings` 目标）。
-  3. 同步修正 `QKeyMapper::loadKeyMapSetting()` 与 `loadEmptyMapSetting()` 的真实跨配置联动缺陷：此前 `loadKeyMapSetting` 在第 28208 行调用 `autoStartMappingCheckBox->setCheckState(...)` 触发 `on_autoStartMappingCheckBox_stateChanged` 时，`settingselectComboBox->setCurrentIndex` 尚未于第 28599 行更新，导致 `Ordinary(Checked) -> QKeyMapperGlobalSetting(AutoStartMappingChecked=0)` 错将 `sendToSameTitleWindowsCheckBox` 启用、`Global(Checked) -> Ordinary(Unchecked)` 错将其保持禁用；现于第 28255 行按 `(isChecked() || (loadGlobalSetting && !loadDefault))` 禁用、否则在 `KEYMAP_IDLE` 下恢复启用，并在 `loadEmptyMapSetting()` 对齐禁用 `sendToSameTitleWindowsCheckBox`。
-  4. 同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`mcp_bridge_rust/src/tool_catalog.json` 与 `mcp_bridge_rust/tests/test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`CE824DEF`，零警告）；Rust Sidecar `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`3F4404B8`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`23C9C856`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`F74A0B09`）；复用双 Qt INI 读回器 `out/mcp_win_criteria_249_20261124/{qt6,qt5}-reader/release/read_window_match.exe`（`25D21FE6` / `9B2A787D`）；隔离产品 `out/mcp_product/win_autostart_250_20261125/runtime/QKeyMapperMcpAcceptance_WinAutoStart.exe`（`E6C3311F`，零警告，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/win_autostart_250_20261125/run5/`（含 `gui-probe-result.json`、`baseline_saved.ini`、`saved.ini`、`saved_global.ini`、`readback-{qt6,qt5}.json` 与 `readback-global-{qt6,qt5}.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 与隔离产品均零警告；`cargo test`（23+14 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 仅白名单 `qtmain` LNK4099）；私有桌面 `run5` 全部 7 场景退出 0：GUI 探针验证初值 `checkState=2`、`sendToSameTitleWindowsCheckBox` 禁用、左键点击取消勾选联动启用并置 dirty 且 INI 不变；只读配对验证 `permission_denied` 与状态；`McpSaved` 验证 Schema 非法参数拒绝、预览取消、`tab.select` 切至 Common Tab 后 `true -> false`（`check_state: 2->0`、`send_to_same_windows_editable: false->true`）、无操作、`configuration.save("McpSaved")`、冷启动恢复及双 Qt 6.8.3／5.15.2 读回（`AutoStartMappingChecked=0`，相对 `baseline_saved.ini` 排除该键后 `unchanged_other_keys=261`、`changed_other_keys=0`）；`QKeyMapperGlobalSetting` 验证 `editable=true`、`send_to_same_windows_editable=false`、草稿 `0->2` 不提前改 `global_saved_auto_start`、保存后更新并经双 Qt 读回 `2`，随后切入 `[OrdinaryUnchecked]` 验证 `send_to_same_windows_editable=true`；旧值 `[LegacyPartial]`（`AutoStartMappingChecked=1`）验证 `1->2` 与 `1->0` 均正确置 `modified=true`、dirty 与联动启用；`--demo-configuration-only` 实测省略该能力、`editable=false` 且拒绝 `unsupported_capability`、INI 不变。控制器 PID `40116` 已清零。
-- **失败重试轮次**：`run1`/`run2` 为验证脚本键名与未切 Common Tab 调用问题；`run3` 揭露上述 `loadKeyMapSetting()` 跨配置切换后 `sendToSameTitleWindowsCheckBox` 启用态滞后产品缺陷并在 `qkeymapper.cpp` 修正后通过 `run4` 全部标准场景；`run4` demo 用例与 `run4_demo` 确认 `main.cpp:596` 在演示模式下设计禁用 `autoStartMappingCheckBox`，收敛为标准模式专属能力后 `run5` 全部 7 场景一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、开启映射或配置热切换期间 `matchAutoStartSaveSettings` 对多个真实前台窗口的优先级排序／无条件组跳过／全局自动回退真实命中行为、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### TRAY-MCP-FIX [Gemini]：修复托盘右键菜单“Agent / MCP 控制”左键点击被 `SystrayMenu` 吞掉并补充独立分栏
-
-- **源码基线**：`02626cc8`。
-- **变更范围**：核对确认主计划第 1719 行已规划独立托盘入口且 `initSysTrayIcon()` 已连接 `m_TrayIconMenu_McpAction -> showMcpControlDialog`，但 `SystrayMenu::mousePressEvent`/`mouseReleaseEvent` 仅放行原有 3 个动作（吞掉左键点击）。本次在 `QKeyMapper/qkeymapper_constants.h` 新增 `SYSTRAY_MENU_ITEM_PRESSED_MCP = 4`；在 `QKeyMapper/qkeymapper.cpp` 的 `initSysTrayIcon()` 于 `m_TrayIconMenu_ShowHideAction` 与 `m_TrayIconMenu_McpAction` 之间新增 `addSeparator()` 形成独立分栏，在 `showMcpControlDialog()` 补充最小化窗口 `showNormal()` 恢复，并在 `SystrayMenu::mousePressEvent`/`mouseReleaseEvent` 新增 `m_TrayIconMenu_McpAction` 配对放行。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`FBE93090`，零警告）；隔离探针 `out/mcp_product/tray_mcp_fix_20261125/runtime/QKeyMapperMcpAcceptance_TrayMcp.exe`（`11A7EC92`，零警告，**运行副本禁用 FakerInput 分配与连接**）；证据 `out/mcp_product/tray_mcp_fix_20261125/run2/`（含 `tray-mcp-probe-result.json` 与 `tray-mcp-menu.png`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 与隔离运行副本均零警告；私有桌面隔离产品 `run2` 退出 0，实测菜单动作序列为 7 项且 `separator_before_mcp=true`、`separator_after_mcp=true`，人工／模型直接查验 `run2/tray-mcp-menu.png` 确认上下分隔线布局清晰；实测主窗可见点击打开（`opened_when_main_visible=true`）、跨项错位按压松开拦截（`mismatch_blocked=true`）、主窗隐藏托盘点击打开（`main_hidden_before_click=true`、`opened_when_main_hidden=true`）、最小化对话框再次点击恢复（`restored_from_minimized=true`）及 `ini_unchanged=true`。控制器 PID `40116` 已清零。
-- **失败重试轮次**：`run1` 因前次探针编译警告中断漏拷运行目录 DLL 且当时存在用户个人运行实例造成 `start_result_unknown` 触发旧控制器 PID `39460` 安全关闭；补齐全部 DLL 并经 `dumpbin /dependents` 验证且由用户外部重开控制器 PID `40116` 后，`run2` 一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、`Default` 桌面真实系统托盘图标右键弹出、Qt5 整体产品、Win10、跨登录及 QQ 联调保持待验。本机选验完成，待 Codex 复核。
-
-### REVIEW-FIX-241-ROOT-THRESHOLDS [Gemini]：241 根区空白重载与手柄阈值原子加载（Codex 三轮 P2 复核修正）
-
-- **源码基线**：`781d0965`。
-- **变更范围**：
-  1. **根区空白回退按磁盘 `[General]` 重载**：`QKeyMapper::loadKeyMapSetting`（`qkeymapper.h/.cpp`）新增 `bool loadRootBlankOnly = false` 参数，在 `loadRootBlankOnly=true` 时跳过窗口位置／全局偏好加载并固定将 `settingSelectStr` 置空，走与冷启动无 `SettingSelect` 相同的根区 `[General]` 读取路径；新增 `QKeyMapper::reloadRootBlankSettingGroup()`（复用 `loadSetting_flag=true`、`EMPTYSETTING_INDEX` 与 `settingNameLineEdit` 清理及共通修复）。`handleAutomationConfigurationList` 回退到原干净空白来源（`restoreCleanEmpty=true`）改用 `reloadRootBlankSettingGroup()`＋`clearSaveSettingDirty()`，既保留旧 INI `[General]` 非默认值又不标 dirty；显式 `configuration.load_empty` 仍走 `selectEmptySettingGroup()` 重置默认并保留草稿 `has_unsaved_changes=true`。
-  2. **手柄 12 项阈值原子加载**：`QMappingAdvancedDialog`（`qmappingadvanceddialog.h/.cpp`）新增 `GamepadThresholdSettings` 与 `setGamepadThresholds()`（校验规范化四组三元后屏蔽 12 个 SpinBox 信号、先放开上下限到 `0..100` 再写入全部 12 值，最后重建三元 `Release <= Light <= Press/Push` 约束，`resetGamepadThresholdsToDefaults()` 改为委托该入口）；`loadKeyMapSetting()` 先读取全部 12 项阈值再调用 `setGamepadThresholds()` 一次性应用，消除高阈值坏组回退 `McpSaved` 时因加载顺序先设 `Press=50` 被 `LightPress=85` 夹紧成 `85` 的问题。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`79D85D7C`，零警告）；复用未改动 Rust Sidecar `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`C072833F`）；241 隔离产品 `out/mcp_product/configuration_load_global_241_20261124/runtime/QKeyMapperMcpAcceptance_ConfigLoadGlobal.exe`（`8C42274B`，零警告，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/configuration_load_global_241_20261124/run7/`（含 `calls.jsonl`、`corrupt-saved-dialog-snapshots.json`、`corrupt-root-nondefault-dialog-snapshots.json` 与 `gui-probe-result.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 与 241 隔离运行副本均为零警告；私有桌面 241 隔离产品 `run7` 全部 9 轮退出 0，其中：`corrupt_from_saved` 与 `corrupt_from_blank` 同进程 27 项高级控件快照实测坏组（含 `LT=90/85/80`、`Key2Mouse_PollingInterval=17`、`Touchpad_XSpeed=2.5/InvertX=true`、`Brake=0.85`）失败回退后 `lt_press/lt_light_press/lt_release` 精确恢复 `50/30/15`（不再被夹为 `85`）且全 12 项阈值、触摸板与刹车值前后精确一致、`has_unsaved_changes=false`；新增 `corrupt_from_root_nondefault_blank` 在 `[General]` 写入 `Key2Mouse_PollingInterval=7`、`Key2Mouse_XSpeed=11`、`ShowWindowPointKey=F12`、`LT=70/40/20`、`Touchpad_XSpeed=1.75`、`Brake=1.45` 且无 `SettingSelect`，实测坏组失败回退后 `qkm_get_state` 与同进程快照均精确维持 `[General]` 非默认值（`7/11/F12` 与 `LT 70/40/20` 等全 27 项完全不变且 `has_unsaved_changes=false`），紧接着 `configuration.load("McpSaved")` 成功；`absent_global` 显式 `configuration.load_empty` 仍置 `has_unsaved_changes=true`。控制器 PID `39460` 已清零。
-- **失败重试轮次**：Qt6 Release、隔离构建与 `run7` 全部 9 轮均一次性全绿通过。
-- **明确未验范围**：本次未重跑 Rust / 双 Qt 组件 / `249`（对应逻辑未改，沿用 `e94536d9` 证据）；**开启 FakerInput 连接的运行**、Qt5 整体产品、Win10、跨登录及 QQ 联调保持待验。本机选验完成，待 Codex 复核。
-
-### REVIEW-FIX-241-RESET [Gemini]：241 空白回退完整配置级重置（Codex 二轮 P2 复核修正）
-
-- **源码基线**：`9aec8be5`（代码基线 `e94536d9`）。
-- **变更范围**：针对 Codex 对 `e94536d9` 指出的 `loadKeyMapSetting()` 在校验 `datavalidflag` 前提前写入配置级控件、而 `loadEmptyMapSetting()` 回退空白路径漏重置 `Key2Mouse_PollingInterval` 等字段导致“清理 dirty 却保留坏值”问题，在共用路径补齐重置：`QMappingAdvancedDialog`（`qmappingadvanceddialog.h/.cpp`）新增 `resetGamepadThresholdsToDefaults()`（先放开 12 项上下限再设默认并重装三元约束）；`QKeyMapper::loadEmptyMapSetting()`（`qkeymapper.cpp`）补齐 `Key2Mouse_PollingInterval`（默认 `2`）、`GamepadTouchpad_*`、12 项手柄阈值、`ShowWindowPointKey`／`ShowScreenPointKey`、`CustomNotification_*`（在 `blockSignals` 内重置位置/关闭并清 `m_CustomNotificationStyleInitialized` 同步风格副本/关闭编辑窗）及修复 `brakeThresholdDoubleSpinBox` 历史误设 `accelThresholdDoubleSpinBox` 的笔误（同步修正 `loadKeyMapSetting` 对应 `else` 分支）。`configuration_load_global_241_20261124/verify_load_global.py`（`out/` 忽略脚本）在坏组 `[QKeyMapperGlobalSetting]` 增补 `Key2Mouse_PollingInterval=17` 等 14 项非默认设置，在 `corrupt_from_saved` 与 `corrupt_from_blank` 回退前后比对 `qkm_get_state`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`5C386AB7`，零警告）；复用未改动 Rust Sidecar `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`C072833F`）；241 隔离产品 `out/mcp_product/configuration_load_global_241_20261124/runtime/QKeyMapperMcpAcceptance_ConfigLoadGlobal.exe`（`B072A82F`，零警告，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/configuration_load_global_241_20261124/run6/`（含 `calls.jsonl`、`gui-probe-result.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 与 241 隔离运行副本均为零警告；私有桌面 241 隔离产品 `run6` 全部 8 轮通过（全部退出 0），实测携带 `Key2Mouse_PollingInterval=17`、`Key2Mouse_XSpeed=19`、`Key2Mouse_YSpeed=27`、`ShowWindowPointKey=F10`、`ShowScreenPointKey=F11`、`CustomNotification_*`、`Gamepad_LT_Threshold_*`、`GamepadTouchpad_*` 及 `GripThresholdBrake=0.85` 的坏组加载失败回退至 `McpSaved` 与空白来源后，`key2mouse`（含 `polling_interval_ms=2`）、`point_display_keys`（`F8`/`F9`）、`custom_notification`、`process_icon_as_tray_icon`、`window_match_criteria` 与 `window_display_mode` 与加载前完全一致且 `has_unsaved_changes=false`，紧接着 `configuration.load("McpSaved")` 成功，同时 `absent_global` 显式 `configuration.load_empty` 仍置 `has_unsaved_changes=true`。控制器 PID `39460` 已清零。
-- **失败重试轮次**：`run6` 一次性全绿通过；Qt6 Release 主构建 `p2fix2-qt6-build.log` 零警告通过（初次 `Tee-Object` 包装脚本残留退出码误报后经日志核验确认成功并独立完成隔离目标构建与 `run6`）。
-- **明确未验范围**：本次未重跑 Rust / 双 Qt 组件 / `249`（对应源码未改，沿用 `e94536d9` 证据）及 `Gamepad_LT_Threshold_*`/`GamepadTouchpad_*`/`GripThresholdBrake` 的前端直接 MCP 只读查询字段覆盖（随 `loadEmptyMapSetting()` 代码直检确认已同步重置）；**开启 FakerInput 连接的运行**、Qt5 整体产品、Win10、跨登录及 QQ 联调保持待验。本机选验完成，待 Codex 复核。
-
-### REVIEW-FIX-241-249 [Gemini]：Codex 复核 P2 边界修正（空白回退清洁态与窗口匹配状态返回预算）
-
-- **源码基线**：`1a2e1c58`。
-- **变更范围**：
-  1. **241 空白来源失败回退清洁态**：`QKeyMapper/qkeymapper.cpp` 的 `handleAutomationConfigurationList` 为局部加载闭包增加 `restoreCleanEmpty` 参数，仅在加载失败回退至空白来源（`previousGroup.isEmpty()`）并调用 `selectEmptySettingGroup()` 成功后立即调用 `clearSaveSettingDirty()` 恢复 `has_unsaved_changes=false`，避免污染后续 `configuration.load`；显式 `configuration.load_empty` 仍传 `restoreCleanEmpty=false`，保留交互式清空创建草稿（`has_unsaved_changes=true`）语义。
-  2. **249 窗口匹配状态／预览返回预算与截断元数据**：`QKeyMapper/automation/qkm_mapping_changes.h/.cpp` 新增 `WindowMatchStateTextMaxCodeUnits = 1024`、`BoundedAutomationText`、`boundAutomationText`（按 UTF-16 代码单元安全截断并避开高代理拆分，同时计算全量 UTF-8 SHA-256 `full_sha256`）、`buildWindowMatchCriteriaFields` 与 `buildWindowMatchCriteriaState`；`QKeyMapper/qkeymapper.cpp` 移除局部重复构造并在 `collectAutomationState`（`window_match_criteria`）与 `handleAutomationMappingChange`（`changingWindowMatchCriteria` 的 `before`/`after` 预览快照）统一复用，`modified` 与 `RegexMatch` 合法性仍基于未截断原文判定，截断对象统一附带 `text_max_code_units`、`text_truncated` 及逐字段 `truncated_fields`（`full_code_units`、`returned_code_units`、`full_sha256`）以兼顾 `< 256 KiB` 负载预算与 `stale_preview` 尾部变更感知。`tests/mcp_control/test_mcp_control.cpp` 新增空白回退及超长/代理对边界与 6×16,000 汉字负载预算单测。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`DF6302B2`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`C072833F`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`B5407462`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`18C17054`）；复用双 Qt 读回器 `out/mcp_win_criteria_249_20261124/{qt6,qt5}-reader/release/read_window_match.exe`（`25D21FE6` / `9B2A787D`）；241 隔离产品 `out/mcp_product/configuration_load_global_241_20261124/runtime/QKeyMapperMcpAcceptance_ConfigLoadGlobal.exe`（`0F8E1C9D`，**运行副本禁用 FakerInput 分配与连接**）及证据 `out/mcp_product/configuration_load_global_241_20261124/run5/`；249 隔离产品 `out/mcp_product/win_criteria_249_20261124/runtime/QKeyMapperMcpAcceptance_WinCriteria.exe`（`31E8035D`，**运行副本禁用 FakerInput 分配与连接**）及证据 `out/mcp_product/win_criteria_249_20261124/run3/`。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+13 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 定向组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt6 零警告，Qt5 仅已知白名单 `qtmain.lib(qtmain_win.obj)` LNK4099）；私有桌面 241 隔离产品 `run5` 全 8 轮通过，重点验证 `corrupt_from_blank` 失败恢复空白后 `restored_previous_group=true` 且 `has_unsaved_changes=false`、紧接着 `configuration.load("McpSaved")` 成功不报 `unsaved_changes`，同时 `absent_global` 的显式 `configuration.load_empty` 仍置 `has_unsaved_changes=true`；私有桌面 249 隔离产品 `run3` 全 7 步及双 Qt 6.8.3／5.15.2 读回通过（`changed_other_keys=0`、`unchanged_other_keys=256`），新增 `oversized_legacy` 验证 3×16,000 汉字旧配置写入 `[McpSaved]` 后 `qkm_get_state` 稳定返回（21,671 B，`text_truncated=true`，6 个超长字段均给出 `truncated_fields` 与准确 `full_sha256`），且 `configuration.set_window_match_criteria({"process_name":"Short.exe"})` 预览（17,295 B）与应用成功、重查状态（18,451 B）仅保留其余 5 项截断。全部自有产品退出 0，控制器 PID `39460` 已清零。
-- **失败重试轮次**：`qkm_mapping_changes.cpp` 初次 Qt6 编译因 `qsizetype` 到 `int` 窄化转换失败，显式 `int(...)` 后双 Qt 均一次性编过；241 `run4` 前续 `absent_global` 与 `present_global` MCP 用例均已通过，仅收尾 `Close` 命中 `cache_control.verified_controller()` 读写 `state.json` 的并发 `os.replace` 竞态（`stale_controller`），通过控制器清理残留 PID `23292`（exit 0）并在 `out/` 验证脚本对同 `instance` 存活场景补充 50ms 瞬态重试后，`241 run5` 与 `249 run3` 均一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、Qt5 整体产品、Win10、跨登录及 QQ 联调保持待验。本机选验完成，待 Codex 复核。
-
-### WIN-CRITERIA-249 [Gemini]：窗口匹配条件文本与模式 `configuration.set_window_match_criteria`
-
-- **源码基线**：`57238d01`。
-- **变更范围**：`automation/qkm_mapping_changes.h/.cpp` 新增 6 个 `MappingUpdateArguments` 窗口匹配字段、`configuration.set_window_match_criteria` 严格校验（至少一项、单行 0..1024 文本允许空串、模式 0..5 整数）及标准/演示双模式能力（106 标准 / 100 演示）；`QKeyMapper/qkeymapper.cpp` 新增 `automationWindowMatchCriteriaFields` 与 `automationWindowMatchCriteria`，在 `collectAutomationState` 输出 `window_match_criteria`（含 `editable` 与 `cached.{file_name,window_title,class_name}`），在 `handleAutomationMappingChange` 处理 `changingWindowMatchCriteria`（核对 6 控件全部启用以拦截全局配置 `unsupported_capability`、校验 `RegexMatch` 且非空规则但不弹失败窗、显式允许 Common Tab 下修改已加载普通组条件；应用期对文本采用 `setText` ＋ `markSaveSettingDirty()` 弥补 `textEdited` 不触发的 dirty 语义，对模式调用 `setCurrentIndex`，且不提前改写 `m_MapProcessInfo` 缓存，交由 `configuration.save` 写盘并经 `loadKeyMapSetting` 重载）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json` 与 `test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`649498A0`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`C072833F`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`97E3AF25`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`E34E9AE1`）；新建可复用双 Qt 窗口匹配读回器 `out/mcp_win_criteria_249_20261124/{qt6,qt5}-reader/release/read_window_match.exe`（`25D21FE6` / `9B2A787D`，含 `AutoStartMappingChecked` 与 `SendToSameWindowsChecked` 字段供 250/251 复用）；隔离产品 `out/mcp_product/win_criteria_249_20261124/runtime/QKeyMapperMcpAcceptance_WinCriteria.exe`（`D1876E96`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/win_criteria_249_20261124/run2/`（含 `gui-probe-result.json`、`baseline_saved.ini`、`saved.ini` 与 `readback-{qt6,qt5}.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+13 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；双 Qt 读回器零警告／Qt5 仅 `qtmain` LNK4099；私有桌面真实 GUI 探针验证 6 控件可用、空白默认模式 `2/2/0`、`QTest::keyClicks` 置 dirty、0..5 切换且 INI 不变；正式 Rust 隔离产品 `run2` 覆盖只读 `permission_denied`、Schema 非法参数（空对象、1025 超长、换行/\0、非串、布尔/浮点/越界模式、null、未知键）、先存清洁 `baseline_saved.ini` 后单改 `process_name="Notepad.exe"` 验证 `clean->dirty` 且 `cached.file_name` 仍为空、非法正则 `[unclosed`＋`5` 拒绝、字面 `[unclosed`＋`2` 接受后单切模式 `5` 拒绝、空串＋`5` 接受、预览取消、全 6 项设值（`DemoApp.exe`/1、`^MyWindow-[0-9]+$`/5、`Qt6QWindow`/3）与无操作、显式保存后 `cached` 随重载更新、切换 `QKeyMapperGlobalSetting` 实测 `editable=false` 与 `unsupported_capability` 拦截再切回 `McpSaved`、冷启动恢复 6 项与 `cached`、双 Qt 6.8.3／5.15.2 读回（6 项 `ProcessInfo_*` 精确一致且排除后 `unchanged_other_keys=256`、`changed_other_keys=0`）以及 `--demo-configuration-only` 不写盘。全部自有产品退出 0，控制器 PID `6448` 已清零。
-- **失败重试轮次**：`run1` 因测试脚本 `verify_win_criteria.py` 误将空白配置进程/标题默认匹配模式断言为 `0`（产品 `loadKeyMapSetting` 源码实际按 `WINDOWINFO_MATCH_INDEX_DEFAULT=2` 对进程/标题置 `2`、类名置 `0`）中断；修正测试脚本断言后（未改产品代码）`run2` 一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、6 种匹配模式相对真实前台／目标窗口标题大小写与正则运行时实际匹配行为、`Default` 桌面前台切换、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### ADV-NOTIFY-248 [Gemini]：配置专属提示信息开关与位置 `configuration.set_custom_notification`
-
-- **源码基线**：`205afd0e`。
-- **变更范围**：`automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::customNotificationEnabled`／`customNotificationPosition`、`configuration.set_custom_notification` 严格校验（至少一项、`enabled` 布尔、`position` 为 `0..6` 整数，且同传 `enabled=false` 与 `position` 拒绝）及标准/演示双模式能力（104 标准 / 98 演示）；`QKeyMapper/qkeymapper.cpp` 新增 `automationCustomNotification`，在 `collectAutomationState` 输出 `custom_notification`（`enabled`、`position`、`style_initialized`），在 `handleAutomationMappingChange` 处理 `changingCustomNotification`（预览精确计算 `willInitFromGlobal` 与全局位置初始化预览但不提前改变 `m_CustomNotificationStyleInitialized`，拒绝在 `enabled=false` 时单设 `position`，应用按先 `setCustomNotificationEnabled` 后 `setCustomNotificationPosition` 次序共用 `onCustomNotificationEnabledChanged` 与 `dirty` 联动）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json`（`custom_notification` 带 `if/then` 约束）与 `test_tool_contract.py`。本切片同步标志 `QMappingAdvancedDialog` 全部 7 项 M2-B 控件已完成 MCP 接入。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`EB81F143`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`1B90ABC4`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`3E536DE8`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`4F48D111`）；复用双 Qt 高级读回器 `out/mcp_adv_mouse_245_20261124/{qt6,qt5}-reader/release/read_mapping_advanced.exe`（`0E41D434` / `DE0E99C1`）；隔离产品 `out/mcp_product/adv_notify_248_20261124/runtime/QKeyMapperMcpAcceptance_AdvNotify.exe`（`7BE70E23`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/adv_notify_248_20261124/run1/`（含 `gui-probe-result.json`、`after_save_capture.png`、`baseline_saved.ini`、`saved.ini` 与 `readback-{qt6,qt5}.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+12 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针与对话框截图 `after_save_capture.png` 验证初始未启用/禁用下拉与设定按钮/初值 3/干净、勾选启用与 dirty 联动、改设位置 `5`（底部居中）与关闭后位置保留且不写 INI；正式 Rust 隔离产品 `run1` 覆盖只读 `permission_denied`、Schema 与运行时禁用态改 `position` 拒绝、首次预览 `enabled=true` 精确预测 `initializes_from_global_style=true` 且取消后 `style_initialized=false` 不落样式键、先保存 `baseline_saved.ini`（不含 14 项 `CustomNotification_*` 样式键）、同次启用并设 `position=5`、无操作、禁用保留 `position=5` 且 `style_initialized=true`、再禁用态拒改 `position=1`、再启用 `initializes_from_global_style=false` 并保留 `position=5`、位置切 `0`（`None`）再切回 `5` 并保存 `McpSaved`（确认 14 项 `CustomNotification_*` 样式键全部持久化）、冷启动恢复 `{enabled:true, position:5, style_initialized:true}`、双 Qt 6.8.3／5.15.2 读回（`CustomNotification_Enabled=true`、`CustomNotification_Position=5`，相对 `baseline_saved.ini` 排除 16 项 `McpSaved/CustomNotification_*` 后 `unchanged_other_keys=260`、`changed_other_keys=0`）与 `--demo-configuration-only` 不写盘。全部自有产品退出 0，控制器 PID `6448` 已清零。
-- **失败重试轮次**：`cargo test` 初次因 `tool_args.rs` 新增单测缺少本地 `preview` 闭包编译失败，补齐闭包后全套构建、契约、组件及 `run1` 产品验收均一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、映射启停与切表触发通知时实际提示框出现位置与定制样式绘制（含 `position=0` 不显示与未启用自定义回退全局样式）、`McpSaved` 仅含 `Enabled=true` 而无样式键时 `style_initialized` 惰性初始化分支、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### ADV-POINT-KEYS-247 [Gemini]：窗口／屏幕坐标显示快捷键 `configuration.set_point_display_keys`
-
-- **源码基线**：`3cae0d65`。
-- **变更范围**：`QMappingAdvancedDialog` 新增规范只读 getter `getCanonicalShowWindowPointKey()`／`getCanonicalShowScreenPointKey()`（索引 `FUNCTION_KEY_NONE_INDEX` 返回规范 `"None"`，避免界面翻译污染公共状态）；`automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::showWindowPointKey`／`showScreenPointKey`、`configuration.set_point_display_keys` 字段校验（`1..64` UTF-16、非空、禁换行与 `\0`）及标准/演示双模式能力（102 标准 / 96 演示）；`QKeyMapper/qkeymapper.cpp` 新增 `automationPointDisplayKeys`、在 `collectAutomationState` 输出 `point_display_keys`，在 `handleAutomationMappingChange` 处理 `changingPointDisplayKeys`（允许 Common Tab、核对组一致性，严格按 `FUNCTION_KEY_NONE` 或 `QKeyMapper_Worker::MultiKeyboardInputList` 校验，拒绝非法串及本地化译名而不沿用旧 setter 的默认键回退；应用调用 `setShowWindowPointKey`/`setShowScreenPointKey` 触发 `currentIndexChanged -> dirty`）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json` 与 `test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`87EF0BDF`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`0190E26F`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`F0D902E4`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`EF9D281A`）；复用双 Qt 高级读回器 `out/mcp_adv_mouse_245_20261124/{qt6,qt5}-reader/release/read_mapping_advanced.exe`（`0E41D434` / `DE0E99C1`）；隔离产品 `out/mcp_product/adv_point_keys_247_20261124/runtime/QKeyMapperMcpAcceptance_AdvPointKeys.exe`（`2A8BAB08`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/adv_point_keys_247_20261124/run1/`（含 `gui-probe-result.json`、`saved.ini` 与 `readback-{qt6,qt5}.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+11 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证初值 `F8`/`F9`、切 `None`/`F10` 后索引 `0`/文本 `"F10"` 与 dirty 且 INI 不变；正式 Rust 隔离产品 `run1` 覆盖只读 `permission_denied`、Schema 非法参数（空对象、空串、超长、含换行、非字符串、额外键）、严格 `invalid_arguments` 拒绝 `"InvalidKey999"` 与本地化 `"无"`（不回退 `F8`/`F9`）、预览取消、双键同设 `F10/F10`、无操作、显式保存清干净、单设 `window_point_key="None"` 置 dirty 并保存 `McpSaved`、冷启动恢复 `{"window_point_key":"None","screen_point_key":"F10"}`、双 Qt 6.8.3／5.15.2 读回（`ShowWindowPointKey="None"`、`ShowScreenPointKey="F10"`，相对 `formal-seed.ini` 基线 86 项不变，新增 Saved 组 173 项）及 `--demo-configuration-only` 不写盘。全部自有产品退出 0，控制器 PID `6448` 已清零。
-- **失败重试轮次**：初次 `cargo test` 因 `tool_catalog.json` 第 813 行新增中文描述内 `"None"` 未转义为 `\"None\"` 失败；修正转义并重跑 `scripts/build_qt6.ps1` 更新 qmake 构建目录中的正式 Rust Sidecar 后，全套构建、契约、组件与 `run1` 产品验收均一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、三语言下 `None` 译名切换展示与运行时按下窗口/屏幕坐标显示热键叠加层渲染、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### ADV-PROCESS-TRAY-246 [Gemini]：映射期间进程图标作为托盘图标 `configuration.set_process_icon_as_tray_icon`
-
-- **源码基线**：`88393171`。
-- **变更范围**：`QMappingAdvancedDialog` 新增只读查询 `isProcessIconAsTrayIconEnabled()`；`automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::processIconAsTrayIcon`、`configuration.set_process_icon_as_tray_icon` 严格布尔校验及标准/演示双模式能力（100 标准 / 94 演示）；`QKeyMapper/qkeymapper.cpp` 在 `collectAutomationState` 输出 `process_icon_as_tray_icon`（`enabled`＋`editable`），在 `handleAutomationMappingChange` 处理 `changingProcessIconAsTrayIcon`（允许 Common Tab、核对组一致性、`!isProcessIconAsTrayIconEnabled()` 时按全局禁用守卫拒绝 `unsupported_capability`，应用调用 `setProcessIconAsTrayIcon` 触发 `toggled -> dirty` 且不直接刷新托盘）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json` 与 `test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`49FD0DA4`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`82A4B837`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`F4CD39E0`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`892B7A09`）；复用双 Qt 高级读回器 `out/mcp_adv_mouse_245_20261124/{qt6,qt5}-reader/release/read_mapping_advanced.exe`（`0E41D434` / `DE0E99C1`）；隔离产品 `out/mcp_product/adv_process_tray_246_20261124/runtime/QKeyMapperMcpAcceptance_AdvProcessTray.exe`（`C732782C`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/adv_process_tray_246_20261124/run2/`（含 `gui-probe-result.json` 与 `readback-{qt6,qt5}.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+10 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证普通/空白态 `ProcessIconAsTrayIconCheckBox` 可编辑、点击切换并置 dirty 且 INI 不变；正式 Rust 隔离产品 `run2` 覆盖只读 `permission_denied`、非法参数拒绝（非布尔与额外键）、预览取消、`false -> true`（`modified=true`、dirty 且不写 INI）、`true -> true` 无操作、显式保存 `McpSaved`、干净切换 `QKeyMapperGlobalSetting` 实测 `process_icon_as_tray_icon={enabled:false, editable:false}` 且 `configuration.set_process_icon_as_tray_icon` 拒为 `unsupported_capability`、切回 `McpSaved` 恢复 `{enabled:true, editable:true}`、冷启动恢复、双 Qt 6.8.3／5.15.2 读回（`McpSaved/ProcessIconAsTrayIconChecked=true`、`_raw="true"`，其余未触及基线键 86 项不变）与 `--demo-configuration-only` 不写盘。全部自有产品退出 0，FilterKeys 一致，控制器 PID `6448` 已清零。
-- **失败重试轮次**：`run1` 因测试脚本 `verify_adv_process_tray.py` 误用 `cfg_list["catalog_revision"]` 而非 `cfg_list["catalog"]["revision"]` 中断，修正测试脚本后 `run2` 一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、映射开启期间真实 `Default` 桌面系统托盘图标优先级（Tab 图片 vs 进程图标 vs 状态图标）渲染效果、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### ADV-MOUSE-245 [Gemini]：Key2Mouse 速度与轮询间隔 `configuration.set_key2mouse_settings`
-
-- **源码基线**：`f9e0aa0b`。
-- **变更范围**：`automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::mouseXSpeed` / `mouseYSpeed` / `mousePollingIntervalMs`、`configuration.set_key2mouse_settings` 严格整数边界（三项各自 `1..99`）校验及标准/演示双模式能力（98 标准 / 92 演示）；`QKeyMapper/qkeymapper.cpp` 新增 `automationKey2Mouse`、`collectAutomationState` 在 `m_MappingAdvancedDialog` 输出 `key2mouse`（`x_speed`/`y_speed`/`polling_interval_ms`）、`handleAutomationMappingChange` 处理 `changingKey2Mouse`（允许在 Common Tab 上操作，核对 `currentSettingSelectGroupName() == m_LoadedMappingSettingGroup`，应用调用 `setMouseXSpeed`/`setMouseYSpeed`/`setMousePollingInterval` 并触发既有 `valueChanged -> dirty`）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json` 与 `test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`19BC2741`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`66D7CC6E`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`318896B2`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`361736F7`）；新构建可复用双 Qt 高级设置读回器 `out/mcp_adv_mouse_245_20261124/{qt6,qt5}-reader/release/read_mapping_advanced.exe`（`0E41D434` / `DE0E99C1`）；隔离产品 `out/mcp_product/adv_mouse_245_20261124/runtime/QKeyMapperMcpAcceptance_AdvMouse.exe`（`46F2B0A7`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/adv_mouse_245_20261124/run1/`（含 `gui-probe-result.json` 与 `readback-{qt6,qt5}.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+9 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证 `mouseXSpeedSpinBox`、`mouseYSpeedSpinBox`、`mousePollingIntervalSpinBox` 范围 `1..99`、初值 `(3, 3, 2)`、修改触发 dirty 且 INI 字节不变；正式 Rust 隔离产品 `run1` 覆盖只读 `permission_denied`、非法参数拒绝（空对象、`0`/`100`/小数/布尔/null/未知键）、预览取消、单字段 `x_speed=1`、无操作（`modified=false`）、边界 `(99, 1, 99)`、显式保存清干净后单改 `polling_interval_ms=17` 置 dirty、最终保存 `(18, 42, 17)`、冷启动恢复及双 Qt 6.8.3／5.15.2 读回（`McpSaved/Key2Mouse_XSpeed=18`、`Key2Mouse_YSpeed=42`、`Key2Mouse_PollingInterval=17`，其余未触及基线键 86 项不变）与 `--demo-configuration-only` 不写盘。全部自有产品退出 0，FilterKeys 一致，控制器 PID `6448` 已清零。
-- **失败重试轮次**：产品脚本 `run1` 一次性全绿通过；组件命令行初次因 PowerShell `-o ...,txt` 逗号拆分修正引号后 Qt6/Qt5 均一次通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、实际开启按键/摇杆转鼠标映射期间的真实指针位移与定时器间隔、映射/重启生效实测、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### GEN-FULLSCREEN-244 [Gemini]：全屏禁用全局映射与白名单 `general.set_fullscreen_global_mapping`
-
-- **源码基线**：`fa5536cd`。
-- **变更范围**：`QGeneralAdvancedDialog` 保持 `setGlobalMappingFullscreenAllowedProcesses` 加载期无 dirty 语义，新增 `editGlobalMappingFullscreenAllowedProcesses`（文本变化时 `setText` 并触发 `textEdited -> notifyDirty()`）；`automation/qkm_mapping_changes.h/.cpp` 新增 `disableGlobalMappingInFullscreen`/`fullscreenAllowedProcesses`、`general.set_fullscreen_global_mapping` 单行非空/UTF-16（`<=32767`）/禁止 `disable_in_fullscreen=false` 与 `allowed_processes` 并发的校验及标准/演示双模式能力（96 标准 / 90 演示）；`QKeyMapper/qkeymapper.cpp` 新增 `automationFullscreenGlobalMapping`、`collectAutomationState` 输出 `fullscreen_global_mapping`、预览守卫禁止开关关闭时单独提交 `allowed_processes`（`unsupported_capability`）、先更新开关再更新白名单并接入动作三目分支；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`tool_catalog.json` 与 `test_tool_contract.py`。（至此 `QGeneralAdvancedDialog` 全部 11/11 控件均已完成 MCP 接入。）
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`BE942A43`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`6F240514`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`4AF031D6`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`1827D2AC`）；复用双 Qt INI 读回器 `out/mcp_general_sound_242_20261124/{qt6,qt5}-reader/release/read_general_settings.exe`（`CD20249C` / `0BA21CB4`）；隔离产品 `out/mcp_product/general_fullscreen_244_20261124/runtime/QKeyMapperMcpAcceptance_GeneralFullscreen.exe`（`4EF641B7`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/general_fullscreen_244_20261124/run3/`（含 `gui-probe-result.json` 与 `readback-{qt6,qt5}.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+8 passed, 1 ignored）与 `test_tool_contract.py` 双协议 6 组通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证勾选/取消 `disableGlobalMappingInFullscreenCheckBox` 与 `fullscreenGlobalMappingProcessLineEdit` 联动启用禁用、键入 `"demo.exe"` 保留及 dirty 置位且 INI 不变；正式 Rust 隔离产品 `run3` 覆盖只读 `permission_denied`、非法参数拒绝（空对象、`false+allowed_processes`、`\n`/`\r`/32768/额外键）、禁用状态单传 `allowed_processes` 拒为 `unsupported_capability`、预览取消、组合开启并写白名单、保存清干净（`has_unsaved_changes=false`）后单改 `allowed_processes` 正确置 dirty、单关开关保留白名单、空串清空白名单、显式保存、冷启动恢复及双 Qt 6.8.3／5.15.2 读回（`GlobalMappingDisableInFullscreen=true`、`GlobalMappingFullscreenAllowedProcesses="notepad.exe;demo_app.exe"`、其余未触及基线键 84 项不变）与 `--demo-configuration-only` 不写盘。全部自有产品退出 0，FilterKeys 一致，控制器 PID `6448` 已清零。
-- **失败重试轮次**：`run1` 因隔离部署脚本漏拷 5 个第三方 DLL，导致启动即退并触发旧控制器 PID `36024` 按 `start_result_unknown` 安全停机；补齐全部 DLL 并通过 `dumpbin /dependents` 核验后在用户重建的新控制器 PID `6448` 下跑出 `run2`，其中 `gui_baseline`/`readonly`/`standard` 全过，仅 `cold_read` `Enable` 瞬间命中 `state.json` 并发读写竞态（`controller_absent`），复跑 `run3` 一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、实际全屏前台窗口进入退出与白名单进程运行时拦截放行效果（仅验配置/控件与持久等价）、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### GEN-GLOBAL-SWITCH-243 [Gemini]：全局配置自动切换等待时间 `general.set_global_switch_timeout`
-
-- **源码基线**：`f4ce85fc`。
-- **变更范围**：`automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::globalSwitchTimeoutMs`、`general.set_global_switch_timeout` 严格整数（`0..999999999` 毫秒）校验及标准/演示双模式能力（94 标准 / 88 演示）；`QKeyMapper/qkeymapper.cpp` 在 `collectAutomationState` 输出 `global_switch_timeout_ms`（沿用 `getGeneralAdvancedSwitchTimeout()`），并在 `handleAutomationMappingChange` 处理 `changingGlobalSwitchTimeout` 预览/应用（调用 `m_GeneralAdvancedDialog->setGlobalSettingSwitchTimeout` 置 dirty 并按 GUI 语义同步 `m_CheckGlobalSettingSwitchTimer.setInterval(*update.globalSwitchTimeoutMs)`，含动作名三目分支）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`mcp_bridge_rust/src/tool_catalog.json` 与 `mcp_bridge_rust/tests/test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`2FFAD5FD`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`138952DD`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`D03E77A4`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`02CEDC56`）；双 Qt INI 读回器 `out/mcp_general_sound_242_20261124/qt6-reader/release/read_general_settings.exe`（`CD20249C`）与 `qt5-reader`（`0BA21CB4`）；隔离产品 `out/mcp_product/general_global_switch_243_20261124/runtime/QKeyMapperMcpAcceptance_GeneralGlobalSwitch.exe`（`20BB9BAF`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/general_global_switch_243_20261124/run1/`（含 `gui-probe-result.json` 与四份读回 JSON）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+7 passed, 1 ignored）与 `test_tool_contract.py` 双协议通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证 `globalSettingSwitchTimerSpinBox` 范围 `0..999999999`、点击/设 `0` 触发 dirty 且 INI 字节不变；正式 Rust 隔离产品 `run1` 覆盖只读 `permission_denied`、`2000 → 0`、`0 → 0` 无操作（`modified=false`）、保存 `0`、上限 `999999999`、`999999999 → 4500`、显式 `configuration.save`、`cold_read` 冷启动恢复 `global_switch_timeout_ms=4500`、双 Qt 6.8.3／5.15.2 独立 INI 读回（`GlobalSettingSwitchTimeout` 分别正确读回 `0` 与 `4500`，其余未触及基线键 85 项不变），以及 `--demo-configuration-only` 下不写盘设置 `0`。全部自有产品退出 0，FilterKeys 一致，控制器 PID `36024` 已清零。
-- **失败重试轮次**：产品脚本已预先沿用 `242` 经验传递 `source_binding_after.source_tab_ref` 与正确断言，构建与隔离产品 `run1` 均一次通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、已有等待计时期间编辑后实际自动切换窗口时效触发、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### GEN-SOUND-242 [Gemini]：通知提示音开关 `general.set_sound_effect`
-
-- **源码基线**：`3281446d`。
-- **变更范围**：`automation/qkm_mapping_changes.h/.cpp` 新增 `MappingUpdateArguments::playSoundEffect`、`general.set_sound_effect` 请求校验及标准/演示双模式能力（92 标准 / 86 演示）；`QKeyMapper/qkeymapper.cpp` 在 `collectAutomationState` 输出 `play_sound_effect`（沿用 `isSoundEffectEnabled()`），并在 `handleAutomationMappingChange` 处理 `changingPlaySoundEffect` 预览/应用（调用 `m_GeneralAdvancedDialog->setPlaySoundEffect`，触发真实控件 `toggled → dirty`）；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`mcp_bridge_rust/src/tool_catalog.json` 与 `mcp_bridge_rust/tests/test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`F0EEA999`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`477D642E`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`E616DECD`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`24016F27`）；双 Qt INI 读回器 `out/mcp_general_sound_242_20261124/qt6-reader/release/read_general_settings.exe`（`CD20249C`）与 `qt5-reader`（`0BA21CB4`）；隔离产品 `out/mcp_product/general_sound_242_20261124/runtime/QKeyMapperMcpAcceptance_GeneralSound.exe`（`24767052`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/general_sound_242_20261124/run2/`。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+6 passed, 1 ignored）与 `test_tool_contract.py` 双协议通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证点击 `soundEffectCheckBox` 切换并置 dirty 且 INI 不变；正式 Rust 隔离产品 `run2` 覆盖只读 `permission_denied`、非布尔拒绝、取消预览、`false → true`（`modified=true`、`has_unsaved_changes=true` 且不写 INI）、`true → true` 无操作（`modified=false`）、往返切换并显式 `configuration.save`、`cold_read` 冷启动恢复 `play_sound_effect=true`、双 Qt 6.8.3／5.15.2 独立 INI 读回（`PlaySoundEffect=true`，其余未触及键 85 项不变），以及 `--demo-configuration-only` 下不写盘正常工作。全部自有产品退出 0，FilterKeys 一致，控制器 PID `36024` 已清零。
-- **失败重试轮次**：首编对齐 `test_tool_contract.py` 中 `general.set_sound_effect` 动作名拼接及 `qkeymapper.cpp` 预览动作名三目分支后全部构建与契约通过；产品脚本 `run1` 将复用 `tab` 更新为 `source_binding_after.source_tab_ref` 后 `run2` 一次性全绿通过。
-- **明确未验范围**：**开启 FakerInput 连接的运行**、实际 WAV 音频播放输出（本片验证控件/状态与配置等价，未采样本机音频输出）、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### CFG-LOAD-GLOBAL-241 [Gemini]：全局与空白来源切换（扩展 `configuration.load`）
-
-- **源码基线**：`16796c96`。
-- **变更范围**：`QKeyMapper/qkeymapper.cpp` 扩展 `handleAutomationConfigurationList` 中 `configuration.load` 逻辑，允许无未保存变更的普通组、全局组（`QKeyMapperGlobalSetting`）与干净空白来源互转，并支持目标为 `QKeyMapperGlobalSetting`（INI 缺省该节时沿用 GUI 无写盘语义加载空全局表），失败时恢复原普通组/全局组/空白来源，继续拒绝空 `group: ""`；`automation/qkm_mapping_changes.cpp` 将 `loadLimits` 更新为 `"ordinary_or_global_group_only"`；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_catalog.json`、`mcp_bridge_rust/src/tool_args.rs` 与 `mcp_bridge_rust/tests/test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`99059D0B`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`673E28E4`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`768240C8`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`117225C5`）；隔离产品 `out/mcp_product/configuration_load_global_241_20261124/runtime/QKeyMapperMcpAcceptance_ConfigLoadGlobal.exe`（`FBC41665`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/configuration_load_global_241_20261124/run3/`（含 `gui-probe-result.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+5 passed, 1 ignored）与 `test_tool_contract.py` 双协议通过；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针验证 `McpSaved <-> QKeyMapperGlobalSetting <-> 空白` 双向切换、控件只读/启用联动及 INI 未写盘；正式 Rust 隔离产品 `run3` 覆盖缺省 `[QKeyMapperGlobalSetting]` 加载/同组重载/切回 `McpSaved`/全局再 `load_empty`、有效 `[QKeyMapperGlobalSetting]`（`G->H`）加载及脏全局草稿 `unsaved_changes` 拒绝、无 `SettingSelect` 冷启动干净空白分别加载 `McpSaved` 与全局组、损坏全局组触发 `configuration_load_failed` 后 `restored_previous_group=true` 恢复回 `McpSaved` 与干净空白、空串拒绝及 `--demo-configuration-only` 拒绝。全部 8 轮自有产品退出 0，FilterKeys 一致，控制器 PID `36024` 已清零。
-- **失败重试轮次**：`test_tool_contract.py` 首轮修正 `validator`＋`call_tool` 调用格式后通过；产品脚本 `run1`/`run2` 修正探针基线 `same_title_enabled` 对齐及映射行 `fields["KeyMapData_*"]`／空串契约断言后 `run3` 一次性全绿通过。
-- **明确未验范围**：开启 FakerInput 连接的运行、映射/监视中切换、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### CFG-EMPTY-240 [Gemini]：正式加载空白草稿配置 `configuration.load_empty`
-
-- **源码基线**：`e4e95fe5`。
-- **变更范围**：在 `QKeyMapper.h` / `qkeymapper.cpp` 提取共用 `selectEmptySettingGroup()`（恢复 `selectSettingCustomIconButton`、`ProcessIconAsTrayIconCheckBox` 等控件可编辑状态）并在 `handleAutomationConfigurationList` 接入 `configuration.load_empty`；在 `automation/qkm_mapping_changes.h/.cpp` 新增 `ConfigurationListAction::LoadEmpty`、标准模式 `configuration.load_empty.preview`/`.apply` 能力（90 标准 / 84 演示）并修复 `MappingChangeStore::createConfigurationList` 误拒空 `group` 的条件；同步更新 `tests/mcp_control/test_mcp_control.cpp`、`mcp_bridge_rust/src/tool_args.rs`、`mcp_bridge_rust/src/tool_catalog.json` 与 `mcp_bridge_rust/tests/test_tool_contract.py`。
-- **产物与关键摘要**：Qt6 Release `out/build_qt6/release/QKeyMapper.exe`（`62F02619`）；Rust `QKeyMapper/build/mcp_bridge/x86_64-pc-windows-msvc/release/qkeymapper-mcp-rust.exe`（`2FF00D79`）；Qt6/Qt5 组件 `out/mcp_gemini_qt6_component/release/QKeyMapperMcpControlTest.exe`（`974E3526`）与 `out/mcp_gemini_qt5_component/release/QKeyMapperMcpControlTest.exe`（`310E8138`）；隔离产品 `out/mcp_product/configuration_empty_240_20261124/runtime/QKeyMapperMcpAcceptance_ConfigEmpty.exe`（`FBFEBDD5`，**运行副本禁用 FakerInput 分配与连接**）；完整证据 `out/mcp_product/configuration_empty_240_20261124/run3/`（含 `gui-probe-result.json`）。
-- **真实产品／组件／双 Qt 覆盖**：Qt6 Release 零警告；`cargo test`（23+5 passed, 1 ignored）与 `test_tool_contract.py` 双协议通过（随后仅改 C++ Store 校验未再改 Rust）；Qt6/Qt5 组件 `configurationListArgumentsAndOwnership mappingChangeArguments` 各 4 passed / 0 failed（Qt5 零警告）；私有桌面真实 GUI 探针覆盖 `McpSaved → 空白` 与 `QKeyMapperGlobalSetting → 空白` 的控件恢复及 INI 字节不变；正式 Rust 隔离产品 `run3` 覆盖 `permission_denied`、取消、`confirmation_required`、`invalid_arguments`（错用 `confirm_delete`）、`stale_catalog`、`stale_preview`、`unsaved_changes`、`McpSaved → 空白`（`modified=true`、`selected_group=loaded_group=""`、`has_unsaved_changes=true`、旧源 `stale_source`、保留已存组且 INI 不变）、空白态二次加载拒绝、空白草稿保存为 `McpFromEmpty`、无 `SettingSelect` 冷启动干净空白重载（`reload=true`，`has_unsaved_changes=true`）及 `--demo-configuration-only` 隐藏并拒绝 `unsupported_mode`。全部自有产品退出 0，FilterKeys 一致，控制器 PID `36024` 已清零。
-- **失败重试轮次**：Qt6 组件首轮因缺 `QKM_IPC_TEST_EXE` 与 `createConfigurationList` 校验逻辑失败后修复复跑通过；隔离产品探针首编译修正命名空间及私有成员访问；产品测试脚本前两轮修正字段断言（`business_capabilities`、`source_snapshot.revision`、`mapping_load_context.generation`）后 `run3` 一次性通过。
-- **明确未验范围**：开启 FakerInput 连接的运行、映射/监视中加载空白、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### CFG-REMOVE-STARTUP-239 [Gemini]：已保存启动组删除与独立冷读验证
-
-- **源码基线**：`d0342f70`。
-- **变更范围**：无产品 C++/Rust 源码改动；仅将本机夹具 `out/mcp_product/configuration_remove_startup_239_20261124/verify_startup_remove.py` 的控制器 PID 断言更新为当前活跃控制器 `36024`。
-- **产物与关键摘要**：隔离产品副本 `out/mcp_product/configuration_remove_startup_239_20261124/runtime/QKeyMapperMcpAcceptance_ConfigLoad.exe`（`8e325d23`，运行副本禁用 FakerInput 分配与连接）、正式 Rust `qkeymapper-mcp-rust.exe`（`6077e6d8`）、独立读回 `out/mcp_configuration_remove_startup_239_20261124/qt6-reader/release/read_startup_remove.exe`（`419fc899`）与 `qt5-reader/release/read_startup_remove.exe`（`ad6bf242`），原始证据 `out/mcp_product/configuration_remove_startup_239_20261124/run1/`。
-- **真实产品／双 Qt 覆盖**：在私有桌面（`QkmProduct_e105d1ed...`、`QkmProduct_84f09a1e...`，`input_desktop=Default`）执行 23 次调用，覆盖启动组 `McpSaved` 冷启 → `configuration.load` 切至 `McpSecond` → `configuration.remove` 预览确认 `clears_startup_selection=true` → 锁文件触发 `save_write_failed` 保留原文件、启动选择与当前源 → 正式删除并确认仅移除 `[McpSaved]` 与根 `SettingSelect` → 独立冷启产品不再加载已删启动组且目录移除 `McpSaved`。双 Qt 6.8.3／5.15.2 独立 Core 读回均通过（其余 75 个字段不变）。两份自有产品退出 0，FilterKeys 前后一致，控制器授权与登记已清零。
-- **失败重试轮次**：产品验证 0 轮失败；双 Qt 读回首次因未将 Qt bin 加入 PATH 报 `-1073741515`，临时注入 PATH 后一次性通过。
-- **明确未验范围**：开启 FakerInput 连接的运行、当前组删除、GUI 右键、监视中删除、Qt5 整体产品及 Win10 待验。本机选验完成，待 Codex 复核。
-
-### CFG-LOAD-238：正式加载普通配置组
-
-`configuration.load` 使用精确组名、配置目录修订和 Read＋Configure，绑定固定 INI、源版本及空闲生命周期。当前为无未保存变更的普通组时可预览切换或同组重载，显式 `confirm_scope=true` 后沿用 GUI 加载流程。操作保留 INI 和启动选择，旧源引用失效。加载失败后按原文件和当前授权尝试恢复前组，结果报告实际选择、加载组和恢复状态。仅配置演示角色不公开此能力。
-
-PC-W11，源码基于 `b4ed0c89`。Qt6.8.3 Release `1427cc27` 零警告，双 Qt 定向组件各 4 项、Rust 定向单元和双协议工具合同通过。私有真实 GUI 确认单改索引不会加载，切换会丢失未保存显示模式且保留 dirty，坏组可退回空白。正式 Rust `6077e6d8` 和隔离副本 `8e325d23` 共 66 次调用，覆盖权限、显式确认、取消、旧目录及文件、切换、重载、坏组恢复、保留草稿、仅配置角色拒绝和独立冷读。正式首轮助手无法从 `Alt` Tab 打开配对页面，产品正常退出后由独立冷启动撤销遗留自有配对并完成读回。全部副本退出 0，最终无本片进程或专属配对，FilterKeys 前后采样一致。
-
-本机 FakerInput 设备在场，自动审批在启动前拦截含原驱动选项的新版副本，指出关闭时可能发出键鼠中性报告。直接去掉编译选项暴露既有未守卫引用，私有构建另排除并行 PDB 和同名源冲突。最终仅在忽略的夹具 Worker 禁用分配与连接，PE 导入复核，夹具及正式构建均零警告。旧 GUI 驱动两次中断，保留原件并通过后续控件路径完成。开启 FakerInput 连接的新版运行、活跃监视、Qt5 整体产品及 Win10 待验。原件 `out/mcp_configuration_load_238_20261124/`、`out/mcp_product/configuration_load_238_20261124/`。
-
-### CFG-REMOVE-237：正式删除非当前普通配置组
-
-`configuration.remove` 绑定当前目录、固定 INI、实例权限及空闲修订。预览列出精确组名、删除前后顺序及启动选择影响。显式 `confirm_delete=true` 后复用 236 的写盘和失败恢复，保留当前加载源和草稿。当前组、空白和 GlobalSetting 受保护。
-
-PC-W11，源码基于 `4f48b89a`。Qt6.8.3 Release `a1f2c5c8` 与私有产品 `198e553b` 零警告，正式 Rust `b8f2fae6` 完成 50 次调用，覆盖只读拒绝、保护组、取消、错误确认、外部改动和旧目录、占用失败、正常删除、回放及独立产品冷读。两个副本正常退出 0，专属配对、授权及登记已清理。Qt5／6 定向组件、双协议工具目录、Rust 参数单元及双 Qt 独立读回通过，另 85 个字段保持。此组未被选为启动组，清除启动选择的分支、当前组删除、GUI 右键、监视中删除及 Win10 留待后续。原件 `out/mcp_configuration_remove_237_20261124/`、`out/mcp_product/configuration_remove_237_20261124/run1/`。
-
-### CFG-REMOVE-GUI-236：非当前配置组删除的写盘及草稿保护
-
-确认后复核空闲和目标。删除配置组时保留同名根值，更新顺序及必要的启动选择；写入失败恢复该次操作的待写值。删除非当前组沿用当前选择及草稿，当前组删除沿原后继加载流程。
-
-PC-W11，源码基于 `77d97222`。Qt6.8.3 Release `fa9cb965`、私有前／后 `58a06aaf`／`23f14914` 零警告。经同一删除控件入口和真实确认框验证取消、同名排序组正常删除和占用。旧版正常删除后丢失未保存显示模式并改写相对顺序，仍显示 dirty；占用时磁盘未变但缓存丢组。修正版保留草稿和相对顺序，失败时磁盘、缓存和列表保持。双 Qt 独立读回其余 85 个字段。右键夹具前几轮未完成，一次正常关闭失败后按用户单独授权结束 PID 22924 并注销；最终控件验证副本均正常退出。当前组删除、右键入口与正式 Rust 本片未验。原件 `out/mcp_configuration_delete_236_20261124/`、`out/mcp_product/configuration_delete_236_20261124/`。
-
-### CFG-ORDER-235：正式配置列表移动与复位
-
-`configuration.move` 将普通组移到另一组原位置，`configuration.reset_order` 恢复默认排序。两者绑定 Read＋Configure、配置目录、固定文件和空闲修订，预览完整新旧顺序，`confirm_scope=true` 后仅写顺序。复用 232／234 的写盘及失败恢复。当前选择、加载源和草稿保留。
-
-PC-W11，源码基于 `4888d468`。Qt6.8.3 Release `eb102e9e` 与私有验证产品 `271613ab` 零警告，正式 Rust `84674a1b` 真产品核对只读拒绝、保护组、取消、显式确认、磁盘改动与旧目录、回放、无变化、占用失败和恢复后复位。独立产品冷读默认四组，复用双 Qt 读程序核对当前 INI，其余 86 字段一致。双 Qt 定向参数／归属、Rust 单元、工具目录和 11 项 stdio 通过。首编修正只读 QSettings 参数，私有构建恢复默认 CRT；真实首轮固定助手拒绝通用目标名，次轮更正夹具参数层断言。四次自有启动均正常退出，配对、授权与登记已清理。物理拖拽、真实监视中的本工具和 Win10 未验。原件 `out/mcp_configuration_order_235_20261124/`、`out/mcp_product/configuration_order_235_20261124/`。
-
-### CFG-ORDER-GUI-234：配置列表复位的写盘及同名组保护
-
-复位确认后再核对 IDLE，删除根排序键时保留同名配置组下的所有值。同步失败还原共享缓存并沿用现有提示。写入成功后更新列表，保留当前配置、选择及草稿。
-
-PC-W11，源码基于 `ea166946`。Qt6.8.3 Release `882a49a4`、私有 GUI 前／后 `dad1a5a6`／`d70659b1` 零警告。真实复位确认 No 保留原状态。原版正常复位删除了同名配置组，目标占用时磁盘仍旧但列表及缓存已变。修复后正常清除排序键，双 Qt 独立读回默认四组及另外 86 个字段。占用时原字节、组、顺序、选择及未保存显示模式保持并提示失败。低权限基线子编译 C1902 后普通 Medium 通过，读进程改用 qmake 默认目标，首轮 GUI 驱动补齐导入后通过。五个自有副本均正常退出 0，授权撤出、登记注销。正式 Rust、物理拖拽和 Win10 待验。原件 `out/mcp_configuration_order_234_20261124/`、`out/mcp_product/configuration_order_234_20261124/`。
-
-### CACHE-REGISTRY-233：受管测试登记容量和显式释放
-
-每控制器登记容量 128，授权摘要、自有进程分别保持 32。测试责任流程确认并撤出本定义的授权后，用实例、ID、摘要显式标记。标记保留槽位，依赖进程、执行中动作、作业或未定启动时拒绝释放，无法归属的未定启动保留可能涉及的登记。`status` 保留原字段并显示用量、上限及当前可释放 ID。显式注销复核原引用、释放令牌和当前资格，只释放内存登记并保留历史及测试原件。重新授权或登记使旧释放引用失效。满额仍允许合法更新同 ID，重复测试继续走既有授权。释放的槽位通过完整审核重新登记。
-
-PC-W11，源码基于 `81449ea9`。普通权限下实际技能目录组件 104 项通过，覆盖第 128／129 项、标记不腾槽、释放后登记、授权／占用／未定／旧引用拒绝和重复使用。满额合成场景含 128 个可释放 ID 和 32 个独立授权摘要，状态文件 22,058 字节、状态回执 22,110 字节、最长抽样历史行 698 字节。测试使用控制器替身及本机文件系统，未对运行控制器执行新接口。低权限夹具遇到目录联接和路径大小写差异，改用普通 Medium 测试后通过。Python 3.11 通过隔离目录的 PyYAML 轮包运行原 `quick_validate.py`，返回 `Skill is valid!`，项目依赖及锁保持。PID 27880 仅只读核对，未升级、启动替代控制器或触发 UAC。原件 `out/cache_registry_233_20261123/`。
-
-11-24 补齐 `release-ref <target_id>`，由已核验的同登录普通客户端查询同一实例的单个有效标记。旧回执淘汰后，仍可从 `status` 选择 ID、取回引用并显式注销。状态新增能力标志，令牌留在有界回执内。技能补充一次性目标的显式收尾和重复使用逻辑 ID 的做法。
-
-PC-W11，源码基于 `1ff96fa1`。普通 Medium 实际技能目录 108 项组件测试及原 `quick_validate.py` 通过，复用隔离 PyYAML 轮包。覆盖回执淘汰后查询和注销、授权／依赖／未定／实例／身份拒绝、同 ID 更新及重新授权后旧引用失效、关闭中拒绝、旧版兼容和参数校验。满额抽样的状态文件和回执为 22,135／22,187 字节，单目标回执 555 字节，最长历史行 698 字节。令牌未进入状态和历史，查询前后标记及期限一致。范围为控制器替身和本机文件系统，未执行真实缓存、UAC 或产品操作。原件 `out/cache_registry_release_ref_20261124/`。
-
-### CFG-ORDER-GUI-232：配置列表排序的写盘保护
-
-移动普通配置组时，先核对磁盘组与待保存顺序，再用已有同步和缓存回退检查写入结果。成功后更新列表和实际组名，保留当前选择。占用失败沿用含文件名的已翻译提示，保留列表、缓存、磁盘和当前未保存编辑。
-
-PC-W11，源码基于 `e8a38d90`。Qt6.8.3 Release `c1888994`、私有 GUI 前／后 `e94f9683`／`c2918f8f` 零警告。用真配置选择弹窗搜索 `McpSecond` 并置顶。占用时旧版改变 UI 和缓存顺序，磁盘保持。修复后原顺序及 `McpSaved` 选择、未保存显示模式 1 均保持，出现 `keymapdata.ini` 失败提示。正常保存前后结果逐字节一致，双 Qt 独立进程读取三个组的新顺序，另 85 个字段保持。四个隔离产品退出 0，专属授权撤出。首轮夹具修正 Qt 私有角色标识后完成对照。正式 Rust 排序、复位、拖拽和 Win10 留待后续。原件 `out/mcp_configuration_order_232_20261123/`、`out/mcp_product/configuration_order_232_20261123/`。
-
-### CONFIG-IMPORT-STATE-231：监视与停止清理门禁
-
-PC-W11，源码 `a8e2f1a2`，复用 Qt6 Release `a7a05f83` 与正式 Rust `5f866d43`。原启动模式的私有真产品只有空映射表，目标进程不存在，自动启动、共通、提示音、虚拟手柄、多输入和筛选键均关闭；无开始／停止发送。真实 Rust 开启 CHECKING 后，已有保存预览的提交、新导入预览和保存预览均拒绝，INI 字节保持。停止实际经过 `waiting_cleanup` 并观察到完成。旧草稿保存拒绝为 `stale_preview`，取消原草稿后新目录、新预览和显式保存通过，仍加载原空表。产品退出 0，独享授权已撤出，输入桌面和系统筛选键保持。仅选验无输入监视，匹配活动态、设备和物理输出待验。原件 `out/mcp_product/configuration_import_lifecycle_231_20261123/mcp-current/`。
-
-### CONFIG-IMPORT-230：正式普通配置组导入与保存
-
-`configuration.import` 接受配置目录修订、显式组名和同名政策，普通权限 Rust 读取备份。确认后封存 128 KiB／100 组以内的内容及实例、配对、权限、配置文件与生命周期修订。覆盖按 GUI 语义合并备份字段。以草稿 ID 预览 `configuration.save_import`，复用固定 INI 快照检查、同步与失败恢复。保存只写选中普通组，刷新对应目录项，保持当前配置、共享字段及草稿。首轮覆盖当前未加载且无外部路径、自动匹配或系统筛选键启用的组。
-
-PC-W11，源码基于 `5f5e65d7`。Qt6.8.3 Release `a7a05f83` 零警告，正式 Rust `5f866d43` 和真实私有产品验证只读拒绝、旧目录、坏格式／超限、保护组、设备和路径范围、取消、预览后换文件、写盘占用后保留原字节和草稿、续次保存及外部修订拒绝。复用 224 GUI 旧备份和 223 Rust 备份，双 Qt 独立进程在已保存 INI 和冷启产品导出逐字段查到 12 个合并、4 个新增字段，68 个根字段及 3 个未选范围保持。当前窗口模式未保存编辑和当前映射保持。双 Qt 参数／事务 6 项及两个 Rust 协议通过。首轮脚本取错目录修订层级，产品正常退出；改正后通过，两个产品均正常退出 0，专属授权已撤出。监视中、全局／General、当前已加载组覆盖、带资源的配置及 Win10 待验。原件 `out/mcp_configuration_import_230_20261123/`、`out/mcp_product/configuration_import_230_20261123/`。
-
-### CONFIG-IMPORT-DRAFT-229：普通配置组草稿的身份和寿命
-
-配置组预览沿原操作 ID 和 120 秒预览寿命。确认后，原操作记录持有同一批有界内容和修订，仅原实例、配对、权限代次可读取或取消；内容不进入操作返回。保存预览独立绑定草稿，取消保存预览和写失败保留草稿，确定保存后释放；草稿随 10 分钟的既有有界结果记录失效。
-
-PC-W11，源码基于 `8317bd3e`。Qt5.15.2／6.8.3 的草稿和既有配置保存生命周期各 4 项，含跨归属拒绝、不同修订、重复确认、取消与过期。此片为内存组件，正式工具和写盘尚未接线。原件 `out/mcp_configuration_import_draft_229_20261123/`。
-
-### CONFIG-IMPORT-SELECTION-228：普通配置组选择和同名规划
-
-按显式组名与请求顺序生成创建、保留、合并补丁。合并仅纳入备份提供的字段，沿 224 真 GUI 的行为保留目标其他字段。缺组、重复及大小写歧义整批拒绝，已加载组只允许保留。配置列表和 Tab 加载会解析进程、自定义图标、Tab 图片路径，正式补丁首轮拒绝这些字段的路径值。组件只返回计划数据。
-
-PC-W11，源码基于 `6c69b62f`。Qt5.15.2／6.8.3 组件各 4 项。独立 Qt6 读进程用 224 真 GUI 文件验证同名保留和 11 字段合并，用 223 正式 Rust 文件验证请求顺序、创建／合并和选中两组的 15 字段。未新启动产品或写入配置。原件 `out/mcp_configuration_import_selection_228_20261123/`。
-
-### GEN-STARTUP-POSITION-227：启动位置模式和坐标
-
-`general.set_startup_position` 在当前源守卫下编辑通用高级设置。模式可单独改变并保留坐标；坐标须成对落在各轴 ±50000，且最终是指定模式。复用现有控件联动、dirty 与保存字段。当前窗口保持位置。
-
-PC-W11，源码基于 `3c51e399`。Qt6.8.3 Release `336d9e1c`、私有真 GUI `752148ed` 零警告。GUI 实测默认 `715,304`、独立上次位置 `640,240`、指定 `180,190`、双轴 `50000` 屏幕外时回退 `715,335`。三模式切换、负坐标编辑、坐标控件联动和 dirty 通过。正式 Rust `61031df9` 验证只读拒绝、取消、同值、错误确认、三模式／单独坐标、显式保存不移动以及跨独立实例真实落点。双 Qt 参数及双 Rust 协议通过。首轮 Rust 夹具误期待权限错误代码，按实际 `permission_denied` 修正。冷读新登记被控制器以 `request_limit` 拒绝，复用本片已经核验且已关闭的同一登记发起全新启动后通过。自有产品均退出 0，专属授权已撤出。混合 DPI、物理移动和 Win10 未验。原件 `out/mcp_general_startup_227_20261123/`、`out/mcp_product/general_startup_227_20261123/`。
-
-### CONFIG-IMPORT-FORMAT-226：有界普通配置组解码
-
-共享 INI 词法及 Qt4 QVariant 预检接受 GUI 和正式导出的普通组，保留出现顺序，解码 Qt 标识符转义、文本列表、已用嵌套类型、位置、尺寸和共通行 RGB 色。忽略 General／全局组。128 KiB／100 组，拒绝歧义名称、畸形和超限值。本片止于解码结果。
-
-PC-W11，源码基于 `ae11c037`。Qt6.8.3 Release `e85959fc` 零警告。Qt5.15.2／6.8.3 组件各 7 项，另用独立 Qt 进程对照真 GUI 两份、正式 Rust 一份及实际保存两份，每套 Qt 合计 422 个字段，逐组字段和值均一致。首轮合成全局组名已纠正，完整写盘对照补齐共通 QColor 的 Qt4 编号。真实文件证据复用 220～224，未新启动产品或执行正式导入。原件 `out/mcp_configuration_import_format_226_20261123/`。
-
-### GEN-SAVE-SPLITTER-225：分割条位置记忆
-
-`general.set_save_splitter_position` 以当前源守卫编辑通用高级的布尔项，复用复选框及 dirty 信号。即时分区尺寸保持，显式保存沿根 `SaveSplitterPosition` 及已有 `LastSplitterPosition` 写入条件。
-
-PC-W11，源码基于 `19c6b28f`。Qt6.8.3 Release `4532310a`、私有 GUI `3c14bb30` 零警告。真 GUI 冷启实测关闭 `548/548`、开启恢复保存的 `700/396`，切换选项即时宽度保持。正式 Rust `a98cb2e7` 验证取消、同值、确认负例、源行和主窗大小保持、显式保存及独立进程读回，保存值为 `548,548`。双 Qt 参数与 Rust 双协议通过，四个产品副本正常退出 0，专属授权已撤出。进程表隐藏、无效比例、物理拖动及混合 DPI 未验。原件 `out/mcp_general_splitter_225_20261123/`、`out/mcp_product/general_splitter_225_20261123/`。
-
-### CONFIG-IMPORT-GUI-224：配置组 GUI 导入的失败保护
-
-GUI 普通同名组沿既有确认和成功后的加载流程。读源、同步及缓存回退共用 222 的字段收集和写盘检查。未写成时显示目标文件名，保留已加载映射与草稿。
-
-PC-W11，源码基于 `ced74823`。Qt6.8.3 Release `c7283757`、私有 GUI 前／后 `7cf95235`／`a6bef941` 零警告。真实文件对话框中 No 保持 B，确认正常写入及加载 N，两版正常 INI 字节一致，Qt5／Qt6 独立进程读回 11 个字段。目标占用时旧版误报并把缓存及当前映射改成 N，修复后提示失败，磁盘、缓存和当前映射保持 B，另有未保存的窗口显示模式仍为 1。四个产品正常退出 0，专属授权已撤出。General、分组排序、Qt5 真窗和正式配置组导入待验。原件 `out/mcp_configuration_import_224_20261123/`、`out/mcp_product/configuration_import_224_20261123/`。
-
-### CONFIG-EXPORT-223：正式导出已保存普通配置组
-
-`qkm_export_configurations` 绑定 Read、实例／配对与 `configurations` 目录修订，按请求顺序导出固定配置文件里已保存的普通组。最多 100 组／128 KiB，沿 222 收集组值。Rust 校验产品回复后在已有显式目录发布，整份目标覆盖须明确同意。
-
-PC-W11，源码基于 `7315464d`。Qt6.8.3 Release `7aec30b8` 零警告；正式 Rust `a25e0132` 在私有真产品验证 Read、单／多组、中文组名和字段、目标占用／覆盖、旧配对、组范围以及草稿与原 INI 保持。Qt5／Qt6 独立进程读回单组 11 字段、三组 18 字段。双 Qt 格式、Rust 回复绑定单元及双协议通过。补齐 Rust 单行组名校验。首轮实际输出正常，合成源手写的原始 UTF-8 组名／键名导致 Qt5 源对照失败，改用共同转义后重跑通过，两次均正常退出 0 并撤出专属授权。产品超大文档、活动态、Qt5 真窗及 Win10 未验。原件 `out/mcp_configuration_export_223_20261123/`、`out/mcp_product/configuration_export_223_20261123/`。
-
-### CONFIG-EXPORT-GUI-222：配置组 GUI 导出的写盘结果
-
-配置组导出提取已保存选中组字段，复用 215 的 QSettings 同步和待写值回退，失败显示既有保存提示。显式选择的 General 与普通组仍按原 GUI 范围。
-
-PC-W11，源码基于 `40aff735`。Qt6.8.3 Release `2039ea1b`、私有 GUI 前／后 `f1d0864d`／`46af1106` 零警告。真 GUI 选择 McpSaved，通过文件对话框正常导出；修复前后字节相同，双 Qt 独立 Core 进程读回 11 个已保存字段。占用默认目标时，基线误报完成并留待写值，修复后实际顶层提示文件名、原文件和缓存保持。共享单表写盘回归通过。两轮提示观察夹具先后定位到独立顶层标签，第三轮完整通过。自有产品均正常退出 0，授权已撤出。General、多组、正式 Rust 和导入未在本片运行。原件 `out/mcp_configuration_export_222_20261123/`、`out/mcp_product/configuration_export_222_20261123/`。
-
-### GEN-WINDOW-SIZE-221：保存窗口尺寸
-
-`general.set_save_window_size` 用当前源守卫编辑通用高级的布尔选项，沿用复选框 setter 和 dirty 信号。即时窗体几何保持，显式保存写入根 `SaveWindowSize`，启动继续读取原 `LastWindowSize`。
-
-PC-W11，源码基于 `6559db5e`。Qt6.8.3 Release `b2d34b1c`、GUI `17e0ec5a` 零警告。两份私有真 GUI 在同一 `1260×790` 保存值下分别启动为 `1130×722` 和 `1260×790`，勾选和取消即时尺寸保持并提示未保存。正式 Rust `8b5672b7` 验证取消、同值、错误确认、草稿不改源行及几何、保存和独立进程冷读；双 Qt 参数及 Rust 双协议通过。四个产品副本正常退出 0，专属授权已撤出。原生缩放手势、多屏／运行 DPI、活动态及 Win10 未验。原件 `out/mcp_general_window_size_221_20261123/`、`out/mcp_product/general_window_size_221_20261123/`。
-
-### TABLE-IMPORT-220：正式单表导入
-
-`table.import` 绑定 Read＋Configure、已加载配置和已附着普通／共通源。Rust 从显式本地目录读取具名 INI，产品接收最多 128 KiB／100 行并沿 219 行构造。预览报告跳过、抬起键回退及互斥；共通优先禁用现有普通行须 `confirm_conflicts=true`。确认使用预览捕获的内容，在同一次提交中应用目标及跨表草稿，保存仍独立提交。
-
-PC-W11 build 26100，源码基于 `3c5ee116`。Qt6.8.3 Release `a76ab43a` 零警告，正式 Rust `cc42c2b0` 在真实私有产品核对 Read 拒绝、空／错型／超限／全无效、旧配对和旧草稿引用、取消、预览替换和重放、预览后换文件、当前普通表／未选中普通表／共通表、未改选中表、显式保存和另一进程 74 字段读回。宏同名保留预览通过，复用 219 真 GUI 文件及共通冲突基线。双 Qt 参数／生命周期／限额各 3 项及 Rust 双协议通过。首轮夹具缺辅助模块，补齐后开始实际运行；两产品均正常退出 0，自有授权已撤出。活动态、实际映射输出、Qt5 真产品及 Win10 未验。原件 `out/mcp_table_import_220_20261123/`、`out/mcp_product/table_import_220_20261123/`。
-
-### TABLE-IMPORT-GUI-219：共用单表行重建
-
-单表的 74 个读写字段使用同一集合。GUI 继续读本地备份的 QSettings 值，共用函数从字段重建映射行，保留缺省值、跳过无效主行、抬起键回退、备注和派生字段。既有 GUI 插入位置、提示和共通冲突入口沿用。
-
-PC-W11，源码基于 `06daff2a`。产品构建首次发现 218 的常量命名空间遗漏，已补齐。Qt6.8.3 Release 产品 `411022bd`、GUI 前／后 `70b93f9a`／`b69fc88b` 零警告。合成配置经真实菜单、文件对话框及共通冲突 No／Yes，覆盖旧文件无效行、非法抬起键回退、同批重复禁用、216 新文件 Unicode 备注及确认后跨表修复，前后观测结果逐字节一致。前两轮基线没有出现预设冲突，第三轮在专属 INI 中启用原来禁用的 G 后通过。所有实际副本正常退出 0，专属授权已撤出，INI 保持原字节。Qt5 真 GUI、正式导入和保存未在本片运行。原件 `out/mcp_table_import_gui_219_20261123/`、`out/mcp_product/table_import_gui_219_20261123/`。
-
-### TABLE-IMPORT-FORMAT-218：有界单表 INI 解码
-
-兼容备份的旧版最小 INI、Qt 导出的普通文本和分段备注，以及 216 的带类型字段。复用宏备份的尺寸、类型、深度预检，单表限制 128 KiB／100 行，识别字段由产品的导出字段集合提供。拒绝重复字段、错型、无效主键列形状和数量越界。此片实现格式组件，GUI 行构造与正式工具接续。
-
-PC-W11，源码基于 `74f4f50a`。Qt5.15.2／6.8.3 的离屏宏与单表组件各 4 项通过，两个 Core 读进程对照 215 真 GUI 及 216 真 Rust 留存的五份文件，每份 74 字段一致。首轮测试构建补齐常量命名空间后双 Qt 零警告通过。未新启动产品。原件 `out/mcp_table_import_format_218_20261123/`。
-
-### WIN-DISPLAY-217：当前配置的窗口显示匹配模式
-
-`configuration.set_window_display_mode` 在当前已加载配置使用既有模式框和 dirty 信号。0 忽略／1 全屏／2 窗口，`get_state` 回报草稿，保存沿组内 `ProcessInfo_DisplayModeMatchIndex`。沿用已有匹配消费者及加载时机。
-
-PC-W11 build 26100，源码基于 `bad1f0f8`。Qt6.8.3 Release 产品 `2d926bd8`、私有 GUI 夹具 `3ba440ac` 零警告。真 GUI 通过定向 Qt 事件核对三档及未保存提示。正式 Rust `f0659b7a` 核对取消、同值、确认、草稿未变源行、保存及独立进程冷读；双 Qt 参数和 Rust 双协议通过，所有产品正常退出 0，专属授权已撤出。实际全屏 HWND 分类、自动候选及前台变化未验。原件 `out/mcp_window_display_mode_217_20261123/`、`out/mcp_product/window_display_mode_217_20261123/`。
-
-### TABLE-EXPORT-216：正式单表备份
-
-`qkm_export_mapping_table` 绑定 Read 和 `mapping_sources` 当前实例／权限代次的已附着源表，包含未选中普通表及共通表。215 的 74 字段沿用 Qt 兼容 INI，在产品内存生成最多 100 行／128 KiB 文档。宏引用保留，定义另由宏备份提供。Rust 从既有显式本地目录完整发布备份，覆盖需确认。
-
-PC-W11 build 26100，源码基于 `ff726a90`。Qt6.8.3 Release 产品 `f9b983db` 零警告，正式 Rust `d02ef923` 在私有桌面核对 Read、选中／未选中／共通表、陈旧及旧配对引用、占用失败和覆盖、保留配置与当前选择。未保存 Unicode 备注随源表导出，配置 INI 保持原字节；双 Qt 独立 Core 进程读回并与 215 真 GUI 的 74 字段对照。Qt 双组件、Rust 文件 4 项及双协议通过。首轮更正了共用桥接错读缺省宏字段的 panic，第二轮校准 Windows 规范路径比较，第三轮从实际导出文件补齐被 stdout 截断的独立读回。实际产品均退出 0，自有授权已撤出。产品超限、宏引用专案及活动态另验。原件 `out/mcp_table_export_216_20261123/`、`out/mcp_product/table_export_216_20261123/`。
-
-### TABLE-EXPORT-WRITE-215：单表选定源的格式与写盘结果
-
-GUI 单表导出抽取原有 74 字段的有序序列化。显式同步并检查状态，失败时回退本次 QSettings 待写值并沿用既有三语保存失败提示。PC-W11，源码基于 `16744d19`。Qt6.8.3 Release 产品 `1347f76e` 与 GUI 基线／修复 `4ac7d2f3`→`b3445c42` 均零警告。私有真窗对照复现占用时旧版误报成功及缓存残留，修复后提示失败、原文件与待写值保持。正常四行备份字节一致，Qt5／Qt6 两个 Core 新进程逐字段读回一致。两产品正常退出 0，自有权限已撤出。正式 Rust 单表导出续接。原件 `out/mcp_table_export_215_20261123/`、`out/mcp_product/table_export_215_20261123/`。
-
-### GEN-EDIT-214：表行内联编辑触发
-
-`general.set_table_edit_trigger` 以当前源入口编辑通用高级的全局触发方式。0 右双击、1 左双击，复用已有 setter／dirty，显式保存写入根 `EditModeTrigger`。已有列、修饰键及编辑器规则沿原路径。
-
-PC-W11 build 26100，源码基于 `aea370ed`。Qt6.8.3 Release 产品 `da77cd3e`、私有 GUI 夹具 `66c88c49` 零警告。真实主表选定一行，以 Qt 界面事件对照左双击从打开单项窗改为内联编辑。首轮夹具未找到作为 Tab 页本身的表格，修正后通过。正式 Rust `5f4aa44f` 核对预览、取消、同值、错误确认、源行与插入偏好保持、保存及独立进程冷读。双 Qt 参数、Rust 双协议合同通过，产品在 `QkmProduct_*` 私有桌面正常退出 0，专属授权已撤出。其余列、物理鼠标／Alt、宏／序列窗口及活动态未验。原件 `out/mcp_general_edit_trigger_214_20261123/`、`out/mcp_product/general_edit_trigger_214_20261123/`。
-
-### GEN-INSERT-213：全局表行插入模式草稿
-
-`general.set_table_insert_mode` 在已加载、完成清理的当前源入口预览全局设置。0 上方／1 下方，提交沿用通用高级组合框 setter 及其 dirty 信号。显式位置和源行内容沿原规则，存盘仍由 `configuration.save` 提交根 `TableInsertMode`。
-
-PC-W11 build 26100，源码基于 `fa59e86a`。Qt6.8.3 Release 产品 `2e71e019`、私有 GUI 夹具 `b35b33e4` 零警告。真 GUI 用定向 Qt 事件验证两档和未保存提示，首轮下拉点击未命中，修正夹具后通过。正式 Rust `f1cc4004` 核对预览／取消、同值、错误确认、修改后源行保持、显式保存、旧引用及独立进程冷读。双 Qt 离屏参数各 1 用例，Rust 双协议及 Draft 2020-12 合同通过；首轮合同夹具的旧字段名单已校准。产品均在 `QkmProduct_*` 正常退出 0。未验证物理输入、各插入消费者或 Win10；原件 `out/mcp_general_insert_mode_213_20261123/`、`out/mcp_product/general_insert_mode_213_20261123/`。
-
-### MACRO-SCHEMA-212：宏预览的发布 schema
-
-正式 Rust 接线已接受三种宏命令，工具总枚举遗漏了这些值。补齐 `macro.upsert`、`macro.delete`、`macro.import`，用 JSON Schema Draft 2020-12 验证正例及混字段负例，并纳入合同检查。211 的产品和调用语义沿用。
-
-### MACRO-IMPORT-211：宏文件的同名合并与草稿事务
-
-`macro.import` 由 Rust 普通权限从 `--macro-backup-directory` 读取具名本地 INI（128 KiB、100 条）；产品接收文档，沿 Read＋Configure、实例／配对、目录修订及空闲清理守卫预览。GUI 和 MCP 共用字段解码及同名合并。保留跳过同名，覆盖按文件顺序移到尾部且须确认。兼容文件可忽略非 Map／空名，同文件重复保留首次位置与最后值。正式 MCP 目前接受字母／数字序列，拟写入的超范围宏拒绝整次导入。提交只生成草稿，保存继续使用原配置事务。
-
-PC-W11 build 26100，源码基于 `86104662`。Qt 6.8.3 Release 产品 `7a2e2a5f`、真实 GUI 夹具 `93113995` 零警告。GUI 私有窗实际操作保留、覆盖、旧四／新五字段及作用域顺序，沿用 207／209 对照。正式 Rust `2260fa32`＋隔离产品核对权限、错误和大小／数量、取消与无确认不变性、同名全保留无操作、旧引用、操作重放、预览后换文件、部分条目忽略、逐段备注、写盘失败后草稿保留、显式保存和另一产品进程冷读。双 Qt 离屏组件各 3 用例、Rust 文件 3 项和 legacy／2026-07-28 协议通过。首两轮 Rust 夹具在派发前误读控制器 PID，第三轮通过；三次实际产品均在 `QkmProduct_*` 私有桌面退出 0，自有授权已撤出。未启动映射，现有启停清理证据复用；本片未实测监视中导入门禁、映射输出、Qt5 私有 GUI 或 Win10。原件 `out/mcp_macro_import_211_20261123/` 和 `out/mcp_product/macro_import_211_20261123/`。
-
-### MACRO-IMPORT-FORMAT-210：有界宏备份读取
-
-源码基线 `f0963dcb`。GUI 用 QSettings 读 `MacroList_Export`，共用配置解码跳过空名／非 Map，同名文件项保留首次位置与最后内容；GUI 对目标同名选择保留会跳过，覆盖会把已接受项按文件顺序移到尾部。207／209 的真实 Qt6 私有 GUI 已建立该基线。新组件兼容 GUI 的单包装／逗号列表和 208 导出，只将经过大小（128 KiB）、条目（100）及 Qt 4.0 类型／长度校验的值交给原 Qt 流解码；GUI 路径现有容错和限制保持。抽取现有导出编码，正式导入权限和草稿事务续接。
-
-PC-W11 build 26100。Qt6 产品 Release `out/mcp_macro_import_210_20261123/qt6-product-medium/release/QKeyMapper.exe` 编译零警告；Qt5.15.2／Qt6.8.3 组件各 2 个用例（QSettings 四／五字段、双向读取、转义和限额）通过。低完整性首次编译遇 MSVC C1902；平台拒绝 Qt6 组件改用 Medium，Qt6 组件改用沙箱内 `/Z7` 并验证通过。原件 `out/mcp_macro_import_210_20261123/`。本片仅编译产品，产品 MCP、界面及安装包待相应切片验证。
-
-### ORDERED-MAP-209：修复 OrderedMap 移动赋值迭代器失效
-
-`OrderedMap::operator=(OrderedMap&&)` 改为交换 `data` 与 `insertOrder`，使哈希表迭代器继续绑定对应链表并保持自移动及源对象清理／复用安全。Qt6.8.3 Release、Qt5.15.2 Release 及 Qt6 ASan（`clang_rt.asan_dynamic-x86_64.dll`）组件各 7 项通过且零警告（已先于修复前以 ASan 复现旧实现失效，修复后通过）。带标志门控私有探针构建的 Qt6 私有产品 `7eff2dbc`（`rust-save` 中探针钩子未激活）＋Rust `7f35ab31` 通过宏旧／新格式导入往返、正式 MCP 逐段备注保存重载与独立冷读；各实际私有桌面 `QkmProduct_*`、输入桌面保持 `Default`（其中三项产品验证由 Antigravity `exebox` 线程发起，`GetForegroundWindow()` 返回 `0` 而未观测 `Default` 前台窗口）。首轮 `gui-import` 夹具因 Medium 跨 High 调用 `GetThreadDesktop` 遇拒绝访问错误 5，改用 `EnumDesktopWindows` 直接核验私有桌面与 `Default` 后 `gui-import-02` 通过（产品源码未改）。本机原件 `out/mcp_ordered_map_209_20261123/`、`out/mcp_product/ordered_map_209_20261123/`。
-
-### MACRO-EXPORT-208：普通权限导出宏备份
-
-产品 Read 生成单作用域当前目录备份（最多 100 宏／128 KiB）；Rust 仅在启动时配置的本地目录接收 INI 文件名，完整写入后发布，默认拒绝覆盖。Qt6 私有 4788ae48＋Rust 7f35ab31 通过范围、陈旧、占用、覆盖及配置不变性，双 Qt Core 独立读回。首轮控制器复核在派发前拒绝，次轮夹具误判 Windows 规范路径前缀；均正常清理。原件 `out/mcp_product/macro_export_208_20261123/`。正式导入待办。
-
-### MACRO-FORMAT-207：宏 INI 往返与写入失败
-
-五字段共用配置编解码，兼容旧四字段。Qt6 私有原／最终 GUI abcba7ad→6512331b 验证选择／作用域、中英日锁文件失败、独立进程导入及同名决策／排序；Qt5／Qt6 Core 互读。原版误报成功。首轮夹具模态回调阻塞，经核验定向关闭后退出 0；冷读初版触发 `OrderedMap` 移动赋值失效，用匹配 PDB 定位并改回原地填充。原件 `out/mcp_product/macro_format_207_20261123/`。正式导出续见 208，导入待办。
-
-### MACRO-COMMENTS-206：显式宏逐段备注
-
-`segment_comments` 与规范化按键数等长，空串清除，沿 GUI 去 CR／LF。Qt6 原／当前 GUI `ff573e23`→`94b9efd5`、只配置 Release `70853c21`＋Rust `cad48edd` 选验取消、普通备注替换、通用新增、权限、不匹配拒绝、保存与冷读。双 Qt 各7项及 Rust 双协议通过。原件 `out/mcp_product/macro_comments_206_20261123/`。宏执行仍待。
-
-### MACRO-POSITION-205：新增宏的上方与下方插入
-
-同作用域精确锚点，同名替换保留位置。Qt6 两种 GUI 插入、Rust、双 Qt 及冷读见 Git `01c54413`。
-
-### MACRO-DELETE-204：按作用域删除宏并保留引用
-
-精确名单须确认，原引用保留。真实 GUI、Rust、保存和冷读的范围及前两轮夹具调整见 Git `80d5b2b9`，原件 `out/mcp_product/macro_delete_204_20261120/`。
-
-### MACRO-UPSERT-203：宏追加及同作用域替换
-
-字母／数字序列可追加或按原位置替换，后者需确认并沿 GUI 对齐备注。Qt6、双 Qt 组件、Rust 双协议及冷读见 Git `b43528e2`。
-
-### MACRO-CATALOG-202：普通／通用宏只读目录
-
-Read 查询两个作用域、顺序及逐段备注。Qt6 真 GUI 和 Rust 验证分页、切配置及旧修订拒绝。夹具修正、退出证据及限制见 Git `bfed0071`，原件 `out/mcp_product/macro_catalog_202_20261120/`。
-
-### DUPLICATE-COMMON-TARGET-201：复制到已选共通表
-
-须明确确认连带禁用。Qt6 GUI、正式 Rust、双 Qt 组件及冷读选验取消、仅影响继承表、共通自复制。初轮夹具修正及范围见 Git `48ce9159`，原件 `out/mcp_product/duplicate_common_target_201_20261120/`。
-
-### DUPLICATE-COMMON-SOURCE-200：显式共通源复制到普通表
-
-继承表禁用新副本，非继承表保留启用。真实 GUI、Rust、双 Qt 组件、冷读及本机证据见 Git `5fef6ff3`。
-
-### DUPLICATE-CROSS-TAB-199：普通源表复制到当前普通表
-
-同修订源、当前普通目标与可见锚点，冲突仅影响新副本。原始 GUI、正式 Rust、冷读及组件见 Git `8ac41946`。
-
-### DUPLICATE-BATCH-198：同表连续可见行复制
-
-2–100 个同源同修订连续可见行按源顺序复制，跳过隐藏。夹具、双 Qt、Rust 及冷读见 Git `a4d1958d`。
-
-### DUPLICATE-ROW-197：当前普通表单行复制与四位置
-
-共享插入前准备和提交，四位置按可见行及锚点，冲突仅禁新副本。GUI、Rust 和冷读见 Git `d5cf4f31`。
-
-### BATCH-TRIGGER-196：同源可见行批量触发
-
-2–100 行逐条预览，500 ms 默认，需整批确认。GUI、Rust、双 Qt 和冷读及夹具校准见 Git `bbe241a1`。实际触发另验。
-
-### ROW-TRIGGER-195：当前可见源行触发类型与时长
-
-共享触发、时长和互斥校验，修复 GUI 保存标记。Qt6 GUI、双 Qt、正式 Rust、冷读及首轮构建修正见 Git `2a254895`。
-
-### ADVANCED-ROW-194：固定键码、粘贴方式与 Fn 切换
-
-三个高级行选项共用单项窗写入。双 Qt 组件、Qt6 私有真窗、正式 Rust 与冷读通过。证据、权限和范围见 Git `1d926f62`。实际粘贴及按键另验。
-
-### INPUT-OPTIONS-193：当前可见源行透传、顺序与不可打断
-
-顺序限组合原键，透传刷新颜色。双 Qt、Qt6 GUI、正式 Rust 及冷读见 Git `1b0fbbd8`，实际输出另验。
-
-### SEQUENCE-OPTIONS-192：当前可见源行按住及重复
-
-普通发送可按住，开启时关闭重复并保留次数。双 Qt、正式 Rust、GUI 及冷读见 Git `4e272494`，实际输出另验。
-
-### 182～191：行备注、分类、显示及发送选项
-
-单行备注保留 Unicode 与空格 `479e09f6`，分类修整 `35ea0c97`、批量原子预览 `4f61e785`；修正标签筛选 `bf281b12`，显示禁用不改源 `feae0170`，三显示列 `d62800a6`。连发／锁定 `840fd282`、时长 `718813b3`、解锁保留 `c2510b82`、时机与原抬起键 `240625a3`。原件、双 Qt／Rust／GUI 各自边界及失败轮次见上述 Git 记录；实际键鼠输出与悬浮开关另验。
-
-### TAB-NOTIFY-COLORS-181：当前普通 Tab 通知颜色
-
-当前普通表的通知字体／背景颜色可分别设置，取消不变，default 恢复现有默认色。Qt6 私有 GUI、正式 Rust 及独立冷读选验通过。原件 `out/mcp_product/tab_notify_colors_181_20261120/`，完整范围见 Git `c32f4eee`。活动通知另验。
-
-### TAB-NOTIFY-180：当前普通 Tab 通知三态
-
-`tab.set_notification_mode` 共用 GUI 三态，值1抑制启动通知，值2再抑制切表通知。私有 GUI／Rust 权限、取消、同值、保存重载及冷读选验见 Git `dd1f5d90`。原件 `out/mcp_product/tab_notify_180_20261120/`，活动态实际显示另验。
-
-### TAB-HOTKEY-179：当前普通 Tab 快捷键
-
-`tab.set_hotkey` 共用 GUI 校验及共享目标缓存。私有 GUI／Rust 选验规范化、清空、旧引用及保存重载，冷读 F9→[0,1]，旧 F8 移除。原件 `out/mcp_product/tab_hotkey_179_20261120/`，详情见 Git `75b72f48`。实体快捷键未验。
-
-### TAB-SELECT-178：在已加载配置中显式选择 Tab
-
-`tab.select` 选验同修订普通／共通选择、同值、旧引用拒绝、取消及重放。Qt6 私有 GUI／Rust 核对源行、草稿和 INI 保持。原件 `out/mcp_product/tab_select_178_20261120/`，切页与验证边界见 Git `6b1d6b32`。活动态及实体快捷键另验。
-
-### COMMON-FEATURE-177：当前配置共通总开关
-
-`configuration.set_common_enabled` 绑定当前配置，启用冲突须明确确认，关闭保留本配置行。修复首次启用漏查、切配置／空白串用备份及关态重载丢派生键。Qt6 私有 GUI／Rust 定向复验和独立冷读通过。原件 `out/mcp_product/common_feature_177_20261120/`，红例及详细范围见 Git `bd430c51`。
-
-### TAB-COLLAPSE-176：共通分隔行折叠／展开
-
-`tab.set_common_collapsed` 仅作用于当前继承分隔行。Qt6 原 GUI 与 Rust 选验符号、双向折叠、未改源行、隐藏禁用行仍有效及保存重载。原件 `out/mcp_product/tab_collapse_176_20261120/`，详细守卫、验证及未验范围见 Git `1d2cb6a6`。
-
-### TAB-COMMON-175：当前普通 Tab 共通继承
-
-`tab.set_common_inheritance` 共用 Tab 设定窗。Qt6 私有 GUI／Rust 选验刷新继承、本地行不变、权限、同值及保存重载。原件 `out/mcp_product/tab_common_175_20261120/`，详情见仓库 Git `bde3cba5`。独立冷启动和活动态另验。
-
-### TAB-ORDER-174：普通 Tab 重排
-
-`tab.move` 共用真实拖动后的移动路径。Qt6 私有拖动及 Rust 选验双向重排、源属性、热键索引与保存重载。原件 `out/mcp_product/tab_order_174_20261120/`，详见 Git `f9e52d77`。
-
-### TAB-CLEAR-173：清空当前映射源
-
-`tab.clear` 显式确认并清理当前普通／共通源及坐标缓存。Qt6 私有 GUI／Rust 选验隐藏行纳入清空、继承来源保持及保存重载。原件 `out/mcp_product/tab_clear_173_20261120/`，详见 Git `3dd4d1a4`。
-
-### TAB-HOTKEY-172：复制后刷新热键索引
-
-Qt6 私有真菜单 `4d13ab3b`→`4db94f86`。原版连续复制仍用旧索引，修正后 F8 循环指向索引1，F9 跟随 Tab2 至索引3。复用170 Rust 业务证据，本片只读实际热键解析。两个产品退出0。原件 `out/mcp_product/tab_copy_hotkey_172_20261120/`。
-
-### TAB-DELETE-171：删除当前普通 Tab
-
-`tab.delete` 预览整表及接替表，显式确认并保护共通及最后普通表。Qt6 私有 GUI 修复删除后热键索引，Rust 守卫、取消、重放及保存重载通过。原件 `out/mcp_product/tab_delete_171_20261120/`，首轮夹具错误、复验和未验范围见 Git `b8b2edc6`。
-
-### TAB-COPY-170：复制当前普通 Tab
-
-`tab.copy` 共享 GUI。Qt6 私有 GUI／Rust 两次同序，保留源选中、禁用行、宏引用、快捷键值、颜色及共通。拒绝、取消、旧引用、重放与保存重载通过。双 Qt、Rust 双协议通过。原件 `out/mcp_product/tab_copy_170_20261120/`，范围见 Git 7a177e7a。
-
-### TAB-ADD-169：新增空白普通 Tab
-
-Qt6 私有 GUI／Rust 同样在共通前建并选中 Tab3，零本地行并继承共通。取消、拒绝、旧引用、重放及保存重载通过。原件 `out/mcp_product/tab_add_169_20261119/`，范围见 Git 83985127。
-
-### TAB-NAME-168：当前普通 Tab 重命名
-
-沿 GUI 名称规则，Qt6 私有真窗、正式 Rust、中文旧引用与冷读通过。原件 `out/mcp_product/tab_name_168_20261119/`，清理夹具复验与完整范围见 Git `a895f818`。
-
-### ROW-ORDER-167：连续行相邻移动
-
-双行相邻移动的 Qt6 私有 GUI／Rust 顺序、选区及完整顺移一致。非法范围、旧引用、重放及 INI 不变通过。双 Qt、Rust 双协议通过，专属资源已清理。原件 `out/mcp_product/row_order_167_20261119/`，范围见 Git a09e96c1。
-
-### ROW-ORDER-166：连续行置顶／置底
-
-同源同修订的 2–100 个升序连续引用可置顶／置底。Qt6 私有 GUI／Rust 双行同序，范围拒绝、旧引用、重放及显式保存重载通过。双 Qt、Rust 双协议通过，专属资源已清理。原件 `out/mcp_product/row_order_166_20261119/`，范围见 Git 10fc1939。
-
-### ROW-GUI-165：连续双行的原 GUI 行为
-
-Qt6 私有真点选及菜单验证双行两端移动和锚点。UIA／定向消息未建有效范围。原件 `out/mcp_product/row_order_165_20261119/`，范围见 Git 16f658b2。
-
-### ROW-ORDER-164：普通表单行置顶／置底
-
-Qt6 私有 GUI／Rust 两端移动同序。顺移、其他源、旧引用及重放通过。原件 `out/mcp_product/row_order_164_20261119/`，范围见 Git abc56f2c。
-
-### ROW-ORDER-162／163：普通表单行相邻移动
-
-Qt6 私有 GUI／Rust 单行上移和下移、拒绝、旧引用、重放及保存重载通过。原件 `out/mcp_product/row_order_{162,163}_20261119/`，含失败范围见 Git 9c87f5b9、b2b07096。
-
-### RUN-WRITE-161：停止并排空后的写入边界
-
-Qt6 输出截获＋Rust 私有验证运行中写入被拒且不写 INI。停止排空后仅新预览可提交 A→B、保存并由 GUI 读回。原生五项零、FakerInput 替身空报告、FilterKeys 不变。原件 `out/mcp_product/run_write_161_20261119/`，范围见 Git 7d1bfeb6。
-
-### AGY-160：静态 Rust 组件与 Antigravity 选验
-
-静态组件中文／空格路径直启。Antigravity 对私有 Qt6 产品正式调用成功，取得中文主窗 PNG。同回合回读受客户端规则阻止，独立 ACP 内联同图可识读。失败轮次与清理见 Git f9ffccde。原件 `out/mcp_product/agy_rust_160_20261119/` 和同名 `out/rust_sidecar/`。整包与同轮图像消费仍待。
-
-### ACTIVE-STOP-159：已核验活动源显式停止
-
-仅限计入活动源证明的已匹配同代运行。Qt6 普通构建及私有输出截获目标的 GUI／Rust 停止和实际排空通过。原生五项零，替身空报告，FilterKeys／INI 不变。原件 `out/mcp_product/active_stop_159_20261119/`，普通产品活动态及真实输入未验，范围见 Git 09c3b60。
-
-### START-158：固定当前源显式开启监视
-
-`start_only` 绑定同实例／源修订／当前普通 Tab，限基础键盘行。Qt6 私有 GUI／Rust 监视、未匹配超时、权限、重放及停净通过。Qt5 夹具修正后双 Qt 通过。原件 `out/mcp_product/start_158_20261119/`，范围见 Git fc5dec2b。
-
-### STOP-157：显式停止与实际清理结果
-
-Read＋RunMapping，绑定实例及请求 ID。未匹配稳定源监视可显式停止并等待同代清理，超时保持观察。私有 Qt6 原 manifest 产品与 Rust 两会话、双协议、取消实际排空和 IPC 超时已选验。失败轮次、测试边界及已封存 Python 变更见 Git e0b00eac，输出 `out/mcp_product/stop_157_20261119/` 与 `out/mcp_stop_157_20261119/`。匹配态另见159。
-
-### WAIT-156：有界只读状态等待
-
-认证状态按单调截止采样，100–5000 ms，默认1000。超时保留最后快照，实际 IPC 取消排空后可重连。Qt6 私有产品 Read 初始空闲等待和真实认证夹具通过。原件 `out/mcp_wait_state_20261119/`、`out/mcp_product/wait_156_20261119/`。历史双 Sidecar 与失败轮次见 Git 5b293017。
-
-### BUG02-FOLLOWUP-151：三项运行时边界补充（选定完成，停止）
-
-`3fefc26a` 接受序列身份、FakerInput 释放隔离及显式 UP 记账，补强无 Hook 回声的已受理回落键。双 Qt 17项、普通 Release、定向分析、实际 ASan、MCP／保存及演示选验通过。用户转交的 Gemini 实测单列；同 VK、松开受阻及实际物理输入仍按原范围。[完整事实与失败轮次](runtime_bugfix_validation.md#bug02-followup-151三项运行时边界补充2026-11-17选定完成)，原详细计划见 Git。
-
-### EDIT-COMMON-155：Common 同表原键冲突
-
-同表冲突沿 GUI 只禁用当前行，初始已禁用则保持；只有连带普通表时需要冲突确认。双 Qt 独立 GUI 四组 52 项、Qt6 实际产品五组 131 次工具记录、双 Qt 组件及 Rust 新旧合同通过。两组同表及一组 154 连带用例的完整数据与各自 GUI 一致；独立开关、权限及启停边界保持。[事实记录](mapping_edit_validation.md#edit-common-155common-同表原键冲突)。
-
-### EDIT-COMMON-154：Common 原键更新的连带禁用
-
-预览列出 Common 原键改变和被禁用的普通源行，显式确认后同次内存提交，保存独立。Qt6 私有七例202调用和三个全数据对照、双 Qt 及 Rust 合同通过。Common 同表续见155；禁用连带待补。[事实与原件索引](mapping_edit_validation.md#edit-common-154common-原键更新的连带禁用)。
-
-### EDIT-CAP-153：原键冲突能力说明
-
-原键更新预览／提交统一公布 original_key_conflict_policy=disable_current_normal_row_only；旧布尔字段仍表示通用冲突处理不可用。业务、权限及两种 Sidecar 无改动。基于 349d889c 的双 Qt x64 零警告维护构建及四个离屏用例通过；首轮缺 IPC 夹具路径即停止，补传匹配路径后各原生退出 0。无新产品、图形交互或系统输入；原件 out/edit_capability_153_20261118 仅本机。
+### 历史切片压缩索引（FORZA-MERGE ～ SET-SCALE-256，全文固定锚点 `8cbf5eb3`）
+
+> 本节压缩 `SET-SCALE-256` 往前至 `FORZA-MERGE-20261031` 的历史已选验段落；完整逐行细节固定保存在 Git `8cbf5eb3`，可通过 `git show 8cbf5eb3:handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md` 取回全文。以下提及的所有 `out/` 路径均仅存 `PC-W11` 本机（`.gitignore` 忽略，不随 Git 同步），跨机需按对应仓库脚本复跑；**从 `238` 起的隔离运行副本均禁用了 FakerInput 分配与连接**（以免退出触发 Neutral Report），开启连接运行单列为待验项。
+
+| 切片范围 | 代码基线 / 关键修复 | 接入能力／核心变更与关键验证结论（PC-W11 选验） | 剩余未闭环与依赖约束 |
+|---|---|---|---|
+| `SET-SCALE-256` | `e4fb73d6` | `general.set_display_scale`（120/112）、`get_state.display_scale`、`setDisplayScaleEnum(int)`；Qt6 Release `4811ED24`、Rust/双 Qt 组件/私有产品/双 Qt INI `display_scale=9`（261 不变）通过 | 开启 FakerInput、Win10 Release、跨 DPI 多屏拖拽 |
+| `WIN-RESTORE-PATH-255` | `65c33ac0` | `configuration.restore_process_path`（118/110）、`get_state.restore_process_path`、共用 `restoreProcessPathToProcessLineEdit()` 修复 `markSaveSettingDirty()`；`9B606FB3`、双 Qt INI（261 不变）通过 | 开启 FakerInput、真进程窗口匹配、>1024 超长路径展示、Win10 |
+| `IGNORE-DEFAULTS-254` | `20695a69` | `ignore_rules.restore_defaults`（116/108）、`confirm_scope=true`、`buildDefaultIgnoreWindowInfoList()` 三语言即时描述；`6390162F`、双 Qt 9 条/三语言实窗/INI（261 不变）通过 | 开启 FakerInput、空表增删后语言热切换实测、Win10 |
+| `IGNORE-DELETE-253` | `922887e7` | `ignore_rules.delete`（114/106）、`confirm_delete=true`、修正 `loadIgnoreRulesFromINI()` 按 `userType()` 区分空/单 Map/损坏标量；`B854C19D`、双 Qt 0/1/7 条冷读与损坏回退通过 | 开启 FakerInput、GUI 可见选区同步、运行中/多实例删除、Win10 |
+| `IGNORE-UPSERT-252` | `dc0f4609` | `ignore_rules` 目录查询与 `ignore_rules.upsert`（112/104）、`QKeyMapper.pro` `/bigobj` 解除 MSVC `C1128`、1024 UTF-16 有界截断；`8B957AD4`、匹配探针/超长/双 Qt INI 通过 | 开启 FakerInput、编辑器草稿/打开列表删除恢复已补 `253/254`；系统/多开真实枚举过滤、Win10 |
+| `WIN-SAME-WINDOWS-251` | `05360895` | `configuration.set_send_to_same_windows`（110/102）、`effective_enabled` 与全局/自动匹配锁定状态；`99573006`、双 Qt INI（260 不变）全绿零重试通过 | 开启 FakerInput、运行态同标题多窗口广播发送与释放、Win10 |
+| `WIN-AUTOSTART-250` | `5db38020` | `configuration.set_auto_match_foreground`（标准 108/演示禁）、修 `loadKeyMapSetting()`/`loadEmptyMapSetting()` 跨组切换滞后启用 `sendToSameTitleWindowsCheckBox`；`CE824DEF`、双 Qt 普通/全局/半选通过 | 开启 FakerInput、运行期多前台窗口优先级/自动回退命中、Win10 |
+| `TRAY-MCP-FIX` | `02626cc8` | 补 `SYSTRAY_MENU_ITEM_PRESSED_MCP=4`、`initSysTrayIcon()` 分隔线、`showMcpControlDialog()` 恢复最小化；`FBE93090`、私有点击/隐藏恢复/截图通过 | 开启 FakerInput、Default 桌面真实托盘右键弹出、Qt5 产品/Win10 |
+| `REVIEW-FIX-241-249` / `RESET` / `ROOT-THRESHOLDS` | `1a2e1c58` / `9aec8be5` / `781d0965` | Codex 复核 `241/249` 三轮收口：空白失败恢复干净态、1024 截断元数据、补全 `loadEmptyMapSetting()` 重置与 `brakeThresholdDoubleSpinBox` 笔误、根区 `[General]` 重载与 12 项阈值原子加载；`DF6302B2`/`5C386AB7`/`79D85D7C` 全通 | 开启 FakerInput、阈值/触板/刹车前端仅在后续 `258/259` 补验；Qt5 产品/Win10 |
+| `WIN-CRITERIA-249` | `57238d01` | `configuration.set_window_match_criteria`（106/100）、6 窗口条件＋`RegexMatch` 校验；`649498A0`、双 Qt INI（256 不变）与全局锁定通过 | 开启 FakerInput、6 模式实窗正则/大小写运行时匹配、Default 切换、Win10 |
+| `ADV-NOTIFY-248` | `205afd0e` | `configuration.set_custom_notification`（104/98）、预览预测全局样式初始化（标志 `QMappingAdvancedDialog` 7/7 控件完成）；`EB81F143`、截图/双 Qt INI 通过 | 开启 FakerInput、通知实框定位渲染、仅 `Enabled=true` 无样式键惰性分支、Win10 |
+| `ADV-POINT-KEYS-247` | `3cae0d65` | `configuration.set_point_display_keys`（102/96）、规范 `"None"` getter 与严格键名校验；`87EF0BDF`、双 Qt INI 通过 | 开启 FakerInput、三语言 `"None"` 展示与实际热键坐标叠加层渲染、Win10 |
+| `ADV-PROCESS-TRAY-246` | `88393171` | `configuration.set_process_icon_as_tray_icon`（100/94）、全局配置禁用守卫；`49FD0DA4`、双 Qt INI（86 基线不变）通过 | 开启 FakerInput、运行期 Default 托盘图标优先级渲染、Win10 |
+| `ADV-MOUSE-245` | `f9e0aa0b` | `configuration.set_key2mouse_settings`（98/92）、X/Y/Polling `1..99`；`19BC2741`、GUI/MCP/冷读/双 Qt INI 通过 | 开启 FakerInput、键鼠映射真实位移与定时间隔、Win10 |
+| `GEN-FULLSCREEN-244` | `fa5536cd` | `general.set_fullscreen_global_mapping`（96/90，标志 `QGeneralAdvancedDialog` 11/11 控件完成）；`BE942A43`、联动/白名单/双 Qt INI 通过 | 开启 FakerInput、实际全屏前台拦截放行、Win10 |
+| `GEN-GLOBAL-SWITCH-243` | `f4ce85fc` | `general.set_global_switch_timeout`（94/88）、同步 `m_CheckGlobalSettingSwitchTimer` 间隔；`2FFAD5FD`、0..999999999/双 Qt INI 通过 | 开启 FakerInput、待切换计时触发切换、Win10 |
+| `GEN-SOUND-242` | `3281446d` | `general.set_sound_effect`（92/86）、沿用 `toggled -> dirty`；`F0EEA999`、双 Qt INI（85 不变）通过 | 开启 FakerInput、实际 WAV 音频播放输出、Win10 |
+| `CFG-LOAD-GLOBAL-241` / `CFG-EMPTY-240` / `CFG-REMOVE-STARTUP-239` | `16796c96` / `e4e95fe5` / `d0342f70` | `241` 扩展普通/全局/空白互切与坏组回退；`240` 新增 `configuration.load_empty`（90/84）与 `selectEmptySettingGroup()`；`239` 补测删除启动组及清根 `SettingSelect`；`99059D0B`/`62F02619`/`8e325d23`、双 Qt INI 通过 | 开启 FakerInput、监视/映射中切换、当前组删除与右键入口、Qt5 产品/Win10 |
+| `CFG-ORDER-GUI-232` / `CFG-ORDER-GUI-234` / `CFG-ORDER-235` / `CFG-REMOVE-GUI-236` / `CFG-REMOVE-237` / `CFG-LOAD-238` | `e8a38d90`..`b4ed0c89` | `232/234/236` 修复排序/复位/删组写盘占用误报成功及同名组/草稿损坏；`235` `configuration.move/reset_order`；`237` `configuration.remove`；`238` `configuration.load` 并确立 FakerInput 禁用隔离夹具基线 | 开启 FakerInput、当前组删除、GUI 右键菜单、物理拖拽、监视/映射中切换、Qt5 产品/Win10 |
+| `CACHE-REGISTRY-233` | `81449ea9` / `1ff96fa1` | 受管测试登记容量 128／摘要 32、按实例显式标记及 `release-ref <target_id>` 淘汰后注销；普通 Medium 技能组件 104/108 项＋`quick_validate.py` 通过 | 仅控制器替身，未以新接口直驱运行态缓存或 UAC |
+| `CONFIG-IMPORT-228～231` / `CONFIG-EXPORT-222～223` / `CONFIG-IMPORT-FORMAT-226` | `ced74823`..`a8e2f1a2` | `222/223` 普通组导出与占盘恢复；`226/228/229/230` 128 KiB/100 组解码、同名合并草稿、`configuration.import`/`save_import`（74+配置字段）；`231` 验证 `CHECKING -> waiting_cleanup` 门禁 | 监视中、全局/`General`/当前已加载组覆盖、带外部路径/自动匹配/FilterKeys 配置导入、Win10 |
+| `GEN-WINDOW-SIZE-221` / `GEN-SAVE-SPLITTER-225` / `GEN-STARTUP-POSITION-227` | `6559db5e` / `19c6b28f` / `3c51e399` | `general.set_save_window_size`、`general.set_save_splitter_position`、`general.set_startup_position`（±50000 成对坐标）；真实 GUI＋Rust＋双 Qt INI 冷启通过 | 物理缩放/拖动/移动、隐藏进程表/混合 DPI、Win10 |
+| `TABLE-EXPORT-215～216` / `TABLE-IMPORT-218～220` | `16744d19`..`3c5ee116` | `215/216` 74 字段单表导出及占盘回退（`qkm_export_mapping_table`）；`218/219/220` 128 KiB/100 行解码、共用行重建与 `table.import`（含共通冲突确认）；补齐 218 常量命名空间 | 活动态输入输出、产品超限/宏引用专案、Qt5 真产品/Win10 |
+| `GEN-INSERT-213` / `GEN-EDIT-214` / `WIN-DISPLAY-217` | `fa59e86a` / `aea370ed` / `bad1f0f8` | `general.set_table_insert_mode`、`general.set_table_edit_trigger`、`configuration.set_window_display_mode`（0/1/2） | 物理点击、宏/序列窗内联编辑、真实前台 HWND 分类、Win10 |
+| `MACRO-202～208` / `ORDERED-MAP-209` / `MACRO-210～212` | `bfed0071`..`86104662` | `macro` 只读目录、`macro.upsert`（追加/替换/插位/逐段备注）、`macro.delete`、五字段编解码与 `qkm_export_macros`/`macro.import`、Schema 补齐（212）；`209` 修复 `OrderedMap::operator=(OrderedMap&&)` 迭代器失效（ASan 复现并验证） | 超越字母数字序列的完整 DSL、宏实际运行执行、监视中导入与 Qt5 私有 GUI/Win10 |
+| `DUPLICATE-197～201` / `TRIGGER-195～196` / `ROW-182～194` | `240625a3`..`48ce9159` | 单行/批量/跨普通表/共通源与目标复制（197～201）；行与批量触发时长（195～196）；备注/分类/显示/连发/锁定/时机/透传顺序/按住重复/固定键码（182～194） | 实际键鼠发送、触发与粘贴/悬浮开关运行效果 |
+| `TAB-168～181` / `ROW-ORDER-162～167` | `9c87f5b9`..`c32f4eee` | Tab 重命名/增删/复制/清空/重排/共通继承/折叠/选择/热键/通知三态与双色（168～181，含 172 复制刷新热键索引修复、177 共通总开关冲突与关态修复）；单行与连续 2–100 行置顶置底与相邻移动（162～167） | 活动态切页/通知展示、实体快捷键触发、物理拖拽与拖拽边界 |
+| `WAIT-156` / `STOP-157` / `START-158` / `ACTIVE-STOP-159` / `AGY-160` / `RUN-WRITE-161` | `5b293017`..`7d1bfeb6` | 有界只读等待、`stop`/`start`、活动源显式停止（`09c3b60`）、停止排空后恢复写入（`7d1bfeb6`）；`AGY-160`（`f9ffccde`）验证 Antigravity 中文路径调用取得主窗 PNG 与 ACP 内联识读 | `159/161` 普通产品活动态及真实键鼠物理输出、`160` 整包与同回合图像消费 |
+| `EDIT-CAP-153` / `EDIT-COMMON-154` / `EDIT-COMMON-155` | `349d889c` / `8f902531` / `c9283438` | `original_key_conflict_policy=disable_current_normal_row_only`（153）；Common 原键更新连带禁用普通表行（[154 事实记录](mapping_edit_validation.md#edit-common-154common-原键更新的连带禁用)）；Common 同表原键冲突（[155 事实记录](mapping_edit_validation.md#edit-common-155common-同表原键冲突)） | 禁用行联动（disabled row cascading）、完整冲突与运行态生效 |
+| `RUNTIME-BUG01-149` / `BUG02-150` / `BUG02-FOLLOWUP-151` | `ec2daf69` / `fe2eb674` / `3fefc26a` | 实键双列表与两叶锁（149）、虚拟列表与待释放 DOWN（150）、序列身份/FakerInput 释放隔离/UP 记账（151）；双 Qt/ASan/维护目标 Default G HUB & Razer 通过，详见[runtime_bugfix_validation.md](runtime_bugfix_validation.md) 与 [151 边界](runtime_bugfix_validation.md#bug02-followup-151三项运行时边界补充2026-11-17选定完成) | 同 VK、松开受阻、真实物理输入与普通 Release 全设备验收 |
+| `EDIT-143～148`（不含 `141/142` 单独锚点段） | `c35aa57d`..`5a80dd06` | `143` 简单键值、`144` 禁用 GUI 基线（[144 证据](mapping_edit_validation.md#edit-gui-144禁用开关原gui基线)）、`145` `disabled` 字段（[145 证据](mapping_edit_validation.md#edit-145独立禁用字段正式接线)）、`146` 原键互斥 GUI（[146 证据](mapping_edit_validation.md#edit-gui-146原键互斥与common确认gui基线)）、`147` 共用冲突分析（[147 证据](mapping_edit_validation.md#edit-147共用纯冲突分析)）、`148` 普通冲突禁本行（[148 证据](mapping_edit_validation.md#edit-148普通原键冲突仅禁用本行)）；详表另见 [mapping_edit_validation.md](mapping_edit_validation.md) | 复杂原键扩展、真实输入输出、Default/Win10 |
+| `DOC-140` / `CACHE-139A` / `IB-MCP-138～139` | `987e840f` / `395e684d` / `e73f719b` | `140` 文档压缩；`139A` `write_json` winerror=5 有限退避替换（99 项单测通过）；`138` IbInput 合流 `MCP 94f0bb84`＋固定输入 `b5b484a6`；`139` `window_role=ibinput_settings` 观察/捕获/关闭；详见[选定证据页](ibinput_mcp_integration_validation.md) | 主动连接检查／试发、普通 PrintWindow High 读、长期并发锁竞争、Default/Win10/ASan |
+| `FORZA-MERGE-20261031` | `97963bf4` / `0d053c17` | 将 master 仅含维护测试的 `0d053c17` 并入 MCP 分支（保持停止准入/排空），补建 [现有Forza维护测试](../../QKeyMapper/tests/forza_auto_state/README.md) 实际 Worker 入口 147 项 ASan 无报错；FH4/FH6 沿 `85422ea9` 实测 | 合并版未重跑实车、Qt5、性能、完整停止协调与驱动 |
+
+#### 历史区间跨切片持续有效约束与未闭环汇总
+
+- **FakerInput 隔离测试口径（`238～266` 共同约束）**：因 `238` 证实关闭含原驱动连接的新版副本可能触发键鼠中性报告，`238～266` 所有隔离回归运行副本均在夹具 Worker 禁用 FakerInput 分配与连接，**开启 FakerInput 连接的真实运行持续作为待验门槛**，不以禁用驱动副本替代完整硬件/驱动验收。
+- **局部能力待扩展或待补验子项**：`configuration.remove` 仅支持非当前组（当前组与 GUI 右键待补）；`configuration.import` 首轮排除含外部路径、自动匹配前台、FilterKeys、当前已加载组覆盖、全局/General 组；`macro.upsert`/`import` 首轮限字母/数字序列且宏真实运行时执行仍待；`EDIT-COMMON-154/155` 禁用行连带、完整冲突与独立开关组合待补；`AGY-160` 整包与同回合图像读取待完成；`IB-MCP-138/139` 主动连接检查与试发待接；`RUN-WRITE-161` 与 `ACTIVE-STOP-159` 普通产品活动态及真实键鼠物理输出、`BUG02-FOLLOWUP-151` 同 VK/受阻 UP 待验。
 
 ### RUST-D4：Sidecar 迁移结项
 
-RUST-D4 选验采用 x64 Rust 单运行文件 qkeymapper_mcp.exe，组件附说明、清单和许可证；Windows 7 x86 不支持 MCP。当时保留 Python 独立组件，现按顶部策略归档。双 Qt 产品和 Codex 选验见[迁移归档](qkeymapper_mcp_rust_migration_plan.md)。
-
-M3-B 按 AGY-160 区分真实 MCP 工具／PNG、同轮落盘图片读取和独立 ACP 图像解读。Win10 Release PC 核对 Qt Creator／命令行联动及正式三包。用户免除干净 Win11 离线复验。
-
-**2026-11-19 构建与 Release 布局。** 基于 `3a442ab1`，`QKM_BUILD_MCP_BRIDGE=0` 只关闭联动；x64 Debug／Release 共用 Rust 1.100.0 静态 CRT 产物。Win10 三套 Qt 都关闭联动，两个 x64 包使用重新生成并核验的独立组件，放入同级 EXE 及 `licenses/QKeyMapper-MCP-Licenses.txt`，x86 排除两项。[发布用法](../../scripts/release/Release使用说明.md)。
-
-PC-W11 生成 7 组 qmake，带空格 JOM 路径及 Cargo 保留原错误通过。实际锁定的 67 个 crate、123 份原件及 Rust 标准库声明进入合并许可，组件摘要夹具通过。首轮前置 clone 退出 128，改用合成目录后组装 100 项通过。原件 `out/mcp_release_build_20261119/` 仅本机。实际联动编译、PE／烟测和 Win10 发布待验。
-
-
-### RUNTIME-BUG01-149／BUG02-150：选定完成（11-16）
-
-149 ec2daf695fb7eeb3dc65625e77b7030eb8cc35fc采用实键双列表／Timed两叶锁与锁外回调、UI快照；150 fe2eb674b1ca1842ab1bae0923c33f58cfcda880补虚拟列表快照、待释放DOWN、打断重触发和绑定原源／运行代次的计数尾任务。双Qt普通构建、定向分析、01五模式、02三套复现及各300轮、47运行态／28repeat／26实际ASan／7Qt5、MCP／保存／演示／Forza选验通过。Default G HUB／Razer各7场真实维护目标通过，不扩大普通Release全运行／游戏／物理设备验收；不匹配重建PDB仅辅助对照。失败轮次、版本／EXE、原始材料与未验范围见[事实页](runtime_bugfix_validation.md)，精简前全文保留Git fe2eb674。本轮缓存off及独立核实后停止，11-17只插入151，不恢复MCP。
-
-### EDIT-148：普通原键冲突仅禁用本行（选定完成，本机暂停）
-
-5a80dd06：普通原键冲突只禁用当前行；跨行及 Common 自身冲突仍拒绝。Qt6 零警告、七产品159调用、四数据对照、三场保存重载及三Common拒绝通过。11-16 核对原件后补记录，未重验。退出、缓存清理、失败轮次及遗漏见[事实页](mapping_edit_validation.md#edit-148普通原键冲突仅禁用本行)及 Git 5a80dd06。
-
-### EDIT-147：共用纯冲突分析（选定完成）
-
-898af798：两处 MCP 拒绝判断共用纯分析，GUI 三入口保持；初始禁用 Common 仍分析他行。双 Qt 维护、十二 GUI 共168断言、十二146对照、六产品76调用和两上下文分析通过。退出、权限清理及计数／原生码修正见[事实页](mapping_edit_validation.md#edit-147共用纯冲突分析)和 Git 5a80dd06。
-
-### EDIT-GUI-146：原键互斥与Common确认GUI基线（选定完成）
-
-66a5270e封存六场：同表重复／有效Common、Common原键No／Yes及初始禁用Common的No／Yes。真实Item双击／字符／Update／模态／Escape，双Qt六场各60项共120、十二实际私有High进程exit0；完整源、确认期／No草稿／Yes禁用、通知、INI／加载／FilterKeys及尾计数通过，无失败。原GUI即使showPopup=false亦可能询问／改他行，不能充纯预览。产品仍808f7e0b；权限已撤出，原19:00缓存继续，完整[证据](mapping_edit_validation.md#edit-gui-146原键互斥与common确认gui基线)及本机原件保留，无Default／输入／新增普通Release或全量分析。
-
-### EDIT-145：独立禁用字段更新（选定完成）
-
-808f7e0b：mapping.update独立disabled布尔，不混键／发送方式，沿Read＋Configure、可见源／完整快照、偏好修订／清理许可及执行前复核；只改内存flag／dirty，同值不推进，隐藏后须显式重显。需改变他行或Common优先回退／确认则unsupported_capability零修改，不承接复杂决策。选定双Qt组件、stdio schema、Qt6普通Release／随包桥接、144全源对照、保存冷读与拒绝／定向分析全过，八产品exit0、八桥接不再存活，配对／凭据与资源清理，11-10按用户要求off。167调用／四GUI对照／22上下文及精确范围见[145证据](mapping_edit_validation.md#edit-145独立禁用字段正式接线)，不扩大完整M1或Default／驱动／Worker／ASan范围。
-
-### EDIT-GUI-144：禁用开关原GUI基线（选定完成）
-
-0db06e9f封存普通／初始禁用／Common／隐藏四场真实Qt Item与表格开关，不用控件赋值／直接槽；Item即时改源／dirty，Escape不回滚，隐藏重显经原Item。双Qt各37项共74、八实际私有High进程exit0，完整源／派生、通知、INI／加载／FilterKeys及退出排空通过，无失败。产品未改，两份权限撤出／资源0；[完整证据](mapping_edit_validation.md#edit-gui-144禁用开关原gui基线)及out/mcp_disabled_gui_20261110仅本机，不作正式MCP／Default／输入设备或完整M1证明。
-
-### EDIT-143：正式简单键值更新（选定完成）
-
-c35aa57d：mapping.update可选original_key／mapping_key／key_up_mapping_key及send_method，至少一项，省略保持；新键仅单个大写字母／数字，既有行限简单键，抬起编辑须SendTiming=2／3／4，空抬起沿候选按下键／清备注。原键冲突需禁本行／他行或确认则明确不支持零修改，完整冲突待后续。复用Read＋Configure、当前可见source_ref、完整快照／偏好修订／生命周期／编辑守卫、到期／消费／重放与执行前复核、GUI校验／142值助手／备注对齐；真实变化仅源／dirty，不自动保存开始。17工具／23能力不变，旧send_method兼容。
-
-2026-11-10双Qt参数／schema组件、Qt6普通Release／锁依赖桥接、八产品179正式调用、四141全源对照／23上下文、完整保存／一次冷读、Read及复杂冲突拒绝和两文件五上下文定向分析选定通过，产品均exit0。夹具／驱动失败、未发布Disable、凭据补清理和遗漏见[详细证据](mapping_edit_validation.md)；派生样本按原GUI／实际冷读分别保留，不扩大完整M1／Default／输入设备、Worker或ASan。原件仅本机，精简前完整文字保留Git66a5270e。
-
-### EDIT-142：键值候选的最小共用数据提取（选定完成）
-
-a4270951／11-10：原setter保留边界，只共用updateMappingKeyValues，分段／纯键去重和赋值顺序保持，不改原键样本、备注或dirty。双Qt八High私有进程各45项／共90，四场完整sources与141同kit一致，值拷贝往返／负索引、INI／FilterKeys及尾计数通过；Qt6零警告、Qt5精确qtmain例外。权限撤出／资源0，无正式MCP、Default／输入设备或完整M1结论。原件out/mcp_edit_values_20261110仅本机；完整原文、逐场身份与限定保留Git5a80dd06本节，143正式接线另记。
+Rust 是唯一受支持的 Sidecar（`349d889c`），采用 x64 单运行文件 `qkeymapper_mcp.exe`，组件附说明、清单与合并许可（Windows 7 x86 不支持 MCP；原 Python 独立组件按顶部策略归档，双 Qt 与 Codex 选验见[迁移归档](qkeymapper_mcp_rust_migration_plan.md)）。基于 `3a442ab1` 的 Release 布局以 `QKM_BUILD_MCP_BRIDGE=0` 关闭联动、共用 Rust 1.100.0 静态 CRT 产物与 `licenses/QKeyMapper-MCP-Licenses.txt`（[发布用法](../../scripts/release/Release使用说明.md)）；PC-W11 已完成 7 组 qmake 与 67 crate / 123 原件许可组装，实际联动编译、PE／烟测、Win10 三包与 `AGY-160` 消费留归 M3-B。
 
 ### EDIT-GUI-141：普通单行键值修改原GUI基线（选定完成）
 
-1d0281f3／11-10，产品仍0ce665c0；真实Item双击、字符／Backspace、Update／Escape建普通、合法抬起清空、禁用及Common四组。双Qt八High私有进程各41项／共82、全部exit0，完整源／其他行／派生、草稿取消、dirty／INI／加载、FilterKeys和尾计数通过。首b01清空组9/10、exit2：NORMAL禁用抬起，修合成夹具为KEYDOWN_AND_KEYUP后b02全过，不改产品。Pure_OriginalKeys改键后仍A/F13，仅观察，不宣称运行故障。原件out/mcp_edit_gui_20261110仅本机、权限撤出／资源0；无Default、普通Release、正式MCP或完整M1证明，完整原文与身份保留Git5a80dd06本节。
+`1d0281f3`（2026-11-10，PC-W11，产品 `0ce665c0` 未改；完整记录保留 Git `8cbf5eb3`／`5a80dd06`，本机原件 `out/mcp_edit_gui_20261110` 不随 Git）：双 Qt 八个 High 私有进程各 41 项／共 82 项经真实 Item 双击、字符/Backspace、Update/Escape 核对普通键值与抬起清空（b02 修正合成夹具为 `KEYDOWN_AND_KEYUP` 后全通），无 Default、普通 Release、正式 MCP 或完整 M1 证明。
 
-### DOC-140：历史记录压缩与接续校准（2026-11-10）
+### EDIT-142：键值候选的最小共用数据提取（选定完成）
 
-987e840f仅精简主计划重复历史，保留标题、关键结果／失败／未验范围；完整原文见0ce665c0及本计划Git历史，证据页不作进度来源。UTF-8无BOM／LF、链接／大小／差异检查通过，不构建或运行；M1及跨登录未完成状态不变。
+`a4270951`（2026-11-10，PC-W11；完整记录保留 Git `8cbf5eb3`／`5a80dd06`，本机原件 `out/mcp_edit_values_20261110` 不随 Git）：保留原 setter 边界并提取共用 `updateMappingKeyValues`（保持分段/纯键去重与赋值顺序，不改原键样本、备注或 dirty），双 Qt 八个 High 私有进程各 45 项／共 90 项对比 141 一致（Qt6 零警告、Qt5 仅已知 `qtmain` LNK4099 例外），后续正式接线见 `143～148`，无正式 MCP、Default 或输入设备结论。
 
-### CACHE-139A：状态文件共享冲突的有界原子替换（2026-11-10，选定普通检查完成）
-
-139两轮真实产品均完成GUI配对／重认证与关闭MCP管理窗，最后GUI动作native0／有效成功；但控制器publish替换state.json实际取得Windows错误5并关闭缓存，未进入Popup业务验证。两已知自有产品分别独立受限Close exit0，无强杀；原始错误、controller_finish清理未完成及后续正常退出分别保留，不把缓存关闭当产品清理成功。本机普通临时NTFS文件证实读句柄可阻止原子替换、关闭后成功；包括共享删除读法也未通过，不将该标志冒充修正或断言现场只有此一原因。
-
-用户已批准最小write_json修正：仅PermissionError.winerror=5时最多6次同一临时文件替换、最多5次10ms等待，持续失败仍原错抛出，其他错误不重试；不重放gsudo／GUI／MCP请求，不改准入、权限、模式、单调截止及关闭合同。正式99项普通测试通过，包含实际独立NTFS短锁恢复、模拟持续／其他错误原样保留、重试期间跨截止后不续期／不新派发；skill-creator基础结构检查通过，不代替行为验收。上述修正独立提交395e684d并快进同步公共入口后，新建42036至原19:00截止；popup-03至07多次受限原生动作／产品正常清理后仍可用，尚未复发发布退出。现场没有记录到重试计数，不宣称已在真实故障中证明恢复，长期／到期行为也未由本段证明。139产品和测试仍独立未提交。
-
-本机原件：作业树out/ibinput_popup_20261110（file-sharing-probe、cache-io-candidate、cache-formal-tests-01.log），原MCP树out/mcp_product/ibinput139_20261110（popup-01／02及两次uncached-owned-close-result）。历史未知请求原样保留，当前清理不接管该记录。
-
-### IB-MCP-139：IbInput固定Popup窗口角色（2026-11-10，选定范围完成）
-
-复用qkm_query(windows)显式window_role、qkm_capture_window及现有qkm_open_mapping_settings／qkm_close_mapping_settings，增加可选window_role=ibinput_settings；省略时保持mapping_advanced兼容。仅本实例原showIbInputSettings入口、当前安全源／会话／权限和实际后台私有非输入桌面，不提供任意窗口、控件、路径或设备动作。查询Read，开关Read+ShowWindows，PNG另须CaptureWindows；只关闭本会话打开且源／偏好语义修订及窗口代次未变的Popup。自身Popup可被捕获，其下拉子窗／其他Popup仍拒绝。被动刷新不改偏好、dirty、配置修订或磁盘，不触发连接检查或真实输入；演示仍受既有底层守卫。
-
-本片Qt6普通Release与正式认证MCP私有桌面选验通过：popup-07／popup-read-01覆盖允许／拒绝、仅GUI窗口不能接管、旧连接／旧引用、重开／关闭、偏好变化拒绝关闭、被动刷新／捕获、预览及配置／INI不变；独立Read+Capture和Read+Show+Capture无Configure均已实测。产品内部中文PNG已自主查看；普通仓库PrintWindow读取High失败单列未验证，不提权截图。复用原维护计数入口核演示显示无初始化／输入，Qt5定向组件兼容及窗口跟踪生命周期检查；原Worker／驱动完整门槛无受影响变化不重跑。此片无需Default前台／输入场景；普通父进程只读记录各窗口动作前后输入桌面名及前台PID，要求仍为Default且不是本轮产品，允许用户在其他应用间正常切换。不截Default、不激活、不注入系统输入、不安装驱动或改全局设置。实现、原生构建、真实产品及替身结果分别记录，未验项不计完成。
-
-选定结果：Qt6／Qt5 x64窗口组件各10项，真实Qt6两产品PID37764／33276均GUI撤销专属配对、移除凭据并正常exit0；61／17组动作前后只读桌面采样均为Default且前台不归本实例，允许用户自行换应用，不冒称全程监控。演示维护PID38528实际私有桌面，原生0／25项、正式MCP33条请求、原两场景／回收和新增Popup第三张PNG通过；10场景与退出逐项IbSendInit／IbSendInput／IbSendDestroy／SendInput／SetCursorPos全零，正对照按138未变路径复用，不当作普通Release厂商I/O验收。
-
-Qt5共享JSON take破坏原close输入已由组件先复现后局部修正，两close解析器输入不变／重复解析通过。静态首轮4处临时QList循环诊断修正后该文件3上下文项目0，主窗／图片原轮未受影响项目0复用；Python图片10／工具结果8／原场景编排18项通过。缓存故障01／02、UIA夹具03至06及修正后07独立通过的失败边界见[同一选定证据页](ibinput_mcp_integration_validation.md)。无新文案或TS/QM变更，不新增Default／Win10／Worker ASan／QQ结论；本片实现与验证实耗约3小时，已含缓存故障和夹具定位，后续137先按代码盘点再估算。
-
-### IB-MCP-138：已批准接纳契约（2026-11-09，核心选验及接纳完成）
-
-e73f719b接纳MCP94f0bb84与固定IbInput b5b484a6，保留共同历史。发送方式3、两项全局偏好的预览／提交／完整保存足迹、被动状态／语义修订、运行代次／实际排空及只配置演示底层守卫完成选验；合法配置保存不依赖软件安装／连接。GUI与MCP沿有效Common、禁用行及移动组业务边界；候选先筛能力再按G HUB→旧Logitech→Razer尝试，旧通道未开放输入、运行中不换后端。该阶段mapping.update仅改发送方式，后续键值／禁用扩展见141–148；Popup后继139，主动连接检查／试发仍未交付。
-
-Qt6普通产品配置／冷读、正式维护目标Default G HUB／Razer、Qt5 x64／x86兼容、定向分析／实际ASan及演示逐场原生零调用／正对照分层记录。旧代／零代重启通知解除新屏障曾经真实维护入口native2复现，修正后拒绝及释放检查通过；缺DLL／unknown启动、GUI探针违例及其他夹具失败保留在[选定事实页](ibinput_mcp_integration_validation.md)。维护／替身／用户转交DLL Hook结果不扩大为普通Release完整设备验收；dwExtraInfo沿b5b484a6所录范围，不追加专项或FakerInput结论。v1.1手册、0009制品／许可及双方TS词条保留，QM由合并TS重生；新文案仍需三语审阅。完整原文见Git3fefc26a本节，其他历史／未验边界仍见同一事实页，不以本文精简重新计算验收。
-
-### FORZA-MERGE-20261031：master修复补验与本地同步
-
-- 临时修复仓库从干净master 85422ea9补充[现有Forza维护测试](../../QKeyMapper/tests/forza_auto_state/README.md)，仅测试／说明两文件，提交0d053c17；未更改游戏实测后的产品逻辑。两提交正常推送至origin/master，直接ls-remote核实完整SHA为`0d053c17590589f9a2b8492b61ab7e77b915456a`，没有额外提交或强推。
-- 用户FH4／FH6实测沿原85422ea9的游戏EXE；游戏目录与其Qt Creator构建目录SHA256均为`A3B09B7B2598F88B067F236375765A7D544A54E3BD7DC1ECF4DF6745086109D3`，内嵌修复提交且无dirty后缀。旧out产品EXE是另一构建，未混称相同。本轮未替换用户游戏文件。
-- 补验在Qt6.8.3／MSVC14.40.33807 ASan目标：原五类竞争用例exit0／29500项；新实际Worker入口exit0／147项，无ASan报错。后者PID24412，实际`QkmForza_781b84a46c6e4fee90c824ed502fc2c1`私有桌面；EXE为临时仓库`out/forza_auto_state/lifecycle_acceptance/lifecycle_3f22710e/runtime/QKeyMapperForzaAutoStateTest.exe`。真实QApplication／QKeyMapper和两个Tab，同线程直接执行Worker开始、停止、再次开始、同表重启和选第二Tab后重启；断言活动源／旧源／恢复编辑源、双组／级别／遥测时间清理、释放归零与重新使用。阈值固定值及三个ViGEm报告函数仍为替身；未运行产品main、Hook或完整GUI按钮／跨线程协调，不冒称完整生命周期或硬件验证。真实窗口构造仍沿原逻辑尝试驱动客户端初始化，普通枚举CreateFile错误5与后续Found device原样保留；槽执行期间屏蔽本测试FakerInput指针以免ReleaseAll，结束恢复。最初Community14.44缺ASan链接库的LNK1104属环境失败，改回原BuildTools后成功，原失败日志保留。
-- MCP从2bdc593a加精确忽略提交9a45a6ac后，以普通merge形成`97963bf4d9c7ff737fbdf652650841c5a13e4b82`，第二父为已核实master 0d053c17。无冲突；MCP停止准入／排空代码保留，未squash、cherry-pick或rebase。Qt6普通Release用`scripts/build_qt6.ps1 -Jobs 2`构建，原生0／零编译链接警告；源码身份97963bf4，构建EXE为`out/build_qt6/release/QKeyMapper.exe`。
-- 该EXE精确复制至`out/mcp_product/forza_merge_20261031/runtime/QKeyMapperMcpAcceptance_forza_merge.exe`，两者SHA256为`d942ad59e22a74f7ff3e57645d994750cd2c7a4ea56fe3fb0c4c9e4ec2007bfa`，正式requireAdministrator manifest保持。复用现有Product／公共登记Start、ReadMapping、Close及PID31672；实际产品PID33348／High12288，控制器Medium8192、同登录，桌面`QkmProduct_6dfbc8f14c9b4c4896b73cfb6937b178`。安全空INI、未启用MCP；只读GUI确认0行／映射开始／添加可用，产品及控制脚本正常exit0，拥有关系清零后缓存正常关闭。普通截图PrintWindow失败，未提权截图、未使用asInvoker副本，不能记视觉通过。
-- 原件仅本机上述out：构建、生命周期／身份、GUI观察、部署及缓存清理结果；无Default、真实系统输入、映射启动或驱动安装。用户游戏实测与旧ASan按原版本范围复用；未在合并版重跑游戏、Qt5、性能、复杂MCP组合／完整停止协调或驱动验收。PERSIST-136及137安排不变，不将本同步计为新业务能力完成。
 
 ### UI-73：MCP 用户界面翻译与按钮行为修正
 
@@ -1087,279 +473,23 @@ TARGET-07 的状态／绘制逻辑优先在私有桌面验证；真实前台、�
 
 本轮自然切点核对（2026-10-28）：SAVE-101选验真实清理／观察超时后保存，SAVE-102选验清理后新增／保存／冷读，SAVE-103选验停止回切与目标重核，均已聚焦本地提交；保存接口的范围确认、文件／派生修订、分段失败、超时／断线结果恢复沿SAVE-87至100原证据保留。C1-C／M1未整体标完，物理输入、设备／迟到事件、撤权交错、4MiB性能与完整GUI仍待。现进入与源／窗口会话衔接的DEMO-P0，不重跑上述已验矩阵。
 
-DEMO-P0-104实施前选定范围（实际覆盖见后段及同一C1证据）：先实现无文件I/O、无激活的内部captureOwnWindow(QWidget*) PNG底层，仅GUI线程、已可见且非最小化的本进程顶层窗口，拒绝外部所有者，先以8M像素／2MiB PNG作为维护探针上限采样。调用者仍须在后续正式接口强制角色、源／场景与权限；内部函数不构成远程入口。复用settings_save_apply维护框架和准确SDK身份，在空白合法专用INI中经正式MCP新增A→B；Qt真实表格双击打开单条设定窗，等后续GUI轮次绘制后分别抓main／item_setup，固定维护记录只传PNG字节与元数据，由普通权限SDK写自有产物。Agent实际看图核对中文及A／B，Esc真实GUI事件关闭编辑窗，源／dirty／代次及INI保持，正常回收该自有进程。补隐藏／关闭／线程上下文拒绝，不返回旧图。每Qt一个独立场景、预计集中运行／看图3–5分钟，增量构建另计；实际私有桌面，不调用主窗口置顶入口，不发送系统输入／不启动映射／不改驱动，无Default验收场景。正式截图MCP、独立显示／捕获授权、常规服务预热与免Python交付均仍待P1至P3，具体新启动／权限方案先评审，不以开发缓存代替服务授权；QQ仍末期Win10另验。
-
-DEMO-P0-104选定结果：双Qt内部捕获底层／维护构建及真实私有窗口采样通过，正式MCP从空白源只在内存新增A→B，Qt表格事件展示单项窗口，普通SDK落盘四幅真PNG，Agent原尺寸检查中文与A／B清楚。main为1130×722，item_setup为820×480，DPR1、PNG44865–51182字节；当前256KiB协议帧可优先采用有界单图，正式P1拟将PNG限制为160KiB并校验整体帧，不预设分块缓存。内部底层当前2MiB仅用于探针，不代表正式传输承诺。实际INI／源／dirty／代次在捕获与Esc关闭前后保持，未启动映射，隐藏／关闭和错误线程拒绝。首次消费端借用缓存记录读取器的小上限导致exit2，原图和记录保留，改3MiB有界读取后两场exit0／12项；不是gsudo启动故障。新pri源的Qt6独立组件消费者链接也通过，旧协议／权限测试按原范围复用。
-
-捕获范围为Qt客户区内容，原生边框、独立弹窗／原生子窗不包含；主表水平滚动区域与单行映射码只展示实际可见范围。P0未验实际HighDPI／Win10／高级页、最小化和过期全矩阵、其他实例或Default全程焦点因果、长期无打扰与服务部署。维护原件在本机out/mcp_demo_p0_w11_20261028，不随Git。P0当时无正式截图MCP端点、场景／窗口令牌、独立捕获授权或服务产物清理策略；其后105／107／108的正式权限／观察／捕获见对应结果，P1必须在C++／桥接强制权限、角色／生命周期与普通权限有界产物，不能把维护探针作为普通用户功能。配对追加权限UI与TS三语草稿另行明确授权，P3新私有启动／预热方案按既定规则先评审；QQ仍末期Win10另验。
-
-#### DEMO-P1-105：独立窗口权限与既有配对追加授权（选定基础完成；正式窗口工具待实现）
-
-源核对发现AutomationSessionServer已有updatePermissions：保存同一pairId／secret的新scopes，权限代次递增、关闭该活动连接，写失败关闭接口。复用此实现，不新增授权通道。现有KnownScopes占1至64，新增独立ShowWindows=128／CaptureWindows=256；旧权限数据不自动扩展，Python同步识别511上限，新／旧未知位测试按新边界调整。新配对两复选框默认不选；现有配对由用户选定后点“授权窗口权限”，仅追加所选两个窗口位，保留其余权限、不再配对，批准后显式重连。复用原updatePermissions的持久化／代次／失败行为，不新增MCP自助授权工具。
-
-本切片只建立权限和GUI批准基础，正式窗口工具仍留P1后续；只用普通权限组件／私有桌面或已登记自有维护目标，Default无实际输入／显示验收。选定检查：范围编码／未知位与既有凭据兼容、同pair及secret追加后重认证、原权限与代次和旧请求失效、选择／取消／无新增权限不改代次、写失败沿原关闭与未成功规则、新配对默认不授予；双Qt受影响构建，必要GUI三语／焦点在授权TS后按UI-73范围执行，不重跑完整保存矩阵。新启动／UAC／系统输入／服务模式未纳入此授权。
-
-以下为本次8条必要UI文案。2026-10-28用户已明确批准同步TS／QM；沿项目lupdate-pro流程提取，仅保留8条新增词条，既有翻译未改。用户另在Linguist确认W7源文及中英日实际换行正确（用户提供截图，本机原件不入Git）；此确认不替代下述实际窗口验收。已有Approve selected permissions／Close等翻译复用，原词条不重写。状态与解释按实际失败类型刷新，保留原撤销失败文案行为。
-
-批准的 W1–W8 完整三语对照保留在本文件 Git 历史（`1d2cb6a6`）。正式译文以 TS/QM 为准。W7 的真实 LF 与 %1／%2 占位符已在 Linguist 和实际窗口核验。
-
-P1-105实现结果：新配对Read仍必需，ShowWindows／CaptureWindows各自默认不选；旧配对不自动扩权。GUI只对实际选中项、启用接口及无待批准新客户端时开放追加入口；以纯文本列出名称／pair ID，现有窗口权限已选且禁改，提交时重新取同pair当前权限并只合并新增勾选。复用原updatePermissions保留secret／pair ID、递增epoch并关闭旧连接；无新增和取消不写存储，失败沿既有关闭规则，原权限不误记成功。普通桥接认识新范围；无MCP自助扩权、Read扩大或新启动模式。旧二进制不能理解新增位时拒绝存储，部署保持配套，不删除凭据恢复。
-
-选定验收：双Qt控件／真实配对子进程各51项、配对存储／旧范围／新范围／旧请求失效与同密钥重连各5项IPC，Python协议及桥接重连7项；均native exit0。Win11实际私有桌面，两类界面双Qt三语共12幅PrintWindow截图已逐图查看，中文优先、W7两行、文字／按钮完整，NoFocus及运行时刷新保持状态。用户已在Linguist确认W7。TS各新增8条，既有译文修改／删除0；QM往返核对全部非空完成译文1152／1155／1155项相等。Qt6及官方Qt5受影响组件增量构建通过；当前未运行High产品授权或正式新窗口端点，不把组件fixture当业务交付。
-
-原件及失败边界见[同一C1证据](map67c1_validation.md#demo-p1-105独立窗口权限及追加授权2026-10-28pc-w11)，out/mcp_demo_p1_w11_20261028仅在本机；沙箱DPAPI失败、项目解析警告和最终通过分别留存。无Default、映射启动、系统输入、驱动改动或新UAC。本片不重跑未改保存矩阵、不扩大ASan／全量静态分析／完整Release。下一正式窗口能力仍按P1后续分片；用户新增翻译工作流优化先独立收敛。
-
-#### DOC-L10N-106：经审阅的Agent翻译资源工作流（2026-10-28）
-
-用户要求将本次TS／QM流程纳入AGENTS和qkeymapper-workflow：Agent给出逐条英中日三行对照，用户审阅批准后直接授权Agent用项目lupdate-pro／lrelease完成对应正式资源，不要求用户手动更新，也不重复索取同一资源编辑许可。保留范围差异和既有译文，不批量清理位置／失效条目；实际LF和Qt占位符与原多行条目一致，QM与TS核对，涉及换行时给更新片段／实际显示供用户确认，区分用户Linguist和Agent实窗证据。原英文tr／运行时刷新、中文优先及比例验证规则不变。
-
-替换AGENTS及Codex／Claude镜像原No .ts edits unless asked规则；两镜像一致，UTF-8无BOM／LF、链接和diff检查。标准quick_validate因本机锁环境无PyYAML未执行成功，不新增依赖；原YAML front matter与提交前逐字相同并检查必要字段／文档结构。仅文档，无产品构建／启动／UAC／运行测试，P1-105证据按原提交保留。后续继续原P1窗口能力，未将完整P1或M1标完成。
-
-#### DEMO-P1-107：正式窗口观察与生命周期引用（选定范围完成）
-
-Read只观测本实例固定main／item_setup，不创建或显示；实际进程／创建时间／会话／桌面、Qt／原生可见及尺寸与窗口代次纳入引用，隐藏、重开、resize或源变化使旧引用失效。不接受外部PID／HWND／Qt属性／任意路径，前台变化只作事实、不能直接推断产品干扰。双Qt选定组件／正式SDK及旧引用／权限边界结果、版本与原件范围见[既有C1证据](map67c1_validation.md#demo-p1-107正式窗口只读查询及引用2026-10-28pc-w11)。Default前台确认与首次预热、跨实例等未验证项仍按后续计划，不把观察当写入权限或业务效果等价。
-
-#### DEMO-P1-108：正式有界PNG捕获（选定范围完成）
-
-Read+CaptureWindows仅捕获受支持本实例QWidget的实时客户区，复核当前源／窗口引用、实际桌面、绘制及尺寸，最大160KiB／8M像素，超限拒绝且不裁剪／降画质。返回真实MCP ImageContent及必要目标／窗口／尺寸元数据，不能证明UI草稿已提交或QQ已送达；原生边框、未支持子窗与滚动隐藏区不包含。双Qt选定真实图片／拒绝及协议回归、Agent审阅和未覆盖范围见[既有C1证据](map67c1_validation.md#demo-p1-108正式有界窗口png2026-10-28pc-w11)，原始材料仍仅本机；历史版本与本机其他系统范围不混用。窗口展示／安全关闭及串行归属由109之后接续，完整P1／M1／交付未标完成。
-
-#### DEMO-P1-109：私有后台正式打开源行窗口（选定范围完成）
-
-基于P1-108 bde036b3，qkm_open_mapping_editor(source_ref, presentation=private_background)／mapping.editor.open已接正式C++与桥接，Read+ShowWindows=129；Configure／Capture不能替代，工具标为非只读。固定本实例单项设定窗，不接PID／HWND／路径。源引用含完整owner修订／源Tab／行，复核安全源、真实当前Tab、非隐藏显示行到源的解析；不把附加共通显示行当普通源行，不自动切Tab。复用mappingAdditionAllowed及既有hasOpenMappingEditor，并观察表格EditingState，拒绝已有编辑窗／草稿、模态／弹窗及不安全清理状态，避免原GUI入口关闭旧窗。
-
-C++核验GUI线程的WinSta0桌面非Default且非当前输入桌面，未知身份或输入桌面不可读取时拒绝；客户端参数不是演示授权证明。仅这次显示临时WA_ShowWithoutActivating，作用域结束恢复原值；调用原showItemSetupDialog，不设置业务控件模拟界面、不调用主窗置顶、激活、SwitchDesktop或系统输入。显示后重核请求／完整源／实际角色与源行／Qt和原生可见，返回目标摘要、实际源、window及activation_requested=false；失败／断线先query确认当前窗口，不自动重发、关闭旧窗或换目标。普通GUI入口及配对默认行为保持。
-
-双Qt受影响维护增量构建native exit0，Qt6零编译／链接警告，Qt5兼容通过。每Qt私有参数／桌面组件4项、Default只读门槛3项、IPC权限3项（均含init／cleanup）通过；Default实际桌面名称已核对，只运行查询断言，无显示窗口／截图／输入或焦点操作，单场约1ms测试体。IPC证实Read+Configure+Capture不能替代Show，Read+Show无Configure可路由；正式产品场景仍含Configure以建立A→B，不写作High产品纯Read+Show专项已验。后续维护只改固定观察夹具时仅重编生命周期目标，原构建日志保留。
-
-正式SDK最终Qt6／Qt5两场demo_mcp_editor各28次记录调用／6次open／4次schema拒绝；另Qt6无Show的demo_mcp_capture 21／1／4。累计77次调用＋12次schema拒绝，三场各native exit0／6项CPP，共18项，逐场owned／unresolved／pending／current_action／current_job全零。正例仅Read+Configure+Show+Capture、无Run，MCP建A→B并正式打开源行；固定维护标记只观察已显示窗及属性恢复，不双击、不替代打开。负例Read+Configure+Capture的正式open为permission_denied且窗保持关闭，再用真实GUI双击原入口作独立基线。旧源、越界行及未附加空共通源引用拒绝；重复打开和C草稿期间context_busy，窗口引用保持且草稿未覆盖，恢复B后正式capture成功。Esc关闭仍为维护GUI，正式安全关闭／重置待后续。
-
-八幅正式MCP图片均由Agent原尺寸查看：主窗1130×722，Qt6／Qt5 PNG51182／50326字节；单项820×480、45094／44865字节，DPR1、中文／A→B一致，无黑图或错窗。Qt6正式打开和独立GUI双击的main／item PNG逐字节相同；完整源／dirty／加载代次及INI不变。两正例各三次普通Default控制器前台归属采样均非本测试PID，未观察到采样间前台变化；这只是离散观察，不当作全程因果／长期无干扰证明。所有产品实际在QkmDemo104_<UUID>私有桌面，普通SDK8192、原manifest产品12288，同登录，无Default显示／系统输入／映射启动或驱动修改。
-
-首正式Qt6场在建例前因SDK脚本遗漏Path导入退出1，产品正常回收但该失败场native exit2；first-consumer-import保留case／原消费脚本／实际错误，控制器五项零。只补普通SDK一行导入，同一产品EXE／定义随后通过，不归因为产品或gsudo故障。汇总脚本初次误读正常closed记录不存在的sdk_passed字段，KeyError未改运行原件；最终按sdk-pass／case／closed及逐场cache-after分别核对，不推算缺失字段。
-
-本机out/mcp_editor_open_w11_20261028不随Git，含一式大文件补丁及字节核对、双Qt构建／观察夹具前后日志、组件／实际Default拒绝／IPC、部署身份／公共登记、SDK准确peer／77次记录及12次schema拒绝、八图／源INI及前台采样／逐场清理、summary和Agent看图。当前14工具／13业务能力。实际非当前已填充Tab、共通附加／过滤行、inline编辑／模态交错、显示期间撤权／退出未专项运行；普通Default显示确认、其他角色／高级页、HighDPI、Win10、其他实例对照、P2串行重置、P3预热／M3-B免Python及QQ仍待，完整P1／C1-C／M1不标完成。
-
-#### DEMO-P1-110：正式打开记录及不丢草稿的受限关闭（选定范围完成）
-
-P1-109 `560eaea3` 后增加 `qkm_close_mapping_editor`。Read＋ShowWindows 只关闭本 owner 在私有后台正式打开、当前源与草稿未变的单项窗。通过原关闭入口后核实隐藏与源数据。摘要覆盖输入组合、四组待提交段及备注，独立子窗或捕获录键时拒绝。窗口隐藏／重开、原生身份变化或源变更使引用失效，尺寸变化需要刷新窗口引用。焦点返回 Agent 不影响归属。
-
-当轮双 Qt 组件与真实私有 GUI／正式 SDK 选验通过，合计94次记录调用、15次参数拒绝及10幅图片。实窗草稿拒绝后内容保留，恢复原值才可关闭。保留首组件文本假设失败、补子窗保护和旧版本证据。原件仅本机 `out/mcp_editor_close_w11_20261028`。精确范围、缺口和分项见[验证记录](map67c1_validation.md#demo-p1-110正式打开记录及安全关闭2026-10-28pc-w11)，完整历史正文见 Git `75b72f48`。
-
-#### DELETE-GUI-111：源行删除原GUI基线（选定范围完成／今日收尾）
-
-按用户18:20前争取停止的要求，111仅在P1-110 ed936e514c6ec1389937f8b642caafc40ab46e83之上新增固定维护观察，产品deleteSelectedMappingData及头文件完全未改，不提取删除逻辑、不接正式MCP删除／串行重置。复用本机Common76合成文本INI（1171字节、非个人配置），独立运行副本，正常产品启动载入Common76Seed：普通A→B及共通F13／F14两行，MCP未启用。无新环境恢复或已验截图矩阵重跑。
-
-Win11双Qt各三场：normal_last普通表1→0行、common_first共通2→1行、common_all共通2→0行。以真实Qt Tab／表格鼠标及Delete／Ctrl+A事件走原GUI，不设置选中控件值、不直接调用删除或加载函数；删除前后完整源JSON校验目标与剩余行全部fields／derived采样、其他快照源不变，dirty=true、加载代次仍1、pristine_idle读取成立、全过程及退出INI字节不变。删除到空表时当前行列为−1／−1、选区空，首行删除后为0／0并选最近剩余行。六场各native exit0／7项，共42项，工作／生产者及owned／unresolved／pending／current_action／current_job均零。
-
-双Qt真实源码维护Release增量构建native exit0，Qt6零编译／链接警告，Qt5按既定兼容规则通过。测试EXE为out/mcp_delete_gui_w11_20261028/{qt6,qt5}-runtime/QKeyMapperDeleteGui111_*_runtime.exe，requireAdministrator保持，公共登记deletegui111-qt6／qt5固定三case／实际EXE身份／输出根；普通控制器8192、产品12288，同登录，六个实际QkmDeleteGui111_<UUID>私有桌面。无Default、系统输入、映射启动、驱动或MCP删除动作；截图未新增，本片是事件／模型／选择观察，不声称视觉或完整GUI等价性验收。
-
-首公共登记仅取得ok=false，未启动产品；本地合同复核发现case多了id，删除额外字段后按原arguments／environment格式登记成功，缓存核心／模式未改。首返回具体错误码未保存，不推算。原件out/mcp_delete_gui_w11_20261028含构建／部署身份、合成INI、定义／登记、六场完整源前后／7项记录／退出INI／实际桌面与权限、逐场尾状态、summary和首次登记说明，不随Git。过滤／隐藏、附加共通／分隔行、混合源选择警告、独立共通备份、鼠标点派生列表专项、运行后清理、正式MCP引用／删除、实际Win10／高DPI／其他实例未验，完整EQ-MAP-DELETE／M1未完成。
-
-2026-10-28 17:58:43使用现技能off，原控制器9664／instance2ff1d26a17e942ee9688a45261b272c2返回closed／user_off、generation2、cache_available=false、native_sessions_observed=0，五项清理零；17:59独立status确认controller=null／原生会话0。历史未知请求未接管或重放。完成本片必要文档检查及聚焦本地提交后今日普通临时暂停，不推送、不启动下一测试或切片。环境、构建目录、原始材料保留；明日“继续”后从本基线开始必要局部业务提取和稳定源引用的预览／提交，仅做当前动作必需状态检查，无交接包或环境恢复。新的提权测试时长另由用户安排，缓存未安排时先做普通权限工作。
-
-#### DELETE-112：单源行删除业务提取（选定范围完成）
-
-在111（20c0ea1f）上局部提取私有removeMappingRows(sourceTabIndex, sourceRows, topDisplayRow)。表格／Tab键盘及菜单Delete仍经原GUI可见选行、原条件关闭编辑器和混合普通／共通源警告；仅单源列表交给共用函数。共用入口在GUI线程先验证源Tab、数据指针及全部源行，再倒序去重删除；原显示刷新、鼠标点更新、双向可见接替选区和dirty保留。合法GUI来源只可能当前源或Common，故按显式源刷新与原选择相同。无新MCP方法／权限、工具15／能力14不变；不写盘、不重载、不启动映射。
-
-Win11双Qt各三场GUI事件与111同机同合成INI的settingsGeneral完整JSON逐字节语义相等（包括before／after全部源、选择、dirty、加载、源epoch和七项断言），不省略字段或使用新函数冒充原基线。各另一个共用入口场景12项：非GUI线程、负／越界Tab、空／负／越界行、有效＋无效列表及空数据指针全部拒绝，完整源／dirty／加载／INI／当前单元格不变；{1,0,1}只删除两条Common源行，非目标普通源完整保持。共八场／66项、native exit0，源读取pristine_idle；退出及工作／生产者为零，逐场owned／unresolved／pending／current_action／current_job五项零。
-
-两套首受限执行构建均native exit2／C1902，原日志保留；未改工具链或构建配置，退出后在沙箱外先断言非管理员，同一增量构建均native exit0，Qt6零编译／链接警告，Qt5兼容通过。不能据此单独断定C1902底层原因。原manifest隔离目标out/mcp_delete_shared_w11_20261029/{qt6,qt5}-runtime/QKeyMapperDeleteShared112_*_runtime.exe，经公共登记deleteshared112-qt6／qt5，实际QkmDeleteShared112_<UUID>私有桌面、控制器8192／产品12288、同登录。无Default测试需求，无系统输入、映射启动、驱动／FilterKeys变更或截图矩阵重跑。
-
-本机out/mcp_delete_shared_w11_20261029保留一式大文件补丁／期望字节、构建失败及成功日志、部署身份、固定定义／登记、合成INI、八场完整结果／退出／尾状态和精确对照summary，不随Git。过滤／附加Common／分隔行／混合源交互、独立Common备份及鼠标点派生专项、运行后清理、正式MCP引用／删除、实际Win10／高DPI仍未验；未选普通完整Release／全量静态／ASan，不宣称完整EQ-MAP-DELETE／M1完成。下一片接稳定源引用的正式mapping.delete预览／提交及相应定向验收，串行演示重置按依赖后续推进。
-
-#### DELETE-113：稳定源行删除预览／提交（选定范围完成）
-
-在112 df433862之上接正式mapping.delete，复用现有预览／提交／取消／operation，不增加工具或权限位。Read+Configure、完整source_revision／source_tab_ref及1–100个规范source_refs，仅同一当前附着源、未隐藏可选行，去重且拒绝跨源／修订。预览逐条列全部fields／derived／lock采样和实例／源摘要，不改源／dirty／INI；提交须confirm_delete=true，不能用冲突／保存确认替代。120秒、owner(instance／pair／epoch)、单次消费、结果槽及历史去重沿原Store，取消／到期／应用结果关联原实例及源摘要。
-
-提交重新复制验证完整源、实际当前目标、源行／显示归属、当前请求／权限／到期及完整清理许可，在原源访问互斥内复核runtimeRevision；无编辑窗、表格编辑或弹出菜单后才调用112共用删除。结果明确modified=true／saved=false／started_by_operation=false及删除数，要求重查源；旧引用／旧预览失效。拒绝不部分删除；成功重放只返回原历史，不再修改。普通GUI仍沿112原入口，无自动切表、停止、关闭编辑窗、保存或开启映射。源修订不等于完整全局设定修订，未把删除接线标成完整M1或串行演示重置。
-
-双Qt协议／存储九槽各11项含init／cleanup，相关配对重连及handler生命周期IPC各4项，均native0；Python协议22项通过。原manifest产品私有桌面正式stdio五场各Qt：普通最后行、Common首行／全批逆序重复、GUI Delete后的陈旧预览及Read拒绝；各8项native检查。取消／无确认／错误确认、完整预览不变、跨源／越界、编辑窗拒绝、表格未提交Z草稿／菜单保护、恢复后未改盘、旧引用、结果归属及历史重放均有实际请求记录。SDK剩余行全部fields／derived／lock与111同机原GUI对应结果相等，Native独立验证全部源／非目标metadata、实际GUI选择、dirty、加载代次、INI和恰一次sourceEpoch变化。表格editItem及QMenu是明确组件注入，独立GUI删除基线仍111，未冒称真实用户表格编辑操作已全验。
-
-随后只增加hidden组件用例，产品qkeymapper.cpp及协议代码完全不变；双Qt各一场验证隐藏行时预览／提交invalid_target、恢复后正式删除。隐藏状态由setRowHidden注入，不能替代真实筛选GUI验收。合计十二场／96项native检查、450次handler／471次SDK记录及84次schema拒绝，八次实际MCP删除；stale两场由原GUI删除，Read两场不删除。所有native exit0／pristine_idle，完整INI字节及加载保持，实际QkmDelete113_<UUID>私有桌面，普通SDK8192／产品12288、同登录；所有进程正常退出、工作／生产者0、逐场清理五项零。无Default、系统输入、映射启动、驱动／FilterKeys设置变化或新权限模式。
-
-双Qt受影响维护／协议／IPC增量native0，Qt6零编译／链接警告、Qt5兼容通过。首十场在补表格／菜单保护前也通过，原件在first-passed-before-table-editor-guard；补保护后重验受影响双Qt十场。hidden只扩固定夹具，先前十场按不变产品／有效输入范围复用，实际旧EXE／定义／构建身份留before-hidden-component；当前EXE只新增hidden两场，不把全部十二场误记为同一个二进制。维护SDK断言已纳入mcp_bridge/tests/mapping_deletion_acceptance.py，合成INI由已有common样例去五个可选键精确重建，不复制个人数据或增加进度来源。
-
-本机out/mcp_delete_w11_20261029含两式产品补丁／精确字节、双Qt构建／部署身份、分版EXE与定义、普通组件／IPC、正式SDK调用／schema／peer、十二场源／退出INI／清理和summary，不随Git。过滤的真实GUI、普通Tab附加Common／分隔行、独立Common备份／鼠标点派生专项、运行后清理／实际撤权／过期／断线删除、其他实例及Win10／高DPI未验；存储到期／跨owner仅组件，未选全量静态／ASan／普通完整Release。下一项先收敛专用初始状态与串行演示场景归属／重置契约，再按依赖实现正式P2；P3预热／M3-B免Python和QQ仍待。
-
-#### DEMO-P2-114：专用实例只读就绪核验（选定范围完成）
-
-113 ff6ed42b后实现正式桥接预检。宿主显式--demo-record才增加无参数只读qkm_get_demo_state，普通15工具／产品16能力不变；配置该参数时16工具。记录严格8字段／8KiB、当前用户私有ACL目录及文件、非重解析／单链接；保存EXE、PID／创建时间、Session、实例、实际桌面及固定初始配置组，无密钥、不产生授权。先匹配显式可信EXE和已认证固定管道，再复核实际存活进程／登录身份；桌面另与产品实际返回核对，错误或损坏记录不返回未核实目标、不改配对／连接。维护宿主只依据本次受管Start／实际身份生成测试记录，正式预热生成仍待P3，不能凭客户端自报记录宣称专用部署。
-
-产品windows查询仅复用未改privateBackgroundDesktopAvailable并增加保守布尔private_background_available（未知false）；不控制窗口／焦点／桌面。Bridge将原单worker等待代码局部提取_perform，预检在本桥接单作业中连续读取Windows、状态和完整源目录，拒绝同桥接并发；不锁定整个产品或其他客户端，原取消／busy／关闭语义保留。要求Read+Configure+ShowWindows+CaptureWindows、实际非Default且非输入桌面、固定保存配置接受加载、完整空闲清理读取基准、单一附着普通空源及空的未附着Common备份、主窗恢复可见且无单项窗、初始无dirty。返回ready／reason、已核实目标和source_snapshot，reference_scope=preflight_observation_only，不是写许可／租约／完整重置或咨询服务就绪证明；不建例、截图、删除、保存、重载或启动映射。
-
-Python5项新记录／桥接测试与原22协议共27项通过：严格字段／类型／身份、私有ACL、8KiB／损坏／重复键／硬链接／公共目录拒绝、就绪多类边界、三条只读请求及错误记录保持连接。Qt6／Qt5窗口观察＋实际私有桌面守卫各4项含init／cleanup；受影响维护／窗口目标增量native0，Qt6零编译／链接警告、Qt5兼容通过。固定非空／草稿用例补齐后只重编受影响Native维护文件，未重复环境恢复或113产品矩阵。
-
-双Qt正式stdio各四场，普通空源ready、Read权限permission_denied、预置A→B源demo_baseline_not_empty及实际Qt名称草稿demo_baseline_dirty；各8项Native、合计八场64项／104次handler／176次SDK记录＋8次schema拒绝。每场另验错误创建时间／实例／Session／EXE／桌面／额外字段和损坏记录，恢复后原因／目标回到原观察，原认证连接仍connected。Native独立完整源／GUI名／dirty／加载／sourceEpoch／INI均不变；dirty准备在观察前完成，不冒称该GUI准备也只读。实际QkmDemoReady114_<UUID>私有桌面，SDK8192／产品12288、同登录；全部正常退出、工作／生产者0、逐场清理五项零。无Default、系统输入、MCP配置写入、映射启动或驱动／FilterKeys变化，无截图／视觉新验收。
-
-原件out/mcp_demo_ready_w11_20261029在本机，含分步构建／部署与身份、双Qt组件、合成INI、受管定义／登记、普通宿主私有记录、准确SDK peer／逐次调用、八场完整源／退出INI／尾状态及summary，不随Git。错误PID复用等身份仅字段反例／当前活进程核验，不冒称真实PID复用／退出／休眠均已验。Default拒绝复用同一未改函数既有证据，不记本轮Default测试。串行场景、非映射上下文一致性／重置、正式预热／免Python、Win10／高DPI、其他实例及QQ未验，完整P2／M1未标完成。
-
-下一项补专用演示的非映射上下文证明，复用C1现有只读保存足迹，避免仅凭空源／dirty推断其他设定已复原；再实现单worker串行建例→打开→图像→安全关窗→正式删除回收，新的启动／提权范围仍单列P3批准。
-
-#### DEMO-P2-115：非行保存足迹证明（选定范围完成）
-
-qkm_query(entity=demo_context)的Read+Configure只读能力，限定实际后台私有桌面、当前普通源／Common关闭／空备份和完整空闲清理；复用C1完整保存候选、Reader缓存及Qt序列化，不写预览槽、保存／重载或自动关闭。H0排除74项源行存储键，保留配置／Tab元数据、全局／profile／通知／鼠标点及完整原INI等非行足迹；不是完整业务修订或租约，不能用行revision代替。
-
-双Qt选定真实SDK及组件已验证：正式新增／删除不改H0，真实Qt名称变化／恢复和合成INI字节变化能检出，完整源／GUI名／加载／INI恢复，dirty依原GUI保留；实际身份、源回收及完整退出／五项零分别留证。原件out/mcp_demo_context_w11_20261029仅本机，[详细C1证据](map67c1_validation.md#demo-p2-115非行保存足迹2026-10-29pc-w11)保留精确版本、统计、组件注入和原GUI差别及遗漏。该历史开发普通模式结果不重算为125的新只配置准入。真正串行归属／隔离由116–118接续，完整P2／M1、实际运行／撤权／断线／跨实例、其他系统与正式部署仍按后续逐项验收，不从签名推出已完成。
-
-#### DEMO-P2-116：提交时源绑定（选定范围完成）
-
-115 a7e7a06d后为mapping.add.apply／mapping.delete.apply补提交时完整源绑定。真实变更后、释放既有非递归source写围栏前复制实际完整源，用既有instance／pair／epoch及全源哈希形成source_binding_after；新增含新行ref，删除仅给源Tab、source_ref=null，不把接替行冒充已创建资源。source_binding_result=commit_snapshot_or_null声明新合同；捕获不了为unavailable／null，原操作仍applied／modified=true，不回滚或冒称未修改。结果重放／operation保留原绑定，不重新采样当前目标。
-
-读取入口仅分离原带锁包装和调用方已持同一锁的私有采样体，完整采样／读取门槛保持；无递归锁、新锁、线程或源增量修订捷径。源绑定为commit_snapshot_only历史事实，未来GUI或其他操作仍可立即使它失效；后续串行回收须用该绑定核验，不能重查后认领相似行。GUI业务、权限、原提交预算及失败处理不变；本片新增一次有界完整源采样／哈希，最大源耗时未验。
-
-双Qt受影响生命周期维护增量native0，Qt6零编译／链接警告、Qt5兼容通过。正式stdio各正例＋Read负例四场38项Native，48次handler／65次SDK记录。新增／删除的提交绑定与正常完整源查询相等，删除不返回行引用；历史重放保留原完整业务结果，仅按既有语义更新查询时间和重放标记。第二次新增的生产回复后，维护夹具立即真实Qt点击行并Delete，旧绑定查询／正式开窗均stale_source；历史operation／重放仍返回原提交绑定，不采样已空的新源。正例每场两次正式新增、一次正式删除、一次原GUI删除，sourceEpoch恰+4；所有源／metadata精确复原，GUI名／加载／INI保持、dirty按原GUI保留、无编辑窗／运行输入。Read两场零修改；纯组件拒绝无快照／错误索引／不存在行／未附着Common备份并与原全源查询交叉核对。
-
-首Qt5正例把动态replayed／query_sampled_at_utc也要求恒等，首Read负例误比较run采样时间，各断言失败、native exit2；两个原件分别保留first-attempt-history-assertion与first-attempt-state-sample-assertion，目标正常退出、工作／生产者0，随后实际控制器五项清理零。只修SDK断言（Read复用既有business_state），未改产品／重建；最终四场均native0／正常退出、逐场清理五项零。实际QkmPostBinding116_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录，无Default、系统输入、映射启动或驱动／FilterKeys变化。
-
-原件out/mcp_post_binding_w11_20261029含单次大文件补丁／精确字节、双Qt构建部署身份、公共定义／SDK peer／逐次调用、两个失败原件、四场源／退出INI／清理和summary，不随Git。维护用例纳入mcp_bridge/tests/post_change_binding_acceptance.py，使用说明同步桥接README。普通15工具／17产品能力、demo-record时16工具不变。未实际诱发提交后采样失败／撤权／断线、最大源耗时、其他实例、Win10／Default／高DPI、串行场景／预热／免Python／QQ；既有111／113／114／115结果按未改路径复用，未重复全量静态／ASan／普通完整Release，未标完整P2／M1完成。
-
-下一项实现显式专用许可下的单worker串行建例→打开→真实图片→安全关窗→正式删除，以提交源绑定及115非行足迹共同核验回收；失败不认领外来行、不强制清dirty、不盲目重试或改连。
-
-#### DEMO-P2-117：正式串行单行演示（选定范围完成）
-
-单Bridge worker，宿主显式demo-record及--enable-demo-mapping，qkm_demo_mapping只收一个大写字母／数字基础映射；沿GUI配对及Read+Configure+Show+Capture，不授Run、不创建实例或提权。当时普通15／记录16／演示17工具及17能力，121后计数见当前卡。正式新增、提交绑定、完整源／H0复核、原单项窗／真实PNG、安全关闭、只删本轮行、空源／H0证明组成一轮；同桥接receipt允许dirty按GUI保留后的连续轮次。外来／草稿／未知传输结果隔离，不盲重试、改连、清空或强制清dirty。
-
-选定Python编排／取消边界及双Qt正式两轮A→B／C→D、Read负例与四张真图通过；完整源／非行足迹／INI／加载／GUI名保持，正例epoch+4、dirty保留。实际私有桌面、SDK8192／原manifest产品12288、同登录、正常退出／尾部工作及五项零。原件out/mcp_demo_scene_w11_20261029含两次失败原件和最终材料，仅本机；[详细C1证据](map67c1_validation.md#demo-p2-117正式串行单行演示2026-10-29pc-w11)保留版本、统计／图片和真实／模拟边界，不改旧失败结论。主窗及高级页由118–122扩展，125后仅新模式／version2可准入；真实进程退出／撤权／断线／超时、跨实例、其他系统与预热／整包／QQ缺口仍待，不标完整P2／M1或Release可直接部署。
-
-#### DEMO-P2-118：主窗口串行视图（选定范围完成）
-
-117 e966ea9f后为同一显式qkm_demo_mapping补固定view=main，省略仍item_setup；写入前检查实际windows.capture角色enum，未知角色／原合同不支持在修改前拒绝。main只查询并捕获已有本实例可见／恢复主窗，不打开单项窗、不切换设置页、不请求显示或激活。仍沿原身份／Read+Configure+Show+Capture／私有桌面／提交绑定／非行足迹和本轮归属行回收，结果demo_scene.view与原图像role对应。普通15工具／仅记录16／显式演示17及产品17能力不变。
-
-普通权限场景12＋既有图像7共19项通过，覆盖main不调用开／关单项窗、当前实际窗口引用捕获、回收、原角色合同不支持零写入、非法view及原默认／失败／取消路径。产品C++与维护夹具相对117完全不变；复用原本机双Qt构建制品，部署前逐个匹配117实际已验SHA256并记录native-reuse，不重复环境恢复或编译。双Qt正式stdio各主窗A→B后默认单项C→D及Read负例四场28项Native，150 handler／62外层SDK＋32 schema；全源／metadata精确复原、sourceEpoch各正例恰+4、INI／GUI名／加载保持、dirty保留、无编辑窗或runtime输入，Read零修改。
-
-Agent原尺寸查看两张1130×722主窗PNG（Qt6 51182B／Qt5 50326B）及两张820×480默认单项PNG，主窗真实A/B行、Demo104Seed名称及未启动状态可见，后续单项为C/D/D，中文清晰、无黑图／错窗／旧场景污染。主窗横向滚动表格只显示当前可见列，不以截图代替全字段源核验；范围为原Qt客户区，非OS标题边框。实际QkmDemoViews118_<UUID>私有桌面，普通SDK8192／原manifest产品12288、同登录，全部native0／正常退出、工作／生产者0及逐场清理五项零；无Default、系统输入、映射启动、驱动／FilterKeys或新提权模式。
-
-原件out/mcp_demo_views_w11_20261029含本机二进制复用身份、公共登记、19项日志、正式SDK／peer／原始图像响应、四图及Agent审阅、源INI／退出／清理和summary，不随Git。README及正式工具描述同步实际view合同；无TS／QM变更。代表高级页、真实退出／撤权／断线／超时及其他实例全程因果、Win10／高DPI、正式预热／免Python和QQ仍待，117失败模拟及既有不变路径按原范围复用，不宣称本片覆盖这些缺口或完整P2／M1。
-
-下一项先盘点代表高级页的原GUI入口和系统副作用，取得独立GUI显示／恢复基线，再接最小受限私有页面展示；不设置控件值冒充GUI业务或开放任意页面属性。
-
-#### DEMO-GUI-119：映射高级设定原GUI基线（选定范围完成）
-
-118 b91fac02后只补QMappingAdvancedDialog原GUI显示基线，产品C++／权限不改。源码盘点showMappingAdvancedDialog仅show，close会先关通知子窗，ActivationChange失去激活自动close；各参数／通知／共通开关实际联动配置，故本片不编辑值或打开通知子窗。先由正式MCP建立A→B，再以真实Qt TabBar点击mapping页和原mappingAdvancedSettingButton、100ms绘制后采样，Escape原关闭后真实点击恢复原页；没有setCurrentIndex、控件赋值或直接调用show代替GUI。
-
-双Qt增量维护构建最终native0，Qt6零编译／链接警告、Qt5兼容通过；首轮都因漏含已有qkm_window_access.h声明而native2，修正该维护include后重编受影响文件，原日志first-missing-header保留，无产品测试在失败构建上启动。正式stdio配合两场原GUI，共12项Native／32 handler／38 SDK记录。GUI开关前后完整源及全部fields／metadata、完整非行context对象／签名、GUI名／INI／加载保持，原设置页和高级窗输入指纹恢复；打开期间demo_context及删除预览context_busy，源行只读查询保持。最后正式删除归属行，两场sourceEpoch各恰+2、dirty按原GUI保留、全部源恢复为空、无编辑窗／runtime输入。
-
-固定原生GUI线程复用captureOwnWindow／QWidget::grab、160KiB上限，记录实际PID／HWND／桌面及源代次；普通SDK解码固定frame证据为PNG，未提权外部截图工具。四图由Agent原尺寸查看：主窗1130×722（Qt6 53741B／Qt5 52729B），mapping页与真实A/B行可见；独立高级窗770×390（34525B／33989B），中文清晰，鼠标速度3／3、轮询2ms、扳机／摇杆50／30／15%、触板0.50／0.50等默认值可读，无黑图或错窗。仅Qt客户区和主窗当前可见列，不代替全字段验证。这些是GUI基线文件，不是正式高级角色ImageContent交付。
-
-实际QkmAdvancedGui119_<UUID>私有桌面，SDK8192／原manifest产品12288、同登录；全部native0／正常退出、工作／生产者0及逐场owned／unresolved／pending／current_action／current_job零。dialog.isActiveWindow在私有Qt线程为true，不代表Default前台归属或其全程因果；后续无激活正式显示须另验。无Default、系统输入、映射启动、驱动／FilterKeys修改，画面显示既有FakerInput可用不证明私有桌面隔离驱动或本片安装了驱动。
-
-原件out/mcp_advanced_gui_w11_20261029含首轮及最终构建、部署／公共定义、SDK peer／逐次调用、GUI开关确认、四个自身帧／普通PNG及Agent审阅、完整源INI／退出／清理和summary，不随Git。维护SDK纳入advanced_gui_acceptance.py及Native README用法；普通15／仅记录16／显式演示17工具、产品17能力保持，高级窗正式观察／捕获／归属开关／串行接线尚未交付。未测参数编辑、通知子窗／撤权／激活失败、实际Default／Win10／高DPI／其他实例因果、预热／免Python和QQ，不把本片标为完整P1／P2／M1完成。
-
-下一项补固定mapping_advanced角色的受限只读观察／捕获，再接有归属的私有显示／安全关闭及串行例程；优先兼容保留默认main／item_setup查询，不能把GUI基线当成已交付接口。
-
-#### DEMO-P1-120：高级窗只读角色观察／捕获（选定范围完成）
-
-3d43f41c封存固定mapping_advanced只读观察／PNG，默认windows仍main／item_setup；需要独立Read／Capture，实时非行设定不由源行revision提交。双Qt组件10、Python37及四场24 Native／98 handler／112 SDK通过，两张正式图与同次原GUI帧字节相等并经Agent查看；无Capture零MCP图，完整源／context／INI及退出清理保持。原件out/mcp_advanced_capture_w11_20261029仅本机，完整范围见[同一C1证据](map67c1_validation.md#demo-p1-120高级窗只读角色观察捕获2026-10-29pc-w11)。当时未交付高级窗开关／串行接线，后续分别见121及下一切片，系统／交付缺口保留。
-
-#### DEMO-P1-121：高级窗私有归属开关（选定范围完成）
-
-120 3d43f41c后固定qkm_open_mapping_settings／qkm_close_mapping_settings与两项能力，仅Read+ShowWindows（129）、当前source_tab_ref、private_background及关闭window_ref。复用原show／close、临时WA_ShowWithoutActivating和现有WindowAccess归属记录；原ActivationChange、主窗页及单项默认调用保持。只关闭本owner打开且完整源／全部输入未变的窗，拒绝GUI窗接管、旧引用、未提交数字及其他草稿；不收任意目标、属性、路径或discard。高级实时捕获可选settings_editor_unchanged，不能把源行revision当完整设定提交证明。普通17／仅记录18／演示19工具、产品19能力，无既有权限自动扩展或TS/QM改动。
-
-双Qt生命周期／控制／IPC增量native0、Qt6零编译链接警告及组件18项通过；复用未变输入的Python38。四场36 Native／96 handler／112 SDK＋56 schema，原Qt Tab／按钮／Escape独立GUI窗拒绝接管，正式两轮开关及实际Qt数值3→4→3的草稿拒绝／恢复、无Show259零显示／图像通过。未提交数字／跨线程明确是组件注入，恢复keyboardTracking。六张770×390正式PNG经直接审阅或与审阅图字节相等核验；双Qt首次／恢复／同次GUI／120原GUI图相等，没有为图片改变产品或夹具。
-
-完整源／非行context／GUI名／INI／加载保持，仅本轮新增删除令epoch+2，dirty保留，源空且无编辑窗或runtime输入。实际私有桌面、SDK8192／原manifest目标12288、同登录，四场exit0、尾部工作／生产者0及逐场五项清理零。无Default、系统输入、映射启动或驱动／FilterKeys变化；不由私有结果推断Default因果。原件out/mcp_advanced_window_w11_20261029仅本机；[详细证据](map67c1_validation.md#demo-p1-121高级窗私有归属开关2026-10-29pc-w11)保留原版本、原GUI／正式差别及图片、失败和遗漏范围。正式设置编辑、通知子窗、真实撤权／断线／超时／跨实例、Default／Win10／高DPI、完整P1／P2／M1和交付仍待；下一固定高级view由122接续。
-
-#### DEMO-P2-122：固定高级窗串行view（选定范围完成）
-
-121 9d6fe3f2后仅扩现有显式演示view=mapping_advanced，沿原single worker／提交绑定／非行足迹、121归属开关及本轮行删除；图片必须settings_editor_unchanged=true，缺失／变化不交付，草稿或未知结果保留隔离。高级窗仅展示当前真实参数，A→B由正式完整源核验；不编辑设置或增加启动方式，正常17／仅记录18／显式演示19工具、产品19能力保持。
-
-Python26及双Qt四场28 Native／154 handler／64 SDK＋32 schema通过：高级A→B后默认单项C→D、Read零修改／图片、完整源及非行签名／INI／加载保持、每正例epoch+4、dirty保留，正常退出／五项清理零。四张真实中文高级／单项图经Agent查看，无黑图／错窗／旧场景；高级图本身不显示A/B。C++及夹具不变，复用121精确本机制品，未重复构建。原件out/mcp_demo_advanced_w11_20261029仅本机，详细模拟／异常边界及证据见[同一C1记录](map67c1_validation.md#demo-p2-122固定高级窗串行视图2026-10-29pc-w11)。
-
-下一步准备P3一次预热的具体权限／生命周期决策，先推进普通权限M3-B打包依赖；新启动方案待用户决定。正式参数编辑／子窗、真实身份或连接异常／其他实例、Default／Win10／高DPI、Release预热／免Python及QQ仍待，不将完整P1／P2／M1标完成；无Default、系统输入／映射启动或驱动变化。
-
-#### PKG-123：固定嵌入运行时桥接目录包（选定范围完成）
-
-122 5dc866a1后提前完成M3-B桥接组件切片：固定[PSF 3.11.9 x64嵌入归档](https://www.python.org/downloads/release/python-3119/)＋29项原锁wheel，独立无pip构建环境／标准库组装，不改开发venv或依赖锁、不新增打包器。归档11249023B／SHA256 009d6bf7e3b2ddca3d784fa09f90fe54336d5b60f0e0f305c37f400bf83cfd3b，官方发布页／摘要及关键PE有效PSF签名核对，未做Sigstore证书链／透明日志全验证。全新目录／ZIP、原始成员路径／重解析／碰撞／预算、许可与载荷manifest；最终7项在独立builder通过，失败原件及修正边界见[同一C1证据](map67c1_validation.md#pkg-123固定嵌入运行时桥接组件包2026-10-29pc-w11)。
-
-本机release/QKeyMapper MCP Bridge 中文.zip为26706513B，SHA256 d356f5f124aa1eb8d81fe45b0ab2a4543584c7ed2b5fa6a31f4b4c1064e027d6；1614项／62659786B载荷。独立解压及运行后manifest不变，中文／空格、无关cwd、仅系统PATH及错误Python环境下prefix／全部sys.path／原生依赖均包内，29项版本精确、无pip，17工具及无产品异步失败通过。包内实际Medium客户端与121原manifest Qt6私有目标完成高级A→B后默认单项C→D，一场6 Native／68 handler／23 SDK＋8 schema、两张真实图／全源与非行签名／INI及正常退出／五项清理零；复用精确本机制品，不重编C++。原件out/mcp_bundle_w11_20261029仅本机。
-
-构建及随包用法进入正式源码／README。组件运行不需用户安装Python、venv、源码或联网装包；本机未卸载Python或断网，不冒称干净Win10／Win11／断网启动验收。普通Release发布整合、Qt5包接续、完整P3／M3-B与QQ仍待，正常默认关闭／身份／配对不变，开发缓存不进入交付包。下一步先审阅原正式启动的Hook／Interception／FakerInput／全局设置副作用，形成P3最小正式预热方案供用户决定；新启动／权限或Default范围批准前不执行。
-
-#### DEMO-P3-124：只配置门禁（选定范围完成；固定预热角色待实现）
-
-2026-10-29用户明确批准“同意实施及私有验证”。本片完成不可变只配置模式及相关权限／线程／效果门禁和选定私有验证；固定预热角色随后接线。正式原生UAC、临时Default／私有切换及人工配对待程序可审阅后另行说明授权，本轮不执行Default测试。
-
-123 ce4c268a后，源码确认原main在QKeyMapper构造前创建Interception／Hook／Worker线程；HookProcThreadStarted默认可安装低级键鼠Hook，Interception构造调用doLoadInterception／libusb，Worker构造取得QJoysticks／SDL，GUI构造在已安装时分配并连接FakerInput；main还排队FilterKeys提示。故MCP无Run、空源或private desktop均不能证明启动无系统接触；当前事实是原模式启动，不将这些已存在调用描述为本片新引入或先前实际驱动修改。见[main](../../QKeyMapper/main.cpp)、[Worker](../../QKeyMapper/qkeymapper_worker.cpp)、[Interception](../../QKeyMapper/interception_worker.cpp)、[GUI](../../QKeyMapper/qkeymapper.cpp)。该段为实现前盘点；后述124仅运行自有私有新模式，Default场景未执行。
-
-推荐复用同一正式EXE、原requireAdministrator与每目标桥接，加入显式只配置演示模式及固定预热角色，不另做通用进程服务／独立产品分支。模式在任何单例／线程／GUI／INI联动前不可变确定，主动禁止映射／系统输入、Hook／Interception及FakerInput／虚拟设备初始化和驱动操作、系统FilterKeys等写入；启动监视／自动映射、硬件／系统设置联动与未来Run能力也由产品门禁拒绝，不能只灰化按钮或依赖安全INI／Skill。真实配置模型／解析器／窗口／MCP业务入口保持复用；正常模式默认行为、正式manifest及MCP默认关闭不改。GUI新文字仍先给三语建议获批，再按既有TS/QM流程更新。
-
-部署使用全新完整Release副本和安全初始INI（不覆盖／复制个人INI），普通随包预热端在操作者明确执行时走一次原生UAC进入固定EXE预热角色；管理员角色只创建并拥有同一EXE的一个私有子实例及桌面，不接任意EXE／命令／PID／HWND／管理员路径。普通桥接／Agent和产物消费不提权，不用gsudo或持久系统服务；正常咨询只复用已认证目标，不能触发UAC／切桌面／自动配对。可信创建记录依据实际EXE、PID／创建时间、Session、desktop及认证instance逐项生成、私有ACL保存；退出／身份改变失效，不自动接管其他实例或重放原业务。
-
-分片实施：先做只配置门禁／完整线程退出及正常模式回归（源改动局部，双Qt，已授权自有私有测试）；再做固定预热创建／归属记录／失败及关闭协调，gsudo仅作为开发测试入口。最终一次部署须通过原GUI启用MCP、选择实际随包客户端并批准Read／Configure／Show／Capture，无Run；既有有效配对按原策略复用，拒绝／取消不能自动通过。临时显示专用桌面供首次GUI配置／配对，完成或取消后恢复Default；正常咨询无激活／桌面切换。该首次原生UAC＋桌面／焦点／人工配对验收另在实现可审阅后说明并申请，预计每系统集中5–10分钟、不发映射测试按键，本次决策不立即执行Default测试。
-
-新模式和门禁涉及线程生命周期／驱动与系统调用路径，用户已按AGENTS作出上述选择。实施与私有测试仍按固定公共登记、真实API拒绝／未调用证据、完整FilterKeys／其他实例不变、实际桌面／图片及退出清理分别验证；不把模式自报或STOPPED当完成，干净双系统／断网及QQ缺口保持。普通输入／原生发送出口也要拒绝，不能只挡GUI或Run权限；安装器与危险系统动作不以实际执行作为负例。
-
-本片实现：固定`--demo-configuration-only`在QApplication／全部单例前只初始化一次，实际WinSta0非Default且非输入桌面才能启动；无运行中切换。原三个QThread保留事件循环和既有BlockingQueued关闭，分别跳过Hook／设备／Worker运行初始化，不把“线程未创建”当证据。所有原生输入公共出口／异步准入、映射／重启／停止、驱动分配安装、外部命令／更新及Windows开机任务／FilterKeys写入均由产品门禁拒绝；窗口与真实模型仍复用。正常模式条件旁路、原manifest和MCP默认关闭保持；仅模式状态／能力附execution_policy，新配对禁Run，旧配对仅运行时权限交集387，持久511／secret不自动降级。无新增翻译。
-
-双Qt三目标增量native0、Qt6零编译链接警告，普通／只配置实际私有组件40项（含init／cleanup）通过；新Run拒绝、旧511认证只387且不重复配对。六场正式stdio72 Native／302 handler／122 SDK＋48 schema、八张图片；两Qt正常／只配置正例均高级A→B后默认单项C→D，另只配置Read负例。四张模式图逐张看，四张普通图与对应模式图字节相等，中文／真实3参数及C/D/D清晰。模式设备／Hook／libusb／SDL资源未初始化、安全拒绝探针、main前后完整FilterKeys、全源／非行context／INI／加载／dirty及正常退出／尾部工作／生产者和五项清理分别核对通过。首构建仅测试断言错误引用Hook句柄所属类，保留双Qt失败日志，修正后选定构建／测试通过；未为测试改产品行为或放宽准入。
-
-[详细证据](map67c1_validation.md#demo-p3-124只配置门禁2026-10-29pc-w11)，原件out/mcp_demo_mode_w11_20261029仅本机。六场使用安全合成INI，不声称所有危险INI／实际安装器或系统动作、运行态映射／硬件、Default因果、Win10／高DPI／ASan已验；私有组件不能替代正式部署。下一125固定预热创建／归属记录／失败和关闭协调；同EXE启动模式已实现不等于正式一次UAC预热、普通Release集成、完整P3／M3-B或QQ送达完成。主计划121重复明细精简，原C1及Git保留范围。
-
-#### DEMO-P3-125：正式演示绑定契约（选定范围完成；预热宿主待实现）
-
-在124 7142cf99之后，先完成固定预热角色的必要信任契约，再实现其创建／关闭宿主。演示记录升为严格version2及startup_purpose=configuration_only_demo，旧开发version1不自动迁移或沿用；仍经私有ACL／实际EXE、PID创建时间、Session、instance、实际桌面及认证核验。记录自报用途不能授权，桥接还必须检查已认证state／capabilities完整只配置策略，缺失／普通模式／非严格false或有效Run均在预览／写入／显示前拒绝。普通非演示MCP和既有持久配对不改。
-
-本片仅桥接／维护断言及既有124本机制品，先定向Python边界与取消／隔离回归，再自有实际私有目标的模式正例、旧记录拒绝／恢复及普通模式拒绝。复用124精确EXE，无新增C++构建、Default、桌面切换、原生UAC或实际系统输入；结果如下。新版记录与旧桥接／旧产品不承诺混用，固定预热宿主及整包发布仍未交付。
-
-34项Python通过；双Qt复用124精确本机制品，四场44 Native／174 handler／100 SDK＋16 schema、四张新图与124已审阅对应图字节相等。模式两图及回收、每场旧version1／错误用途拒绝恢复、普通模式即便记录自称演示也在预览／写入／显示前拒绝，完整源／INI／加载及退出清理通过。首Qt6正例业务及native0后读取status响应遭PermissionError（errno13，其他错误码未取得），独立status证实五项零，未重放产品／缓存变更；原因不推测为网络或原生失败。详见[同一C1证据](map67c1_validation.md#demo-p3-125正式演示绑定契约2026-10-29pc-w11)，原件out/mcp_demo_binding_w11_20261029仅本机；Cpp构建／40组件沿124范围复用，不冒充当前执行。下一126先由模式产品发布自身固定私有创建记录，后接固定预热宿主；Default／原生一次UAC／人工配对、普通Release及QQ仍待。
-
-#### DEMO-P3-126：产品自身私有创建记录（选定范围完成／今日收尾）
-
-125 682dc2bd之后先替换测试宿主手写记录。只配置产品在初始映射加载完成后固定声明启动配置，MCP仍默认关闭；显式启用时，在现有私有发现目录／独占租约内发布自身version2记录，名称仅由当前instance构成，字段取实际EXE／PID创建时间／Session／桌面及用途，无外部路径／PID／属性参数。原7字段发现文件不加配置，已认证capabilities另给demo_record位置；正常模式不发布。
-
-复用QSaveFile、私有ACL／非重解析／单链接及持有句柄规则。记录不覆盖已有文件，启用期间拒绝外部写删；关闭只在当前身份及发布字节一致时按句柄删除，拒绝误删替换／不明文件。启动配置不随普通查询／换配置自动重绑；实际输入桌面暂为私有的首次GUI批准可启用，但咨询仍要求后台私有，不能由发布记录推出ready。正式宿主、原生UAC和桌面切换尚未接入。
-
-选定双Qt六目标增量、普通／模式IPC的记录生命周期及原发现／权限边界，再Qt6原manifest私有SDK消费产品记录、两图与回收／退出清理。Qt5正式SDK本片不扩展，依赖共享Core实测和编译并保留缺口；不执行Default、切桌面、新UAC、系统输入／驱动或危险负例。结果如下。
-
-双Qt六目标增量及修正夹具后的双QtNative通过，Qt6零编译链接警告，实际私有48组件（含init／cleanup）通过。首Qt6在ready前native2／未启动SDK，原因是维护夹具替换ControlDialog后漏声明；原产品声明已固定，修正只校验其不可变并向隔离替换服务器声明实际已接受组，不放宽产品准入。失败制品／case／清理保留。修正后Qt6正式SDK只读消费产品记录，写打开实际Win32码32，两轮高级／单项图及回收14 Native／74 handler／27 SDK＋8 schema通过；两图与124已审阅对应图字节相等，目标正常退出原记录消失／尾部工作及五项零。声明／发布／不误删和原发现／权限回归详见[同一C1证据](map67c1_validation.md#demo-p3-126产品自身私有创建记录2026-10-29pc-w11)，原件out/mcp_demo_record_w11_20261029仅本机。
-
-本片Qt5 SDK／默认存储GUI启用、首次输入私有桌面的发布、实际删除竞争／异常退出矩阵未验；不冒称正式预热／完整P3／M3-B／M1。用户要求以126形成聚焦本地commit后收尾，不推送、不启动固定宿主或其他新切片；提交后关闭／独立核实当前缓存，保留环境／out／原始证据。明日“继续”直接从固定预热宿主创建／关闭协调接续，普通工作先行，必要提权由用户另行安排新缓存；不重复环境恢复或已验矩阵。
-
-#### DEMO-P3-127：固定宿主进程归属核心（选定范围完成）
-
-基126 15d59215实现固定同EXE／只配置子实例及自有随机私有桌面，安全演示INI／目录和Session租约／实际身份核验，拒绝存活冲突及不明目标。未公布失败只清本次创建；运行后仅正常关闭且等实际退出，5秒超时保留身份不强杀；只配置改QApplication隔离旧实例通知，普通入口保持。无外部命令／目标或自动配对。
-
-双Qt四构建与最终20实际私有组件通过（首轮20另存不混计）；覆盖标记／冲突／租约、身份、关闭及5秒超时恢复。真实双Qt父子／高级A→B后单项C→D四图已看，另Qt6普通入口拒绝零写／图；三场38 Native／158 handler／70 SDK＋16 schema，父子实际0、work／producer0、记录删除、INI保持、五项零。实际产品本片自行退出，运行中WM_CLOSE／超时仅组件，不能冒充128的真实关闭。无Default／切桌面／系统输入／驱动，正式宿主／人工预热当时未交付；[原范围及原件索引](map67c1_validation.md#demo-p3-127固定宿主进程归属核心2026-10-30pc-w11)保留，本机out/mcp_demo_process_w11_20261030不随Git。
-
-#### DEMO-P3-128：正式固定宿主入口／状态与正常关闭（选定范围完成）
-
-固定--demo-host在产品／SingleApplication前分流，原manifest下仅创建同EXE私有子实例，宿主无引擎／自动启用／配对。双Qt四构建／20组件证明三语、非默认按钮、Escape同门禁、5秒关闭保留及恢复。H1–H5获批后按lupdate-pro／lrelease更新，旧1175不变；H2三语图／H4–H5文本刷新及W7真实LF获用户确认，H6–H8留后续。首跨桌面截图归属拒绝后，同桌面普通助手三图通过，未放宽脚本。
-
-双Qt正式入口各17 Native／13 handler／12 SDK，只读ready后由宿主关闭仍存活产品，父无产品单例；父子实际0、源INI／FilterKeys保持、work／producer0、记录删除／五项零。未重跑127两图，无Default／切桌面／输入；配对入口／人工部署当时待做，不代表完整P3／M3-B。[详细失败与原范围](map67c1_validation.md#demo-p3-128正式宿主入口与存活产品关闭2026-10-30pc-w11)。
-
-#### DEMO-P3-129：父子专用管理窗显示（选定范围完成）
-
-同EXE子实例只继承两个匿名事件，STARTUPINFOEX白名单与早期父身份／登录／EXE核验、环境清除；无参数端点复用原管理窗，确认／退出有界，不启用／批准。双Qt四构建，最终模式各5组件及普通各5复用，精确继承、父身份不符、无确认超时／关闭保持通过。
-
-宏／链接／句柄探针失败和修正见[同一C1](map67c1_validation.md#demo-p3-129父子专用管理窗通道2026-10-30pc-w11)：第二轮完整链接日志缺失，仅片段；原生50不能推断继承泄漏，改Qt前句柄／对象比较。首40204核实后退出0，后轮守卫清理；旧缓存拒绝在派发前，用户协调后2580接续。双Qt真实原GUI基线后各两次显示／各6检查，MCP仍关、全源／引用／dirty／加载／页面／INI不变，父子0、work／producer0及五项零。无Default／输入／配对，H6–H8当时未接；H2／H4／H5 LF确认不称新Linguist验收。
-
-#### PKG-130：当前演示记录契约的组件包刷新（组件／Qt6产品选验完成）
-
-复用123既有无pip环境／锁输入刷新桥接，26706970B、1614载荷／29依赖／九个当前源码；独立解压、PSF签名、污染Python环境／中文空格／无关cwd／包内隔离、17／18／19工具及无认证拒绝通过。首测试误期望disconnected，按既有failed/not_connected修测试，桥接不改，旧失败保留。ZIP SHA及原件见[同一C1](map67c1_validation.md#pkg-130version2契约的组件包刷新2026-10-30pc-w11)。
-
-同包内Medium接129 Qt6原manifest私有产品，15 Native／27 SDK＋8结构拒绝、两代场景两图与回收通过，Agent看图；父子实际0、记录删除、INI／载荷保持、五项零。固定维护／配对夹具非正式GUI部署，Qt5新包产品／干净系统／断网／Win10／QQ未验；完整P3／M3-B未完成。
-
-#### DEMO-P3-131：人工配对显示／返回（私有选验完成；Default待验证）
-
-H6人工入口核Default输入／拥有者后走129管理通道，独立原生线程显示自有桌面及H7；取消／子退出／15分钟上限收束，H9返回重试，用户已换桌面不抢回，关闭等返回。H6–H9三语获批。双Qt control／Native及Qt6普通五构建、20组件／九私有图和真实宿主各17 Native／13 handler／12 SDK通过，父子0／五项零；未重跑130两图。
-
-首资源自检、QObject重名、Qt5关闭失败和修正保留在[同一C1](map67c1_validation.md#demo-p3-131人工配对入口及私有原生提示2026-10-30pc-w11)，H8／H9真LF正确。私有未切输入，真实Default／UAC／人工配对当时待批，132才补；15分钟实等／真实恢复失败／宿主死亡／Win10／QQ未验，不标完整预热。
-
-#### DEMO-P3-132：真实GUI预热与返回线程修复（选定范围完成）
-
-用户另批原生Shell／产品UAC／Default人工切入返回及387配对，开发gsudo不参与。无测试宏的Qt6 EXE为out/mcp_demo_pairing_w11_20261030/release-qt6-ready/QKeyMapper.exe，MSVC运行库沿本机前提；先前纯私有启动烟测父子0／INI保持。
-
-cf56普通产品真实GUI启用／387批准，包内Medium认证High私有实例，高级A→B／单项C→D两图与回收通过。770×390／820×480中文真图已看，四原操作applied、空源／非行足迹／加载／INI保持、dirty保留。103记录含审批轮询；摘要重复native_images键exit1，完整调用／PNG只读重建，不重放或称SDK exit0。首UAC1223经许可重发、启动前取证脚本错误、提前退出、误批Read及申请过期均未计通过。
-
-用户原图暴露thread_restore_failed170：Default已恢复，失败在一次性线程末尾迁移。批准后只删多余SetThreadDesktop，保留真实返回／重试，实际线程退出后放句柄。三构建零警告／双Qt20组件及新版Default原387重连／正常返回／父子0、INI保持通过，High宿主显示由用户确认；未重跑两图。私有桌面看不到Agent导致协调超原15–20分钟，133补随包步骤。原件及失败见[同一C1](map67c1_validation.md#demo-p3-132真实gui预热及一次性线程收束2026-10-30pc-w11)，仅本机。无Default整屏／映射键／驱动；其他实例因果／全程系统API、真实恢复失败／锁屏／宿主死亡、15分钟实等／Qt5普通／Win10／高DPI／QQ未验，完整P3／M3-B／M1未完。
-
-#### DEMO-P3-133：固定连接配置与随包引导（选定范围完成）
-
-显式--product-demo-record与旧--demo-record互斥：仅认证管道实例ID推导同一私有目录产品记录，未连接不读，逐次ACL／身份／策略和旧场景归属保持；没有发现／改选、自动启动／配对或凭据迁移。固定参数复用限同一可信EXE路径／Windows会话，正常17工具、两模式18／19保持。随包指南补黑背景、申请标志、启用与配对／三项勾选／返回及约60秒窗口。
-
-27项普通定向、最终ZIP独立解压／1614载荷及九源码／指南一致、29锁依赖／PSF签名、污染环境／中文空格／无关cwd、五种工具配置及两组CLI拒绝通过。最终包26708370B／SHA256 a992189487b21fef8278acf86ae0b7cd286d19bbd943f3b2eea315798a42bc40；首候选仅指南会话边界补充前版本，不计最终包。Qt6复用未变129 Native制品（5146bf17，132返回线程路径未调用），新包内Medium正式两图／回收，15 Native／27 SDK＋8 schema，实际父子0／INI／FilterKeys／载荷保持及五项零，Agent已看。首驱动误读status.pid在派发前失败，修identity.pid后通过。无新C++构建／Default／UAC；非完整Release／跨登录／干净系统／Win10／QQ验收。[C1及原件](map67c1_validation.md#demo-p3-133固定产品记录与随包引导2026-10-30pc-w11)仅本机out/mcp_product_record_w11_20261030。
-
-用户新要求已排下一片PERSIST-134：先核对双边SessionId、既有workspace配置与凭据关联，补最小持久设计及验收，再分片实施；密钥只在Windows凭据管理器，workspace仅非秘密配置。明确保存的持久启用待实现，不把132同登录重连称跨Windows重启通过。
+#### DEMO-104～133 历史实施与选验压缩索引（全文固定锚点 `8cbf5eb3`）
+
+> 本表汇总 `DEMO-P0-104` 至 `DEMO-P3-133` 的历史实施契约、选验结果与未闭环边界；完整全文固定保存于 `git show 8cbf5eb3:handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md`，详证与失败轮次见 [map67c1_validation.md](map67c1_validation.md)（表中提及的 `out/mcp_*` 目录仅存 `PC-W11` 本机，不随 Git 同步）。
+
+| 切片范围 | 核心交付／契约要点 | 选验结论与证据入口（PC-W11） | 遗留边界与跨机待办 |
+|---|---|---|---|
+| `DEMO-P0-104` | `captureOwnWindow(QWidget*)` 无激活／无文件 I/O 内部截图，正式 P1 约定 PNG 上限 `160 KiB / 8M px` | 双 Qt 私有采样 4 图（main `1130×722` / item `820×480`）通过，源/INI/dirty 不变 | 原生边框/未支持子窗不截、HighDPI/Win10/长期服务另验 |
+| `DEMO-P1-105` / `DOC-L10N-106` | `ShowWindows=128`／`CaptureWindows=256`、`updatePermissions` 追加入口、`W1–W8` 获批三语；`106` 固化经审阅 TS/QM 工作流 | 双 Qt 组件／IPC／12 张截图、`W7` Linguist 复核、QM `1152/1155/1155` 一致；[105 证据](map67c1_validation.md#demo-p1-105独立窗口权限及追加授权2026-10-28pc-w11) | 正式窗口端点与 High 实测接续至 `107～110` |
+| `DEMO-P1-107` / `108` / `109` / `110` | `windows` 只读与窗口引用（`107`）、`160 KiB/8M px` 有界 PNG（`108`）、`qkm_open_mapping_editor` `WA_ShowWithoutActivating` 私有后台打开（`109`）、`qkm_close_mapping_editor` 不丢草稿关闭（`110`） | 双 Qt／正式 SDK／实图与子窗拒绝通过；[107](map67c1_validation.md#demo-p1-107正式窗口只读查询及引用2026-10-28pc-w11) · [108](map67c1_validation.md#demo-p1-108正式有界窗口png2026-10-28pc-w11) · [110](map67c1_validation.md#demo-p1-110正式打开记录及安全关闭2026-10-28pc-w11) | 跨 Tab/过滤/撤权退出/HighDPI/Win10、P2/P3/QQ 待续 |
+| `DELETE-GUI-111` / `DELETE-112` / `DELETE-113` | `111` GUI 原事件删除基线；`112` `removeMappingRows` 共用提取；`113` `mapping.delete`（1–100 `source_refs`、`confirm_delete=true`、编辑窗/表格/菜单/隐藏行守卫） | 双 Qt 私有真实 GUI 对照、组件与 12 场正式 stdio（471 SDK 调用、INI 不变）全通 | 真实筛选 GUI 触发、运行后清理、撤权/过期/断线删除、Win10 |
+| `DEMO-P2-114` / `115` / `116` / `117` / `118` | `qkm_get_demo_state` 就绪预检（`114`）、`demo_context` H0 非行保存足迹（`115`）、`source_binding_after` 提交快照（`116`）、`qkm_demo_mapping` `item_setup`/`main` 串行建例—截图—回收（`117～118`） | 双 Qt 组件／正式 stdio／PNG 核验；[115](map67c1_validation.md#demo-p2-115非行保存足迹2026-10-29pc-w11) · [117](map67c1_validation.md#demo-p2-117正式串行单行演示2026-10-29pc-w11) | 真实 PID 复用/退出/撤权/断线/超时、`125` 后仅新只配置模式准入、Win10 |
+| `DEMO-GUI-119` / `P1-120` / `P1-121` / `P2-122` | `QMappingAdvancedDialog` 原 GUI 基线（`119`）、`mapping_advanced` 只读观察/捕获（`120`）、`qkm_open/close_mapping_settings` 归属开关与 `settings_editor_unchanged`（`121`）、串行 `view=mapping_advanced`（`122`） | 双 Qt 组件／真实高级窗 `770×390` PNG／草稿保护与回收集通过；[120](map67c1_validation.md#demo-p1-120高级窗只读角色观察捕获2026-10-29pc-w11) · [121](map67c1_validation.md#demo-p1-121高级窗私有归属开关2026-10-29pc-w11) · [122](map67c1_validation.md#demo-p2-122固定高级窗串行视图2026-10-29pc-w11) | 通知子窗显示、实际撤权/断线/跨实例、Default/Win10/HighDPI/QQ |
+| `PKG-123` / `PKG-130`（已由 `RUST-D4` 归档替代） | 历史嵌入 [PSF 3.11.9 x64嵌入归档](https://www.python.org/downloads/release/python-3119/) ＋29 lock wheel 免安装 Python 桥接包组装与 `version2` 契约刷新 | 独立 ZIP/解压/PSF 签名/中文空格隔离/Qt6 私有实跑通过；[123](map67c1_validation.md#pkg-123固定嵌入运行时桥接组件包2026-10-29pc-w11) · [130](map67c1_validation.md#pkg-130version2契约的组件包刷新2026-10-30pc-w11) | 正式发行改以 `RUST-D4` Rust 单运行文件在 M3-B 收口 |
+| `DEMO-P3-124` | 不可变 `--demo-configuration-only` 门禁（前置盘点 [main](../../QKeyMapper/main.cpp)、[Worker](../../QKeyMapper/qkeymapper_worker.cpp)、[Interception](../../QKeyMapper/interception_worker.cpp)、[GUI](../../QKeyMapper/qkeymapper.cpp)）、拦截 Hook/设备/驱动/FilterKeys/Run、`execution_policy`、旧 511 运行时降交集 `387` | 双 Qt 40 私有组件＋6 场正式 stdio＋8 图字节核对，确认设备/Hook/libusb/SDL 未初始化；[124](map67c1_validation.md#demo-p3-124只配置门禁2026-10-29pc-w11) | 危险 INI 全组合、Win10/HighDPI/ASan、与正式发行包集成 |
+| `DEMO-P3-125` / `126` | 严格 `version2`＋`startup_purpose=configuration_only_demo` 契约（`125`）；只配置产品自有发现目录自发布/句柄验删 `version2` 记录（`126`） | Python 34/私有 48 组件＋Qt6 正式 stdio 消费产品记录与两图回收通过；[125](map67c1_validation.md#demo-p3-125正式演示绑定契约2026-10-29pc-w11) · [126](map67c1_validation.md#demo-p3-126产品自身私有创建记录2026-10-29pc-w11) | Qt5 SDK 自发布消费、删除竞争/异常退出矩阵 |
+| `DEMO-P3-127` / `128` / `129` / `131` | `--demo-host` 同 EXE 私有子进程与租约（`127～128`）、仅继承两匿名事件的 `STARTUPINFOEX` 父子管理窗通道与 `H1–H9` 三语（`129/131`） | 双 Qt 组件／正式宿主创建、存活关闭、父子 0 与私有提示通过；[127](map67c1_validation.md#demo-p3-127固定宿主进程归属核心2026-10-30pc-w11) · [128](map67c1_validation.md#demo-p3-128正式宿主入口与存活产品关闭2026-10-30pc-w11) · [129](map67c1_validation.md#demo-p3-129父子专用管理窗通道2026-10-30pc-w11) · [131](map67c1_validation.md#demo-p3-131人工配对入口及私有原生提示2026-10-30pc-w11) | 15 分钟实等超时、真实桌面恢复失败/锁屏/宿主崩溃、Win10 |
+| `DEMO-P3-132` / `133` | 真实 Default 原生 Shell/UAC 人工切入配对 `387` 与去除多余 `SetThreadDesktop` 修复 `thread_restore_failed 170`（`132`）；`--product-demo-record` 固定按实例 ID 绑定产品记录（`133`） | 真实 High/Medium 双图与回收、新版 Default 重连返回、随包引导实测通过；[132](map67c1_validation.md#demo-p3-132真实gui预热及一次性线程收束2026-10-30pc-w11) · [133](map67c1_validation.md#demo-p3-133固定产品记录与随包引导2026-10-30pc-w11) | 跨登录/PC 重启、Default 整屏/Qt5 普通/Win10/QQBot gateway 联调 |
 
 #### 复用、隔离及专用目标
 
@@ -1622,37 +752,16 @@ Qt6最终IPC构建05、Qt5构建05均native0／零编译链接警告。Qt6私有
 
 待验矩阵：首次关闭、启用保存／取消保存／恢复失败；同workspace新会话与跨workspace共享；关联缺失／损坏／目标不符、凭据缺失／写失败／产品撤销；桥接及产品重启、新实例／旧引用失效；用户／机器／Windows会话／路径变化与连接冲突；选定目标有预期业务、其他实例未收到操作、产物无密钥。复用133配置／认证／图像／回收证据，不重复完整验收；未实现／未验证保持待办。
 
-#### PERSIST-135：workspace先后复用与明确忙碌（选定范围完成）
+#### PERSIST-135～136A 历史选验压缩索引（全文固定锚点 `8cbf5eb3`）
 
-复用客户端mcpServers／固定command、argv，桥接不读第二份关联文件或扫描workspace；客户端密钥／服务端配对存储不改。现有三秒开管道等待实际观察231且预算耗尽才返回pipe_busy，未认证前不称已核实占用者；取消、其他超时／原生失败语义不变，不抢占／换目标。开发／随包说明补显式加载、共享配对而非隔离、三种删除／撤权区别。
+> `PERSIST-134` 契约与 `PERSIST-137-A/B` 正文保留于上下段落；以下 `135～136A` 历史明细固定保存于 `git show 8cbf5eb3:handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md`（表中本机 `out/` 原件仅存 `PC-W11`，不随 Git 同步）。
 
-5管道单元＋7工具结果项通过；新包26709181B、SHA256 22d25c83e1e45561f46bdcec577531ae44f2c56eed594c0f5dc025b8c6a22ab7，独立解压1614载荷／九源码／README一致。普通SDK显式加载两个合成workspace配置，仅一次固定夹具配对后A→B→A三个独立桥接认证；B并发pipe_busy不伤A，错误EXE拒绝，缺失／损坏配置在启动前拒绝，无业务写。131旧Qt6 High宿主／子实际私有桌面、包内peer Medium，17 Native通过，父子0／INI／FilterKeys保持、记录撤下／五项零。首轮扫描误读产品锁文件权限失败，父子实际2且已退出；只限客户端自生成文件后重跑通过，未改产品或放宽权限。[证据／范围](map67c1_validation.md#persist-135workspace先后复用与明确忙碌2026-10-30pc-w11)仅本机out/mcp_workspace_w11_20261030。
+| 切片范围 | 核心改动／契约要点 | 选验结论与证据入口（PC-W11） | 遗留边界 |
+|---|---|---|---|
+| `PERSIST-135` | 复用 `mcpServers`/固定 `command`/`argv` 与 `231` 三秒等待→`pipe_busy`（未认证前不宣称占用者），显式共享配对 | 5 管道＋7 结果＋3 独立桥接 `A→B→A` 认证与 `B` 并发 `pipe_busy` 通过；[135 证据](map67c1_validation.md#persist-135workspace先后复用与明确忙碌2026-10-30pc-w11) | 真实 Agent 自动加载、产品重启、撤权/写失败、跨登录/重启（续 `137`） |
+| `PERSIST-136` | 管理窗新增明确保存开关、`startup.json`（canonical EXE＋角色）、`S1–S9` 三语；用户批准豁免 Qt6 `lupdate-pro` 确切 `winextras` 提示 | 双 Qt 28+7 组件（含真实冷进程）、9+3 三语图、QM `1193` 往返一致；[136 证据](map67c1_validation.md#persist-136用户明确保存启动选择2026-10-30pc-w11) | 仅组件冷进程；`136A` 修复并补普通 Release 默认路径实测 |
+| `PERSIST-136A` | 修正 `applicationName` 拼入完整 EXE 路径导致保存 `io_error`：改为 `GenericDataLocation/QKeyMapper/MCP/startup-v1/<hash>` | 普通 Qt6 Release 4 阶段（未选关闭→启用保存重启→配对 `Read+Configure` 建例保存→重启复用冷读→关闭保存，8 次退出 0）通过；[136A 证据](map67c1_validation.md#persist-136a真实普通release启动选择与同登录复用2026-11-02pc-w11) | FakerInput 根/驱动在场拒绝启动（避免关闭中性报告）、跨登录/PC 重启/`137`/Win10/Qt5/QQ |
 
-本片证明同一Windows登录、同一产品运行实例的先后复用／显式共享，不证明真实Agent自动加载、产品重启、撤销／写失败、Windows登录／机器／路径变化或其他实例无误操作的完整矩阵。无新C++构建、Default／UAC／映射输入／图像；133／132未变业务证据按原版本复用。持久启用136及双边稳定上下文137仍待，不称完整M1／P3／M3-B。
-
-#### PERSIST-136：用户明确保存启动选择（2026-10-30选定范围完成）
-
-管理窗增加明确保存按钮／已存意愿及失败状态；仅保存实际开关，不因普通映射配置／Tab／MCP保存而改。首次无选择关闭，存开／存关与未保存切换分离；产品构造收尾、原业务及初始加载／演示策略就绪后恢复一次，失败保留意愿及实际关闭／原失败码，不静默重试／改目标。按用户本机、canonical EXE＋普通／演示角色绑定私有startup.json，复用安全存储／短锁／原子写；配对与密钥、manifest、普通输入策略不改。
-
-双Qt control及普通Qt6最终构建0／零警告；组件普通各28、演示各7通过（含init／cleanup），包含真实按钮、独立冷进程、未保存切换／存关、角色不符、坏文件、写锁／提交失败、接口忙碌恢复失败／不重试及受影响配对。截图发现showEvent刷新覆盖Busy原因，保留实际失败码／原有说明后四组各7定向通过；Qt6三语9＋3图逐张已看，96DPI，S2／S7／S8真实LF无裁剪，未收到用户Linguist复核。S1–S9获批；三语旧1184不变＋9，QM1193完成／往返准确。[原件／失败及界限](map67c1_validation.md#persist-136用户明确保存启动选择2026-10-30pc-w11)仅本机out/mcp_persist_w11_20261030。
-
-首三构建沙箱C1902保留，普通Medium原工具链重试成功；首截图观察器跨桌面HWND核验失败、未截图／未保留目标退出码，不推算。改同私有桌面一次性观察后12次目标及截图助手实际0，未切输入桌面。Qt6 lupdate-pro原生0但winextras提示，随后Qt5项目提取正常；用户明确授权该确切提示默认忽略，workflow及Claude镜像局部更新、两份quick_validate通过，其他模块／构建错误不豁免。
-
-仅组件独立冷进程，普通Release未启动；真实配置切换／整包冷启、跨Windows登录／PC重启、实际Agent／gateway及完整持久／多实例矩阵未验；137未启动。无新增Default／UAC／映射输入／驱动，未重复132／133图像业务。指南已更新而135ZIP未重包，非M1／P3／M3-B完成。17:55技能off核实本轮无活动／五项零、缓存关闭；保留他组登记及历史未知，环境与原件不移除。按用户要求本片聚焦本地提交后停止、不推送，等待同机／换机决定。
-
-136只测显式目录组件／组件冷进程，普通Release当时未启动，不能证明默认目录可用；136A随后发现并修复applicationName导致的默认目录错误。旧12图／组件结果不追认成产品启动／跨登录验收，137及完整系统矩阵仍待。
-
-#### PERSIST-136A：真实普通Release的启动选择及同登录复用（选定范围完成）
-
-2026-11-02只补真实普通Qt6 Release，不推进137。首真实GUI启用成功但保存选择返回io_error，管理窗先报告unsafe_storage；产品正常退出0，未配对／改映射。根因为main使用完整EXE路径作applicationName，AppLocalDataLocation将其拼为非法目录。只将默认根改GenericDataLocation/QKeyMapper/MCP/startup-v1/<原EXE＋角色哈希>，原ACL／反重解析硬链／短锁／原子写及三字段不变，不迁移／删除旧文件；双Qt默认构造各3项（含init／cleanup）及最终三构建0／零警告。
-
-真实产品四阶段完成：新路径无已存选择关闭→GUI启用保存／同路径正常重启恢复→一次真实GUI配对仅Read＋Configure（权限位掩码3），正式MCP A→B预览／提交／完整保存→产品重启及新桥接用原配对认证、冷读A/B／旧源与预览拒绝、旧操作unknown→GUI关闭保存／再启动保持关闭。独立GUI读取当前行及“映射开始”按钮文案，原独立新增／保存基线只按原版本复用，不称完整等价性。过程中测试等待busy及路径分隔符比较两处误判，均未改产品或重放原操作；依据原GUI／SDK／实际退出只读重建非秘密QA收据，仅续接认证冷读／关闭。失败轮与缺失首次peer PID原件如实见[C1](map67c1_validation.md#persist-136a真实普通release启动选择与同登录复用2026-11-02pc-w11)。
-
-本片共8次产品实际退出0，其中有效结论跨verified与resumed证据关联，不冒称一次全程无错脚本。后续7次FilterKeys前后采样一致，首轮未采样不补记。FakerInput ROOT／驱动未发现，若出现则拒绝启动，避免普通关闭ReleaseAll中性报告；ViGEm客户端可连接但配置禁虚拟目标。Hook／Interception／SDL仍为普通模式，不以私有桌面当驱动隔离。无Default切换／映射／系统输入／安装驱动；无新增像素／Qt5产品／Win10／PC重启／跨登录／QQ验收。
-
-最终专属实例保存关闭、撤销自身唯一配对、客户端对应凭据确认不存在；原件仅本机out/mcp_product/persist136a_20261102。既有共享36124原18:30窗口保留供ibinput，五项空／自身三个定义授权撤出，未另建／延长／强行关闭，历史未知不接管。源／环境／构建目录及早期夹具记录保留，不再扩展测试。
-
-合流后待核对：IbInput新发送方式GUI／MCP保存加载、Worker实际发送与完整停止清理、只配置演示隔离、TS/QM融合。当前collectMappingTableSaveValues未知方式回落SendInput仅是未合流源码风险，未复现IbInput故障；本轮不改ibinput工作区。等对方达到条件及用户明确安排后再核对最新节点／决定合流，137仍待后续。
 
 #### M0.3b 鉴权与传输细化（历史设计，当前实现以顶部为准）
 
