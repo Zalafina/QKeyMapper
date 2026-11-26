@@ -38106,6 +38106,14 @@ static QJsonObject automationKey2Mouse(int xSpeed, int ySpeed, int pollingInterv
         {QStringLiteral("polling_interval_ms"), pollingIntervalMs}};
 }
 
+static QJsonObject automationGyro2MouseOptions(int mouseXSource, int mouseYSource, bool mouseXRevert, bool mouseYRevert)
+{
+    return {{QStringLiteral("mouse_x_source"), mouseXSource},
+        {QStringLiteral("mouse_y_source"), mouseYSource},
+        {QStringLiteral("mouse_x_revert"), mouseXRevert},
+        {QStringLiteral("mouse_y_revert"), mouseYRevert}};
+}
+
 static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QString &screenKey)
 {
     return {{QStringLiteral("window_point_key"), windowKey},
@@ -38274,6 +38282,13 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             m_MappingAdvancedDialog->getCustomNotificationEnabled(),
             m_MappingAdvancedDialog->getCustomNotificationPosition(),
             m_CustomNotificationStyleInitialized));
+    }
+    if (m_Gyro2MouseOptionDialog) {
+        result.insert(QStringLiteral("gyro2mouse_options"), automationGyro2MouseOptions(
+            m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXSource(),
+            m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYSource(),
+            m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXRevert(),
+            m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYRevert()));
     }
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
@@ -40585,6 +40600,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingWindowDisplayMode = updating && update.windowDisplayMode.has_value();
         const bool changingKey2Mouse = updating
             && (update.mouseXSpeed.has_value() || update.mouseYSpeed.has_value() || update.mousePollingIntervalMs.has_value());
+        const bool changingGyro2MouseOptions = updating
+            && (update.gyro2MouseXSource.has_value() || update.gyro2MouseYSource.has_value()
+                || update.gyro2MouseXRevert.has_value() || update.gyro2MouseYRevert.has_value());
         const bool changingProcessIconAsTrayIcon = updating && update.processIconAsTrayIcon.has_value();
         const bool changingPointDisplayKeys = updating
             && (update.showWindowPointKey.has_value() || update.showScreenPointKey.has_value());
@@ -40613,7 +40631,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
-            || changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys
+            || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingProcessIconAsTrayIcon || changingPointDisplayKeys
             || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingDisplayScale;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
@@ -40630,13 +40648,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
             || m_KeyMappingDataTable->hasActiveEditor()
             || (changingGeneralPreference && !m_GeneralAdvancedDialog)
-            || ((changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys || changingCustomNotification) && !m_MappingAdvancedDialog)) {
+            || ((changingKey2Mouse || changingProcessIconAsTrayIcon || changingPointDisplayKeys || changingCustomNotification) && !m_MappingAdvancedDialog)
+            || (changingGyro2MouseOptions && (!m_Gyro2MouseOptionDialog || m_Gyro2MouseOptionDialog->isVisible()))) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
-            && !changingWindowDisplayMode && !changingKey2Mouse && !changingProcessIconAsTrayIcon
+            && !changingWindowDisplayMode && !changingKey2Mouse && !changingGyro2MouseOptions && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale
             && isCommonMappingTabIndex(tab)) {
@@ -40647,7 +40666,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("The display scale control is unavailable or disabled."));
             return;
         }
-        if ((changingWindowDisplayMode || changingKey2Mouse || changingProcessIconAsTrayIcon
+        if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingProcessIconAsTrayIcon
                 || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria
                 || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
@@ -41010,6 +41029,21 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), QStringLiteral("set_key2mouse_settings")},
                     {QStringLiteral("before"), automationKey2Mouse(beforeX, beforeY, beforePoll)},
                     {QStringLiteral("after"), automationKey2Mouse(afterX, afterY, afterPoll)}};
+            } else if (changingGyro2MouseOptions) {
+                const int beforeX = m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXSource();
+                const int beforeY = m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYSource();
+                const bool beforeXRev = m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXRevert();
+                const bool beforeYRev = m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYRevert();
+                const int afterX = update.gyro2MouseXSource.value_or(beforeX);
+                const int afterY = update.gyro2MouseYSource.value_or(beforeY);
+                const bool afterXRev = update.gyro2MouseXRevert.value_or(beforeXRev);
+                const bool afterYRev = update.gyro2MouseYRevert.value_or(beforeYRev);
+                modified = beforeX != afterX || beforeY != afterY || beforeXRev != afterXRev || beforeYRev != afterYRev;
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_gyro2mouse_options")},
+                    {QStringLiteral("before"), automationGyro2MouseOptions(beforeX, beforeY, beforeXRev, beforeYRev)},
+                    {QStringLiteral("after"), automationGyro2MouseOptions(afterX, afterY, afterXRev, afterYRev)}};
             } else if (changingProcessIconAsTrayIcon) {
                 const bool before = m_MappingAdvancedDialog->getProcessIconAsTrayIcon();
                 const bool after = *update.processIconAsTrayIcon;
@@ -41707,6 +41741,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingStartupPosition ? QStringLiteral("general.set_startup_position")
             : changingWindowDisplayMode ? QStringLiteral("configuration.set_window_display_mode")
             : changingKey2Mouse ? QStringLiteral("configuration.set_key2mouse_settings")
+            : changingGyro2MouseOptions ? QStringLiteral("configuration.set_gyro2mouse_options")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -41802,6 +41837,12 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 if (update.mouseXSpeed) m_MappingAdvancedDialog->setMouseXSpeed(*update.mouseXSpeed);
                 if (update.mouseYSpeed) m_MappingAdvancedDialog->setMouseYSpeed(*update.mouseYSpeed);
                 if (update.mousePollingIntervalMs) m_MappingAdvancedDialog->setMousePollingInterval(*update.mousePollingIntervalMs);
+            } else if (changingGyro2MouseOptions) {
+                const int targetX = update.gyro2MouseXSource.value_or(m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXSource());
+                const int targetY = update.gyro2MouseYSource.value_or(m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYSource());
+                const bool targetXRev = update.gyro2MouseXRevert.value_or(m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXRevert());
+                const bool targetYRev = update.gyro2MouseYRevert.value_or(m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYRevert());
+                m_Gyro2MouseOptionDialog->setGyro2MouseOptions(targetX, targetY, targetXRev, targetYRev);
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);
             } else if (changingPointDisplayKeys) {

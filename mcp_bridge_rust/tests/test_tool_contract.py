@@ -276,6 +276,21 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            gyro_opts = {"action": "configuration.set_gyro2mouse_options", "source_tab_ref": tab}
+            for fields in ({"mouse_x_source": 0}, {"mouse_y_source": 2}, {"mouse_x_revert": True},
+                           {"mouse_y_revert": False},
+                           {"mouse_x_source": 0, "mouse_y_source": 2, "mouse_x_revert": True, "mouse_y_revert": False}):
+                request = gyro_opts | {"gyro2mouse_options": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for fields in ({}, {"mouse_x_source": -1}, {"mouse_x_source": 3}, {"mouse_y_source": -1},
+                           {"mouse_y_source": 3}, {"mouse_x_source": 1.5}, {"mouse_y_source": True},
+                           {"mouse_x_source": None}, {"mouse_x_revert": 1}, {"mouse_y_revert": "true"},
+                           {"mouse_y_revert": None}, {"mouse_x_source": 1, "extra": 1}):
+                request = gyro_opts | {"gyro2mouse_options": fields}
+                assert not validator.is_valid(request), fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -465,7 +480,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

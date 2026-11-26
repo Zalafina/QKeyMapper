@@ -125,6 +125,30 @@ void QGyro2MouseOptionDialog::setGyro2Mouse_MouseYRevert(bool revert)
     ui->mouseYRevertCheckBox->setChecked(revert);
 }
 
+bool QGyro2MouseOptionDialog::setGyro2MouseOptions(int mouseXSource, int mouseYSource, bool mouseXRevert, bool mouseYRevert)
+{
+    if (mouseXSource < GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X
+        || mouseXSource > GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z
+        || mouseYSource < GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X
+        || mouseYSource > GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z) {
+        return false;
+    }
+
+    if (ui->mouseXInputSourceComboBox->currentIndex() != mouseXSource) {
+        setGyro2Mouse_MouseXSource(mouseXSource);
+    }
+    if (ui->mouseYInputSourceComboBox->currentIndex() != mouseYSource) {
+        setGyro2Mouse_MouseYSource(mouseYSource);
+    }
+    if (ui->mouseXRevertCheckBox->isChecked() != mouseXRevert) {
+        setGyro2Mouse_MouseXRevert(mouseXRevert);
+    }
+    if (ui->mouseYRevertCheckBox->isChecked() != mouseYRevert) {
+        setGyro2Mouse_MouseYRevert(mouseYRevert);
+    }
+    return true;
+}
+
 bool QGyro2MouseOptionDialog::event(QEvent *event)
 {
     if (event->type() == QEvent::ActivationChange) {

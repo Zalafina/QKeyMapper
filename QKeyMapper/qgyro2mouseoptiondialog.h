@@ -32,6 +32,7 @@ public:
     void setGyro2Mouse_MouseYSource(int source_index);
     void setGyro2Mouse_MouseXRevert(bool revert);
     void setGyro2Mouse_MouseYRevert(bool revert);
+    bool setGyro2MouseOptions(int mouseXSource, int mouseYSource, bool mouseXRevert, bool mouseYRevert);
 
 signals:
     void settingsChanged();

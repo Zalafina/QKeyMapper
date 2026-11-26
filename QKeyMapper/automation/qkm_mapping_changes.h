@@ -90,6 +90,10 @@ struct MappingUpdateArguments {
     std::optional<int> mouseXSpeed;
     std::optional<int> mouseYSpeed;
     std::optional<int> mousePollingIntervalMs;
+    std::optional<int> gyro2MouseXSource;
+    std::optional<int> gyro2MouseYSource;
+    std::optional<bool> gyro2MouseXRevert;
+    std::optional<bool> gyro2MouseYRevert;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

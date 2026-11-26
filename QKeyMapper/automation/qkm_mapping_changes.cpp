@@ -436,6 +436,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool globalSwitchTimeoutPreview = preview && action == QLatin1String("general.set_global_switch_timeout");
     const bool fullscreenGlobalMappingPreview = preview && action == QLatin1String("general.set_fullscreen_global_mapping");
     const bool key2MousePreview = preview && action == QLatin1String("configuration.set_key2mouse_settings");
+    const bool gyro2MouseOptionsPreview = preview && action == QLatin1String("configuration.set_gyro2mouse_options");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -459,7 +460,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || processIconTrayPreview
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -482,6 +483,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : globalSwitchTimeoutPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("timeout_ms")}
         : fullscreenGlobalMappingPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}
         : key2MousePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}
+        : gyro2MouseOptionsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gyro2mouse_options")}
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
         : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
@@ -660,6 +662,45 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 return fail("key2mouse x_speed and y_speed must be integers between 1 and 99.");
             if (!parseIntInRange(fields, QStringLiteral("polling_interval_ms"), MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX, result.update.mousePollingIntervalMs))
                 return fail("key2mouse polling_interval_ms must be an integer between 1 and 99 milliseconds.");
+        }
+        if (gyro2MouseOptionsPreview) {
+            using namespace QKeyMapperConstants;
+            const auto raw = arguments.value(QStringLiteral("gyro2mouse_options"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return fail("Provide at least one gyro2mouse option.");
+            const QSet<QString> allowedGyroKeys{
+                QStringLiteral("mouse_x_source"), QStringLiteral("mouse_y_source"),
+                QStringLiteral("mouse_x_revert"), QStringLiteral("mouse_y_revert")};
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (!allowedGyroKeys.contains(it.key()))
+                    return fail("Unknown gyro2mouse_options field.");
+            }
+            const auto parseSource = [](const QJsonObject &obj, const QString &key, std::optional<int> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                const int parsed = val.toInt(GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X - 1);
+                if (!val.isDouble() || val.toDouble() != parsed
+                    || parsed < GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X
+                    || parsed > GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z) {
+                    return false;
+                }
+                target = parsed;
+                return true;
+            };
+            const auto parseBoolField = [](const QJsonObject &obj, const QString &key, std::optional<bool> &target) -> bool {
+                if (!obj.contains(key)) return true;
+                const auto val = obj.value(key);
+                if (!val.isBool()) return false;
+                target = val.toBool();
+                return true;
+            };
+            if (!parseSource(fields, QStringLiteral("mouse_x_source"), result.update.gyro2MouseXSource)
+                || !parseSource(fields, QStringLiteral("mouse_y_source"), result.update.gyro2MouseYSource))
+                return fail("gyro2mouse axis sources must be integers between 0 and 2.");
+            if (!parseBoolField(fields, QStringLiteral("mouse_x_revert"), result.update.gyro2MouseXRevert)
+                || !parseBoolField(fields, QStringLiteral("mouse_y_revert"), result.update.gyro2MouseYRevert))
+                return fail("gyro2mouse revert flags must be booleans.");
         }
         if (processIconTrayPreview) {
             const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
@@ -2085,6 +2126,30 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
     for (auto *item : {&displayScalePreviewCap, &displayScaleApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("global_application_setting"),
             QStringLiteral("applies_live_scale_compensation"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const auto gyroSourceSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+        {QStringLiteral("minimum"), QKeyMapperConstants::GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X},
+        {QStringLiteral("maximum"), QKeyMapperConstants::GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z}};
+    const auto gyroOptionsSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("mouse_x_source"), gyroSourceSchema},
+            {QStringLiteral("mouse_y_source"), gyroSourceSchema},
+            {QStringLiteral("mouse_x_revert"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("mouse_y_revert"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}}}};
+    auto gyro2MouseOptionsPreviewCap = capability("configuration.set_gyro2mouse_options.preview", "qkm_preview_changes", Read | Configure, true,
+        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_gyro2mouse_options")}}},
+            {QStringLiteral("source_tab_ref"), reference},
+            {QStringLiteral("gyro2mouse_options"), gyroOptionsSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gyro2mouse_options")}));
+    auto gyro2MouseOptionsApply = capability("configuration.set_gyro2mouse_options.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
+    for (auto *item : {&gyro2MouseOptionsPreviewCap, &gyro2MouseOptionsApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("gyro2mouse_axis_source_and_revert"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);

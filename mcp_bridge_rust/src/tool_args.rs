@@ -491,6 +491,27 @@ struct Key2MouseSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct Gyro2MouseOptionFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mouse_x_source: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mouse_y_source: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mouse_x_revert: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mouse_y_revert: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct Gyro2MouseOptionsSettings {
+    action: String,
+    source_tab_ref: String,
+    gyro2mouse_options: Gyro2MouseOptionFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1010,6 +1031,25 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && fields.x_speed.is_none_or(|x| (1..=99).contains(&x))
                             && fields.y_speed.is_none_or(|y| (1..=99).contains(&y))
                             && fields.polling_interval_ms.is_none_or(|ms| (1..=99).contains(&ms))
+                    });
+                }
+                Some("configuration.set_gyro2mouse_options") => {
+                    if arguments
+                        .get("gyro2mouse_options")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &Gyro2MouseOptionsSettings| {
+                        let fields = &v.gyro2mouse_options;
+                        tab_ref(&v.source_tab_ref)
+                            && (fields.mouse_x_source.is_some()
+                                || fields.mouse_y_source.is_some()
+                                || fields.mouse_x_revert.is_some()
+                                || fields.mouse_y_revert.is_some())
+                            && fields.mouse_x_source.is_none_or(|src| src <= 2)
+                            && fields.mouse_y_source.is_none_or(|src| src <= 2)
                     });
                 }
                 Some("configuration.set_process_icon_as_tray_icon") => {
@@ -1982,6 +2022,41 @@ mod tests {
         ] {
             assert!(preview(&bad).is_err());
         }
+    }
+
+    #[test]
+    fn configuration_gyro2mouse_options_checks_bounds() {
+        let revision = "a".repeat(64);
+        let tab = format!("{revision}:source:0");
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for fields in [
+            json!({"mouse_x_source": 0}),
+            json!({"mouse_y_source": 2}),
+            json!({"mouse_x_revert": true}),
+            json!({"mouse_y_revert": false}),
+            json!({"mouse_x_source": 0, "mouse_y_source": 2, "mouse_x_revert": true, "mouse_y_revert": false}),
+        ] {
+            let valid = json!({"action": "configuration.set_gyro2mouse_options", "source_tab_ref": tab, "gyro2mouse_options": fields});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!({}),
+            json!({"mouse_x_source": -1}),
+            json!({"mouse_x_source": 3}),
+            json!({"mouse_y_source": -1}),
+            json!({"mouse_y_source": 3}),
+            json!({"mouse_x_source": 1.5}),
+            json!({"mouse_y_source": true}),
+            json!({"mouse_x_source": null}),
+            json!({"mouse_x_revert": 1}),
+            json!({"mouse_y_revert": "true"}),
+            json!({"mouse_y_revert": null}),
+            json!({"mouse_x_source": 1, "extra": 1}),
+        ] {
+            assert!(preview(&json!({"action": "configuration.set_gyro2mouse_options", "source_tab_ref": tab, "gyro2mouse_options": bad})).is_err());
+        }
+        assert!(preview(&json!({"action": "configuration.set_gyro2mouse_options", "source_tab_ref": tab, "gyro2mouse_options": {"mouse_x_source": 1}, "extra": 1})).is_err());
     }
 
     #[test]

@@ -1576,6 +1576,38 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateKey2Mouse({{QStringLiteral("polling_interval_ms"), QJsonValue::Null}}).ok());
     QVERIFY(!validateKey2Mouse({{QStringLiteral("x_speed"), 3}, {QStringLiteral("extra"), 1}}).ok());
 
+    const auto validateGyro2MouseOptions = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_gyro2mouse_options")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("gyro2mouse_options"), fields}});
+    };
+    const auto gyroAll = validateGyro2MouseOptions({
+        {QStringLiteral("mouse_x_source"), 0},
+        {QStringLiteral("mouse_y_source"), 2},
+        {QStringLiteral("mouse_x_revert"), true},
+        {QStringLiteral("mouse_y_revert"), false},
+    });
+    QVERIFY(gyroAll.ok() && gyroAll.update.gyro2MouseXSource == 0 && gyroAll.update.gyro2MouseYSource == 2
+        && gyroAll.update.gyro2MouseXRevert == true && gyroAll.update.gyro2MouseYRevert == false);
+    const auto gyroSubset = validateGyro2MouseOptions({{QStringLiteral("mouse_y_revert"), true}});
+    QVERIFY(gyroSubset.ok() && !gyroSubset.update.gyro2MouseXSource.has_value()
+        && !gyroSubset.update.gyro2MouseYSource.has_value() && !gyroSubset.update.gyro2MouseXRevert.has_value()
+        && gyroSubset.update.gyro2MouseYRevert == true);
+    QVERIFY(validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), 1}, {QStringLiteral("mouse_y_source"), 1}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), -1}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), 3}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_y_source"), -1}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_y_source"), 3}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), 1.5}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_y_source"), true}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), QJsonValue::Null}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_revert"), 1}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_y_revert"), QStringLiteral("true")}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_revert"), QJsonValue::Null}}).ok());
+    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), 1}, {QStringLiteral("extra"), 1}}).ok());
+
     const auto validateProcessIconTray = [&](const QJsonValue &value) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("configuration.set_process_icon_as_tray_icon")},
@@ -1766,9 +1798,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 120);
+    QCOMPARE(capabilities.size(), 122);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 112);
+    QCOMPARE(demoCapabilities.size(), 114);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1797,8 +1829,13 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(110).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.restore_process_path.apply"));
     QCOMPARE(capabilities.at(111).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_display_scale.preview"));
     QCOMPARE(capabilities.at(112).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_display_scale.apply"));
-    QCOMPARE(capabilities.at(117).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(118).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(113).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_gyro2mouse_options.preview"));
+    QCOMPARE(capabilities.at(114).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_gyro2mouse_options.apply"));
+    QCOMPARE(capabilities.at(119).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(120).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_gyro2mouse_options.apply");
+    }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
     }));
