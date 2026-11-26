@@ -512,6 +512,49 @@ struct Gyro2MouseOptionsSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct TriggerThresholdFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    press: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    light_press: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    release: Option<u8>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct StickThresholdFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    push: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    light_push: Option<u8>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    release: Option<u8>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct GamepadThresholdGroups {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    lt: Option<TriggerThresholdFields>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rt: Option<TriggerThresholdFields>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ls: Option<StickThresholdFields>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    rs: Option<StickThresholdFields>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct GamepadThresholdsSettings {
+    action: String,
+    source_tab_ref: String,
+    gamepad_thresholds: GamepadThresholdGroups,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1050,6 +1093,49 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                 || fields.mouse_y_revert.is_some())
                             && fields.mouse_x_source.is_none_or(|src| src <= 2)
                             && fields.mouse_y_source.is_none_or(|src| src <= 2)
+                    });
+                }
+                Some("configuration.set_gamepad_thresholds") => {
+                    if arguments
+                        .get("gamepad_thresholds")
+                        .and_then(Value::as_object)
+                        .is_some_and(|groups| {
+                            groups.values().any(|group| {
+                                group.is_null()
+                                    || group
+                                        .as_object()
+                                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                            })
+                        })
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &GamepadThresholdsSettings| {
+                        let valid_trigger = |t: &TriggerThresholdFields| {
+                            (t.press.is_some() || t.light_press.is_some() || t.release.is_some())
+                                && t.press.is_none_or(|p| p <= 100)
+                                && t.light_press.is_none_or(|l| l <= 100)
+                                && t.release.is_none_or(|r| r <= 100)
+                                && t.release.zip(t.light_press).is_none_or(|(r, l)| r <= l)
+                                && t.light_press.zip(t.press).is_none_or(|(l, p)| l <= p)
+                                && t.release.zip(t.press).is_none_or(|(r, p)| r <= p)
+                        };
+                        let valid_stick = |s: &StickThresholdFields| {
+                            (s.push.is_some() || s.light_push.is_some() || s.release.is_some())
+                                && s.push.is_none_or(|p| p <= 100)
+                                && s.light_push.is_none_or(|l| l <= 100)
+                                && s.release.is_none_or(|r| r <= 100)
+                                && s.release.zip(s.light_push).is_none_or(|(r, l)| r <= l)
+                                && s.light_push.zip(s.push).is_none_or(|(l, p)| l <= p)
+                                && s.release.zip(s.push).is_none_or(|(r, p)| r <= p)
+                        };
+                        let g = &v.gamepad_thresholds;
+                        tab_ref(&v.source_tab_ref)
+                            && (g.lt.is_some() || g.rt.is_some() || g.ls.is_some() || g.rs.is_some())
+                            && g.lt.as_ref().is_none_or(valid_trigger)
+                            && g.rt.as_ref().is_none_or(valid_trigger)
+                            && g.ls.as_ref().is_none_or(valid_stick)
+                            && g.rs.as_ref().is_none_or(valid_stick)
                     });
                 }
                 Some("configuration.set_process_icon_as_tray_icon") => {
@@ -2057,6 +2143,43 @@ mod tests {
             assert!(preview(&json!({"action": "configuration.set_gyro2mouse_options", "source_tab_ref": tab, "gyro2mouse_options": bad})).is_err());
         }
         assert!(preview(&json!({"action": "configuration.set_gyro2mouse_options", "source_tab_ref": tab, "gyro2mouse_options": {"mouse_x_source": 1}, "extra": 1})).is_err());
+    }
+
+    #[test]
+    fn configuration_gamepad_thresholds_checks_bounds() {
+        let revision = "a".repeat(64);
+        let tab = format!("{revision}:source:0");
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for groups in [
+            json!({"lt": {"press": 80, "light_press": 50, "release": 20}}),
+            json!({"rt": {"press": 100, "light_press": 100, "release": 100}}),
+            json!({"ls": {"push": 0, "light_push": 0, "release": 0}}),
+            json!({"rs": {"push": 85, "light_push": 45}}),
+            json!({"lt": {"press": 70}, "rs": {"release": 10}}),
+        ] {
+            let valid = json!({"action": "configuration.set_gamepad_thresholds", "source_tab_ref": tab, "gamepad_thresholds": groups});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!({}),
+            json!({"lt": {}}),
+            json!({"unknown": {"press": 50}}),
+            json!({"lt": {"push": 50}}),
+            json!({"ls": {"press": 50}}),
+            json!({"lt": {"press": -1}}),
+            json!({"rt": {"press": 101}}),
+            json!({"ls": {"push": 1.5}}),
+            json!({"rs": {"push": true}}),
+            json!({"lt": {"press": null}}),
+            json!({"lt": null}),
+            json!({"lt": {"light_press": 60, "release": 65}}),
+            json!({"rt": {"press": 40, "light_press": 45}}),
+            json!({"ls": {"push": 30, "release": 35}}),
+        ] {
+            assert!(preview(&json!({"action": "configuration.set_gamepad_thresholds", "source_tab_ref": tab, "gamepad_thresholds": bad})).is_err());
+        }
+        assert!(preview(&json!({"action": "configuration.set_gamepad_thresholds", "source_tab_ref": tab, "gamepad_thresholds": {"lt": {"press": 50}}, "extra": 1})).is_err());
     }
 
     #[test]

@@ -437,6 +437,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool fullscreenGlobalMappingPreview = preview && action == QLatin1String("general.set_fullscreen_global_mapping");
     const bool key2MousePreview = preview && action == QLatin1String("configuration.set_key2mouse_settings");
     const bool gyro2MouseOptionsPreview = preview && action == QLatin1String("configuration.set_gyro2mouse_options");
+    const bool gamepadThresholdsPreview = preview && action == QLatin1String("configuration.set_gamepad_thresholds");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -460,7 +461,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || processIconTrayPreview
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -484,6 +485,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : fullscreenGlobalMappingPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}
         : key2MousePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}
         : gyro2MouseOptionsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gyro2mouse_options")}
+        : gamepadThresholdsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_thresholds")}
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
         : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
@@ -701,6 +703,58 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             if (!parseBoolField(fields, QStringLiteral("mouse_x_revert"), result.update.gyro2MouseXRevert)
                 || !parseBoolField(fields, QStringLiteral("mouse_y_revert"), result.update.gyro2MouseYRevert))
                 return fail("gyro2mouse revert flags must be booleans.");
+        }
+        if (gamepadThresholdsPreview) {
+            using namespace QKeyMapperConstants;
+            const auto raw = arguments.value(QStringLiteral("gamepad_thresholds"));
+            const auto groups = raw.toObject();
+            if (!raw.isObject() || groups.isEmpty())
+                return fail("Provide at least one gamepad threshold group (lt, rt, ls, rs).");
+            const QSet<QString> allowedGroups{
+                QStringLiteral("lt"), QStringLiteral("rt"), QStringLiteral("ls"), QStringLiteral("rs")};
+            for (auto it = groups.constBegin(); it != groups.constEnd(); ++it) {
+                if (!allowedGroups.contains(it.key()))
+                    return fail("Unknown gamepad threshold group.");
+            }
+            const auto parseThresholdGroup = [&](const QString &groupKey, const QString &pressKey, const QString &lightKey,
+                                                 std::optional<int> &pressTarget, std::optional<int> &lightTarget,
+                                                 std::optional<int> &releaseTarget) -> bool {
+                if (!groups.contains(groupKey)) return true;
+                const auto groupVal = groups.value(groupKey);
+                const auto fields = groupVal.toObject();
+                if (!groupVal.isObject() || fields.isEmpty()) return false;
+                for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                    if (it.key() != pressKey && it.key() != lightKey && it.key() != QStringLiteral("release"))
+                        return false;
+                }
+                const auto parsePct = [&](const QString &fieldKey, std::optional<int> &target) -> bool {
+                    if (!fields.contains(fieldKey)) return true;
+                    const auto val = fields.value(fieldKey);
+                    const int parsed = val.toInt(GAMEPAD_THRESHOLD_PERCENT_MIN - 1);
+                    if (!val.isDouble() || val.toDouble() != parsed
+                        || parsed < GAMEPAD_THRESHOLD_PERCENT_MIN || parsed > GAMEPAD_THRESHOLD_PERCENT_MAX)
+                        return false;
+                    target = parsed;
+                    return true;
+                };
+                if (!parsePct(pressKey, pressTarget) || !parsePct(lightKey, lightTarget)
+                    || !parsePct(QStringLiteral("release"), releaseTarget))
+                    return false;
+                if (releaseTarget && lightTarget && *releaseTarget > *lightTarget) return false;
+                if (lightTarget && pressTarget && *lightTarget > *pressTarget) return false;
+                if (releaseTarget && pressTarget && *releaseTarget > *pressTarget) return false;
+                return true;
+            };
+            if (!parseThresholdGroup(QStringLiteral("lt"), QStringLiteral("press"), QStringLiteral("light_press"),
+                    result.update.gamepadLtPress, result.update.gamepadLtLightPress, result.update.gamepadLtRelease)
+                || !parseThresholdGroup(QStringLiteral("rt"), QStringLiteral("press"), QStringLiteral("light_press"),
+                    result.update.gamepadRtPress, result.update.gamepadRtLightPress, result.update.gamepadRtRelease)
+                || !parseThresholdGroup(QStringLiteral("ls"), QStringLiteral("push"), QStringLiteral("light_push"),
+                    result.update.gamepadLsPush, result.update.gamepadLsLightPush, result.update.gamepadLsRelease)
+                || !parseThresholdGroup(QStringLiteral("rs"), QStringLiteral("push"), QStringLiteral("light_push"),
+                    result.update.gamepadRsPush, result.update.gamepadRsLightPush, result.update.gamepadRsRelease)) {
+                return fail("Each gamepad threshold group must contain valid 0..100 integer fields with release <= light <= press/push.");
+            }
         }
         if (processIconTrayPreview) {
             const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
@@ -1170,22 +1224,456 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     return result;
 }
 
-QJsonArray mappingChangeCapabilities(bool standardMode)
+namespace {
+
+struct CapabilitySchemaContext
 {
-    const auto string = [](const QString &pattern, int maximum) {
+    QJsonObject revision;
+    QJsonObject reference;
+    QJsonObject identifierSchema;
+    QJsonObject settingsApplySchema;
+    QJsonObject macroApplySchema;
+    QJsonObject deleteApplySchema;
+    QJsonObject saveImportSchema;
+    QJsonObject groupName;
+
+    static QJsonObject string(const QString &pattern, int maximum)
+    {
         return QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
             {QStringLiteral("pattern"), pattern}, {QStringLiteral("maxLength"), maximum}};
-    };
+    }
+
+    static QJsonObject schema(const QJsonObject &properties, const QJsonArray &required)
+    {
+        return QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+            {QStringLiteral("additionalProperties"), false}, {QStringLiteral("properties"), properties},
+            {QStringLiteral("required"), required}};
+    }
+
+    static QJsonObject boundedInteger(int minimum, int maximum)
+    {
+        return QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+            {QStringLiteral("minimum"), minimum}, {QStringLiteral("maximum"), maximum}};
+    }
+
+    static QJsonObject capability(const char *id, const char *method, quint32 scopes, bool readOnly, const QJsonObject &arguments)
+    {
+        QJsonArray limits{QStringLiteral("memory_only_no_save_or_start"), QStringLiteral("bounded_volatile_results")};
+        if (QLatin1String(method) == QStringLiteral("qkm_preview_changes") || QLatin1String(method) == QStringLiteral("qkm_apply_changes")) {
+            for (const char *limit : {"current_attached_source_only", "single_uppercase_letter_or_digit", "idle_after_cleanup",
+                "no_open_mapping_editor_session", "preview_is_not_write_permission"}) { limits.append(QString::fromLatin1(limit)); }
+        }
+        return QJsonObject{{QStringLiteral("id"), QString::fromLatin1(id)}, {QStringLiteral("method"), QString::fromLatin1(method)},
+            {QStringLiteral("required_scopes"), int(scopes)}, {QStringLiteral("read_only"), readOnly},
+            {QStringLiteral("arguments_schema"), arguments}, {QStringLiteral("limitations"), limits}};
+    }
+};
+
+// Keep each capability builder out-of-line on MSVC so the combined frame never exceeds Windows' 1 MB thread stack.
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+void appendPreferencesAndIgnoreCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    using namespace QKeyMapperConstants;
+    auto soundEffectPreview = CapabilitySchemaContext::capability("general.set_sound_effect.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_sound_effect")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("play_sound_effect"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("play_sound_effect")}));
+    auto soundEffectApply = CapabilitySchemaContext::capability("general.set_sound_effect.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&soundEffectPreview, &soundEffectApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
+            QStringLiteral("notification_sound_option"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto globalSwitchPreview = CapabilitySchemaContext::capability("general.set_global_switch_timeout.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_global_switch_timeout")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("timeout_ms"), CapabilitySchemaContext::boundedInteger(GLOBALSETTING_SWITCH_TIMEOUT_MIN, GLOBALSETTING_SWITCH_TIMEOUT_MAX)}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("timeout_ms")}));
+    auto globalSwitchApply = CapabilitySchemaContext::capability("general.set_global_switch_timeout.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&globalSwitchPreview, &globalSwitchApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
+            QStringLiteral("global_setting_switch_timeout_ms"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject fullscreenSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("disable_in_fullscreen"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("allowed_processes"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                {QStringLiteral("maxLength"), 32767},
+                {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*$")}}}}},
+        {QStringLiteral("if"), QJsonObject{{QStringLiteral("required"), QJsonArray{
+            QStringLiteral("disable_in_fullscreen"), QStringLiteral("allowed_processes")}}}},
+        {QStringLiteral("then"), QJsonObject{{QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("disable_in_fullscreen"), QJsonObject{{QStringLiteral("const"), true}}}}}}}};
+    auto fullscreenPreview = CapabilitySchemaContext::capability("general.set_fullscreen_global_mapping.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_fullscreen_global_mapping")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("fullscreen_global_mapping"), fullscreenSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}));
+    auto fullscreenApply = CapabilitySchemaContext::capability("general.set_fullscreen_global_mapping.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&fullscreenPreview, &fullscreenApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
+            QStringLiteral("fullscreen_global_mapping_policy"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject key2MouseSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("x_speed"), CapabilitySchemaContext::boundedInteger(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX)},
+            {QStringLiteral("y_speed"), CapabilitySchemaContext::boundedInteger(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX)},
+            {QStringLiteral("polling_interval_ms"), CapabilitySchemaContext::boundedInteger(MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX)}}}};
+    auto key2MousePreview = CapabilitySchemaContext::capability("configuration.set_key2mouse_settings.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_key2mouse_settings")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("key2mouse"), key2MouseSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}));
+    auto key2MouseApply = CapabilitySchemaContext::capability("configuration.set_key2mouse_settings.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&key2MousePreview, &key2MouseApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("key2mouse_speed_and_polling_interval"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto processIconTrayPreviewCap = CapabilitySchemaContext::capability("configuration.set_process_icon_as_tray_icon.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_process_icon_as_tray_icon")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("process_icon_as_tray_icon"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}));
+    auto processIconTrayApply = CapabilitySchemaContext::capability("configuration.set_process_icon_as_tray_icon.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&processIconTrayPreviewCap, &processIconTrayApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("ordinary_or_blank_profile_only"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject pointKeySchema{
+        {QStringLiteral("type"), QStringLiteral("string")},
+        {QStringLiteral("minLength"), 1},
+        {QStringLiteral("maxLength"), 64},
+        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]+$")}};
+    const QJsonObject pointDisplayKeysSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("window_point_key"), pointKeySchema},
+            {QStringLiteral("screen_point_key"), pointKeySchema}}}};
+    auto pointDisplayKeysPreviewCap = CapabilitySchemaContext::capability("configuration.set_point_display_keys.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_point_display_keys")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("point_display_keys"), pointDisplayKeysSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}));
+    auto pointDisplayKeysApply = CapabilitySchemaContext::capability("configuration.set_point_display_keys.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&pointDisplayKeysPreviewCap, &pointDisplayKeysApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("canonical_none_or_keyboard_key_name"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject customNotificationSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("enabled"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("position"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("minimum"), CustomNotificationPositionMin},
+                {QStringLiteral("maximum"), CustomNotificationPositionMax}}}}},
+        {QStringLiteral("if"), QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("enabled"), QStringLiteral("position")}}}},
+        {QStringLiteral("then"), QJsonObject{{QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("enabled"), QJsonObject{{QStringLiteral("const"), true}}}}}}}};
+    auto customNotificationPreviewCap = CapabilitySchemaContext::capability("configuration.set_custom_notification.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_custom_notification")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("custom_notification"), customNotificationSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}));
+    auto customNotificationApply = CapabilitySchemaContext::capability("configuration.set_custom_notification.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&customNotificationPreviewCap, &customNotificationApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("position_requires_enabled_and_0_to_6"), QStringLiteral("first_enable_initializes_from_global_style"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject matchTextSchema{
+        {QStringLiteral("type"), QStringLiteral("string")},
+        {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
+        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*$")}};
+    const QJsonObject matchModeSchema{
+        {QStringLiteral("type"), QStringLiteral("integer")},
+        {QStringLiteral("minimum"), WindowMatchModeMin},
+        {QStringLiteral("maximum"), WindowMatchModeMax}};
+    const QJsonObject windowMatchCriteriaSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("process_name"), matchTextSchema},
+            {QStringLiteral("process_match_mode"), matchModeSchema},
+            {QStringLiteral("window_title"), matchTextSchema},
+            {QStringLiteral("window_title_match_mode"), matchModeSchema},
+            {QStringLiteral("class_name"), matchTextSchema},
+            {QStringLiteral("class_name_match_mode"), matchModeSchema}}}};
+    auto windowMatchCriteriaPreviewCap = CapabilitySchemaContext::capability("configuration.set_window_match_criteria.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_window_match_criteria")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("window_match_criteria"), windowMatchCriteriaSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_match_criteria")}));
+    auto windowMatchCriteriaApply = CapabilitySchemaContext::capability("configuration.set_window_match_criteria.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&windowMatchCriteriaPreviewCap, &windowMatchCriteriaApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("ordinary_or_blank_profile_only"), QStringLiteral("case_sensitive_and_regex_validated"),
+            QStringLiteral("cache_updates_on_save_or_load"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto sendToSameWindowsPreviewCap = CapabilitySchemaContext::capability("configuration.set_send_to_same_windows.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_send_to_same_windows")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("send_to_same_windows"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("send_to_same_windows")}));
+    auto sendToSameWindowsApply = CapabilitySchemaContext::capability("configuration.set_send_to_same_windows.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&sendToSameWindowsPreviewCap, &sendToSameWindowsApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("requires_auto_match_disabled_and_non_global_profile"), QStringLiteral("preserves_checked_value_when_auto_match_enabled"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const QJsonObject ignoreRuleNameSchema{
+        {QStringLiteral("type"), QStringLiteral("string")},
+        {QStringLiteral("minLength"), 1},
+        {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
+        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*[^\\u0000\\r\\n\\s][^\\u0000\\r\\n]*$")}};
+    const QJsonObject ignoreRuleFieldsSchema = CapabilitySchemaContext::schema({
+        {QStringLiteral("catalog_revision"), ctx.revision},
+        {QStringLiteral("rule_name"), ignoreRuleNameSchema},
+        {QStringLiteral("process_name"), matchTextSchema},
+        {QStringLiteral("process_match_mode"), matchModeSchema},
+        {QStringLiteral("window_title"), matchTextSchema},
+        {QStringLiteral("window_title_match_mode"), matchModeSchema},
+        {QStringLiteral("class_name"), matchTextSchema},
+        {QStringLiteral("class_name_match_mode"), matchModeSchema},
+        {QStringLiteral("description"), matchTextSchema},
+        {QStringLiteral("disabled"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+        {QStringLiteral("catalog_revision"), QStringLiteral("rule_name")});
+    auto ignoreRuleUpsertPreview = CapabilitySchemaContext::capability("ignore_rules.upsert.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ignore_rules.upsert")}}},
+            {QStringLiteral("ignore_rule"), ignoreRuleFieldsSchema}},
+            {QStringLiteral("action"), QStringLiteral("ignore_rule")}));
+    auto ignoreRuleUpsertApply = CapabilitySchemaContext::capability("ignore_rules.upsert.apply", "qkm_apply_changes", Read | Configure, false, ctx.macroApplySchema);
+    for (auto *item : {&ignoreRuleUpsertPreview, &ignoreRuleUpsertApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
+            QStringLiteral("overwrite_in_place_or_append"), QStringLiteral("confirm_overwrite_for_existing_name"),
+            QStringLiteral("case_sensitive_and_gui_diagnostic_parity"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const auto ignoreDeleteFieldsSchema = CapabilitySchemaContext::schema({
+        {QStringLiteral("catalog_revision"), ctx.revision},
+        {QStringLiteral("rule_names"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
+            {QStringLiteral("minItems"), 1}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("uniqueItems"), true},
+            {QStringLiteral("items"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                {QStringLiteral("minLength"), 1}, {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
+                {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]+$")}}}}}},
+        {QStringLiteral("catalog_revision"), QStringLiteral("rule_names")});
+    auto ignoreRuleDeletePreview = CapabilitySchemaContext::capability("ignore_rules.delete.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ignore_rules.delete")}}},
+            {QStringLiteral("ignore_rule"), ignoreDeleteFieldsSchema}},
+            {QStringLiteral("action"), QStringLiteral("ignore_rule")}));
+    auto ignoreRuleDeleteApply = CapabilitySchemaContext::capability("ignore_rules.delete.apply", "qkm_apply_changes", Read | Configure, false, ctx.deleteApplySchema);
+    for (auto *item : {&ignoreRuleDeletePreview, &ignoreRuleDeleteApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
+            QStringLiteral("exact_distinct_rule_names"), QStringLiteral("explicit_delete_confirmation"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const auto ignoreRestoreDefaultsSchema = CapabilitySchemaContext::schema({
+        {QStringLiteral("catalog_revision"), ctx.revision}},
+        {QStringLiteral("catalog_revision")});
+    auto ignoreRuleRestorePreview = CapabilitySchemaContext::capability("ignore_rules.restore_defaults.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ignore_rules.restore_defaults")}}},
+            {QStringLiteral("ignore_rule"), ignoreRestoreDefaultsSchema}},
+            {QStringLiteral("action"), QStringLiteral("ignore_rule")}));
+    auto ignoreRuleRestoreApply = CapabilitySchemaContext::capability("ignore_rules.restore_defaults.apply", "qkm_apply_changes", Read | Configure, false, ctx.saveImportSchema);
+    for (auto *item : {&ignoreRuleRestorePreview, &ignoreRuleRestoreApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
+            QStringLiteral("replaces_all_ignore_rules_with_builtin_defaults"), QStringLiteral("explicit_scope_confirmation"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
+{
+    auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.restore_process_path")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref")}));
+    auto restoreProcessPathApply = CapabilitySchemaContext::capability("configuration.restore_process_path.apply", "qkm_apply_changes", Read | Configure, false, ctx.saveImportSchema);
+    for (auto *item : {&restoreProcessPathPreviewCap, &restoreProcessPathApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_configuration"),
+            QStringLiteral("requires_stored_process_file_path"), QStringLiteral("explicit_scope_confirmation"),
+            QStringLiteral("disabled_for_global_configuration"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto displayScalePreviewCap = CapabilitySchemaContext::capability("general.set_display_scale.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_display_scale")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("display_scale"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+                {QStringLiteral("minimum"), QKeyMapperConstants::DISPLAY_SCALE_MIN},
+                {QStringLiteral("maximum"), QKeyMapperConstants::DISPLAY_SCALE_MAX}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("display_scale")}));
+    auto displayScaleApply = CapabilitySchemaContext::capability("general.set_display_scale.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&displayScalePreviewCap, &displayScaleApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("global_application_setting"),
+            QStringLiteral("applies_live_scale_compensation"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const auto gyroSourceSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+        {QStringLiteral("minimum"), QKeyMapperConstants::GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X},
+        {QStringLiteral("maximum"), QKeyMapperConstants::GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z}};
+    const auto gyroOptionsSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("mouse_x_source"), gyroSourceSchema},
+            {QStringLiteral("mouse_y_source"), gyroSourceSchema},
+            {QStringLiteral("mouse_x_revert"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("mouse_y_revert"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}}}};
+    auto gyro2MouseOptionsPreviewCap = CapabilitySchemaContext::capability("configuration.set_gyro2mouse_options.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_gyro2mouse_options")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("gyro2mouse_options"), gyroOptionsSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gyro2mouse_options")}));
+    auto gyro2MouseOptionsApply = CapabilitySchemaContext::capability("configuration.set_gyro2mouse_options.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&gyro2MouseOptionsPreviewCap, &gyro2MouseOptionsApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("gyro2mouse_axis_source_and_revert"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const auto pctSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
+        {QStringLiteral("minimum"), QKeyMapperConstants::GAMEPAD_THRESHOLD_PERCENT_MIN},
+        {QStringLiteral("maximum"), QKeyMapperConstants::GAMEPAD_THRESHOLD_PERCENT_MAX}};
+    const auto triggerThreshSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("press"), pctSchema},
+            {QStringLiteral("light_press"), pctSchema},
+            {QStringLiteral("release"), pctSchema}}}};
+    const auto stickThreshSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("push"), pctSchema},
+            {QStringLiteral("light_push"), pctSchema},
+            {QStringLiteral("release"), pctSchema}}}};
+    const auto gamepadThreshSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("lt"), triggerThreshSchema},
+            {QStringLiteral("rt"), triggerThreshSchema},
+            {QStringLiteral("ls"), stickThreshSchema},
+            {QStringLiteral("rs"), stickThreshSchema}}}};
+    auto gamepadThresholdsPreviewCap = CapabilitySchemaContext::capability("configuration.set_gamepad_thresholds.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_gamepad_thresholds")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("gamepad_thresholds"), gamepadThreshSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_thresholds")}));
+    auto gamepadThresholdsApply = CapabilitySchemaContext::capability("configuration.set_gamepad_thresholds.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&gamepadThresholdsPreviewCap, &gamepadThresholdsApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("triplet_order_release_le_light_le_press"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    if (standardMode) {
+        auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
+            CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},
+                {QStringLiteral("catalog_revision"), ctx.revision}, {QStringLiteral("group"), ctx.groupName}},
+                {QStringLiteral("action"), QStringLiteral("catalog_revision"), QStringLiteral("group")}));
+        auto applyLoad = CapabilitySchemaContext::capability("configuration.load.apply", "qkm_apply_changes", Read | Configure, false, ctx.saveImportSchema);
+        const QJsonArray loadLimits{QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("ordinary_or_global_group_only"),
+            QStringLiteral("require_clean_loaded_profile"), QStringLiteral("fixed_file_read_only"),
+            QStringLiteral("reload_invalidates_source_references")};
+        for (auto *item : {&load, &applyLoad}) {
+            item->insert(QStringLiteral("limitations"), loadLimits);
+            item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+            capabilities.append(*item);
+        }
+        auto loadEmpty = CapabilitySchemaContext::capability("configuration.load_empty.preview", "qkm_preview_changes", Read | Configure, true,
+            CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load_empty")}}},
+                {QStringLiteral("catalog_revision"), ctx.revision}},
+                {QStringLiteral("action"), QStringLiteral("catalog_revision")}));
+        auto applyLoadEmpty = CapabilitySchemaContext::capability("configuration.load_empty.apply", "qkm_apply_changes", Read | Configure, false, ctx.saveImportSchema);
+        const QJsonArray loadEmptyLimits{QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("require_clean_loaded_profile"), QStringLiteral("fixed_file_read_only"),
+            QStringLiteral("resets_draft_with_unsaved_changes"), QStringLiteral("reload_invalidates_source_references")};
+        for (auto *item : {&loadEmpty, &applyLoadEmpty}) {
+            item->insert(QStringLiteral("limitations"), loadEmptyLimits);
+            item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+            capabilities.append(*item);
+        }
+        auto autoMatchForegroundPreviewCap = CapabilitySchemaContext::capability("configuration.set_auto_match_foreground.preview", "qkm_preview_changes", Read | Configure, true,
+            CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_auto_match_foreground")}}},
+                {QStringLiteral("source_tab_ref"), ctx.reference},
+                {QStringLiteral("auto_match_foreground"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+                {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("auto_match_foreground")}));
+        auto autoMatchForegroundApply = CapabilitySchemaContext::capability("configuration.set_auto_match_foreground.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+        for (auto *item : {&autoMatchForegroundPreviewCap, &autoMatchForegroundApply}) {
+            item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+                QStringLiteral("updates_send_to_same_windows_availability"), QStringLiteral("disk_matcher_reads_saved_value"),
+                QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+            item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+            capabilities.append(*item);
+        }
+    }
+}
+
+} // namespace
+
+QJsonArray mappingChangeCapabilities(bool standardMode)
+{
+    const auto &string = CapabilitySchemaContext::string;
     const QJsonObject revision = string(QStringLiteral("^[0-9a-f]{64}$"), 64);
     const QJsonObject reference = string(QStringLiteral("^[0-9a-f]{64}:source:(0|[1-9][0-9]{0,9})$"), 128);
     const QJsonObject key = string(QStringLiteral("^[A-Z0-9]$"), 1);
     const QJsonObject rowReference = string(QStringLiteral("^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$"), 128);
     const QJsonObject identifierSchema = string(QStringLiteral("^[0-9a-f]{32}$"), 32);
-    const auto schema = [](const QJsonObject &properties, const QJsonArray &required) {
-        return QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
-            {QStringLiteral("additionalProperties"), false}, {QStringLiteral("properties"), properties},
-            {QStringLiteral("required"), required}};
-    };
+    const auto &schema = CapabilitySchemaContext::schema;
     auto preview = schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.add")}}},
         {QStringLiteral("source_revision"), revision}, {QStringLiteral("source_tab_ref"), reference},
         {QStringLiteral("original_key"), key}, {QStringLiteral("mapping_key"), key},
@@ -1200,16 +1688,7 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
     const QJsonObject apply = schema({{QStringLiteral("preview_id"), identifierSchema},
         {QStringLiteral("confirm_conflicts"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}, {QStringLiteral("default"), false}}}},
         {QStringLiteral("preview_id")});
-    const auto capability = [](const char *id, const char *method, quint32 scopes, bool readOnly, const QJsonObject &arguments) {
-        QJsonArray limits{QStringLiteral("memory_only_no_save_or_start"), QStringLiteral("bounded_volatile_results")};
-        if (QLatin1String(method) == QStringLiteral("qkm_preview_changes") || QLatin1String(method) == QStringLiteral("qkm_apply_changes")) {
-            for (const char *limit : {"current_attached_source_only", "single_uppercase_letter_or_digit", "idle_after_cleanup",
-                "no_open_mapping_editor_session", "preview_is_not_write_permission"}) { limits.append(QString::fromLatin1(limit)); }
-        }
-        return QJsonObject{{QStringLiteral("id"), QString::fromLatin1(id)}, {QStringLiteral("method"), QString::fromLatin1(method)},
-            {QStringLiteral("required_scopes"), int(scopes)}, {QStringLiteral("read_only"), readOnly},
-            {QStringLiteral("arguments_schema"), arguments}, {QStringLiteral("limitations"), limits}};
-    };
+    const auto &capability = CapabilitySchemaContext::capability;
     QJsonObject previewCapability = capability("mapping.add.preview", "qkm_preview_changes", Read | Configure, true, preview);
     previewCapability.insert(QStringLiteral("preview_ttl_ms"), double(MappingChangeStore::PreviewTtlMs));
     previewCapability.insert(QStringLiteral("max_previews"), MappingChangeStore::MaxPreviews);
@@ -1764,10 +2243,7 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
     }
     capabilities.append(splitterPreview);
     capabilities.append(splitterApply);
-    const auto boundedInteger = [](int minimum, int maximum) {
-        return QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
-            {QStringLiteral("minimum"), minimum}, {QStringLiteral("maximum"), maximum}};
-    };
+    const auto &boundedInteger = CapabilitySchemaContext::boundedInteger;
     using namespace QKeyMapperConstants;
     const auto point = schema({{QStringLiteral("x"), boundedInteger(STARTUP_SPECIFY_POSITION_MIN_X, STARTUP_SPECIFY_POSITION_MAX_X)},
         {QStringLiteral("y"), boundedInteger(STARTUP_SPECIFY_POSITION_MIN_Y, STARTUP_SPECIFY_POSITION_MAX_Y)}},
@@ -1855,346 +2331,10 @@ QJsonArray mappingChangeCapabilities(bool standardMode)
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }
-    auto soundEffectPreview = capability("general.set_sound_effect.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_sound_effect")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("play_sound_effect"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("play_sound_effect")}));
-    auto soundEffectApply = capability("general.set_sound_effect.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&soundEffectPreview, &soundEffectApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
-            QStringLiteral("notification_sound_option"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    auto globalSwitchPreview = capability("general.set_global_switch_timeout.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_global_switch_timeout")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("timeout_ms"), boundedInteger(GLOBALSETTING_SWITCH_TIMEOUT_MIN, GLOBALSETTING_SWITCH_TIMEOUT_MAX)}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("timeout_ms")}));
-    auto globalSwitchApply = capability("general.set_global_switch_timeout.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&globalSwitchPreview, &globalSwitchApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
-            QStringLiteral("global_setting_switch_timeout_ms"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    const QJsonObject fullscreenSchema{
-        {QStringLiteral("type"), QStringLiteral("object")},
-        {QStringLiteral("additionalProperties"), false},
-        {QStringLiteral("minProperties"), 1},
-        {QStringLiteral("properties"), QJsonObject{
-            {QStringLiteral("disable_in_fullscreen"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
-            {QStringLiteral("allowed_processes"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
-                {QStringLiteral("maxLength"), 32767},
-                {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*$")}}}}},
-        {QStringLiteral("if"), QJsonObject{{QStringLiteral("required"), QJsonArray{
-            QStringLiteral("disable_in_fullscreen"), QStringLiteral("allowed_processes")}}}},
-        {QStringLiteral("then"), QJsonObject{{QStringLiteral("properties"), QJsonObject{
-            {QStringLiteral("disable_in_fullscreen"), QJsonObject{{QStringLiteral("const"), true}}}}}}}};
-    auto fullscreenPreview = capability("general.set_fullscreen_global_mapping.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_fullscreen_global_mapping")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("fullscreen_global_mapping"), fullscreenSchema}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("fullscreen_global_mapping")}));
-    auto fullscreenApply = capability("general.set_fullscreen_global_mapping.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&fullscreenPreview, &fullscreenApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("application_preferences"),
-            QStringLiteral("fullscreen_global_mapping_policy"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    const QJsonObject key2MouseSchema{
-        {QStringLiteral("type"), QStringLiteral("object")},
-        {QStringLiteral("additionalProperties"), false},
-        {QStringLiteral("minProperties"), 1},
-        {QStringLiteral("properties"), QJsonObject{
-            {QStringLiteral("x_speed"), boundedInteger(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX)},
-            {QStringLiteral("y_speed"), boundedInteger(MOUSE_SPEED_MIN, MOUSE_SPEED_MAX)},
-            {QStringLiteral("polling_interval_ms"), boundedInteger(MOUSE_POLLING_INTERNAL_MIN, MOUSE_POLLING_INTERNAL_MAX)}}}};
-    auto key2MousePreview = capability("configuration.set_key2mouse_settings.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_key2mouse_settings")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("key2mouse"), key2MouseSchema}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}));
-    auto key2MouseApply = capability("configuration.set_key2mouse_settings.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&key2MousePreview, &key2MouseApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
-            QStringLiteral("key2mouse_speed_and_polling_interval"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    auto processIconTrayPreviewCap = capability("configuration.set_process_icon_as_tray_icon.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_process_icon_as_tray_icon")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("process_icon_as_tray_icon"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}));
-    auto processIconTrayApply = capability("configuration.set_process_icon_as_tray_icon.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&processIconTrayPreviewCap, &processIconTrayApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
-            QStringLiteral("ordinary_or_blank_profile_only"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    const QJsonObject pointKeySchema{
-        {QStringLiteral("type"), QStringLiteral("string")},
-        {QStringLiteral("minLength"), 1},
-        {QStringLiteral("maxLength"), 64},
-        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]+$")}};
-    const QJsonObject pointDisplayKeysSchema{
-        {QStringLiteral("type"), QStringLiteral("object")},
-        {QStringLiteral("additionalProperties"), false},
-        {QStringLiteral("minProperties"), 1},
-        {QStringLiteral("properties"), QJsonObject{
-            {QStringLiteral("window_point_key"), pointKeySchema},
-            {QStringLiteral("screen_point_key"), pointKeySchema}}}};
-    auto pointDisplayKeysPreviewCap = capability("configuration.set_point_display_keys.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_point_display_keys")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("point_display_keys"), pointDisplayKeysSchema}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}));
-    auto pointDisplayKeysApply = capability("configuration.set_point_display_keys.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&pointDisplayKeysPreviewCap, &pointDisplayKeysApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
-            QStringLiteral("canonical_none_or_keyboard_key_name"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    const QJsonObject customNotificationSchema{
-        {QStringLiteral("type"), QStringLiteral("object")},
-        {QStringLiteral("additionalProperties"), false},
-        {QStringLiteral("minProperties"), 1},
-        {QStringLiteral("properties"), QJsonObject{
-            {QStringLiteral("enabled"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
-            {QStringLiteral("position"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
-                {QStringLiteral("minimum"), CustomNotificationPositionMin},
-                {QStringLiteral("maximum"), CustomNotificationPositionMax}}}}},
-        {QStringLiteral("if"), QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("enabled"), QStringLiteral("position")}}}},
-        {QStringLiteral("then"), QJsonObject{{QStringLiteral("properties"), QJsonObject{
-            {QStringLiteral("enabled"), QJsonObject{{QStringLiteral("const"), true}}}}}}}};
-    auto customNotificationPreviewCap = capability("configuration.set_custom_notification.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_custom_notification")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("custom_notification"), customNotificationSchema}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}));
-    auto customNotificationApply = capability("configuration.set_custom_notification.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&customNotificationPreviewCap, &customNotificationApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
-            QStringLiteral("position_requires_enabled_and_0_to_6"), QStringLiteral("first_enable_initializes_from_global_style"),
-            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    const QJsonObject matchTextSchema{
-        {QStringLiteral("type"), QStringLiteral("string")},
-        {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
-        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*$")}};
-    const QJsonObject matchModeSchema{
-        {QStringLiteral("type"), QStringLiteral("integer")},
-        {QStringLiteral("minimum"), WindowMatchModeMin},
-        {QStringLiteral("maximum"), WindowMatchModeMax}};
-    const QJsonObject windowMatchCriteriaSchema{
-        {QStringLiteral("type"), QStringLiteral("object")},
-        {QStringLiteral("additionalProperties"), false},
-        {QStringLiteral("minProperties"), 1},
-        {QStringLiteral("properties"), QJsonObject{
-            {QStringLiteral("process_name"), matchTextSchema},
-            {QStringLiteral("process_match_mode"), matchModeSchema},
-            {QStringLiteral("window_title"), matchTextSchema},
-            {QStringLiteral("window_title_match_mode"), matchModeSchema},
-            {QStringLiteral("class_name"), matchTextSchema},
-            {QStringLiteral("class_name_match_mode"), matchModeSchema}}}};
-    auto windowMatchCriteriaPreviewCap = capability("configuration.set_window_match_criteria.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_window_match_criteria")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("window_match_criteria"), windowMatchCriteriaSchema}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("window_match_criteria")}));
-    auto windowMatchCriteriaApply = capability("configuration.set_window_match_criteria.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&windowMatchCriteriaPreviewCap, &windowMatchCriteriaApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
-            QStringLiteral("ordinary_or_blank_profile_only"), QStringLiteral("case_sensitive_and_regex_validated"),
-            QStringLiteral("cache_updates_on_save_or_load"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    auto sendToSameWindowsPreviewCap = capability("configuration.set_send_to_same_windows.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_send_to_same_windows")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("send_to_same_windows"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("send_to_same_windows")}));
-    auto sendToSameWindowsApply = capability("configuration.set_send_to_same_windows.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&sendToSameWindowsPreviewCap, &sendToSameWindowsApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
-            QStringLiteral("requires_auto_match_disabled_and_non_global_profile"), QStringLiteral("preserves_checked_value_when_auto_match_enabled"),
-            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    const QJsonObject ignoreRuleNameSchema{
-        {QStringLiteral("type"), QStringLiteral("string")},
-        {QStringLiteral("minLength"), 1},
-        {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
-        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*[^\\u0000\\r\\n\\s][^\\u0000\\r\\n]*$")}};
-    const QJsonObject ignoreRuleFieldsSchema = schema({
-        {QStringLiteral("catalog_revision"), revision},
-        {QStringLiteral("rule_name"), ignoreRuleNameSchema},
-        {QStringLiteral("process_name"), matchTextSchema},
-        {QStringLiteral("process_match_mode"), matchModeSchema},
-        {QStringLiteral("window_title"), matchTextSchema},
-        {QStringLiteral("window_title_match_mode"), matchModeSchema},
-        {QStringLiteral("class_name"), matchTextSchema},
-        {QStringLiteral("class_name_match_mode"), matchModeSchema},
-        {QStringLiteral("description"), matchTextSchema},
-        {QStringLiteral("disabled"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
-        {QStringLiteral("catalog_revision"), QStringLiteral("rule_name")});
-    auto ignoreRuleUpsertPreview = capability("ignore_rules.upsert.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ignore_rules.upsert")}}},
-            {QStringLiteral("ignore_rule"), ignoreRuleFieldsSchema}},
-            {QStringLiteral("action"), QStringLiteral("ignore_rule")}));
-    auto ignoreRuleUpsertApply = capability("ignore_rules.upsert.apply", "qkm_apply_changes", Read | Configure, false, macroApplySchema);
-    for (auto *item : {&ignoreRuleUpsertPreview, &ignoreRuleUpsertApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
-            QStringLiteral("overwrite_in_place_or_append"), QStringLiteral("confirm_overwrite_for_existing_name"),
-            QStringLiteral("case_sensitive_and_gui_diagnostic_parity"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    const auto ignoreDeleteFieldsSchema = schema({
-        {QStringLiteral("catalog_revision"), revision},
-        {QStringLiteral("rule_names"), QJsonObject{{QStringLiteral("type"), QStringLiteral("array")},
-            {QStringLiteral("minItems"), 1}, {QStringLiteral("maxItems"), 100}, {QStringLiteral("uniqueItems"), true},
-            {QStringLiteral("items"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
-                {QStringLiteral("minLength"), 1}, {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
-                {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]+$")}}}}}},
-        {QStringLiteral("catalog_revision"), QStringLiteral("rule_names")});
-    auto ignoreRuleDeletePreview = capability("ignore_rules.delete.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ignore_rules.delete")}}},
-            {QStringLiteral("ignore_rule"), ignoreDeleteFieldsSchema}},
-            {QStringLiteral("action"), QStringLiteral("ignore_rule")}));
-    auto ignoreRuleDeleteApply = capability("ignore_rules.delete.apply", "qkm_apply_changes", Read | Configure, false, deleteApplySchema);
-    for (auto *item : {&ignoreRuleDeletePreview, &ignoreRuleDeleteApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
-            QStringLiteral("exact_distinct_rule_names"), QStringLiteral("explicit_delete_confirmation"),
-            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    const auto ignoreRestoreDefaultsSchema = schema({
-        {QStringLiteral("catalog_revision"), revision}},
-        {QStringLiteral("catalog_revision")});
-    auto ignoreRuleRestorePreview = capability("ignore_rules.restore_defaults.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("ignore_rules.restore_defaults")}}},
-            {QStringLiteral("ignore_rule"), ignoreRestoreDefaultsSchema}},
-            {QStringLiteral("action"), QStringLiteral("ignore_rule")}));
-    auto ignoreRuleRestoreApply = capability("ignore_rules.restore_defaults.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
-    for (auto *item : {&ignoreRuleRestorePreview, &ignoreRuleRestoreApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_ignore_rules_catalog"),
-            QStringLiteral("replaces_all_ignore_rules_with_builtin_defaults"), QStringLiteral("explicit_scope_confirmation"),
-            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    auto restoreProcessPathPreviewCap = capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.restore_process_path")}}},
-            {QStringLiteral("source_tab_ref"), reference}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref")}));
-    auto restoreProcessPathApply = capability("configuration.restore_process_path.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
-    for (auto *item : {&restoreProcessPathPreviewCap, &restoreProcessPathApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_loaded_configuration"),
-            QStringLiteral("requires_stored_process_file_path"), QStringLiteral("explicit_scope_confirmation"),
-            QStringLiteral("disabled_for_global_configuration"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    auto displayScalePreviewCap = capability("general.set_display_scale.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_display_scale")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("display_scale"), QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
-                {QStringLiteral("minimum"), QKeyMapperConstants::DISPLAY_SCALE_MIN},
-                {QStringLiteral("maximum"), QKeyMapperConstants::DISPLAY_SCALE_MAX}}}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("display_scale")}));
-    auto displayScaleApply = capability("general.set_display_scale.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&displayScalePreviewCap, &displayScaleApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("global_application_setting"),
-            QStringLiteral("applies_live_scale_compensation"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    const auto gyroSourceSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("integer")},
-        {QStringLiteral("minimum"), QKeyMapperConstants::GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_X},
-        {QStringLiteral("maximum"), QKeyMapperConstants::GYRO2MOUSE_MOUSE_INPUT_SOURCE_GYRO_Z}};
-    const auto gyroOptionsSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
-        {QStringLiteral("additionalProperties"), false},
-        {QStringLiteral("minProperties"), 1},
-        {QStringLiteral("properties"), QJsonObject{
-            {QStringLiteral("mouse_x_source"), gyroSourceSchema},
-            {QStringLiteral("mouse_y_source"), gyroSourceSchema},
-            {QStringLiteral("mouse_x_revert"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
-            {QStringLiteral("mouse_y_revert"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}}}};
-    auto gyro2MouseOptionsPreviewCap = capability("configuration.set_gyro2mouse_options.preview", "qkm_preview_changes", Read | Configure, true,
-        schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_gyro2mouse_options")}}},
-            {QStringLiteral("source_tab_ref"), reference},
-            {QStringLiteral("gyro2mouse_options"), gyroOptionsSchema}},
-            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gyro2mouse_options")}));
-    auto gyro2MouseOptionsApply = capability("configuration.set_gyro2mouse_options.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-    for (auto *item : {&gyro2MouseOptionsPreviewCap, &gyro2MouseOptionsApply}) {
-        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
-            QStringLiteral("gyro2mouse_axis_source_and_revert"), QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("memory_only_no_save_or_start")});
-        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-        capabilities.append(*item);
-    }
-    if (standardMode) {
-        auto load = capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
-            schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},
-                {QStringLiteral("catalog_revision"), revision}, {QStringLiteral("group"), groupName}},
-                {QStringLiteral("action"), QStringLiteral("catalog_revision"), QStringLiteral("group")}));
-        auto applyLoad = capability("configuration.load.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
-        const QJsonArray loadLimits{QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("ordinary_or_global_group_only"),
-            QStringLiteral("require_clean_loaded_profile"), QStringLiteral("fixed_file_read_only"),
-            QStringLiteral("reload_invalidates_source_references")};
-        for (auto *item : {&load, &applyLoad}) {
-            item->insert(QStringLiteral("limitations"), loadLimits);
-            item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-            capabilities.append(*item);
-        }
-        auto loadEmpty = capability("configuration.load_empty.preview", "qkm_preview_changes", Read | Configure, true,
-            schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load_empty")}}},
-                {QStringLiteral("catalog_revision"), revision}},
-                {QStringLiteral("action"), QStringLiteral("catalog_revision")}));
-        auto applyLoadEmpty = capability("configuration.load_empty.apply", "qkm_apply_changes", Read | Configure, false, saveImportSchema);
-        const QJsonArray loadEmptyLimits{QStringLiteral("idle_after_completed_cleanup"),
-            QStringLiteral("require_clean_loaded_profile"), QStringLiteral("fixed_file_read_only"),
-            QStringLiteral("resets_draft_with_unsaved_changes"), QStringLiteral("reload_invalidates_source_references")};
-        for (auto *item : {&loadEmpty, &applyLoadEmpty}) {
-            item->insert(QStringLiteral("limitations"), loadEmptyLimits);
-            item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-            capabilities.append(*item);
-        }
-        auto autoMatchForegroundPreviewCap = capability("configuration.set_auto_match_foreground.preview", "qkm_preview_changes", Read | Configure, true,
-            schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_auto_match_foreground")}}},
-                {QStringLiteral("source_tab_ref"), reference},
-                {QStringLiteral("auto_match_foreground"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
-                {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("auto_match_foreground")}));
-        auto autoMatchForegroundApply = capability("configuration.set_auto_match_foreground.apply", "qkm_apply_changes", Read | Configure, false, settingsApplySchema);
-        for (auto *item : {&autoMatchForegroundPreviewCap, &autoMatchForegroundApply}) {
-            item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
-                QStringLiteral("updates_send_to_same_windows_availability"), QStringLiteral("disk_matcher_reads_saved_value"),
-                QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
-            item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
-            capabilities.append(*item);
-        }
-    }
+    const CapabilitySchemaContext capabilityContext{revision, reference, identifierSchema,
+        settingsApplySchema, macroApplySchema, deleteApplySchema, saveImportSchema, groupName};
+    appendPreferencesAndIgnoreCapabilities(capabilities, capabilityContext);
+    appendScaleGyroThresholdAndConfigLoadCapabilities(capabilities, standardMode, capabilityContext);
     capabilities.append(operation);
     return capabilities;
 }

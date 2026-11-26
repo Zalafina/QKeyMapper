@@ -291,6 +291,23 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            gamepad_thresh = {"action": "configuration.set_gamepad_thresholds", "source_tab_ref": tab}
+            for groups in ({"lt": {"press": 80, "light_press": 50, "release": 20}},
+                           {"rt": {"press": 100, "light_press": 100, "release": 100}},
+                           {"ls": {"push": 0, "light_push": 0, "release": 0}},
+                           {"rs": {"push": 85, "light_push": 45}},
+                           {"lt": {"press": 70}, "rs": {"release": 10}}):
+                request = gamepad_thresh | {"gamepad_thresholds": groups}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for groups in ({}, {"lt": {}}, {"unknown": {"press": 50}}, {"lt": {"push": 50}},
+                           {"ls": {"press": 50}}, {"lt": {"press": -1}}, {"rt": {"press": 101}},
+                           {"ls": {"push": 1.5}}, {"rs": {"push": True}}, {"lt": {"press": None}},
+                           {"lt": None}, {"lt": {"press": 50}, "extra": {}}):
+                request = gamepad_thresh | {"gamepad_thresholds": groups}
+                assert not validator.is_valid(request), groups
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -480,7 +497,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

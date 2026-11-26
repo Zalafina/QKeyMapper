@@ -94,6 +94,18 @@ struct MappingUpdateArguments {
     std::optional<int> gyro2MouseYSource;
     std::optional<bool> gyro2MouseXRevert;
     std::optional<bool> gyro2MouseYRevert;
+    std::optional<int> gamepadLtPress;
+    std::optional<int> gamepadLtLightPress;
+    std::optional<int> gamepadLtRelease;
+    std::optional<int> gamepadRtPress;
+    std::optional<int> gamepadRtLightPress;
+    std::optional<int> gamepadRtRelease;
+    std::optional<int> gamepadLsPush;
+    std::optional<int> gamepadLsLightPush;
+    std::optional<int> gamepadLsRelease;
+    std::optional<int> gamepadRsPush;
+    std::optional<int> gamepadRsLightPush;
+    std::optional<int> gamepadRsRelease;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;
