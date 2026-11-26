@@ -111,6 +111,23 @@ struct TabFloatingWindowUpdate {
     std::optional<QString> mousePassThroughSwitchKey;
 };
 
+struct MappingCrosshairUpdate {
+    std::optional<QString> centerColor;
+    std::optional<int> centerSize;
+    std::optional<int> centerOpacity;
+    std::optional<QString> crosshairColor;
+    std::optional<int> crosshairWidth;
+    std::optional<int> crosshairLength;
+    std::optional<int> crosshairOpacity;
+    std::optional<bool> showCenter;
+    std::optional<bool> showTop;
+    std::optional<bool> showBottom;
+    std::optional<bool> showLeft;
+    std::optional<bool> showRight;
+    std::optional<int> xOffset;
+    std::optional<int> yOffset;
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -176,6 +193,7 @@ struct MappingUpdateArguments {
     std::optional<NotificationStyleUpdate> customNotificationStyle;
     std::optional<TrayIconsUpdate> trayIcons;
     std::optional<TabFloatingWindowUpdate> tabFloatingWindow;
+    std::optional<MappingCrosshairUpdate> crosshair;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

@@ -259,7 +259,7 @@ ENV-38 保留为 PC-W10 的版本／漂移检查历史。ENV-39 已在 PC-W11 �
 | SET-005 | 开始／停止快捷键、系统筛选键及映射高级 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)、[映射高级](../../QKeyMapper/qmappingadvanceddialog.cpp) | 停止入口、系统筛选键会话恢复、驱动筛选的区别；高风险参数逐项列出 | M2-B／EQ-FILTER-001 |
 | UI-001 | 浮动按钮、样式及同步组 | [浮动按钮设定](../../QKeyMapper/qfloatingbuttonsetupdialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 应用／恢复、三态外观、派生布局、组状态及保存 | M2-B／EQ-FBUTTON-001 |
 | UI-002 | 悬浮窗口、Tab 图片及虚拟按钮面板 | [悬浮窗口](../../QKeyMapper/qfloatingwindowsetupdialog.cpp)、[面板设定](../../QKeyMapper/qvbuttonpanelsetupdialog.cpp) | 显示对象、位置／参考点、鼠标穿透、刷新及配置；拆为独立能力 | M2-B／EQ-PANEL-001；`UI-PANEL-261` 已选验虚拟按钮面板，`UI-FWINDOW-264` 已选验 Tab 悬浮窗口设定 |
-| UI-003 | 准星、通知／自定义通知及托盘图标 | [准星](../../QKeyMapper/qcrosshairsetupdialog.cpp)、[通知](../../QKeyMapper/qnotificationsetupdialog.cpp)、[托盘图标](../../QKeyMapper/qtrayiconselectdialog.cpp) | 编辑值与实际叠加／提示／托盘行为、文件依赖及生效时机 | M2-B／EQ-OVERLAY-001 |
+| UI-003 | 准星、通知／自定义通知及托盘图标 | [准星](../../QKeyMapper/qcrosshairsetupdialog.cpp)、[通知](../../QKeyMapper/qnotificationsetupdialog.cpp)、[托盘图标](../../QKeyMapper/qtrayiconselectdialog.cpp) | 编辑值与实际叠加／提示／托盘行为、文件依赖及生效时机 | M2-B／EQ-OVERLAY-001；`UI-NOTIFY-262` 已选验通知样式、`UI-TRAY-263` 已选验托盘图标、`UI-CROSSHAIR-265` 已选验准星设定（3/3） |
 | UI-004 | 页面、编辑窗、最小化／显示及必要窗口操作 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)、各相关对话框 | 与常规 GUI 相同限制；实际显示、焦点影响及未提交编辑内容 | M2-B／EQ-UISESSION-001 |
 | INPUT-001 | 原始键／宏录制、序列编辑及坐标采集 | [录制](../../QKeyMapper/qkeyrecord.cpp)、[序列编辑](../../QKeyMapper/qmappingsequenceedit.cpp)、[坐标采集](../../QKeyMapper/qpointpickerdialog.cpp) | 实际采集、编辑草稿、确认／取消、上层更新及真实输入边界 | M2-A／M2-B／EQ-EDITOR-001 |
 | RUN-001 | 开始、停止、切表、任务释放及等待 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`handleManualMappingSwitchRequest()`／`setKeyUnHook()`；[Worker](../../QKeyMapper/qkeymapper_worker.cpp) | 切换与明确命令区别、停止发送动作、GUI 与 Worker 完成、释放任务 | M1／EQ-RUN-001 |
@@ -471,20 +471,20 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 
 | 稳定定位 ID | 控件类型／原始文案 | 绑定线索（该 cpp 的基线行号） | UI 声明线索 |
 |---|---|---|---|
-| `U-crosshair/centerColorPicker` | ColorPickerWidget | `connect colorChanged @56` | 运行约束待核 |
-| `U-crosshair/centerSizeSpinBox` | QSpinBox | `on_centerSizeSpinBox_editingFinished @309` | 运行约束待核 |
-| `U-crosshair/centerOpacitySpinBox` | QSpinBox | `on_centerOpacitySpinBox_editingFinished @326` | 运行约束待核 |
-| `U-crosshair/showCenterCheckBox` | QCheckBox；Show Center | `on_showCenterCheckBox_stateChanged @224` | 运行约束待核 |
-| `U-crosshair/crosshairColorPicker` | ColorPickerWidget | `connect colorChanged @57` | 运行约束待核 |
-| `U-crosshair/showTopCheckBox` | QCheckBox；Show Top | `on_showTopCheckBox_stateChanged @241` | 运行约束待核 |
-| `U-crosshair/crosshairLineWidthSpinBox` | QSpinBox | `on_crosshairLineWidthSpinBox_editingFinished @343` | 运行约束待核 |
-| `U-crosshair/showBottomCheckBox` | QCheckBox；Show Bottom | `on_showBottomCheckBox_stateChanged @258` | 运行约束待核 |
-| `U-crosshair/crosshairLineLengthSpinBox` | QSpinBox | `on_crosshairLineLengthSpinBox_editingFinished @360` | 运行约束待核 |
-| `U-crosshair/showLeftCheckBox` | QCheckBox；Show Left | `on_showLeftCheckBox_stateChanged @275` | 运行约束待核 |
-| `U-crosshair/crosshairOpacitySpinBox` | QSpinBox | `on_crosshairOpacitySpinBox_editingFinished @377` | 运行约束待核 |
-| `U-crosshair/showRightCheckBox` | QCheckBox；Show Right | `on_showRightCheckBox_stateChanged @292` | 运行约束待核 |
-| `U-crosshair/x_offsetSpinBox` | QSpinBox | `on_x_offsetSpinBox_editingFinished @394` | 运行约束待核 |
-| `U-crosshair/y_offsetSpinBox` | QSpinBox | `on_y_offsetSpinBox_editingFinished @411` | 运行约束待核 |
+| `U-crosshair/centerColorPicker` | ColorPickerWidget | `connect colorChanged @56` | 静态见 UI-003；`UI-CROSSHAIR-265 [Gemini]` 已接入 `mapping.set_crosshair`／既有 `qkm_query(mappings)` 14 项 `KeyMapData_Crosshair_*`（`"default"`/`#RRGGBB`，Qt6 `61BB5E30`／Sidecar `2F9E3033`／双 Qt 组件／私有桌面 `run6` 与双 Qt INI 读回 `44BBDBE9`/`1BFCE2B7` `changed_other_keys=0` 通过，支持普通与 Common Tab，运行副本禁用 FakerInput 连接，实际屏幕叠加绘制与 Win10 待验） |
+| `U-crosshair/centerSizeSpinBox` | QSpinBox | `on_centerSizeSpinBox_editingFinished @309` | `UI-CROSSHAIR-265 [Gemini]` 已接入（`1..500`，私有 GUI 探针/边界/冷启读回通过） |
+| `U-crosshair/centerOpacitySpinBox` | QSpinBox | `on_centerOpacitySpinBox_editingFinished @326` | `UI-CROSSHAIR-265 [Gemini]` 已接入（`0..255`，UI 隐藏控件仍读写与 INI 持久化；边界/冷启读回通过） |
+| `U-crosshair/showCenterCheckBox` | QCheckBox；Show Center | `on_showCenterCheckBox_stateChanged @224` | `UI-CROSSHAIR-265 [Gemini]` 已接入（布尔，私有 GUI 探针/边界/冷启读回通过；实际叠加显示待验） |
+| `U-crosshair/crosshairColorPicker` | ColorPickerWidget | `connect colorChanged @57` | `UI-CROSSHAIR-265 [Gemini]` 已接入（`"default"`/`#RRGGBB`，边界/冷启读回通过；实际叠加染色待验） |
+| `U-crosshair/showTopCheckBox` | QCheckBox；Show Top | `on_showTopCheckBox_stateChanged @241` | `UI-CROSSHAIR-265 [Gemini]` 已接入（布尔，边界/冷启读回通过；实际叠加显示待验） |
+| `U-crosshair/crosshairLineWidthSpinBox` | QSpinBox | `on_crosshairLineWidthSpinBox_editingFinished @343` | `UI-CROSSHAIR-265 [Gemini]` 已接入（`1..500`，私有 GUI 探针/边界/冷启读回通过） |
+| `U-crosshair/showBottomCheckBox` | QCheckBox；Show Bottom | `on_showBottomCheckBox_stateChanged @258` | `UI-CROSSHAIR-265 [Gemini]` 已接入（布尔，边界/冷启读回通过；实际叠加显示待验） |
+| `U-crosshair/crosshairLineLengthSpinBox` | QSpinBox | `on_crosshairLineLengthSpinBox_editingFinished @360` | `UI-CROSSHAIR-265 [Gemini]` 已接入（`1..900`，边界/冷启读回通过） |
+| `U-crosshair/showLeftCheckBox` | QCheckBox；Show Left | `on_showLeftCheckBox_stateChanged @275` | `UI-CROSSHAIR-265 [Gemini]` 已接入（布尔，Common Tab/冷启读回通过；实际叠加显示待验） |
+| `U-crosshair/crosshairOpacitySpinBox` | QSpinBox | `on_crosshairOpacitySpinBox_editingFinished @377` | `UI-CROSSHAIR-265 [Gemini]` 已接入（`0..255`，边界/冷启读回通过） |
+| `U-crosshair/showRightCheckBox` | QCheckBox；Show Right | `on_showRightCheckBox_stateChanged @292` | `UI-CROSSHAIR-265 [Gemini]` 已接入（布尔，边界/冷启读回通过；实际叠加显示待验） |
+| `U-crosshair/x_offsetSpinBox` | QSpinBox | `on_x_offsetSpinBox_editingFinished @394` | `UI-CROSSHAIR-265 [Gemini]` 已接入（`-5000..5000`，私有 GUI 探针/边界/冷启读回通过） |
+| `U-crosshair/y_offsetSpinBox` | QSpinBox | `on_y_offsetSpinBox_editingFinished @411` | `UI-CROSSHAIR-265 [Gemini]` 已接入（`-5000..5000`，边界/冷启读回通过） |
 
 ### floating_window（9 项）
 
@@ -587,7 +587,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-item/recordKeysButton` | QPushButton；Record Keys | `on_recordKeysButton_clicked @3975` | 运行约束待核 |
 | `U-item/SetupDialog_OriginalKeyListComboBox` | KeyListComboBox | `connect currentTextChanged @177` | 运行约束待核 |
 | `U-item/SetupDialog_MappingKeyListComboBox` | KeyListComboBox | `connect currentTextChanged @178` | 运行约束待核 |
-| `U-item/crosshairSetupButton` | QPushButton；CrosshairSetup | `on_crosshairSetupButton_clicked @4185` | 运行约束待核 |
+| `U-item/crosshairSetupButton` | QPushButton；CrosshairSetup | `on_crosshairSetupButton_clicked @4185` | `UI-CROSSHAIR-265 [Gemini]` 已以单行 `mapping.set_crosshair.{preview,apply}` 覆盖弹窗内 14 项设定；私有桌面探针实测点击打开不误标 dirty |
 | `U-item/keyRecordLineEdit` | QLineEdit | `on_keyRecordLineEdit_textChanged @4302` | 运行约束待核 |
 | `U-item/keyRecordEditModeButton` | QPushButton；Edit | `on_keyRecordEditModeButton_clicked @4254` | 运行约束待核 |
 | `U-item/keyRecordCopyButton` | QPushButton；Copy | `on_keyRecordCopyButton_clicked @4282` | 运行约束待核 |

@@ -414,6 +414,27 @@ async def check_contract(exe):
                     assert not validator.is_valid(request), bad_fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            crosshair_base = {"action": "mapping.set_crosshair", "source_ref": row}
+            for fields in ({"center_color": "#AABBCC", "center_size": 500, "center_opacity": 255,
+                            "crosshair_color": "default", "crosshair_width": 1, "crosshair_length": 900,
+                            "crosshair_opacity": 0, "show_center": False, "show_top": True,
+                            "show_bottom": False, "show_left": True, "show_right": False,
+                            "x_offset": -5000, "y_offset": 5000},
+                           {"center_color": "default", "x_offset": 0}):
+                request = crosshair_base | {"crosshair": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for bad_fields in ({}, {"center_color": "#11223344"}, {"crosshair_color": "70a1ff"},
+                               {"center_size": 0}, {"center_size": 501}, {"center_opacity": -1}, {"center_opacity": 256},
+                               {"crosshair_width": 0}, {"crosshair_width": 501}, {"crosshair_length": 0}, {"crosshair_length": 901},
+                               {"crosshair_opacity": 256}, {"show_center": 1}, {"x_offset": -5001}, {"y_offset": 5001},
+                               {"x_offset": 1.5}, {"center_size": None}, {"center_size": 2, "extra": 1}):
+                request = crosshair_base | {"crosshair": bad_fields}
+                assert not validator.is_valid(request), bad_fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
+            denied = await client.call_tool("qkm_preview_changes", {"action": "mapping.set_crosshair", "source_tab_ref": tab, "crosshair": {"center_size": 5}})
+            assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -603,7 +624,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "crosshair", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

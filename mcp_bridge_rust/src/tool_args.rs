@@ -732,6 +732,47 @@ struct TabFloatingWindowSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct MappingCrosshairFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    center_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    center_size: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    center_opacity: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    crosshair_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    crosshair_width: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    crosshair_length: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    crosshair_opacity: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_center: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_top: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_bottom: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_left: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_right: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    x_offset: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    y_offset: Option<i64>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct MappingCrosshairSettings {
+    action: String,
+    source_ref: String,
+    crosshair: MappingCrosshairFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1549,6 +1590,47 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && f.mouse_pass_through_switch_key
                                 .as_deref()
                                 .is_none_or(valid_switch_key)
+                    });
+                }
+                Some("mapping.set_crosshair") => {
+                    if arguments
+                        .get("crosshair")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &MappingCrosshairSettings| {
+                        let f = &v.crosshair;
+                        let any_set = f.center_color.is_some()
+                            || f.center_size.is_some()
+                            || f.center_opacity.is_some()
+                            || f.crosshair_color.is_some()
+                            || f.crosshair_width.is_some()
+                            || f.crosshair_length.is_some()
+                            || f.crosshair_opacity.is_some()
+                            || f.show_center.is_some()
+                            || f.show_top.is_some()
+                            || f.show_bottom.is_some()
+                            || f.show_left.is_some()
+                            || f.show_right.is_some()
+                            || f.x_offset.is_some()
+                            || f.y_offset.is_some();
+                        row_ref(&v.source_ref)
+                            && any_set
+                            && f.center_color
+                                .as_deref()
+                                .is_none_or(|c| notification_color(c, 6))
+                            && f.center_size.is_none_or(|n| (1..=500).contains(&n))
+                            && f.center_opacity.is_none_or(|n| (0..=255).contains(&n))
+                            && f.crosshair_color
+                                .as_deref()
+                                .is_none_or(|c| notification_color(c, 6))
+                            && f.crosshair_width.is_none_or(|n| (1..=500).contains(&n))
+                            && f.crosshair_length.is_none_or(|n| (1..=900).contains(&n))
+                            && f.crosshair_opacity.is_none_or(|n| (0..=255).contains(&n))
+                            && f.x_offset.is_none_or(|n| (-5000..=5000).contains(&n))
+                            && f.y_offset.is_none_or(|n| (-5000..=5000).contains(&n))
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -2851,6 +2933,78 @@ mod tests {
                 "action": "tab.set_floating_window",
                 "source_tab_ref": tab,
                 "floating_window": bad
+            }))
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn mapping_crosshair_validation() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let row = format!("{}:row:0:0", "a".repeat(64));
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let valid_full = json!({
+            "center_color": "#AABBCC",
+            "center_size": 500,
+            "center_opacity": 255,
+            "crosshair_color": "default",
+            "crosshair_width": 1,
+            "crosshair_length": 900,
+            "crosshair_opacity": 0,
+            "show_center": false,
+            "show_top": true,
+            "show_bottom": false,
+            "show_left": true,
+            "show_right": false,
+            "x_offset": -5000,
+            "y_offset": 5000
+        });
+        let wire = json!({
+            "action": "mapping.set_crosshair",
+            "source_ref": row,
+            "crosshair": valid_full
+        });
+        assert_eq!(preview(&wire).unwrap(), *wire.as_object().unwrap());
+
+        let subset = json!({
+            "action": "mapping.set_crosshair",
+            "source_ref": row,
+            "crosshair": {"center_color": "default", "x_offset": 0}
+        });
+        assert_eq!(preview(&subset).unwrap(), *subset.as_object().unwrap());
+
+        assert!(preview(&json!({
+            "action": "mapping.set_crosshair",
+            "source_ref": tab,
+            "crosshair": {"center_size": 5}
+        }))
+        .is_err());
+
+        for bad in [
+            json!({}),
+            json!({"center_color": "#11223344"}),
+            json!({"crosshair_color": "70a1ff"}),
+            json!({"center_size": 0}),
+            json!({"center_size": 501}),
+            json!({"center_opacity": -1}),
+            json!({"center_opacity": 256}),
+            json!({"crosshair_width": 0}),
+            json!({"crosshair_width": 501}),
+            json!({"crosshair_length": 0}),
+            json!({"crosshair_length": 901}),
+            json!({"crosshair_opacity": 256}),
+            json!({"show_center": 1}),
+            json!({"x_offset": -5001}),
+            json!({"y_offset": 5001}),
+            json!({"x_offset": 1.5}),
+            json!({"center_size": null}),
+            json!({"center_size": 2, "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "mapping.set_crosshair",
+                "source_ref": row,
+                "crosshair": bad
             }))
             .is_err());
         }

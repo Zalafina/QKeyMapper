@@ -503,6 +503,24 @@ struct TabFloatingWindowSettings
     QString mousePassThroughSwitchKey = QString::fromLatin1(QKeyMapperConstants::FLOATINGWINDOW_MOUSE_PASSTHROUGH_SWITCHKEY_DEFAULT);
 };
 
+struct MappingCrosshairSettings
+{
+    QColor centerColor = QKeyMapperConstants::CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR;
+    int centerSize = QKeyMapperConstants::CROSSHAIR_CENTERSIZE_DEFAULT;
+    int centerOpacity = QKeyMapperConstants::CROSSHAIR_CENTEROPACITY_DEFAULT;
+    QColor crosshairColor = QKeyMapperConstants::CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR;
+    int crosshairWidth = QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_DEFAULT;
+    int crosshairLength = QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_DEFAULT;
+    int crosshairOpacity = QKeyMapperConstants::CROSSHAIR_CROSSHAIROPACITY_DEFAULT;
+    bool showCenter = true;
+    bool showTop = true;
+    bool showBottom = true;
+    bool showLeft = true;
+    bool showRight = true;
+    int xOffset = QKeyMapperConstants::CROSSHAIR_X_OFFSET_DEFAULT;
+    int yOffset = QKeyMapperConstants::CROSSHAIR_Y_OFFSET_DEFAULT;
+};
+
 struct ActiveKeyMappingRowSourceInfo
 {
     int SourceTabIndex = -1;
@@ -2143,6 +2161,8 @@ public:
     bool setMappingTabNotificationColors(int tabIndex, const QColor &font, const QColor &background);
     TabFloatingWindowSettings getMappingTabFloatingWindowSettings(int tabIndex) const;
     bool setMappingTabFloatingWindowSettings(int tabIndex, const TabFloatingWindowSettings &settings);
+    MappingCrosshairSettings getMappingSourceRowCrosshairSettings(int tabIndex, int row) const;
+    bool setMappingSourceRowCrosshairSettings(int tabIndex, int row, const MappingCrosshairSettings &settings);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;

@@ -18582,6 +18582,120 @@ bool QKeyMapper::setMappingTabFloatingWindowSettings(int tabIndex, const TabFloa
     return true;
 }
 
+MappingCrosshairSettings QKeyMapper::getMappingSourceRowCrosshairSettings(int tabIndex, int row) const
+{
+    MappingCrosshairSettings settings;
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
+        return settings;
+    }
+    const KeyMappingTab_Info &tab = s_KeyMappingTabInfoList.at(tabIndex);
+    if (!tab.KeyMappingData || row < 0 || row >= tab.KeyMappingData->size()) {
+        return settings;
+    }
+
+    const MAP_KEYDATA &d = tab.KeyMappingData->at(row);
+    const auto normalizeRgb = [](const QColor &color, const QColor &fallback) -> QColor {
+        const QColor resolved = color.isValid() ? color : fallback;
+        return QColor(resolved.red(), resolved.green(), resolved.blue());
+    };
+    settings.centerColor = normalizeRgb(d.Crosshair_CenterColor, QKeyMapperConstants::CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR);
+    settings.centerSize = (d.Crosshair_CenterSize >= QKeyMapperConstants::CROSSHAIR_CENTERSIZE_MIN
+            && d.Crosshair_CenterSize <= QKeyMapperConstants::CROSSHAIR_CENTERSIZE_MAX)
+        ? d.Crosshair_CenterSize : QKeyMapperConstants::CROSSHAIR_CENTERSIZE_DEFAULT;
+    settings.centerOpacity = (d.Crosshair_CenterOpacity >= QKeyMapperConstants::CROSSHAIR_OPACITY_MIN
+            && d.Crosshair_CenterOpacity <= QKeyMapperConstants::CROSSHAIR_OPACITY_MAX)
+        ? d.Crosshair_CenterOpacity : QKeyMapperConstants::CROSSHAIR_CENTEROPACITY_DEFAULT;
+    settings.crosshairColor = normalizeRgb(d.Crosshair_CrosshairColor, QKeyMapperConstants::CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR);
+    settings.crosshairWidth = (d.Crosshair_CrosshairWidth >= QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_MIN
+            && d.Crosshair_CrosshairWidth <= QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_MAX)
+        ? d.Crosshair_CrosshairWidth : QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_DEFAULT;
+    settings.crosshairLength = (d.Crosshair_CrosshairLength >= QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_MIN
+            && d.Crosshair_CrosshairLength <= QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_MAX)
+        ? d.Crosshair_CrosshairLength : QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_DEFAULT;
+    settings.crosshairOpacity = (d.Crosshair_CrosshairOpacity >= QKeyMapperConstants::CROSSHAIR_OPACITY_MIN
+            && d.Crosshair_CrosshairOpacity <= QKeyMapperConstants::CROSSHAIR_OPACITY_MAX)
+        ? d.Crosshair_CrosshairOpacity : QKeyMapperConstants::CROSSHAIR_CROSSHAIROPACITY_DEFAULT;
+    settings.showCenter = d.Crosshair_ShowCenter;
+    settings.showTop = d.Crosshair_ShowTop;
+    settings.showBottom = d.Crosshair_ShowBottom;
+    settings.showLeft = d.Crosshair_ShowLeft;
+    settings.showRight = d.Crosshair_ShowRight;
+    settings.xOffset = (d.Crosshair_X_Offset >= QKeyMapperConstants::CROSSHAIR_X_OFFSET_MIN
+            && d.Crosshair_X_Offset <= QKeyMapperConstants::CROSSHAIR_X_OFFSET_MAX)
+        ? d.Crosshair_X_Offset : QKeyMapperConstants::CROSSHAIR_X_OFFSET_DEFAULT;
+    settings.yOffset = (d.Crosshair_Y_Offset >= QKeyMapperConstants::CROSSHAIR_Y_OFFSET_MIN
+            && d.Crosshair_Y_Offset <= QKeyMapperConstants::CROSSHAIR_Y_OFFSET_MAX)
+        ? d.Crosshair_Y_Offset : QKeyMapperConstants::CROSSHAIR_Y_OFFSET_DEFAULT;
+    return settings;
+}
+
+bool QKeyMapper::setMappingSourceRowCrosshairSettings(int tabIndex, int row, const MappingCrosshairSettings &settings)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+    KeyMappingTab_Info &tab = s_KeyMappingTabInfoList[tabIndex];
+    if (!tab.KeyMappingData || row < 0 || row >= tab.KeyMappingData->size()) {
+        return false;
+    }
+    if (!settings.centerColor.isValid() || !settings.crosshairColor.isValid()
+        || settings.centerSize < QKeyMapperConstants::CROSSHAIR_CENTERSIZE_MIN
+        || settings.centerSize > QKeyMapperConstants::CROSSHAIR_CENTERSIZE_MAX
+        || settings.centerOpacity < QKeyMapperConstants::CROSSHAIR_OPACITY_MIN
+        || settings.centerOpacity > QKeyMapperConstants::CROSSHAIR_OPACITY_MAX
+        || settings.crosshairWidth < QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_MIN
+        || settings.crosshairWidth > QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_MAX
+        || settings.crosshairLength < QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_MIN
+        || settings.crosshairLength > QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_MAX
+        || settings.crosshairOpacity < QKeyMapperConstants::CROSSHAIR_OPACITY_MIN
+        || settings.crosshairOpacity > QKeyMapperConstants::CROSSHAIR_OPACITY_MAX
+        || settings.xOffset < QKeyMapperConstants::CROSSHAIR_X_OFFSET_MIN
+        || settings.xOffset > QKeyMapperConstants::CROSSHAIR_X_OFFSET_MAX
+        || settings.yOffset < QKeyMapperConstants::CROSSHAIR_Y_OFFSET_MIN
+        || settings.yOffset > QKeyMapperConstants::CROSSHAIR_Y_OFFSET_MAX) {
+        return false;
+    }
+
+    const QColor normalizedCenter(settings.centerColor.red(), settings.centerColor.green(), settings.centerColor.blue());
+    const QColor normalizedCrosshair(settings.crosshairColor.red(), settings.crosshairColor.green(), settings.crosshairColor.blue());
+    const MappingCrosshairSettings before = getMappingSourceRowCrosshairSettings(tabIndex, row);
+    if (before.centerColor == normalizedCenter
+        && before.centerSize == settings.centerSize
+        && before.centerOpacity == settings.centerOpacity
+        && before.crosshairColor == normalizedCrosshair
+        && before.crosshairWidth == settings.crosshairWidth
+        && before.crosshairLength == settings.crosshairLength
+        && before.crosshairOpacity == settings.crosshairOpacity
+        && before.showCenter == settings.showCenter
+        && before.showTop == settings.showTop
+        && before.showBottom == settings.showBottom
+        && before.showLeft == settings.showLeft
+        && before.showRight == settings.showRight
+        && before.xOffset == settings.xOffset
+        && before.yOffset == settings.yOffset) {
+        return false;
+    }
+
+    MAP_KEYDATA &d = (*tab.KeyMappingData)[row];
+    d.Crosshair_CenterColor = normalizedCenter;
+    d.Crosshair_CenterSize = settings.centerSize;
+    d.Crosshair_CenterOpacity = settings.centerOpacity;
+    d.Crosshair_CrosshairColor = normalizedCrosshair;
+    d.Crosshair_CrosshairWidth = settings.crosshairWidth;
+    d.Crosshair_CrosshairLength = settings.crosshairLength;
+    d.Crosshair_CrosshairOpacity = settings.crosshairOpacity;
+    d.Crosshair_ShowCenter = settings.showCenter;
+    d.Crosshair_ShowTop = settings.showTop;
+    d.Crosshair_ShowBottom = settings.showBottom;
+    d.Crosshair_ShowLeft = settings.showLeft;
+    d.Crosshair_ShowRight = settings.showRight;
+    d.Crosshair_X_Offset = settings.xOffset;
+    d.Crosshair_Y_Offset = settings.yOffset;
+    ++m_AutomationSourceEpoch;
+    requestSaveSettingDirty();
+    return true;
+}
+
 bool QKeyMapper::setMappingTabCommonInheritance(int tabIndex, bool includeCommon)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) return false;
@@ -38476,6 +38590,73 @@ static bool tabFloatingWindowSettingsEqual(
         && a.mousePassThroughSwitchKey == b.mousePassThroughSwitchKey;
 }
 
+static QJsonObject automationCrosshair(const MappingCrosshairSettings &s)
+{
+    return {
+        {QStringLiteral("center_color"), s.centerColor.name(QColor::HexRgb)},
+        {QStringLiteral("center_size"), s.centerSize},
+        {QStringLiteral("center_opacity"), s.centerOpacity},
+        {QStringLiteral("crosshair_color"), s.crosshairColor.name(QColor::HexRgb)},
+        {QStringLiteral("crosshair_width"), s.crosshairWidth},
+        {QStringLiteral("crosshair_length"), s.crosshairLength},
+        {QStringLiteral("crosshair_opacity"), s.crosshairOpacity},
+        {QStringLiteral("show_center"), s.showCenter},
+        {QStringLiteral("show_top"), s.showTop},
+        {QStringLiteral("show_bottom"), s.showBottom},
+        {QStringLiteral("show_left"), s.showLeft},
+        {QStringLiteral("show_right"), s.showRight},
+        {QStringLiteral("x_offset"), s.xOffset},
+        {QStringLiteral("y_offset"), s.yOffset},
+    };
+}
+
+static MappingCrosshairSettings mergeCrosshairSettings(
+    const MappingCrosshairSettings &base, const QkmAutomation::MappingCrosshairUpdate &u)
+{
+    MappingCrosshairSettings target = base;
+    if (u.centerColor) {
+        target.centerColor = (*u.centerColor == QLatin1String("default"))
+            ? QKeyMapperConstants::CROSSHAIR_CENTERCOLOR_DEFAULT_QCOLOR
+            : QColor(*u.centerColor);
+    }
+    if (u.centerSize) target.centerSize = *u.centerSize;
+    if (u.centerOpacity) target.centerOpacity = *u.centerOpacity;
+    if (u.crosshairColor) {
+        target.crosshairColor = (*u.crosshairColor == QLatin1String("default"))
+            ? QKeyMapperConstants::CROSSHAIR_CROSSHAIRCOLOR_DEFAULT_QCOLOR
+            : QColor(*u.crosshairColor);
+    }
+    if (u.crosshairWidth) target.crosshairWidth = *u.crosshairWidth;
+    if (u.crosshairLength) target.crosshairLength = *u.crosshairLength;
+    if (u.crosshairOpacity) target.crosshairOpacity = *u.crosshairOpacity;
+    if (u.showCenter) target.showCenter = *u.showCenter;
+    if (u.showTop) target.showTop = *u.showTop;
+    if (u.showBottom) target.showBottom = *u.showBottom;
+    if (u.showLeft) target.showLeft = *u.showLeft;
+    if (u.showRight) target.showRight = *u.showRight;
+    if (u.xOffset) target.xOffset = *u.xOffset;
+    if (u.yOffset) target.yOffset = *u.yOffset;
+    return target;
+}
+
+static bool crosshairSettingsEqual(const MappingCrosshairSettings &a, const MappingCrosshairSettings &b)
+{
+    return a.centerColor == b.centerColor
+        && a.centerSize == b.centerSize
+        && a.centerOpacity == b.centerOpacity
+        && a.crosshairColor == b.crosshairColor
+        && a.crosshairWidth == b.crosshairWidth
+        && a.crosshairLength == b.crosshairLength
+        && a.crosshairOpacity == b.crosshairOpacity
+        && a.showCenter == b.showCenter
+        && a.showTop == b.showTop
+        && a.showBottom == b.showBottom
+        && a.showLeft == b.showLeft
+        && a.showRight == b.showRight
+        && a.xOffset == b.xOffset
+        && a.yOffset == b.yOffset;
+}
+
 static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QString &screenKey)
 {
     return {{QStringLiteral("window_point_key"), windowKey},
@@ -41201,6 +41382,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         int rowAfter = update.sourceRow;
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
+        const bool crosshairUpdate = updating && update.crosshair.has_value();
         const bool categoryUpdate = updating && update.category.has_value();
         const bool rowModeUpdate = updating && !update.rowModes.isEmpty() && !triggerUpdate;
         const bool sendTimingUpdate = updating && update.sendTiming.has_value();
@@ -42046,6 +42228,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             modified = before != *update.note;
             change = {{QStringLiteral("kind"), QStringLiteral("update_row_note")},
                 {QStringLiteral("before"), before}, {QStringLiteral("after"), *update.note}};
+        } else if (crosshairUpdate) {
+            const MappingCrosshairSettings before = getMappingSourceRowCrosshairSettings(tab, update.sourceRow);
+            const MappingCrosshairSettings after = mergeCrosshairSettings(before, *update.crosshair);
+            modified = !crosshairSettingsEqual(before, after);
+            change = {{QStringLiteral("kind"), QStringLiteral("set_crosshair")},
+                {QStringLiteral("before"), automationCrosshair(before)},
+                {QStringLiteral("after"), automationCrosshair(after)},
+                {QStringLiteral("persisted"), false}};
         } else if (categoryUpdate) {
             const QString after = update.category->trimmed();
             const auto rows = update.batchRows.isEmpty() ? QList<int>{update.sourceRow} : update.batchRows;
@@ -42336,6 +42526,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingTabHotkey ? QStringLiteral("tab.set_hotkey")
             : renamingTab ? QStringLiteral("tab.rename")
             : duplicatingRow ? QStringLiteral("mapping.duplicate")
+            : crosshairUpdate ? QStringLiteral("mapping.set_crosshair")
             : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
         if (!change.isEmpty()) changes.prepend(change);
@@ -42640,6 +42831,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (noteUpdate) {
                 if (!setMappingSourceRowNote(tab, update.sourceRow, *update.note)) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts note changes."));
+                    return;
+                }
+            } else if (crosshairUpdate) {
+                const MappingCrosshairSettings before = getMappingSourceRowCrosshairSettings(tab, update.sourceRow);
+                const MappingCrosshairSettings after = mergeCrosshairSettings(before, *update.crosshair);
+                if (!setMappingSourceRowCrosshairSettings(tab, update.sourceRow, after)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts crosshair changes."));
                     return;
                 }
             } else if (categoryUpdate) {

@@ -510,6 +510,83 @@ bool parseTabFloatingWindowUpdate(const QJsonObject &arguments, TabFloatingWindo
     }
     return true;
 }
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+bool parseMappingCrosshairUpdate(const QJsonValue &rawValue, MappingCrosshairUpdate &out, const char *&errorOut)
+{
+    const auto fail = [&](const char *msg) {
+        errorOut = msg;
+        return false;
+    };
+    const auto fields = rawValue.toObject();
+    if (!rawValue.isObject() || fields.isEmpty()) {
+        return fail("Provide a non-empty crosshair object.");
+    }
+    static const QSet<QString> allowedFields{
+        QStringLiteral("center_color"), QStringLiteral("center_size"), QStringLiteral("center_opacity"),
+        QStringLiteral("crosshair_color"), QStringLiteral("crosshair_width"), QStringLiteral("crosshair_length"),
+        QStringLiteral("crosshair_opacity"), QStringLiteral("show_center"), QStringLiteral("show_top"),
+        QStringLiteral("show_bottom"), QStringLiteral("show_left"), QStringLiteral("show_right"),
+        QStringLiteral("x_offset"), QStringLiteral("y_offset")};
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        if (!allowedFields.contains(it.key())) {
+            return fail("Unknown crosshair field.");
+        }
+    }
+    const auto parseColor = [&](const QString &key, std::optional<QString> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        if (!val.isString()) return false;
+        const QString s = val.toString();
+        static const QRegularExpression re(QStringLiteral("^#[0-9A-Fa-f]{6}$"));
+        if (s != QLatin1String("default") && !re.match(s).hasMatch()) {
+            return false;
+        }
+        target = (s == QLatin1String("default")) ? s : s.toLower();
+        return true;
+    };
+    const auto parseIntRange = [&](const QString &key, int minVal, int maxVal, std::optional<int> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        const int parsed = val.toInt(minVal - 1);
+        if (!val.isDouble() || std::floor(val.toDouble()) != val.toDouble()
+            || parsed < minVal || parsed > maxVal) {
+            return false;
+        }
+        target = parsed;
+        return true;
+    };
+    const auto parseBoolField = [&](const QString &key, std::optional<bool> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        if (!val.isBool()) return false;
+        target = val.toBool();
+        return true;
+    };
+    if (!parseColor(QStringLiteral("center_color"), out.centerColor)
+        || !parseColor(QStringLiteral("crosshair_color"), out.crosshairColor)) {
+        return fail("crosshair color fields must be \"default\" or a 6-digit hex string (#RRGGBB).");
+    }
+    if (!parseIntRange(QStringLiteral("center_size"), QKeyMapperConstants::CROSSHAIR_CENTERSIZE_MIN, QKeyMapperConstants::CROSSHAIR_CENTERSIZE_MAX, out.centerSize)
+        || !parseIntRange(QStringLiteral("center_opacity"), QKeyMapperConstants::CROSSHAIR_OPACITY_MIN, QKeyMapperConstants::CROSSHAIR_OPACITY_MAX, out.centerOpacity)
+        || !parseIntRange(QStringLiteral("crosshair_width"), QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_MIN, QKeyMapperConstants::CROSSHAIR_CROSSHAIRWIDTH_MAX, out.crosshairWidth)
+        || !parseIntRange(QStringLiteral("crosshair_length"), QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_MIN, QKeyMapperConstants::CROSSHAIR_CROSSHAIRLENGTH_MAX, out.crosshairLength)
+        || !parseIntRange(QStringLiteral("crosshair_opacity"), QKeyMapperConstants::CROSSHAIR_OPACITY_MIN, QKeyMapperConstants::CROSSHAIR_OPACITY_MAX, out.crosshairOpacity)
+        || !parseIntRange(QStringLiteral("x_offset"), QKeyMapperConstants::CROSSHAIR_X_OFFSET_MIN, QKeyMapperConstants::CROSSHAIR_X_OFFSET_MAX, out.xOffset)
+        || !parseIntRange(QStringLiteral("y_offset"), QKeyMapperConstants::CROSSHAIR_Y_OFFSET_MIN, QKeyMapperConstants::CROSSHAIR_Y_OFFSET_MAX, out.yOffset)) {
+        return fail("A crosshair integer field is invalid or out of range.");
+    }
+    if (!parseBoolField(QStringLiteral("show_center"), out.showCenter)
+        || !parseBoolField(QStringLiteral("show_top"), out.showTop)
+        || !parseBoolField(QStringLiteral("show_bottom"), out.showBottom)
+        || !parseBoolField(QStringLiteral("show_left"), out.showLeft)
+        || !parseBoolField(QStringLiteral("show_right"), out.showRight)) {
+        return fail("crosshair visibility fields must be booleans.");
+    }
+    return true;
+}
 }
 
 const char *mappingRowMoveAction(MappingRowMove move)
@@ -867,6 +944,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool savePreview = preview && action.isString() && action.toString() == QStringLiteral("configuration.save");
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
+    const bool crosshairPreview = preview && action == QLatin1String("mapping.set_crosshair");
     const bool duplicatePreview = preview && action == QLatin1String("mapping.duplicate");
     MappingRowMove rowMove = MappingRowMove::None;
     if (preview) {
@@ -931,7 +1009,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
-        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
+        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !crosshairPreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
     const char *singleTabField = renamePreview ? "tab_name"
         : tabHotkeyPreview ? "tab_hotkey"
@@ -983,6 +1061,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         allowed = {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("target_tab_ref")};
     } else if (tabActionPreview) {
         allowed = {QStringLiteral("action"), QStringLiteral("source_tab_ref")};
+    } else if (crosshairPreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("crosshair")};
     } else if (movePreview) {
         allowed = {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")};
     } else if (duplicatePreview) {
@@ -1415,6 +1495,27 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
             if (!enabled.isBool()) return fail("A boolean common_feature_enabled is required.");
             result.update.commonFeatureEnabled = enabled.toBool();
         }
+        return result;
+    }
+    if (crosshairPreview) {
+        const auto reference = arguments.value(QStringLiteral("source_ref"));
+        const QString refStr = reference.toString();
+        const auto parts = refStr.split(QLatin1Char(':'));
+        bool tabOk = false, rowOk = false;
+        const int tab = parts.size() == 4 ? parts.at(2).toInt(&tabOk) : -1;
+        const int row = parts.size() == 4 ? parts.at(3).toInt(&rowOk) : -1;
+        if (!reference.isString() || refStr.size() > 128 || parts.size() != 4
+            || !isLowerHex(parts.at(0), 64) || parts.at(1) != QStringLiteral("row") || !tabOk || !rowOk
+            || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3))
+            return fail("A canonical current source row is required.");
+        const char *parseError = nullptr;
+        MappingCrosshairUpdate parsedCrosshair;
+        if (!parseMappingCrosshairUpdate(arguments.value(QStringLiteral("crosshair")), parsedCrosshair, parseError)) {
+            return fail(parseError);
+        }
+        result.action = MappingChangeAction::UpdateMapping;
+        result.update = {refStr, parts.at(0), parts.at(0) + QStringLiteral(":source:") + parts.at(2), row, -1};
+        result.update.crosshair = parsedCrosshair;
         return result;
     }
     if (updatePreview || movePreview || duplicatePreview) {
@@ -2150,6 +2251,50 @@ void appendTabFloatingWindowCapabilities(QJsonArray &capabilities, const Capabil
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendMappingCrosshairCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    using namespace QKeyMapperConstants;
+    const QJsonObject rowRefSchema = CapabilitySchemaContext::string(
+        QStringLiteral("^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$"), 128);
+    const QJsonObject colorSchema = CapabilitySchemaContext::string(QStringLiteral("^(default|#[0-9A-Fa-f]{6})$"), 7);
+    const QJsonObject boolSchema{{QStringLiteral("type"), QStringLiteral("boolean")}};
+    const QJsonObject crosshairSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("center_color"), colorSchema},
+            {QStringLiteral("center_size"), CapabilitySchemaContext::boundedInteger(CROSSHAIR_CENTERSIZE_MIN, CROSSHAIR_CENTERSIZE_MAX)},
+            {QStringLiteral("center_opacity"), CapabilitySchemaContext::boundedInteger(CROSSHAIR_OPACITY_MIN, CROSSHAIR_OPACITY_MAX)},
+            {QStringLiteral("crosshair_color"), colorSchema},
+            {QStringLiteral("crosshair_width"), CapabilitySchemaContext::boundedInteger(CROSSHAIR_CROSSHAIRWIDTH_MIN, CROSSHAIR_CROSSHAIRWIDTH_MAX)},
+            {QStringLiteral("crosshair_length"), CapabilitySchemaContext::boundedInteger(CROSSHAIR_CROSSHAIRLENGTH_MIN, CROSSHAIR_CROSSHAIRLENGTH_MAX)},
+            {QStringLiteral("crosshair_opacity"), CapabilitySchemaContext::boundedInteger(CROSSHAIR_OPACITY_MIN, CROSSHAIR_OPACITY_MAX)},
+            {QStringLiteral("show_center"), boolSchema},
+            {QStringLiteral("show_top"), boolSchema},
+            {QStringLiteral("show_bottom"), boolSchema},
+            {QStringLiteral("show_left"), boolSchema},
+            {QStringLiteral("show_right"), boolSchema},
+            {QStringLiteral("x_offset"), CapabilitySchemaContext::boundedInteger(CROSSHAIR_X_OFFSET_MIN, CROSSHAIR_X_OFFSET_MAX)},
+            {QStringLiteral("y_offset"), CapabilitySchemaContext::boundedInteger(CROSSHAIR_Y_OFFSET_MIN, CROSSHAIR_Y_OFFSET_MAX)}}}};
+    auto crosshairPreviewCap = CapabilitySchemaContext::capability("mapping.set_crosshair.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.set_crosshair")}}},
+            {QStringLiteral("source_ref"), rowRefSchema},
+            {QStringLiteral("crosshair"), crosshairSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("crosshair")}));
+    auto crosshairApplyCap = CapabilitySchemaContext::capability("mapping.set_crosshair.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&crosshairPreviewCap, &crosshairApplyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_visible_attached_row_only"),
+            QStringLiteral("rgb_hex_or_default_colors"), QStringLiteral("supports_normal_and_common_tabs"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -2283,6 +2428,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     appendNotificationStyleCapabilities(capabilities, ctx);
     appendTrayIconCapabilities(capabilities, ctx);
     appendTabFloatingWindowCapabilities(capabilities, ctx);
+    appendMappingCrosshairCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

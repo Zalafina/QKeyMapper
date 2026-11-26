@@ -1092,9 +1092,9 @@ __declspec(noinline)
 #endif
 static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabilities)
 {
-    QCOMPARE(capabilities.size(), 138);
+    QCOMPARE(capabilities.size(), 140);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 130);
+    QCOMPARE(demoCapabilities.size(), 132);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1141,8 +1141,14 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QCOMPARE(capabilities.at(128).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_tray_icons.apply"));
     QCOMPARE(capabilities.at(129).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_floating_window.preview"));
     QCOMPARE(capabilities.at(130).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("tab.set_floating_window.apply"));
-    QCOMPARE(capabilities.at(135).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(136).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(131).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_crosshair.preview"));
+    QCOMPARE(capabilities.at(131).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capabilities.at(131).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(132).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_crosshair.apply"));
+    QCOMPARE(capabilities.at(132).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!capabilities.at(132).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(137).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(138).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_gyro2mouse_options.apply");
     }));
@@ -1169,6 +1175,9 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("tab.set_floating_window.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("mapping.set_crosshair.apply");
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
@@ -1361,7 +1370,13 @@ static void verifyWindowAndTrayArgumentsValidation(const QString &previewMethod,
     QVERIFY(!validateCustomNotification({{QStringLiteral("position"), 7}}).ok());
     QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), false}, {QStringLiteral("position"), 3}}).ok());
     QVERIFY(!validateCustomNotification({{QStringLiteral("enabled"), true}, {QStringLiteral("extra"), 1}}).ok());
+}
 
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyWindowMatchAndStartupValidation(const QString &previewMethod, const QJsonObject &input)
+{
     const auto validateWindowMatchCriteria = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("configuration.set_window_match_criteria")},
@@ -1707,6 +1722,79 @@ static void verifyTabFloatingWindowValidation(const QString &previewMethod, cons
         QJsonObject{{QStringLiteral("size"), 64}, {QStringLiteral("extra"), 1}},
     }) {
         QVERIFY(!validateFWin(bad).ok());
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyCrosshairValidation(const QString &previewMethod, const QString &revision)
+{
+    const QString rowRef = revision + QStringLiteral(":row:0:0");
+    const auto validateCrosshair = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("mapping.set_crosshair")},
+                {QStringLiteral("source_ref"), rowRef},
+                {QStringLiteral("crosshair"), fields}});
+    };
+    const auto valid = validateCrosshair({
+        {QStringLiteral("center_color"), QStringLiteral("#AABBCC")},
+        {QStringLiteral("center_size"), 500},
+        {QStringLiteral("center_opacity"), 255},
+        {QStringLiteral("crosshair_color"), QStringLiteral("default")},
+        {QStringLiteral("crosshair_width"), 1},
+        {QStringLiteral("crosshair_length"), 900},
+        {QStringLiteral("crosshair_opacity"), 0},
+        {QStringLiteral("show_center"), false},
+        {QStringLiteral("show_top"), true},
+        {QStringLiteral("show_bottom"), false},
+        {QStringLiteral("show_left"), true},
+        {QStringLiteral("show_right"), false},
+        {QStringLiteral("x_offset"), -5000},
+        {QStringLiteral("y_offset"), 5000},
+    });
+    QVERIFY(valid.ok() && valid.update.crosshair.has_value());
+    QCOMPARE(valid.update.crosshair->centerColor, std::optional<QString>(QStringLiteral("#aabbcc")));
+    QCOMPARE(valid.update.crosshair->centerSize, std::optional<int>(500));
+    QCOMPARE(valid.update.crosshair->centerOpacity, std::optional<int>(255));
+    QCOMPARE(valid.update.crosshair->crosshairColor, std::optional<QString>(QStringLiteral("default")));
+    QCOMPARE(valid.update.crosshair->crosshairWidth, std::optional<int>(1));
+    QCOMPARE(valid.update.crosshair->crosshairLength, std::optional<int>(900));
+    QCOMPARE(valid.update.crosshair->crosshairOpacity, std::optional<int>(0));
+    QCOMPARE(valid.update.crosshair->showCenter, std::optional<bool>(false));
+    QCOMPARE(valid.update.crosshair->showTop, std::optional<bool>(true));
+    QCOMPARE(valid.update.crosshair->showBottom, std::optional<bool>(false));
+    QCOMPARE(valid.update.crosshair->showLeft, std::optional<bool>(true));
+    QCOMPARE(valid.update.crosshair->showRight, std::optional<bool>(false));
+    QCOMPARE(valid.update.crosshair->xOffset, std::optional<int>(-5000));
+    QCOMPARE(valid.update.crosshair->yOffset, std::optional<int>(5000));
+
+    QVERIFY(!validateMappingChangeRequest(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("mapping.set_crosshair")},
+        {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")},
+        {QStringLiteral("crosshair"), QJsonObject{{QStringLiteral("center_size"), 5}}}}).ok());
+
+    for (const QJsonObject &bad : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("center_color"), QStringLiteral("#11223344")}},
+        QJsonObject{{QStringLiteral("crosshair_color"), QStringLiteral("70a1ff")}},
+        QJsonObject{{QStringLiteral("center_size"), 0}},
+        QJsonObject{{QStringLiteral("center_size"), 501}},
+        QJsonObject{{QStringLiteral("center_opacity"), -1}},
+        QJsonObject{{QStringLiteral("center_opacity"), 256}},
+        QJsonObject{{QStringLiteral("crosshair_width"), 0}},
+        QJsonObject{{QStringLiteral("crosshair_width"), 501}},
+        QJsonObject{{QStringLiteral("crosshair_length"), 0}},
+        QJsonObject{{QStringLiteral("crosshair_length"), 901}},
+        QJsonObject{{QStringLiteral("crosshair_opacity"), 256}},
+        QJsonObject{{QStringLiteral("show_center"), 1}},
+        QJsonObject{{QStringLiteral("x_offset"), -5001}},
+        QJsonObject{{QStringLiteral("y_offset"), 5001}},
+        QJsonObject{{QStringLiteral("x_offset"), 1.5}},
+        QJsonObject{{QStringLiteral("center_size"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("center_size"), 2}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!validateCrosshair(bad).ok());
     }
 }
 
@@ -2399,7 +2487,9 @@ void McpControlTest::mappingChangeArguments()
     verifyNotificationStyleValidation(previewMethod, input);
     verifyTrayIconsValidation(previewMethod, input);
     verifyTabFloatingWindowValidation(previewMethod, input);
+    verifyCrosshairValidation(previewMethod, revision);
     verifyWindowAndTrayArgumentsValidation(previewMethod, input);
+    verifyWindowMatchAndStartupValidation(previewMethod, input);
     if (QTest::currentTestFailed()) return;
 
     for (const int scale : {0, 1, 2, 5, 6, 10}) {
