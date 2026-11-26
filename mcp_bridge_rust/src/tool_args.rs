@@ -576,6 +576,14 @@ struct GamepadTouchpadSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct AcceptVirtualGamepadInput {
+    action: String,
+    source_tab_ref: String,
+    accept_virtual_gamepad_input: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1186,6 +1194,11 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                 }
                 Some("configuration.set_process_icon_as_tray_icon") => {
                     return typed(arguments, |v: &ProcessIconAsTrayIcon| {
+                        tab_ref(&v.source_tab_ref)
+                    });
+                }
+                Some("configuration.set_accept_virtual_gamepad_input") => {
+                    return typed(arguments, |v: &AcceptVirtualGamepadInput| {
                         tab_ref(&v.source_tab_ref)
                     });
                 }
@@ -2264,6 +2277,27 @@ mod tests {
             assert!(preview(&json!({"action": "configuration.set_gamepad_touchpad", "source_tab_ref": tab, "gamepad_touchpad": bad})).is_err());
         }
         assert!(preview(&json!({"action": "configuration.set_gamepad_touchpad", "source_tab_ref": tab, "gamepad_touchpad": {"x_speed": 0.5}, "extra": 1})).is_err());
+    }
+
+    #[test]
+    fn configuration_accept_virtual_gamepad_input_requires_tab_and_boolean() {
+        let revision = "a".repeat(64);
+        let tab = format!("{revision}:source:0");
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for enabled in [true, false] {
+            let valid = json!({"action": "configuration.set_accept_virtual_gamepad_input", "source_tab_ref": tab, "accept_virtual_gamepad_input": enabled});
+            assert_eq!(preview(&valid).unwrap(), *valid.as_object().unwrap());
+        }
+        for bad in [
+            json!({"action": "configuration.set_accept_virtual_gamepad_input", "source_tab_ref": tab}),
+            json!({"action": "configuration.set_accept_virtual_gamepad_input", "source_tab_ref": tab, "accept_virtual_gamepad_input": 1}),
+            json!({"action": "configuration.set_accept_virtual_gamepad_input", "source_tab_ref": tab, "accept_virtual_gamepad_input": "true"}),
+            json!({"action": "configuration.set_accept_virtual_gamepad_input", "source_tab_ref": tab, "accept_virtual_gamepad_input": null}),
+            json!({"action": "configuration.set_accept_virtual_gamepad_input", "source_tab_ref": tab, "accept_virtual_gamepad_input": true, "extra": 1}),
+        ] {
+            assert!(preview(&bad).is_err());
+        }
     }
 
     #[test]

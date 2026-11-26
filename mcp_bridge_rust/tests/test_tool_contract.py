@@ -327,6 +327,19 @@ async def check_contract(exe):
                     assert not validator.is_valid(request), fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            accept_virtual = {"action": "configuration.set_accept_virtual_gamepad_input", "source_tab_ref": tab}
+            for enabled in (True, False):
+                request = accept_virtual | {"accept_virtual_gamepad_input": enabled}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for bad in (accept_virtual,
+                        accept_virtual | {"accept_virtual_gamepad_input": 1},
+                        accept_virtual | {"accept_virtual_gamepad_input": "true"},
+                        accept_virtual | {"accept_virtual_gamepad_input": None},
+                        accept_virtual | {"accept_virtual_gamepad_input": True, "extra": True}):
+                assert not validator.is_valid(bad), bad
+                denied = await client.call_tool("qkm_preview_changes", bad)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -516,7 +529,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

@@ -440,6 +440,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool gyro2MouseOptionsPreview = preview && action == QLatin1String("configuration.set_gyro2mouse_options");
     const bool gamepadThresholdsPreview = preview && action == QLatin1String("configuration.set_gamepad_thresholds");
     const bool gamepadTouchpadPreview = preview && action == QLatin1String("configuration.set_gamepad_touchpad");
+    const bool acceptVirtualGamepadInputPreview = preview && action == QLatin1String("configuration.set_accept_virtual_gamepad_input");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -463,7 +464,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || processIconTrayPreview
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -489,6 +490,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : gyro2MouseOptionsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gyro2mouse_options")}
         : gamepadThresholdsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_thresholds")}
         : gamepadTouchpadPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_touchpad")}
+        : acceptVirtualGamepadInputPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("accept_virtual_gamepad_input")}
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
         : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
@@ -801,6 +803,11 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 || !parseBoolField(QStringLiteral("invert_y"), result.update.gamepadTouchpadInvertY)) {
                 return fail("Gamepad touchpad invert flags must be booleans.");
             }
+        }
+        if (acceptVirtualGamepadInputPreview) {
+            const auto value = arguments.value(QStringLiteral("accept_virtual_gamepad_input"));
+            if (!value.isBool()) return fail("Provide an explicit boolean accept_virtual_gamepad_input.");
+            result.update.acceptVirtualGamepadInput = value.toBool();
         }
         if (processIconTrayPreview) {
             const auto value = arguments.value(QStringLiteral("process_icon_as_tray_icon"));
@@ -1687,6 +1694,19 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
             QStringLiteral("two_decimal_speed_precision_0_to_200"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    auto acceptVirtualGamepadInputPreviewCap = CapabilitySchemaContext::capability("configuration.set_accept_virtual_gamepad_input.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_accept_virtual_gamepad_input")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("accept_virtual_gamepad_input"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("accept_virtual_gamepad_input")}));
+    auto acceptVirtualGamepadInputApply = CapabilitySchemaContext::capability("configuration.set_accept_virtual_gamepad_input.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&acceptVirtualGamepadInputPreviewCap, &acceptVirtualGamepadInputApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("does_not_install_or_create_virtual_gamepad"), QStringLiteral("accepting_own_virtual_gamepad_may_cause_feedback_loop"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);
     }

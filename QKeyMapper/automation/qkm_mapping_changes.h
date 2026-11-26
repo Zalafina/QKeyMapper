@@ -110,6 +110,7 @@ struct MappingUpdateArguments {
     std::optional<double> gamepadTouchpadYSpeed;
     std::optional<bool> gamepadTouchpadInvertX;
     std::optional<bool> gamepadTouchpadInvertY;
+    std::optional<bool> acceptVirtualGamepadInput;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;
