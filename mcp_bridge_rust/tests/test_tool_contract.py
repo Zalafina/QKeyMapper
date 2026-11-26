@@ -308,6 +308,25 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), groups
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            gamepad_touchpad = {"action": "configuration.set_gamepad_touchpad", "source_tab_ref": tab}
+            for fields in ({"x_speed": 0},
+                           {"y_speed": 200},
+                           {"x_speed": 12.35, "y_speed": 0.5, "invert_x": True, "invert_y": False},
+                           {"invert_x": False},
+                           {"invert_y": True}):
+                request = gamepad_touchpad | {"gamepad_touchpad": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for fields in ({}, {"x_speed": -0.01}, {"y_speed": 200.01}, {"x_speed": 1.234},
+                           {"x_speed": "0.5"}, {"x_speed": True}, {"x_speed": None},
+                           {"invert_x": 1}, {"invert_y": None}, {"invert_x": True, "extra": False}):
+                request = gamepad_touchpad | {"gamepad_touchpad": fields}
+                if fields in ({}, {"x_speed": -0.01}, {"y_speed": 200.01}, {"x_speed": "0.5"},
+                              {"x_speed": True}, {"x_speed": None}, {"invert_x": 1},
+                              {"invert_y": None}, {"invert_x": True, "extra": False}):
+                    assert not validator.is_valid(request), fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -497,7 +516,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

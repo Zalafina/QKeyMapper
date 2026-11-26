@@ -11,6 +11,7 @@
 #include <QSet>
 #include <QUuid>
 #include <algorithm>
+#include <cmath>
 #include <limits>
 #include <utility>
 
@@ -438,6 +439,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool key2MousePreview = preview && action == QLatin1String("configuration.set_key2mouse_settings");
     const bool gyro2MouseOptionsPreview = preview && action == QLatin1String("configuration.set_gyro2mouse_options");
     const bool gamepadThresholdsPreview = preview && action == QLatin1String("configuration.set_gamepad_thresholds");
+    const bool gamepadTouchpadPreview = preview && action == QLatin1String("configuration.set_gamepad_touchpad");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -461,7 +463,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || tabHotkeyPreview || tabNotificationPreview || tabNotificationColorsPreview || categoryFilterPreview
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
-        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || processIconTrayPreview
+        || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -486,6 +488,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : key2MousePreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("key2mouse")}
         : gyro2MouseOptionsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gyro2mouse_options")}
         : gamepadThresholdsPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_thresholds")}
+        : gamepadTouchpadPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_touchpad")}
         : processIconTrayPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("process_icon_as_tray_icon")}
         : pointDisplayKeysPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("point_display_keys")}
         : customNotificationPreview ? QSet<QString>{QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("custom_notification")}
@@ -754,6 +757,49 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
                 || !parseThresholdGroup(QStringLiteral("rs"), QStringLiteral("push"), QStringLiteral("light_push"),
                     result.update.gamepadRsPush, result.update.gamepadRsLightPush, result.update.gamepadRsRelease)) {
                 return fail("Each gamepad threshold group must contain valid 0..100 integer fields with release <= light <= press/push.");
+            }
+        }
+        if (gamepadTouchpadPreview) {
+            using namespace QKeyMapperConstants;
+            const auto raw = arguments.value(QStringLiteral("gamepad_touchpad"));
+            const auto fields = raw.toObject();
+            if (!raw.isObject() || fields.isEmpty())
+                return fail("Provide at least one gamepad touchpad field (x_speed, y_speed, invert_x, invert_y).");
+            const QSet<QString> allowedFields{
+                QStringLiteral("x_speed"), QStringLiteral("y_speed"),
+                QStringLiteral("invert_x"), QStringLiteral("invert_y")};
+            for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+                if (!allowedFields.contains(it.key()))
+                    return fail("Unknown gamepad touchpad field.");
+            }
+            const auto parseSpeed = [&](const QString &key, std::optional<double> &target) -> bool {
+                if (!fields.contains(key)) return true;
+                const auto val = fields.value(key);
+                if (!val.isDouble()) return false;
+                const double d = val.toDouble();
+                if (!std::isfinite(d) || d < GAMEPAD_TOUCHPAD_SPEED_MIN || d > GAMEPAD_TOUCHPAD_SPEED_MAX)
+                    return false;
+                if (std::abs(d * 100.0 - std::round(d * 100.0)) > 1e-6)
+                    return false;
+                double canonical = std::round(d * 100.0) / 100.0;
+                if (canonical == 0.0) canonical = 0.0;
+                target = canonical;
+                return true;
+            };
+            const auto parseBoolField = [&](const QString &key, std::optional<bool> &target) -> bool {
+                if (!fields.contains(key)) return true;
+                const auto val = fields.value(key);
+                if (!val.isBool()) return false;
+                target = val.toBool();
+                return true;
+            };
+            if (!parseSpeed(QStringLiteral("x_speed"), result.update.gamepadTouchpadXSpeed)
+                || !parseSpeed(QStringLiteral("y_speed"), result.update.gamepadTouchpadYSpeed)) {
+                return fail("Gamepad touchpad speeds must be finite numbers in 0..200 with at most 2 decimal places.");
+            }
+            if (!parseBoolField(QStringLiteral("invert_x"), result.update.gamepadTouchpadInvertX)
+                || !parseBoolField(QStringLiteral("invert_y"), result.update.gamepadTouchpadInvertY)) {
+                return fail("Gamepad touchpad invert flags must be booleans.");
             }
         }
         if (processIconTrayPreview) {
@@ -1616,6 +1662,30 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     for (auto *item : {&gamepadThresholdsPreviewCap, &gamepadThresholdsApply}) {
         item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
             QStringLiteral("triplet_order_release_le_light_le_press"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+    const auto touchpadSpeedSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("number")},
+        {QStringLiteral("minimum"), QKeyMapperConstants::GAMEPAD_TOUCHPAD_SPEED_MIN},
+        {QStringLiteral("maximum"), QKeyMapperConstants::GAMEPAD_TOUCHPAD_SPEED_MAX}};
+    const auto gamepadTouchpadSchema = QJsonObject{{QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("x_speed"), touchpadSpeedSchema},
+            {QStringLiteral("y_speed"), touchpadSpeedSchema},
+            {QStringLiteral("invert_x"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("invert_y"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}}}}};
+    auto gamepadTouchpadPreviewCap = CapabilitySchemaContext::capability("configuration.set_gamepad_touchpad.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_gamepad_touchpad")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("gamepad_touchpad"), gamepadTouchpadSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gamepad_touchpad")}));
+    auto gamepadTouchpadApply = CapabilitySchemaContext::capability("configuration.set_gamepad_touchpad.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&gamepadTouchpadPreviewCap, &gamepadTouchpadApply}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("two_decimal_speed_precision_0_to_200"), QStringLiteral("idle_after_completed_cleanup"),
             QStringLiteral("memory_only_no_save_or_start")});
         item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
         capabilities.append(*item);

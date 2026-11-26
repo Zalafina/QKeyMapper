@@ -1643,6 +1643,40 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateGamepadThresholds({{QStringLiteral("rt"), QJsonObject{{QStringLiteral("press"), 40}, {QStringLiteral("light_press"), 45}}}}).ok());
     QVERIFY(!validateGamepadThresholds({{QStringLiteral("ls"), QJsonObject{{QStringLiteral("push"), 30}, {QStringLiteral("release"), 35}}}}).ok());
 
+    const auto validateGamepadTouchpad = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_gamepad_touchpad")},
+                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("gamepad_touchpad"), fields}});
+    };
+    const auto touchpadValid = validateGamepadTouchpad({
+        {QStringLiteral("x_speed"), 0},
+        {QStringLiteral("y_speed"), 200},
+        {QStringLiteral("invert_x"), true},
+        {QStringLiteral("invert_y"), false},
+    });
+    QVERIFY(touchpadValid.ok() && touchpadValid.update.gamepadTouchpadXSpeed == 0.0
+        && touchpadValid.update.gamepadTouchpadYSpeed == 200.0
+        && touchpadValid.update.gamepadTouchpadInvertX == true
+        && touchpadValid.update.gamepadTouchpadInvertY == false);
+    const auto touchpadDecimal = validateGamepadTouchpad({{QStringLiteral("x_speed"), 12.34}});
+    QVERIFY(touchpadDecimal.ok() && qRound(*touchpadDecimal.update.gamepadTouchpadXSpeed * 100.0) == 1234);
+    for (const QJsonObject &badTouchpad : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("x_speed"), -0.01}},
+        QJsonObject{{QStringLiteral("y_speed"), 200.01}},
+        QJsonObject{{QStringLiteral("x_speed"), 1.234}},
+        QJsonObject{{QStringLiteral("y_speed"), 0.005}},
+        QJsonObject{{QStringLiteral("x_speed"), QStringLiteral("0.5")}},
+        QJsonObject{{QStringLiteral("x_speed"), true}},
+        QJsonObject{{QStringLiteral("x_speed"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("invert_x"), 1}},
+        QJsonObject{{QStringLiteral("invert_y"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("invert_x"), true}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!validateGamepadTouchpad(badTouchpad).ok());
+    }
+
     const auto validateProcessIconTray = [&](const QJsonValue &value) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("configuration.set_process_icon_as_tray_icon")},
@@ -1833,9 +1867,9 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateStartupPosition({{QStringLiteral("point"), QJsonObject{{QStringLiteral("x"), 0},
         {QStringLiteral("y"), -50001}}}}).ok());
 
-    QCOMPARE(capabilities.size(), 124);
+    QCOMPARE(capabilities.size(), 126);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 116);
+    QCOMPARE(demoCapabilities.size(), 118);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1868,13 +1902,18 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(capabilities.at(114).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_gyro2mouse_options.apply"));
     QCOMPARE(capabilities.at(115).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_gamepad_thresholds.preview"));
     QCOMPARE(capabilities.at(116).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_gamepad_thresholds.apply"));
-    QCOMPARE(capabilities.at(121).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(122).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(117).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_gamepad_touchpad.preview"));
+    QCOMPARE(capabilities.at(118).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_gamepad_touchpad.apply"));
+    QCOMPARE(capabilities.at(123).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(124).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_gyro2mouse_options.apply");
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_gamepad_thresholds.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("configuration.set_gamepad_touchpad.apply");
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");

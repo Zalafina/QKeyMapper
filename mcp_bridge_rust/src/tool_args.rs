@@ -555,6 +555,27 @@ struct GamepadThresholdsSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct GamepadTouchpadFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    x_speed: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    y_speed: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    invert_x: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    invert_y: Option<bool>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct GamepadTouchpadSettings {
+    action: String,
+    source_tab_ref: String,
+    gamepad_touchpad: GamepadTouchpadFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1136,6 +1157,31 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && g.rt.as_ref().is_none_or(valid_trigger)
                             && g.ls.as_ref().is_none_or(valid_stick)
                             && g.rs.as_ref().is_none_or(valid_stick)
+                    });
+                }
+                Some("configuration.set_gamepad_touchpad") => {
+                    if arguments
+                        .get("gamepad_touchpad")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &GamepadTouchpadSettings| {
+                        let valid_speed = |raw: f64| {
+                            let speed = if raw == 0.0 { 0.0 } else { raw };
+                            speed.is_finite()
+                                && (0.0..=200.0).contains(&speed)
+                                && ((speed * 100.0) - (speed * 100.0).round()).abs() <= 1e-6
+                        };
+                        let f = &v.gamepad_touchpad;
+                        tab_ref(&v.source_tab_ref)
+                            && (f.x_speed.is_some()
+                                || f.y_speed.is_some()
+                                || f.invert_x.is_some()
+                                || f.invert_y.is_some())
+                            && f.x_speed.is_none_or(valid_speed)
+                            && f.y_speed.is_none_or(valid_speed)
                     });
                 }
                 Some("configuration.set_process_icon_as_tray_icon") => {
@@ -2180,6 +2226,44 @@ mod tests {
             assert!(preview(&json!({"action": "configuration.set_gamepad_thresholds", "source_tab_ref": tab, "gamepad_thresholds": bad})).is_err());
         }
         assert!(preview(&json!({"action": "configuration.set_gamepad_thresholds", "source_tab_ref": tab, "gamepad_thresholds": {"lt": {"press": 50}}, "extra": 1})).is_err());
+    }
+
+    #[test]
+    fn configuration_gamepad_touchpad_checks_bounds_and_precision() {
+        let revision = "a".repeat(64);
+        let tab = format!("{revision}:source:0");
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        for (input, expected) in [
+            (json!({"x_speed": 0}), json!({"x_speed": 0.0})),
+            (json!({"y_speed": 200}), json!({"y_speed": 200.0})),
+            (
+                json!({"x_speed": 12.34, "y_speed": 0.5, "invert_x": true, "invert_y": false}),
+                json!({"x_speed": 12.34, "y_speed": 0.5, "invert_x": true, "invert_y": false}),
+            ),
+            (json!({"invert_x": false}), json!({"invert_x": false})),
+            (json!({"invert_y": true}), json!({"invert_y": true})),
+        ] {
+            let valid = json!({"action": "configuration.set_gamepad_touchpad", "source_tab_ref": tab, "gamepad_touchpad": input});
+            let expected_wire = json!({"action": "configuration.set_gamepad_touchpad", "source_tab_ref": tab, "gamepad_touchpad": expected});
+            assert_eq!(preview(&valid).unwrap(), *expected_wire.as_object().unwrap());
+        }
+        for bad in [
+            json!({}),
+            json!({"x_speed": -0.01}),
+            json!({"y_speed": 200.01}),
+            json!({"x_speed": 1.234}),
+            json!({"y_speed": 0.005}),
+            json!({"x_speed": "0.5"}),
+            json!({"x_speed": true}),
+            json!({"x_speed": null}),
+            json!({"invert_x": 1}),
+            json!({"invert_y": null}),
+            json!({"invert_x": true, "extra": false}),
+        ] {
+            assert!(preview(&json!({"action": "configuration.set_gamepad_touchpad", "source_tab_ref": tab, "gamepad_touchpad": bad})).is_err());
+        }
+        assert!(preview(&json!({"action": "configuration.set_gamepad_touchpad", "source_tab_ref": tab, "gamepad_touchpad": {"x_speed": 0.5}, "extra": 1})).is_err());
     }
 
     #[test]

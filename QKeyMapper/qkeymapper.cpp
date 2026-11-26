@@ -38154,6 +38154,22 @@ static QJsonObject automationGamepadThresholds(const QMappingAdvancedDialog::Gam
     };
 }
 
+static double canonicalizeTouchpadSpeed(double value)
+{
+    const double rounded = double(qRound(value * 100.0)) / 100.0;
+    return rounded == 0.0 ? 0.0 : rounded;
+}
+
+static QJsonObject automationGamepadTouchpad(double xSpeed, double ySpeed, bool invertX, bool invertY)
+{
+    return {
+        {QStringLiteral("x_speed"), canonicalizeTouchpadSpeed(xSpeed)},
+        {QStringLiteral("y_speed"), canonicalizeTouchpadSpeed(ySpeed)},
+        {QStringLiteral("invert_x"), invertX},
+        {QStringLiteral("invert_y"), invertY},
+    };
+}
+
 static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QString &screenKey)
 {
     return {{QStringLiteral("window_point_key"), windowKey},
@@ -38324,6 +38340,11 @@ QJsonObject QKeyMapper::collectAutomationState(void) const
             m_CustomNotificationStyleInitialized));
         result.insert(QStringLiteral("gamepad_thresholds"), automationGamepadThresholds(
             readCurrentGamepadThresholds(m_MappingAdvancedDialog)));
+        result.insert(QStringLiteral("gamepad_touchpad"), automationGamepadTouchpad(
+            m_MappingAdvancedDialog->getGamepadTouchpadXSpeed(),
+            m_MappingAdvancedDialog->getGamepadTouchpadYSpeed(),
+            m_MappingAdvancedDialog->getGamepadTouchpadInvertX(),
+            m_MappingAdvancedDialog->getGamepadTouchpadInvertY()));
     }
     if (m_Gyro2MouseOptionDialog) {
         result.insert(QStringLiteral("gyro2mouse_options"), automationGyro2MouseOptions(
@@ -40650,6 +40671,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 || update.gamepadRtPress.has_value() || update.gamepadRtLightPress.has_value() || update.gamepadRtRelease.has_value()
                 || update.gamepadLsPush.has_value() || update.gamepadLsLightPush.has_value() || update.gamepadLsRelease.has_value()
                 || update.gamepadRsPush.has_value() || update.gamepadRsLightPush.has_value() || update.gamepadRsRelease.has_value());
+        const bool changingGamepadTouchpad = updating
+            && (update.gamepadTouchpadXSpeed.has_value() || update.gamepadTouchpadYSpeed.has_value()
+                || update.gamepadTouchpadInvertX.has_value() || update.gamepadTouchpadInvertY.has_value());
         const bool changingProcessIconAsTrayIcon = updating && update.processIconAsTrayIcon.has_value();
         const bool changingPointDisplayKeys = updating
             && (update.showWindowPointKey.has_value() || update.showScreenPointKey.has_value());
@@ -40678,7 +40702,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
-            || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingProcessIconAsTrayIcon || changingPointDisplayKeys
+            || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingProcessIconAsTrayIcon || changingPointDisplayKeys
             || changingCustomNotification || changingWindowMatchCriteria || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingDisplayScale;
         const auto trigger = update.rowModes.value(QStringLiteral("original_trigger")).toObject();
         const bool triggerUpdate = updating && !trigger.isEmpty();
@@ -40695,14 +40719,14 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
             || m_KeyMappingDataTable->hasActiveEditor()
             || (changingGeneralPreference && !m_GeneralAdvancedDialog)
-            || ((changingKey2Mouse || changingGamepadThresholds || changingProcessIconAsTrayIcon || changingPointDisplayKeys || changingCustomNotification) && !m_MappingAdvancedDialog)
+            || ((changingKey2Mouse || changingGamepadThresholds || changingGamepadTouchpad || changingProcessIconAsTrayIcon || changingPointDisplayKeys || changingCustomNotification) && !m_MappingAdvancedDialog)
             || (changingGyro2MouseOptions && (!m_Gyro2MouseOptionDialog || m_Gyro2MouseOptionDialog->isVisible()))) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
         if (editingTab && !clearingTab && !changingCommonFeature && !selectingTab && !filteringCategories
             && !settingDisabledVisibility && !changingMappingDisplay && !changingGeneralPreference
-            && !changingWindowDisplayMode && !changingKey2Mouse && !changingGyro2MouseOptions && !changingGamepadThresholds && !changingProcessIconAsTrayIcon
+            && !changingWindowDisplayMode && !changingKey2Mouse && !changingGyro2MouseOptions && !changingGamepadThresholds && !changingGamepadTouchpad && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale
             && isCommonMappingTabIndex(tab)) {
@@ -40713,7 +40737,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("The display scale control is unavailable or disabled."));
             return;
         }
-        if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingProcessIconAsTrayIcon
+        if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingProcessIconAsTrayIcon
                 || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria
                 || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
@@ -41125,6 +41149,24 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 change = {{QStringLiteral("kind"), QStringLiteral("set_gamepad_thresholds")},
                     {QStringLiteral("before"), beforeObj},
                     {QStringLiteral("after"), afterObj}};
+            } else if (changingGamepadTouchpad) {
+                const double beforeX = canonicalizeTouchpadSpeed(m_MappingAdvancedDialog->getGamepadTouchpadXSpeed());
+                const double beforeY = canonicalizeTouchpadSpeed(m_MappingAdvancedDialog->getGamepadTouchpadYSpeed());
+                const bool beforeInvX = m_MappingAdvancedDialog->getGamepadTouchpadInvertX();
+                const bool beforeInvY = m_MappingAdvancedDialog->getGamepadTouchpadInvertY();
+                const double afterX = canonicalizeTouchpadSpeed(update.gamepadTouchpadXSpeed.value_or(beforeX));
+                const double afterY = canonicalizeTouchpadSpeed(update.gamepadTouchpadYSpeed.value_or(beforeY));
+                const bool afterInvX = update.gamepadTouchpadInvertX.value_or(beforeInvX);
+                const bool afterInvY = update.gamepadTouchpadInvertY.value_or(beforeInvY);
+                modified = (qRound(beforeX * 100.0) != qRound(afterX * 100.0))
+                    || (qRound(beforeY * 100.0) != qRound(afterY * 100.0))
+                    || (beforeInvX != afterInvX)
+                    || (beforeInvY != afterInvY);
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_gamepad_touchpad")},
+                    {QStringLiteral("before"), automationGamepadTouchpad(beforeX, beforeY, beforeInvX, beforeInvY)},
+                    {QStringLiteral("after"), automationGamepadTouchpad(afterX, afterY, afterInvX, afterInvY)}};
             } else if (changingProcessIconAsTrayIcon) {
                 const bool before = m_MappingAdvancedDialog->getProcessIconAsTrayIcon();
                 const bool after = *update.processIconAsTrayIcon;
@@ -41824,6 +41866,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingKey2Mouse ? QStringLiteral("configuration.set_key2mouse_settings")
             : changingGyro2MouseOptions ? QStringLiteral("configuration.set_gyro2mouse_options")
             : changingGamepadThresholds ? QStringLiteral("configuration.set_gamepad_thresholds")
+            : changingGamepadTouchpad ? QStringLiteral("configuration.set_gamepad_touchpad")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -41940,6 +41983,25 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 if (update.gamepadRsLightPush) target.rsLightPush = *update.gamepadRsLightPush;
                 if (update.gamepadRsRelease) target.rsRelease = *update.gamepadRsRelease;
                 m_MappingAdvancedDialog->setGamepadThresholds(target);
+            } else if (changingGamepadTouchpad) {
+                if (update.gamepadTouchpadXSpeed
+                    && qRound(m_MappingAdvancedDialog->getGamepadTouchpadXSpeed() * 100.0)
+                        != qRound(*update.gamepadTouchpadXSpeed * 100.0)) {
+                    m_MappingAdvancedDialog->setGamepadTouchpadXSpeed(*update.gamepadTouchpadXSpeed);
+                }
+                if (update.gamepadTouchpadYSpeed
+                    && qRound(m_MappingAdvancedDialog->getGamepadTouchpadYSpeed() * 100.0)
+                        != qRound(*update.gamepadTouchpadYSpeed * 100.0)) {
+                    m_MappingAdvancedDialog->setGamepadTouchpadYSpeed(*update.gamepadTouchpadYSpeed);
+                }
+                if (update.gamepadTouchpadInvertX
+                    && m_MappingAdvancedDialog->getGamepadTouchpadInvertX() != *update.gamepadTouchpadInvertX) {
+                    m_MappingAdvancedDialog->setGamepadTouchpadInvertX(*update.gamepadTouchpadInvertX);
+                }
+                if (update.gamepadTouchpadInvertY
+                    && m_MappingAdvancedDialog->getGamepadTouchpadInvertY() != *update.gamepadTouchpadInvertY) {
+                    m_MappingAdvancedDialog->setGamepadTouchpadInvertY(*update.gamepadTouchpadInvertY);
+                }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);
             } else if (changingPointDisplayKeys) {
