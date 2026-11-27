@@ -82,6 +82,8 @@
 
 ## 四、`02_codex_review_r1.md` / `04_codex_recheck_r*.md` 模板
 
+> `check --strict-meta --check-latest` 与 `sync-latest` 会核对第 1 节（`## 1. 评审元信息` / `## 1. 复审元信息`）中的冻结 `<base>..<doc_head>`（及 `code_head != doc_head` 时显式声明的 `code_head`）和第 2 节（`## 2. 总体结论` / `## 2. 结论`）中的规范结论（`**PASS**` / `**PASS_WITH_P2_P3**` / `**CHANGES_REQUESTED**`），以此自动推导并校验 `LATEST.md` 的状态与评审文件指针。
+
 ```markdown
 # QKeyMapper Codex 本地提交评审 r1（或复审 rN）
 
@@ -126,7 +128,7 @@
 
 ## 五、`03_gemini_response_r*.md` 修复回复模板
 
-> `check --strict-meta --check-latest` 与 `sync-latest` 会严格解析并链式绑定下方 `前置基线 → 新增本地提交`（须为固定十六进制 `<prev>..<new>`）与 `post_review_action` 两行，请保留精确前缀且不要重复填写。
+> `check --strict-meta --check-latest` 与 `sync-latest` 会严格解析并链式绑定下方 `前置基线 → 新增本地提交`（须为固定十六进制 `<prev>..<new>`）与 `post_review_action` 两行，请保留精确前缀且不要重复填写。`code_head` 默认绑定为 `<new_head_sha>`；仅当末尾存在纯文档提交导致 `code_head != doc_head` 时，才额外添加一行 `- **\`code_head\`**：\`<code_head_sha>\`` 显式固定。
 
 ```markdown
 # Gemini 评审修复与确认回复 r1：`out/codex_review/<YYYYMMDD_tag>`

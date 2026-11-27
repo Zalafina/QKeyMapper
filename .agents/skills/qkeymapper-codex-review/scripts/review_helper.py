@@ -38,6 +38,16 @@ TABLE_KV_RE = re.compile(r"^\|\s*`([a-z0-9_]+)`\s*\|\s*(.*?)\s*\|\s*$")
 REMOTE_META_RE = re.compile(r"^`([^`]+)`\s*@\s*`([0-9a-fA-F]{7,40})`$")
 RESP_RANGE_RE = re.compile(r"^- \*\*前置基线 → 新增本地提交\*\*：\s*(.+)$")
 RESP_POST_RE = re.compile(r"^- \*\*`post_review_action`\*\*：\s*(.+)$")
+RESP_CODE_HEAD_RE = re.compile(r"^- \*\*`code_head`\*\*：\s*(.+)$")
+
+REVIEW_VERDICTS = ("PASS", "PASS_WITH_P2_P3", "CHANGES_REQUESTED")
+REVIEW_VERDICT_LINE_RE = re.compile(
+    r"^\*\*(PASS|PASS_WITH_P2_P3|CHANGES_REQUESTED)(?:[。.:：!！])?\*\*(?:$|\s|[。.:：!！，,])"
+)
+LATEST_STATUS_RE = re.compile(r"^\*\*([A-Z0-9_]+)\*\*(?:$|\s|[（(。.:：，,])")
+BACKTICK_RANGE_RE = re.compile(r"`([0-9a-fA-F]{7,40})\.\.([0-9a-fA-F]{7,40})`")
+DRIFT_HEAD_RANGE_RE = re.compile(r"`[^`\s]*\.\.HEAD`")
+WAITING_RECHECK_RE = re.compile(r"^WAITING_R(\d+)_RECHECK$")
 
 FILE_ATTRIBUTE_REPARSE_POINT = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
 
@@ -251,8 +261,14 @@ def upstream_info(repo_root: Path) -> tuple[str | None, str | None]:
 
 
 def changed_files_in_range(repo_root: Path, base_full: str, head_full: str) -> list[str]:
-    """Return changed repository-relative POSIX paths using NUL-delimited unquoted git diff."""
-    raw = run_git_bytes(repo_root, "diff", "--name-only", "-z", f"{base_full}..{head_full}")
+    """Return changed repo-relative POSIX paths using NUL-delimited git diff with --no-renames.
+
+    Disabling rename detection ensures renames/moves out of handoff/<task>/ emit both
+    the deleted source path and added destination path.
+    """
+    raw = run_git_bytes(
+        repo_root, "diff", "--no-renames", "--name-only", "-z", f"{base_full}..{head_full}"
+    )
     paths: list[str] = []
     for entry in raw.split(b"\x00"):
         if entry:
@@ -652,6 +668,7 @@ def build_latest_markdown(
     next_codex_rel: str,
     previous_closed: str,
     range_note: str = "",
+    closed_codex_rel: str | None = None,
 ) -> str:
     """Render out/codex_review/LATEST.md pointer document."""
     remote_line = (
@@ -659,6 +676,14 @@ def build_latest_markdown(
     )
     prev_line = f"\n- **前序已闭环批次**：{previous_closed}" if previous_closed else ""
     range_extra = f"；{range_note}" if range_note else ""
+    if status_label in ("PASS", "PASS_WITH_P2_P3") and closed_codex_rel:
+        constraint_two = (
+            f"  2. 本批已由 `{closed_codex_rel}` 确认 `{status_label}` 收口，严禁覆盖既有多轮原件；如需新开批次请另建目录。"
+        )
+    else:
+        constraint_two = (
+            f"  2. 结论写入 `{next_codex_rel}` 并更新本页状态，严禁覆盖既有多轮原件；将简短「回传给 Gemini 的确认提示词」同时附在评审文件第 6 节及对用户的聊天回复末尾。"
+        )
     return f"""# Codex 本地提交 Review 交互入口
 
 - **当前活跃评审批次**：`{batch}`（`{title}`）
@@ -672,7 +697,7 @@ def build_latest_markdown(
 - **仓库权威协议**：[qkeymapper-codex-review SKILL](../../.agents/skills/qkeymapper-codex-review/SKILL.md)
 - **当前约束（必读）**：
   1. Reviewer 默认严格只读：仅核对真实 `git --no-optional-locks log`/`diff`、源码与已有 `out/` 产物，严禁修改任何 Git 跟踪文件、严禁 `git commit` / `git push`、严禁触发 UAC/gsudo。
-  2. 结论写入 `{next_codex_rel}` 并更新本页状态，严禁覆盖既有多轮原件；将简短「回传给 Gemini 的确认提示词」同时附在评审文件第 6 节及对用户的聊天回复末尾。
+{constraint_two}
   3. 严格遵守 `post_review_action={post_action}`：评审结束或发回修复时直接按约定停止／交回，不得擅自追加后续无关切片指令。
 """
 
@@ -1120,15 +1145,18 @@ def check_author_response_file(
     text: str,
     prev_doc_full: str,
     prev_doc_short: str,
+    prev_code_full: str,
+    prev_code_short: str,
     expected_post_action: str,
     base_full: str,
     base_short: str,
     review_profile: str,
 ) -> tuple[list[str], dict[str, str]]:
-    """Validate 03/05/... author response frozen commit chain and post_review_action."""
+    """Validate 03/05/... author response frozen commit chain, code_head, and post_review_action."""
     errs: list[str] = []
     range_vals: list[str] = []
     post_vals: list[str] = []
+    code_vals: list[str] = []
     for line in text.splitlines():
         m_range = RESP_RANGE_RE.match(line)
         if m_range:
@@ -1136,6 +1164,9 @@ def check_author_response_file(
         m_post = RESP_POST_RE.match(line)
         if m_post:
             post_vals.append(m_post.group(1).strip())
+        m_code = RESP_CODE_HEAD_RE.match(line)
+        if m_code:
+            code_vals.append(m_code.group(1).strip())
 
     if len(range_vals) != 1:
         errs.append(
@@ -1144,6 +1175,10 @@ def check_author_response_file(
     if len(post_vals) != 1:
         errs.append(
             f"{resp_path}: expected exactly 1 '- **`post_review_action`**：' header line, found {len(post_vals)}."
+        )
+    if len(code_vals) > 1:
+        errs.append(
+            f"{resp_path}: expected at most 1 '- **`code_head`**：' header line, found {len(code_vals)}."
         )
     if errs:
         return errs, {}
@@ -1196,12 +1231,366 @@ def check_author_response_file(
             f"{resp_path}: review_profile is 'general' but cumulative range {base_short}..{r_new_short} touches handoff/<task>/ files."
         )
 
+    if not code_vals:
+        r_code_full, r_code_short = r_new_full, r_new_short
+    else:
+        code_raw = strip_backticks(code_vals[0])
+        if not HEX_SHA_RE.fullmatch(code_raw):
+            errs.append(f"{resp_path}: code_head must be a hex SHA (got {code_vals[0]!r}).")
+            return errs, {}
+        try:
+            r_code_full, r_code_short = resolve_commit(repo_root, code_raw)
+        except HelperError as exc:
+            errs.append(f"{resp_path}: {exc}")
+            return errs, {}
+        if not git_ancestor(repo_root, base_full, r_code_full) or not git_ancestor(
+            repo_root, r_code_full, r_new_full
+        ):
+            errs.append(
+                f"{resp_path}: code_head ({r_code_short}) must satisfy base ({base_short}) <= code_head <= doc_head ({r_new_short})."
+            )
+        if not git_ancestor(repo_root, prev_code_full, r_code_full):
+            errs.append(
+                f"{resp_path}: code_head ({r_code_short}) regresses before previous frozen code_head ({prev_code_short})."
+            )
+
     return errs, {
         "prev_short": r_prev_short,
         "doc_full": r_new_full,
         "doc_short": r_new_short,
-        "code_full": r_new_full,
-        "code_short": r_new_short,
+        "code_full": r_code_full,
+        "code_short": r_code_short,
+    }
+
+
+def parse_markdown_h2_sections(text: str) -> list[tuple[str, list[str]]]:
+    """Extract top-level '## ' sections outside fenced code blocks."""
+    sections: list[tuple[str, list[str]]] = []
+    cur_heading: str | None = None
+    cur_lines: list[str] = []
+    fence_char: str | None = None
+    fence_len = 0
+
+    for line in text.splitlines():
+        fence_match = FENCE_RE.match(line)
+        if fence_match:
+            marker = fence_match.group(1)
+            if fence_char is None:
+                fence_char = marker[0]
+                fence_len = len(marker)
+            elif marker[0] == fence_char and len(marker) >= fence_len:
+                fence_char = None
+                fence_len = 0
+            continue
+        if fence_char is not None:
+            continue
+        h2_match = re.match(r"^##\s+(.+?)\s*$", line)
+        if h2_match:
+            if cur_heading is not None:
+                sections.append((cur_heading, cur_lines))
+            cur_heading = h2_match.group(1).strip()
+            cur_lines = []
+        elif cur_heading is not None:
+            cur_lines.append(line)
+
+    if cur_heading is not None:
+        sections.append((cur_heading, cur_lines))
+    return sections
+
+
+def check_reviewer_file(
+    repo_root: Path,
+    review_path: Path,
+    text: str,
+    *,
+    base_full: str,
+    base_short: str,
+    expected_code_full: str,
+    expected_code_short: str,
+    expected_doc_full: str,
+    expected_doc_short: str,
+    expected_post_action: str,
+    expected_profile: str,
+) -> tuple[list[str], dict[str, str]]:
+    """Validate 02/04/06/... Reviewer Section 1 frozen endpoints and Section 2 canonical verdict."""
+    errs: list[str] = []
+    sections = parse_markdown_h2_sections(text)
+    sec1_list = [lines for heading, lines in sections if re.fullmatch(r"1\.\s*(?:评审|复审)元信息", heading)]
+    sec2_list = [lines for heading, lines in sections if re.fullmatch(r"2\.\s*(?:总体)?结论", heading)]
+
+    if len(sec1_list) != 1:
+        errs.append(
+            f"{review_path}: expected exactly 1 '## 1. 评审元信息' / '## 1. 复审元信息' section, found {len(sec1_list)}."
+        )
+    if len(sec2_list) != 1:
+        errs.append(
+            f"{review_path}: expected exactly 1 '## 2. 总体结论' / '## 2. 结论' section, found {len(sec2_list)}."
+        )
+    if errs:
+        return errs, {}
+
+    sec1_text = "\n".join(sec1_list[0])
+    if DRIFT_HEAD_RANGE_RE.search(sec1_text):
+        errs.append(
+            f"{review_path}: Section 1 contains drifting '..HEAD' range; expected fixed SHA range."
+        )
+
+    resolved_ranges: list[tuple[str, str]] = []
+    for m_rng in BACKTICK_RANGE_RE.finditer(sec1_text):
+        a_raw, b_raw = m_rng.group(1), m_rng.group(2)
+        try:
+            a_full, _ = resolve_commit(repo_root, a_raw)
+            b_full, _ = resolve_commit(repo_root, b_raw)
+        except HelperError as exc:
+            errs.append(f"{review_path}: Section 1 range `{a_raw}..{b_raw}` invalid ({exc}).")
+            continue
+        resolved_ranges.append((a_full, b_full))
+        if a_full == base_full and b_full not in (expected_doc_full, expected_code_full):
+            errs.append(
+                f"{review_path}: Section 1 range `{a_raw}..{b_raw}` conflicts with frozen range `{base_short}..{expected_doc_short}`."
+            )
+
+    if (base_full, expected_doc_full) not in resolved_ranges:
+        errs.append(
+            f"{review_path}: Section 1 must record frozen range `{base_short}..{expected_doc_short}`."
+        )
+
+    code_tokens: list[str] = []
+    for pat in (
+        re.compile(r"`code_head\s*=\s*(?:doc_head\s*=\s*)?([^`]+)`"),
+        re.compile(r"`doc_head\s*=\s*code_head\s*=\s*([^`]+)`"),
+        re.compile(r"`code_head`\s*(?:[:：=]|为)?\s*`([^`]+)`"),
+        re.compile(r"(?:^|[\s（(，,、])(?:代码终点|代码)\s*(?:[:：=]|为)?\s*`([^`]+)`"),
+    ):
+        for m in pat.finditer(sec1_text):
+            code_tokens.append(m.group(1).strip())
+
+    code_range_explicit = False
+    for m_cr in re.finditer(
+        r"(?:冻结|实际)?代码范围\s*(?:[:：=]|为)?\s*`([0-9a-fA-F]{7,40})\.\.([0-9a-fA-F]{7,40})`",
+        sec1_text,
+    ):
+        code_range_explicit = True
+        cr_base_raw, cr_end_raw = m_cr.group(1), m_cr.group(2)
+        try:
+            cr_base_full, cr_base_short = resolve_commit(repo_root, cr_base_raw)
+            cr_end_full, cr_end_short = resolve_commit(repo_root, cr_end_raw)
+        except HelperError as exc:
+            errs.append(f"{review_path}: Section 1 code range `{cr_base_raw}..{cr_end_raw}` invalid ({exc}).")
+            continue
+        if cr_base_full != base_full or cr_end_full != expected_code_full:
+            errs.append(
+                f"{review_path}: Section 1 code range `{cr_base_short}..{cr_end_short}` does not match frozen `{base_short}..{expected_code_short}`."
+            )
+
+    for tok in code_tokens:
+        if not HEX_SHA_RE.fullmatch(tok):
+            errs.append(f"{review_path}: Section 1 code_head '{tok}' must be a hex SHA.")
+            continue
+        try:
+            tok_full, tok_short = resolve_commit(repo_root, tok)
+        except HelperError as exc:
+            errs.append(f"{review_path}: Section 1 code_head '{tok}' invalid ({exc}).")
+            continue
+        if tok_full != expected_code_full:
+            errs.append(
+                f"{review_path}: Section 1 code_head ({tok_short}) does not match expected frozen code_head ({expected_code_short})."
+            )
+
+    if expected_code_full != expected_doc_full and not code_tokens and not code_range_explicit:
+        errs.append(
+            f"{review_path}: Section 1 must explicitly record frozen code_head ({expected_code_short}) when code_head differs from doc_head."
+        )
+
+    doc_tokens: list[str] = []
+    for pat in (
+        re.compile(r"`doc_head\s*=\s*(?:code_head\s*=\s*)?([^`]+)`"),
+        re.compile(r"`code_head\s*=\s*doc_head\s*=\s*([^`]+)`"),
+        re.compile(r"`doc_head`\s*(?:[:：=]|为)?\s*`([^`]+)`"),
+        re.compile(r"(?:^|[\s（(，,、])(?:文档终点|文档)\s*(?:[:：=]|为)?\s*`([^`]+)`"),
+    ):
+        for m in pat.finditer(sec1_text):
+            doc_tokens.append(m.group(1).strip())
+
+    for tok in doc_tokens:
+        if not HEX_SHA_RE.fullmatch(tok):
+            errs.append(f"{review_path}: Section 1 doc_head '{tok}' must be a hex SHA.")
+            continue
+        try:
+            tok_full, tok_short = resolve_commit(repo_root, tok)
+        except HelperError as exc:
+            errs.append(f"{review_path}: Section 1 doc_head '{tok}' invalid ({exc}).")
+            continue
+        if tok_full != expected_doc_full:
+            errs.append(
+                f"{review_path}: Section 1 doc_head ({tok_short}) does not match expected frozen doc_head ({expected_doc_short})."
+            )
+
+    for m_pa in re.finditer(
+        r"`post_review_action\s*=\s*([^`]+)`|`post_review_action`\s*(?:[:：=]|为)?\s*`([^`]+)`",
+        sec1_text,
+    ):
+        pa_val = (m_pa.group(1) or m_pa.group(2) or "").strip()
+        if pa_val != expected_post_action:
+            errs.append(
+                f"{review_path}: Section 1 post_review_action '{pa_val}' differs from submission '{expected_post_action}'."
+            )
+
+    for m_pr in re.finditer(
+        r"`review_profile\s*=\s*([^`]+)`|`review_profile`\s*(?:[:：=]|为)?\s*`([^`]+)`",
+        sec1_text,
+    ):
+        pr_val = (m_pr.group(1) or m_pr.group(2) or "").strip()
+        if pr_val != expected_profile:
+            errs.append(
+                f"{review_path}: Section 1 review_profile '{pr_val}' differs from submission '{expected_profile}'."
+            )
+
+    verdicts: list[str] = []
+    for line in sec2_list[0]:
+        stripped = line.strip()
+        if not stripped:
+            continue
+        m_v = REVIEW_VERDICT_LINE_RE.match(stripped)
+        if m_v:
+            verdicts.append(m_v.group(1))
+
+    if len(verdicts) != 1:
+        errs.append(
+            f"{review_path}: expected exactly 1 canonical verdict (**PASS**, **PASS_WITH_P2_P3**, or **CHANGES_REQUESTED**) in Section 2, found {len(verdicts)}."
+        )
+        return errs, {}
+
+    if errs:
+        return errs, {}
+
+    return errs, {"verdict": verdicts[0], "filename": review_path.name}
+
+
+def evaluate_batch_chain(
+    repo_root: Path, parsed_texts: dict[str, tuple[Path, str]]
+) -> dict[str, Any]:
+    """Validate 01 -> 02 -> 03 -> ... author/reviewer chain and compute expected batch state."""
+    errs: list[str] = []
+    sub_path, sub_text = parsed_texts["01_gemini_submission.md"]
+    sub_errs, sub_info = check_submission_metadata(repo_root, sub_path, sub_text)
+    errs.extend(sub_errs)
+    if not sub_info:
+        return {
+            "errors": errs,
+            "submission_info": {},
+            "latest_author_info": {},
+            "latest_codex_name": None,
+            "expected_status": None,
+            "max_seq": 1,
+            "resp_shas": [],
+        }
+
+    by_seq: dict[int, tuple[Path, str]] = {}
+    for name, item in parsed_texts.items():
+        m = ROUND_FILE_RE.fullmatch(name)
+        if m:
+            seq = int(m.group(1))
+            if seq not in by_seq:
+                by_seq[seq] = item
+
+    author_by_seq: dict[int, dict[str, str]] = {1: dict(sub_info)}
+    reviewer_by_seq: dict[int, dict[str, str]] = {}
+    prev_doc_full = sub_info["doc_full"]
+    prev_doc_short = sub_info["doc_short"]
+    prev_code_full = sub_info["code_full"]
+    prev_code_short = sub_info["code_short"]
+    resp_shas: list[tuple[int, str]] = []
+
+    for seq in sorted(by_seq):
+        path, text = by_seq[seq]
+        if seq == 1:
+            continue
+        if seq % 2 == 1:
+            r_errs, r_info = check_author_response_file(
+                repo_root,
+                path,
+                text,
+                prev_doc_full,
+                prev_doc_short,
+                prev_code_full,
+                prev_code_short,
+                sub_info["post_review_action"],
+                sub_info["base_full"],
+                sub_info["base_short"],
+                sub_info["review_profile"],
+            )
+            errs.extend(r_errs)
+            if r_info:
+                prev_doc_full = r_info["doc_full"]
+                prev_doc_short = r_info["doc_short"]
+                prev_code_full = r_info["code_full"]
+                prev_code_short = r_info["code_short"]
+                author_by_seq[seq] = r_info
+                resp_shas.append(((seq - 1) // 2, r_info["doc_short"]))
+        else:
+            pair_author = author_by_seq.get(seq - 1)
+            if pair_author:
+                rev_errs, rev_info = check_reviewer_file(
+                    repo_root,
+                    path,
+                    text,
+                    base_full=sub_info["base_full"],
+                    base_short=sub_info["base_short"],
+                    expected_code_full=pair_author["code_full"],
+                    expected_code_short=pair_author["code_short"],
+                    expected_doc_full=pair_author["doc_full"],
+                    expected_doc_short=pair_author["doc_short"],
+                    expected_post_action=sub_info["post_review_action"],
+                    expected_profile=sub_info["review_profile"],
+                )
+                errs.extend(rev_errs)
+                if rev_info:
+                    reviewer_by_seq[seq] = rev_info
+
+    max_seq = max(by_seq) if by_seq else 1
+    latest_author_seq = max_seq if max_seq % 2 == 1 else max_seq - 1
+    latest_codex_seq = None if max_seq == 1 else (max_seq if max_seq % 2 == 0 else max_seq - 1)
+
+    latest_author_name = expected_round_filename(latest_author_seq)
+    author_entry = author_by_seq.get(latest_author_seq)
+    if author_entry is None:
+        # Fallback to latest valid author state so downstream reporting stays explicit.
+        fallback_seq = max(author_by_seq)
+        author_entry = author_by_seq[fallback_seq]
+
+    latest_author_info = {
+        "author_filename": latest_author_name,
+        "code_full": author_entry["code_full"],
+        "code_short": author_entry["code_short"],
+        "doc_full": author_entry["doc_full"],
+        "doc_short": author_entry["doc_short"],
+        "has_response": latest_author_seq >= 3,
+    }
+
+    latest_codex_name: str | None = None
+    if latest_codex_seq is not None and latest_codex_seq in by_seq:
+        latest_codex_name = by_seq[latest_codex_seq][0].name
+    elif latest_codex_seq is not None:
+        latest_codex_name = expected_round_filename(latest_codex_seq)
+
+    expected_status: str | None
+    if max_seq == 1:
+        expected_status = "WAITING_R1_REVIEW"
+    elif max_seq % 2 == 1:
+        expected_status = f"WAITING_R{(max_seq - 1) // 2}_RECHECK"
+    else:
+        rev_entry = reviewer_by_seq.get(max_seq)
+        expected_status = rev_entry["verdict"] if rev_entry else None
+
+    return {
+        "errors": errs,
+        "submission_info": sub_info,
+        "latest_author_info": latest_author_info,
+        "latest_codex_name": latest_codex_name,
+        "expected_status": expected_status,
+        "max_seq": max_seq,
+        "resp_shas": resp_shas,
     }
 
 
@@ -1211,9 +1600,11 @@ def check_latest_pointer(
     latest_text: str,
     batch: str,
     submission_info: dict[str, str],
-    latest_author_info: dict[str, str],
+    latest_author_info: dict[str, Any],
+    latest_codex_name: str | None = None,
+    expected_status: str | None = None,
 ) -> list[str]:
-    """Strictly verify LATEST.md fields against canonical submission and latest author response."""
+    """Strictly verify LATEST.md fields against canonical submission, author responses, and reviewer verdicts."""
     errs: list[str] = []
     fields: dict[str, str] = {}
     for line_no, line in enumerate(latest_text.splitlines(), start=1):
@@ -1245,6 +1636,17 @@ def check_latest_pointer(
             f"{latest_path}: review_profile '{profile_val}' does not match submission '{expected_profile}'."
         )
 
+    status_field = fields.get("当前评审状态", "")
+    status_match = LATEST_STATUS_RE.match(status_field)
+    if not status_match:
+        errs.append(
+            f"{latest_path}: 当前评审状态 must start with bold **<STATUS>** (found {status_field!r})."
+        )
+    elif expected_status is not None and status_match.group(1) != expected_status:
+        errs.append(
+            f"{latest_path}: 当前评审状态 '{status_match.group(1)}' conflicts with verified batch state '{expected_status}'."
+        )
+
     expected_author_rel = f"{batch}/{latest_author_info['author_filename']}"
     sub_doc_field = fields.get("最新送审／回复文档", "") or fields.get("最新送审文档", "")
     expected_md_link = f"[{expected_author_rel}]({expected_author_rel})"
@@ -1252,6 +1654,20 @@ def check_latest_pointer(
         errs.append(
             f"{latest_path}: 最新送审／回复文档 must bind exact active author link '{expected_md_link}' (found {sub_doc_field!r})."
         )
+
+    codex_field = fields.get("最新 Codex 评审／复审", "")
+    if latest_codex_name is None:
+        if not codex_field.startswith("暂无") or MD_LINK_RE.search(codex_field):
+            errs.append(
+                f"{latest_path}: 最新 Codex 评审／复审 must report 暂无 before first review file exists (found {codex_field!r})."
+            )
+    else:
+        expected_codex_rel = f"{batch}/{latest_codex_name}"
+        expected_codex_link = f"[{expected_codex_rel}]({expected_codex_rel})"
+        if codex_field != expected_codex_link:
+            errs.append(
+                f"{latest_path}: 最新 Codex 评审／复审 must bind exact active reviewer link '{expected_codex_link}' (found {codex_field!r})."
+            )
 
     range_val = fields.get("本轮冻结审查范围", "")
     range_match = re.match(
@@ -1287,9 +1703,9 @@ def check_latest_pointer(
         errs.append(
             f"{latest_path}: doc_head ({l_doc_short}) does not match {latest_author_info['author_filename']} endpoint ({latest_author_info['doc_short']})."
         )
-    if not latest_author_info["has_response"] and l_code_full != submission_info["code_full"]:
+    if l_code_full != latest_author_info["code_full"]:
         errs.append(
-            f"{latest_path}: code_head ({l_code_short}) does not match submission code_head ({submission_info['code_short']})."
+            f"{latest_path}: code_head ({l_code_short}) does not match {latest_author_info['author_filename']} frozen code_head ({latest_author_info['code_short']})."
         )
     if not git_ancestor(repo_root, l_base_full, l_code_full) or not git_ancestor(repo_root, l_code_full, l_doc_full):
         errs.append(
@@ -1379,59 +1795,21 @@ def cmd_check(args: argparse.Namespace) -> int:
             checked_files.append(str(path))
 
         submission_info: dict[str, str] = {}
-        latest_author_info: dict[str, str] = {}
+        latest_author_info: dict[str, Any] = {}
+        latest_codex_name: str | None = None
+        expected_status: str | None = None
 
         if args.strict_meta or args.check_latest:
             if "01_gemini_submission.md" not in parsed_texts:
                 if args.check_latest:
                     errors.append(f"{batch_dir}: --check-latest requires readable canonical '01_gemini_submission.md'.")
             else:
-                sub_path, sub_text = parsed_texts["01_gemini_submission.md"]
-                meta_errs, submission_info = check_submission_metadata(repo_root, sub_path, sub_text)
-                errors.extend(meta_errs)
-
-            if submission_info:
-                prev_doc_full = submission_info["doc_full"]
-                prev_doc_short = submission_info["doc_short"]
-                latest_author_file = "01_gemini_submission.md"
-                latest_doc_full = prev_doc_full
-                latest_doc_short = prev_doc_short
-                has_response = False
-
-                odd_responses: list[tuple[int, Path, str]] = []
-                for name, (path, text) in parsed_texts.items():
-                    m = ROUND_FILE_RE.fullmatch(name)
-                    if m and int(m.group(1)) >= 3 and int(m.group(1)) % 2 == 1:
-                        odd_responses.append((int(m.group(1)), path, text))
-                odd_responses.sort(key=lambda item: item[0])
-
-                for _, resp_path, resp_text in odd_responses:
-                    r_errs, r_info = check_author_response_file(
-                        repo_root,
-                        resp_path,
-                        resp_text,
-                        prev_doc_full,
-                        prev_doc_short,
-                        submission_info["post_review_action"],
-                        submission_info["base_full"],
-                        submission_info["base_short"],
-                        submission_info["review_profile"],
-                    )
-                    errors.extend(r_errs)
-                    if r_info:
-                        prev_doc_full = r_info["doc_full"]
-                        prev_doc_short = r_info["doc_short"]
-                        latest_doc_full = r_info["doc_full"]
-                        latest_doc_short = r_info["doc_short"]
-                        latest_author_file = resp_path.name
-                        has_response = True
-
-                latest_author_info = {
-                    "author_filename": latest_author_file,
-                    "doc_full": latest_doc_full,
-                    "doc_short": latest_doc_short,
-                    "has_response": has_response,
-                }
+                chain = evaluate_batch_chain(repo_root, parsed_texts)
+                errors.extend(chain["errors"])
+                submission_info = chain["submission_info"]
+                latest_author_info = chain["latest_author_info"]
+                latest_codex_name = chain["latest_codex_name"]
+                expected_status = chain["expected_status"]
 
         if args.check_latest:
             try:
@@ -1454,6 +1832,8 @@ def cmd_check(args: argparse.Namespace) -> int:
                                 batch,
                                 submission_info,
                                 latest_author_info,
+                                latest_codex_name=latest_codex_name,
+                                expected_status=expected_status,
                             )
                         )
                 checked_files.append(str(latest_path))
@@ -1481,7 +1861,7 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 
 def cmd_sync_latest(args: argparse.Namespace) -> int:
-    """Safely rebuild out/codex_review/LATEST.md from verified immutable batch artifacts."""
+    """Safely rebuild out/codex_review/LATEST.md strictly derived from verified batch artifacts."""
     repo_root = find_repo_root(args.repo_root)
     batch = validate_batch_name(args.batch)
 
@@ -1499,69 +1879,29 @@ def cmd_sync_latest(args: argparse.Namespace) -> int:
             raise HelperError("; ".join(fmt_errs))
         parsed_texts[path.name] = (path, text)
 
-    sub_path, sub_text = parsed_texts["01_gemini_submission.md"]
-    sub_errs, sub_info = check_submission_metadata(repo_root, sub_path, sub_text)
-    if sub_errs:
-        raise HelperError("; ".join(sub_errs))
+    chain = evaluate_batch_chain(repo_root, parsed_texts)
+    if chain["errors"] or chain["expected_status"] is None:
+        raise HelperError("; ".join(chain["errors"]) or "Unable to derive canonical review status.")
 
-    prev_doc_full = sub_info["doc_full"]
-    prev_doc_short = sub_info["doc_short"]
-    latest_author_name = "01_gemini_submission.md"
-    code_full = sub_info["code_full"]
-    code_short = sub_info["code_short"]
-    doc_full = sub_info["doc_full"]
-    doc_short = sub_info["doc_short"]
-    max_seq = 1
-    latest_codex_name: str | None = None
-    max_codex_seq = 0
-    first_sub_short = sub_info["doc_short"]
+    sub_info = chain["submission_info"]
+    latest_author_info = chain["latest_author_info"]
+    latest_codex_name = chain["latest_codex_name"]
+    expected_status = chain["expected_status"]
+    max_seq = chain["max_seq"]
+    resp_shas = chain["resp_shas"]
 
-    odd_responses: list[tuple[int, Path, str]] = []
-    for name, (path, text) in parsed_texts.items():
-        m = ROUND_FILE_RE.fullmatch(name)
-        if not m:
-            continue
-        seq = int(m.group(1))
-        if seq > max_seq:
-            max_seq = seq
-        if seq >= 3 and seq % 2 == 1:
-            odd_responses.append((seq, path, text))
-        elif seq % 2 == 0 and seq > max_codex_seq:
-            max_codex_seq = seq
-            latest_codex_name = name
-
-    odd_responses.sort(key=lambda item: item[0])
-    resp_shas: list[tuple[int, str]] = []
-    for seq, resp_path, resp_text in odd_responses:
-        r_errs, r_info = check_author_response_file(
-            repo_root,
-            resp_path,
-            resp_text,
-            prev_doc_full,
-            prev_doc_short,
-            sub_info["post_review_action"],
-            sub_info["base_full"],
-            sub_info["base_short"],
-            sub_info["review_profile"],
+    if args.status is not None and args.status != expected_status:
+        raise HelperError(
+            f"Requested --status '{args.status}' conflicts with verified batch state "
+            f"'{expected_status}' (latest canonical file: {expected_round_filename(max_seq)})."
         )
-        if r_errs:
-            raise HelperError("; ".join(r_errs))
-        prev_doc_full = r_info["doc_full"]
-        prev_doc_short = r_info["doc_short"]
-        doc_full = r_info["doc_full"]
-        doc_short = r_info["doc_short"]
-        code_full = r_info["code_full"]
-        code_short = r_info["code_short"]
-        latest_author_name = resp_path.name
-        resp_shas.append(((seq - 1) // 2, r_info["doc_short"]))
+    status_label = expected_status
 
-    if args.code_head:
-        resolved_code_full, resolved_code_short = resolve_commit(repo_root, args.code_head)
-        if not git_ancestor(repo_root, sub_info["base_full"], resolved_code_full) or not git_ancestor(
-            repo_root, resolved_code_full, doc_full
-        ):
-            raise HelperError("--code-head must satisfy base <= code_head <= doc_head.")
-        code_short = resolved_code_short
+    code_short = latest_author_info["code_short"]
+    doc_full = latest_author_info["doc_full"]
+    doc_short = latest_author_info["doc_short"]
+    latest_author_name = latest_author_info["author_filename"]
+    first_sub_short = sub_info["doc_short"]
 
     up_name, up_short, deferred_note = compute_deferred_note(
         repo_root, sub_info["base_full"], sub_info["base_short"], doc_full, doc_short
@@ -1571,22 +1911,20 @@ def cmd_sync_latest(args: argparse.Namespace) -> int:
     next_codex_file = expected_round_filename(next_codex_seq)
     next_codex_rel = f"{batch}/{next_codex_file}"
 
-    if args.status:
-        status_label = args.status
-    elif max_seq == 1:
-        status_label = "WAITING_R1_REVIEW"
-    elif max_seq % 2 == 1:
-        status_label = f"WAITING_R{(max_seq - 1) // 2}_RECHECK"
+    if args.detail:
+        status_detail = args.detail
+    elif status_label == "WAITING_R1_REVIEW":
+        status_detail = "等待 Codex 第 1 轮只读评审"
+    elif (m_wait := WAITING_RECHECK_RE.fullmatch(status_label)) is not None:
+        rnd = m_wait.group(1)
+        status_detail = f"r{rnd} 修复已提交（{doc_short}），等待 Codex r{rnd} 复审"
+    elif status_label in ("PASS", "PASS_WITH_P2_P3"):
+        status_detail = (
+            f"{latest_codex_name} 已确认 {status_label}（{sub_info['base_short']}..{doc_short}），"
+            f"按 {sub_info['post_review_action']} 处理"
+        )
     else:
-        status_label = "CHANGES_REQUESTED"
-
-    status_detail_map = {
-        "WAITING_R1_REVIEW": "等待 Codex 第 1 轮只读评审",
-        "WAITING_R1_RECHECK": f"r1 修复已提交（{doc_short}），等待 Codex r1 复审",
-        "WAITING_R2_RECHECK": f"r2 修复已提交（{doc_short}），等待 Codex r2 复审",
-        "WAITING_R3_RECHECK": f"r3 修复已提交（{doc_short}），等待 Codex r3 复审",
-    }
-    status_detail = args.detail or status_detail_map.get(status_label, f"当前批次 {batch} 状态已同步")
+        status_detail = f"{latest_codex_name} 结论为 CHANGES_REQUESTED，待 Author 核实修复后报复审"
 
     latest_codex_text = (
         f"[{batch}/{latest_codex_name}]({batch}/{latest_codex_name})"
@@ -1604,6 +1942,12 @@ def cmd_sync_latest(args: argparse.Namespace) -> int:
             repo_root, ("out", "codex_review", "LATEST.md"), reject_hardlinks=True
         )
         previous_closed = extract_previous_closed(validated_latest)
+
+    closed_codex_rel = (
+        f"{batch}/{latest_codex_name}"
+        if status_label in ("PASS", "PASS_WITH_P2_P3") and latest_codex_name
+        else None
+    )
 
     latest_text = build_latest_markdown(
         batch=batch,
@@ -1624,6 +1968,7 @@ def cmd_sync_latest(args: argparse.Namespace) -> int:
         next_codex_rel=next_codex_rel,
         previous_closed=previous_closed,
         range_note=range_note,
+        closed_codex_rel=closed_codex_rel,
     )
     write_atomic_lf(latest_path, latest_text)
     print(
@@ -1633,8 +1978,11 @@ def cmd_sync_latest(args: argparse.Namespace) -> int:
                 "batch": batch,
                 "latest": str(latest_path),
                 "range": f"{sub_info['base_short']}..{doc_short}",
+                "code_head": code_short,
+                "doc_head": doc_short,
                 "status": status_label,
                 "latest_author": f"{batch}/{latest_author_name}",
+                "latest_codex": f"{batch}/{latest_codex_name}" if latest_codex_name else None,
             },
             ensure_ascii=False,
         )
@@ -1745,9 +2093,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     p_sync = sub.add_parser("sync-latest", help="Safely rebuild/recover LATEST.md from immutable batch files")
     p_sync.add_argument("--batch", required=True, help="Batch folder name under out/codex_review/")
-    p_sync.add_argument("--status", default=None, help="Override status label (e.g. WAITING_R2_RECHECK)")
+    p_sync.add_argument(
+        "--status",
+        default=None,
+        help="Optional assertion matching derived canonical status (rejected if conflicting)",
+    )
     p_sync.add_argument("--detail", default=None, help="Override status summary text")
-    p_sync.add_argument("--code-head", default=None, help="Optional code head SHA between base and doc_head")
     p_sync.add_argument("--repo-root", type=Path, default=None, help="Override repository root (for tests)")
     p_sync.set_defaults(func=cmd_sync_latest)
 

@@ -128,6 +128,33 @@ def run_cli(*args: str) -> tuple[int, str, str]:
     return rc, out_buf.getvalue(), err_buf.getvalue()
 
 
+def _write_reviewer_md(
+    path: Path,
+    *,
+    base_sha: str,
+    code_sha: str,
+    doc_sha: str,
+    verdict: str,
+    post_action: str = "pause_for_user",
+    profile: str = "general",
+    omit_code_head: bool = False,
+    body_extra: str = "",
+) -> None:
+    """Write a canonical Reviewer markdown fixture for strict endpoint and verdict tests."""
+    code_frag = "" if omit_code_head else f"，`code_head={code_sha[:8]}`"
+    extra_block = f"\n{body_extra.rstrip()}\n" if body_extra else ""
+    path.write_text(
+        "# QKeyMapper 本地提交复审\n\n"
+        "## 1. 复审元信息\n\n"
+        f"- 冻结范围 `{base_sha[:8]}..{doc_sha[:8]}`{code_frag}，`review_profile={profile}`，`post_review_action={post_action}`。\n\n"
+        "## 2. 总体结论\n\n"
+        f"**{verdict}。** 本轮核对完成。\n"
+        f"{extra_block}",
+        encoding="utf-8",
+        newline="\n",
+    )
+
+
 class ReviewHelperTests(unittest.TestCase):
     def setUp(self) -> None:
         self.repo = TempGitRepo()
@@ -465,6 +492,46 @@ class ReviewHelperTests(unittest.TestCase):
         )
         self.assertEqual(rc_hp, 0, err_hp)
 
+        # Rename/move out of handoff/<task>/ must still trigger handoff-plan via --no-renames
+        self.repo._git("config", "diff.renames", "copies")
+        self.repo._git("mv", "handoff/中文任务目录/主计划.md", "docs/archived_plan.md")
+        self.repo._git("commit", "-m", "docs: move task plan out of handoff")
+        mv_sha = self.repo._rev_parse("HEAD")
+        changed_mv = review_helper.changed_files_in_range(self.repo.root, plan_sha, mv_sha)
+        self.assertIn("handoff/中文任务目录/主计划.md", changed_mv)
+        self.assertIn("docs/archived_plan.md", changed_mv)
+
+        rc_mv_gen, _, err_mv_gen = run_cli(
+            "init",
+            "--batch",
+            "20261127_handoff_mv",
+            "--base",
+            plan_sha,
+            "--head",
+            mv_sha,
+            "--profile",
+            "general",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertNotEqual(rc_mv_gen, 0)
+        self.assertIn("handoff-plan", err_mv_gen)
+
+        rc_mv_hp, _, err_mv_hp = run_cli(
+            "init",
+            "--batch",
+            "20261127_handoff_mv",
+            "--base",
+            plan_sha,
+            "--head",
+            mv_sha,
+            "--profile",
+            "handoff-plan",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_mv_hp, 0, err_mv_hp)
+
     def test_check_read_boundaries_response_binding_and_flag_exclusivity(self) -> None:
         rc, _, err = run_cli(
             "init",
@@ -559,7 +626,14 @@ class ReviewHelperTests(unittest.TestCase):
         self.assertNotIn("does/not/exist.txt", joined)
         self.assertNotIn("nope.md", joined)
 
-        r2_path.write_text("# Review\n[ok](../../../src/main.cpp#L1-L3)\n", encoding="utf-8", newline="\n")
+        _write_reviewer_md(
+            r2_path,
+            base_sha=self.repo.deferred_sha,
+            code_sha=self.repo.doc_sha,
+            doc_sha=self.repo.doc_sha,
+            verdict="CHANGES_REQUESTED",
+            body_extra="## 3. 发现清单\n\n- [ok](../../../src/main.cpp#L1-L3)",
+        )
 
         # Duplicate post_review_action row in 01_gemini_submission.md must fail check
         sub = batch_dir / "01_gemini_submission.md"
@@ -653,6 +727,420 @@ class ReviewHelperTests(unittest.TestCase):
         )
         self.assertEqual(rc_prof, 1)
         self.assertIn("review_profile 'handoff-plan' does not match submission 'general'", "\n".join(json.loads(out_prof)["errors"]))
+
+    def test_frozen_code_head_binding_across_responses_and_sync(self) -> None:
+        rc, _, err = run_cli(
+            "init",
+            "--batch",
+            "20261127_codehead",
+            "--base",
+            self.repo.deferred_sha,
+            "--head",
+            self.repo.doc_sha,
+            "--code-head",
+            self.repo.code_sha,
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc, 0, err)
+
+        batch_dir = self.repo.root / "out" / "codex_review" / "20261127_codehead"
+        latest_path = self.repo.root / "out" / "codex_review" / "LATEST.md"
+
+        # sync-latest must no longer expose --code-head override
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as cm:
+            review_helper.main(
+                [
+                    "sync-latest",
+                    "--batch",
+                    "20261127_codehead",
+                    "--code-head",
+                    self.repo.code_sha,
+                    "--repo-root",
+                    str(self.repo.root),
+                ]
+            )
+        self.assertNotEqual(cm.exception.code, 0)
+
+        _write_reviewer_md(
+            batch_dir / "02_codex_review_r1.md",
+            base_sha=self.repo.deferred_sha,
+            code_sha=self.repo.code_sha,
+            doc_sha=self.repo.doc_sha,
+            verdict="CHANGES_REQUESTED",
+        )
+
+        # r1 response defaults code_head to fix1_sha
+        (self.repo.root / "src" / "fix1.cpp").write_text("// fix1\n", encoding="utf-8", newline="\n")
+        self.repo._git("add", "src/fix1.cpp")
+        self.repo._git("commit", "-m", "fix(ui): fix1")
+        fix1_sha = self.repo._rev_parse("HEAD")
+
+        r3_path = batch_dir / "03_gemini_response_r1.md"
+        r3_path.write_text(
+            "# Response r1\n\n"
+            f"- **前置基线 → 新增本地提交**：`{self.repo.doc_sha[:8]}..{fix1_sha[:8]}`\n"
+            "- **`post_review_action`**：`pause_for_user`\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        rc_s1, out_s1, err_s1 = run_cli(
+            "sync-latest", "--batch", "20261127_codehead", "--repo-root", str(self.repo.root)
+        )
+        self.assertEqual(rc_s1, 0, err_s1)
+        self.assertEqual(json.loads(out_s1)["code_head"], fix1_sha[:8])
+
+        # Tampering LATEST code_head back to initial code_sha or doc_sha must FAIL strict check
+        latest_r3 = latest_path.read_text(encoding="utf-8")
+        latest_path.write_text(
+            latest_r3.replace(f"代码终点 `{fix1_sha[:8]}`", f"代码终点 `{self.repo.code_sha[:8]}`"),
+            encoding="utf-8",
+            newline="\n",
+        )
+        rc_drift, out_drift, _ = run_cli(
+            "check",
+            "--batch",
+            "20261127_codehead",
+            "--check-latest",
+            "--strict-meta",
+            "--json",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_drift, 1)
+        self.assertIn("frozen code_head", "\n".join(json.loads(out_drift)["errors"]))
+        latest_path.write_text(latest_r3, encoding="utf-8", newline="\n")
+
+        _write_reviewer_md(
+            batch_dir / "04_codex_recheck_r1.md",
+            base_sha=self.repo.deferred_sha,
+            code_sha=fix1_sha,
+            doc_sha=fix1_sha,
+            verdict="CHANGES_REQUESTED",
+        )
+
+        # r2 fix has code commit fix2_code_sha + doc-only tail commit fix2_doc_sha
+        (self.repo.root / "src" / "fix2.cpp").write_text("// fix2\n", encoding="utf-8", newline="\n")
+        self.repo._git("add", "src/fix2.cpp")
+        self.repo._git("commit", "-m", "fix(ui): fix2")
+        fix2_code_sha = self.repo._rev_parse("HEAD")
+
+        (self.repo.root / "docs" / "fix2.md").write_text("# Fix2 Doc\n", encoding="utf-8", newline="\n")
+        self.repo._git("add", "docs/fix2.md")
+        self.repo._git("commit", "-m", "docs(ui): explain fix2")
+        fix2_doc_sha = self.repo._rev_parse("HEAD")
+
+        r5_path = batch_dir / "05_gemini_response_r2.md"
+        # Regression check: code_head before previous response code_head (self.repo.code_sha < fix1_sha) fails
+        r5_path.write_text(
+            "# Response r2\n\n"
+            f"- **前置基线 → 新增本地提交**：`{fix1_sha[:8]}..{fix2_doc_sha[:8]}`\n"
+            f"- **`code_head`**：`{self.repo.code_sha[:8]}`\n"
+            "- **`post_review_action`**：`pause_for_user`\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        rc_reg, out_reg, _ = run_cli(
+            "check",
+            "--batch",
+            "20261127_codehead",
+            "--strict-meta",
+            "--json",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_reg, 1)
+        self.assertIn("regresses", "\n".join(json.loads(out_reg)["errors"]))
+
+        # Duplicate code_head lines in 05 fail
+        r5_path.write_text(
+            "# Response r2\n\n"
+            f"- **前置基线 → 新增本地提交**：`{fix1_sha[:8]}..{fix2_doc_sha[:8]}`\n"
+            f"- **`code_head`**：`{fix2_code_sha[:8]}`\n"
+            f"- **`code_head`**：`{fix2_doc_sha[:8]}`\n"
+            "- **`post_review_action`**：`pause_for_user`\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        rc_dup_c, out_dup_c, _ = run_cli(
+            "check",
+            "--batch",
+            "20261127_codehead",
+            "--strict-meta",
+            "--json",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_dup_c, 1)
+        self.assertIn("at most 1", "\n".join(json.loads(out_dup_c)["errors"]))
+
+        # Valid explicit code_head in 05 succeeds across sync-latest and strict check
+        r5_path.write_text(
+            "# Response r2\n\n"
+            f"- **前置基线 → 新增本地提交**：`{fix1_sha[:8]}..{fix2_doc_sha[:8]}`\n"
+            f"- **`code_head`**：`{fix2_code_sha[:8]}`\n"
+            "- **`post_review_action`**：`pause_for_user`\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+        rc_s2, out_s2, err_s2 = run_cli(
+            "sync-latest", "--batch", "20261127_codehead", "--repo-root", str(self.repo.root)
+        )
+        self.assertEqual(rc_s2, 0, err_s2)
+        s2_meta = json.loads(out_s2)
+        self.assertEqual(s2_meta["code_head"], fix2_code_sha[:8])
+        self.assertEqual(s2_meta["doc_head"], fix2_doc_sha[:8])
+        self.assertEqual(s2_meta["status"], "WAITING_R2_RECHECK")
+
+        rc_ok, out_ok, _ = run_cli(
+            "check",
+            "--batch",
+            "20261127_codehead",
+            "--check-latest",
+            "--strict-meta",
+            "--json",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_ok, 0, out_ok)
+
+        # Tampering LATEST code_head to fix2_doc_sha (when 05 froze fix2_code_sha) fails
+        latest_r5 = latest_path.read_text(encoding="utf-8")
+        latest_path.write_text(
+            latest_r5.replace(f"代码终点 `{fix2_code_sha[:8]}`", f"代码终点 `{fix2_doc_sha[:8]}`"),
+            encoding="utf-8",
+            newline="\n",
+        )
+        rc_drift2, out_drift2, _ = run_cli(
+            "check",
+            "--batch",
+            "20261127_codehead",
+            "--check-latest",
+            "--strict-meta",
+            "--json",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_drift2, 1)
+        self.assertIn("frozen code_head", "\n".join(json.loads(out_drift2)["errors"]))
+
+    def test_status_and_reviewer_verdict_binding(self) -> None:
+        rc, _, err = run_cli(
+            "init",
+            "--batch",
+            "20261127_verdict",
+            "--base",
+            self.repo.deferred_sha,
+            "--head",
+            self.repo.doc_sha,
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc, 0, err)
+
+        batch_dir = self.repo.root / "out" / "codex_review" / "20261127_verdict"
+        latest_path = self.repo.root / "out" / "codex_review" / "LATEST.md"
+
+        _write_reviewer_md(
+            batch_dir / "02_codex_review_r1.md",
+            base_sha=self.repo.deferred_sha,
+            code_sha=self.repo.doc_sha,
+            doc_sha=self.repo.doc_sha,
+            verdict="CHANGES_REQUESTED",
+        )
+        (self.repo.root / "src" / "vfix.cpp").write_text("// vfix\n", encoding="utf-8", newline="\n")
+        self.repo._git("add", "src/vfix.cpp")
+        self.repo._git("commit", "-m", "fix(ui): vfix")
+        vfix_sha = self.repo._rev_parse("HEAD")
+
+        (batch_dir / "03_gemini_response_r1.md").write_text(
+            "# Response r1\n\n"
+            f"- **前置基线 → 新增本地提交**：`{self.repo.doc_sha[:8]}..{vfix_sha[:8]}`\n"
+            "- **`post_review_action`**：`pause_for_user`\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+
+        # At 01..03 (no 04 yet), sync-latest must refuse PASS / CHANGES_REQUESTED / wrong WAITING round
+        for bad_status in ("PASS", "CHANGES_REQUESTED", "WAITING_R2_RECHECK"):
+            rc_bad_st, _, err_bad_st = run_cli(
+                "sync-latest",
+                "--batch",
+                "20261127_verdict",
+                "--status",
+                bad_status,
+                "--repo-root",
+                str(self.repo.root),
+            )
+            self.assertNotEqual(rc_bad_st, 0, bad_status)
+            self.assertIn("conflicts with verified batch state", err_bad_st)
+
+        # Default sync-latest derives WAITING_R1_RECHECK and passes strict check
+        rc_w1, out_w1, err_w1 = run_cli(
+            "sync-latest", "--batch", "20261127_verdict", "--repo-root", str(self.repo.root)
+        )
+        self.assertEqual(rc_w1, 0, err_w1)
+        self.assertEqual(json.loads(out_w1)["status"], "WAITING_R1_RECHECK")
+
+        # Tampering LATEST status to PASS or dropping Codex pointer must FAIL strict check
+        orig_lat = latest_path.read_text(encoding="utf-8")
+        latest_path.write_text(
+            orig_lat.replace("**WAITING_R1_RECHECK**", "**PASS**"), encoding="utf-8", newline="\n"
+        )
+        rc_tamper_st, out_tamper_st, _ = run_cli(
+            "check",
+            "--batch",
+            "20261127_verdict",
+            "--check-latest",
+            "--strict-meta",
+            "--json",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_tamper_st, 1)
+        self.assertIn("conflicts with verified batch state", "\n".join(json.loads(out_tamper_st)["errors"]))
+
+        latest_path.write_text(
+            orig_lat.replace(
+                "20261127_verdict/02_codex_review_r1.md", "20261127_verdict/99_wrong.md"
+            ),
+            encoding="utf-8",
+            newline="\n",
+        )
+        rc_tamper_cx, _, _ = run_cli(
+            "check",
+            "--batch",
+            "20261127_verdict",
+            "--check-latest",
+            "--strict-meta",
+            "--json",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_tamper_cx, 1)
+
+        # Doc-only tail commit for 04 test (explicit code_head != doc_head)
+        _write_reviewer_md(
+            batch_dir / "04_codex_recheck_r1.md",
+            base_sha=self.repo.deferred_sha,
+            code_sha=vfix_sha,
+            doc_sha=vfix_sha,
+            verdict="CHANGES_REQUESTED",
+        )
+        (self.repo.root / "src" / "vfix2.cpp").write_text("// vfix2\n", encoding="utf-8", newline="\n")
+        self.repo._git("add", "src/vfix2.cpp")
+        self.repo._git("commit", "-m", "fix(ui): vfix2")
+        vfix2_code = self.repo._rev_parse("HEAD")
+        (self.repo.root / "docs" / "vfix2.md").write_text("# vfix2 doc\n", encoding="utf-8", newline="\n")
+        self.repo._git("add", "docs/vfix2.md")
+        self.repo._git("commit", "-m", "docs(ui): vfix2 doc")
+        vfix2_doc = self.repo._rev_parse("HEAD")
+
+        (batch_dir / "05_gemini_response_r2.md").write_text(
+            "# Response r2\n\n"
+            f"- **前置基线 → 新增本地提交**：`{vfix_sha[:8]}..{vfix2_doc[:8]}`\n"
+            f"- **`code_head`**：`{vfix2_code[:8]}`\n"
+            "- **`post_review_action`**：`pause_for_user`\n",
+            encoding="utf-8",
+            newline="\n",
+        )
+
+        # 06 with stale range or missing code_head when code_head != doc_head must be rejected
+        r6_path = batch_dir / "06_codex_recheck_r2.md"
+        _write_reviewer_md(
+            r6_path,
+            base_sha=self.repo.deferred_sha,
+            code_sha=vfix2_code,
+            doc_sha=vfix_sha,
+            verdict="PASS",
+        )
+        rc_r6_stale, _, err_r6_stale = run_cli(
+            "sync-latest", "--batch", "20261127_verdict", "--repo-root", str(self.repo.root)
+        )
+        self.assertNotEqual(rc_r6_stale, 0)
+        self.assertIn("frozen range", err_r6_stale)
+
+        _write_reviewer_md(
+            r6_path,
+            base_sha=self.repo.deferred_sha,
+            code_sha=vfix2_code,
+            doc_sha=vfix2_doc,
+            verdict="PASS",
+            omit_code_head=True,
+        )
+        rc_r6_nocode, _, err_r6_nocode = run_cli(
+            "sync-latest", "--batch", "20261127_verdict", "--repo-root", str(self.repo.root)
+        )
+        self.assertNotEqual(rc_r6_nocode, 0)
+        self.assertIn("code_head", err_r6_nocode)
+
+        # Valid 06 PASS: default sync-latest produces PASS (never CHANGES_REQUESTED!) & binds 06
+        _write_reviewer_md(
+            r6_path,
+            base_sha=self.repo.deferred_sha,
+            code_sha=vfix2_code,
+            doc_sha=vfix2_doc,
+            verdict="PASS",
+        )
+        rc_pass, out_pass, err_pass = run_cli(
+            "sync-latest", "--batch", "20261127_verdict", "--repo-root", str(self.repo.root)
+        )
+        self.assertEqual(rc_pass, 0, err_pass)
+        pass_meta = json.loads(out_pass)
+        self.assertEqual(pass_meta["status"], "PASS")
+        self.assertEqual(pass_meta["latest_codex"], "20261127_verdict/06_codex_recheck_r2.md")
+        self.assertIn("确认 `PASS` 收口", latest_path.read_text(encoding="utf-8"))
+
+        rc_pass_chk, out_pass_chk, _ = run_cli(
+            "check",
+            "--batch",
+            "20261127_verdict",
+            "--check-latest",
+            "--strict-meta",
+            "--json",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_pass_chk, 0, out_pass_chk)
+
+        # Conflicting --status on closed PASS batch must FAIL
+        rc_conf_p, _, err_conf_p = run_cli(
+            "sync-latest",
+            "--batch",
+            "20261127_verdict",
+            "--status",
+            "CHANGES_REQUESTED",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertNotEqual(rc_conf_p, 0)
+        self.assertIn("conflicts with verified batch state", err_conf_p)
+
+        # Valid 06 PASS_WITH_P2_P3 derives PASS_WITH_P2_P3 cleanly
+        _write_reviewer_md(
+            r6_path,
+            base_sha=self.repo.deferred_sha,
+            code_sha=vfix2_code,
+            doc_sha=vfix2_doc,
+            verdict="PASS_WITH_P2_P3",
+        )
+        rc_p23, out_p23, err_p23 = run_cli(
+            "sync-latest", "--batch", "20261127_verdict", "--repo-root", str(self.repo.root)
+        )
+        self.assertEqual(rc_p23, 0, err_p23)
+        self.assertEqual(json.loads(out_p23)["status"], "PASS_WITH_P2_P3")
+
+        rc_p23_chk, out_p23_chk, _ = run_cli(
+            "check",
+            "--batch",
+            "20261127_verdict",
+            "--check-latest",
+            "--strict-meta",
+            "--json",
+            "--repo-root",
+            str(self.repo.root),
+        )
+        self.assertEqual(rc_p23_chk, 0, out_p23_chk)
 
     def test_status_empty_and_active(self) -> None:
         rc0, out0, _ = run_cli("status", "--json", "--repo-root", str(self.repo.root))

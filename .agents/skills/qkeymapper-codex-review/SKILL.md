@@ -14,7 +14,7 @@ description: QKeyMapper 仓库内 Gemini 与 Codex（或 Author 与 Reviewer）�
   - [agents/openai.yaml](agents/openai.yaml)：Codex 原生 `$qkeymapper-codex-review` 元数据；
   - [references/templates.md](references/templates.md)：送审单、评审/复审单、修复回复单、`LATEST.md` 模板与极简双端交互口令；
   - [references/mcp-handoff-checklist.md](references/mcp-handoff-checklist.md)：提交涉及 `handoff/` 主计划或能力矩阵时的专项附加检查表；
-  - [scripts/review_helper.py](scripts/review_helper.py)：非提权零依赖辅助脚本（`init` / `check` / `status`）。
+  - [scripts/review_helper.py](scripts/review_helper.py)：非提权零依赖辅助脚本（`init` / `sync-latest` / `check` / `status`）。
 - **本机 `.gitignore` 忽略（不入 Git、不污染提交历史）**：
   - `out/codex_review/LATEST.md`：当前活跃轮次唯一指针；
   - `out/codex_review/<YYYYMMDD>_<tag>/`：本机该批次评审与修复原件。
@@ -87,7 +87,7 @@ out/codex_review/
 
 ## 辅助脚手架用法（非提权 Python 3）
 
-从仓库根目录运行（本机首选 `out/mcp_bridge/venv/Scripts/python.exe -B -X utf8`，其他同步仓库且无该 venv 的 PC 可改用 `python -B -X utf8`）；脚本全程使用 `--no-optional-locks` 只读查 Git、`O_CREAT | O_EXCL` 独占创建 `01` 并原子更新 `LATEST.md`（不覆盖既有 `01` 原件，拒绝符号链接／NTFS 联接／硬链接及工作区外链接；作者后续写入 `03/05` 回复单时须沿用 [templates.md](references/templates.md) 的冻结范围与 `post_review_action` 头字段以供 `--strict-meta --check-latest` 绑定校验）：
+从仓库根目录运行（本机首选 `out/mcp_bridge/venv/Scripts/python.exe -B -X utf8`，其他同步仓库且无该 venv 的 PC 可改用 `python -B -X utf8`）；脚本全程使用 `--no-optional-locks` 只读查 Git、`O_CREAT | O_EXCL` 独占创建 `01` 并原子更新 `LATEST.md`（不覆盖既有 `01` 原件，拒绝符号链接／NTFS 联接／硬链接及工作区外链接；作者后续写入 `03/05` 回复单时须沿用 [templates.md](references/templates.md) 的冻结范围与 `post_review_action` 头字段，默认将 `code_head` 绑定为 `<new_head_sha>`，如末尾存在纯文档提交则以可选 `- **\`code_head\`**：\`<hex>\`` 显式固定；Reviewer 第 1/2 节须固定范围终点与规范结论，`sync-latest` 与 `check --strict-meta --check-latest` 会按既有原件严格推导并校验证实状态与文件指针）：
 
 ```powershell
 # 1. 查看当前评审指针与 Git 本地待审状态
@@ -97,9 +97,9 @@ out/codex_review/
 & out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 .agents/skills/qkeymapper-codex-review/scripts/review_helper.py init `
   --batch 20261127_example_tag --base <base_sha> --head <head_sha> --post-action pause_for_user --profile general
 
-# 3. 写入 03/05 回复单后，或 init 更新 LATEST.md 失败后，在不触碰已有原件前提下原子同步 LATEST.md
+# 3. 写入 03/05 回复单后，或评审结束／init 更新 LATEST.md 失败后，在不触碰已有原件前提下从已校验轮次原件严格推导并原子同步 LATEST.md（传 --status 仅作一致断言，冲突即报错）
 & out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 .agents/skills/qkeymapper-codex-review/scripts/review_helper.py sync-latest `
-  --batch 20261127_example_tag --status WAITING_R1_RECHECK
+  --batch 20261127_example_tag
 
 # 4. 校验送审单／回复单／评审单／LATEST.md 的编码（UTF-8 无 BOM / LF）、命名顺序、相对链接与元信息绑定
 & out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 .agents/skills/qkeymapper-codex-review/scripts/review_helper.py check `
