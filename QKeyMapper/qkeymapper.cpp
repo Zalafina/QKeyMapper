@@ -19347,7 +19347,7 @@ bool QKeyMapper::applyWindowSwitchKeySetting(const QString &canonicalKey)
     return changed;
 }
 
-bool QKeyMapper::applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSettings &settings)
+bool QKeyMapper::applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSettings &settings, bool includeWindowSwitchKey)
 {
     if (!ui) {
         return false;
@@ -19376,7 +19376,7 @@ bool QKeyMapper::applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSet
         ui->startupMinimizedCheckBox->setChecked(settings.startupMinimized);
         changed = true;
     }
-    if (applyWindowSwitchKeySetting(settings.windowSwitchKey)) {
+    if (includeWindowSwitchKey && applyWindowSwitchKeySetting(settings.windowSwitchKey)) {
         changed = true;
     }
     if (changed) {
@@ -19478,13 +19478,13 @@ bool QKeyMapper::applyMappingStopKeySetting(const QString &canonicalKey)
     return changed;
 }
 
-bool QKeyMapper::applyMappingHotkeysSettings(const MappingHotkeysSettings &settings)
+bool QKeyMapper::applyMappingHotkeysSettings(const MappingHotkeysSettings &settings, bool includeStartKey, bool includeStopKey)
 {
     bool changed = false;
-    if (applyMappingStartKeySetting(settings.mappingStartKey)) {
+    if (includeStartKey && applyMappingStartKeySetting(settings.mappingStartKey)) {
         changed = true;
     }
-    if (applyMappingStopKeySetting(settings.mappingStopKey)) {
+    if (includeStopKey && applyMappingStopKeySetting(settings.mappingStopKey)) {
         changed = true;
     }
     if (changed) {
@@ -44328,7 +44328,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     after.windowSwitchKey = analyzed.first;
                 }
                 if (modified) {
-                    applyGeneralUiPreferencesSettings(after);
+                    applyGeneralUiPreferencesSettings(after, uiUpdate.windowSwitchKey.has_value());
                 }
             } else if (changingGeneralBehavior) {
                 GeneralBehaviorSettings after = getGeneralBehaviorSettings();
@@ -44368,7 +44368,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     after.mappingStopKey = analyzed.first;
                 }
                 if (modified) {
-                    applyMappingHotkeysSettings(after);
+                    applyMappingHotkeysSettings(after, hkUpdate.mappingStartKey.has_value(), hkUpdate.mappingStopKey.has_value());
                 }
             } else if (changingProfileDescription) {
                 if (modified) {

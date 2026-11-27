@@ -768,9 +768,9 @@ bool parseMappingFloatingButtonUpdate(const QJsonValue &rawValue, MappingFloatin
     if (fields.contains(QStringLiteral("style_code"))) {
         const auto val = fields.value(QStringLiteral("style_code"));
         const QString s = val.toString();
-        if (!val.isString() || s.trimmed().isEmpty() || s.size() > 1024
+        if (!val.isString() || s.trimmed().isEmpty() || s.size() > 4096
             || s.contains(QChar(0)) || s.contains(QLatin1Char('\r')) || s.contains(QLatin1Char('\n'))) {
-            return fail("floating_button.style_code must be a non-empty single-line string of at most 1024 UTF-16 code units.");
+            return fail("floating_button.style_code must be a non-empty single-line string of at most 4096 UTF-16 code units.");
         }
         out.styleCode = s;
     }
@@ -3182,7 +3182,7 @@ void appendMappingFloatingButtonCapabilities(QJsonArray &capabilities, const Cap
         {QStringLiteral("additionalProperties"), false},
         {QStringLiteral("minProperties"), 1},
         {QStringLiteral("properties"), QJsonObject{
-            {QStringLiteral("style_code"), CapabilitySchemaContext::string(QStringLiteral("^[^\\u0000\\r\\n]*\\S[^\\u0000\\r\\n]*$"), 1024)},
+            {QStringLiteral("style_code"), CapabilitySchemaContext::string(QStringLiteral("^[^\\u0000\\r\\n]*\\S[^\\u0000\\r\\n]*$"), 4096)},
             {QStringLiteral("enable"), boolSchema},
             {QStringLiteral("label"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")}, {QStringLiteral("maxLength"), 255},
                 {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n#|]*$")}}},

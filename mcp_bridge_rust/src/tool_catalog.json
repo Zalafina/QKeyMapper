@@ -4973,7 +4973,7 @@
             "additionalProperties": false,
             "minProperties": 1,
             "properties": {
-              "style_code": {"type": "string", "minLength": 1, "maxLength": 1024, "pattern": "^[^\\u0000\\r\\n]*\\S[^\\u0000\\r\\n]*$"},
+              "style_code": {"type": "string", "minLength": 1, "maxLength": 4096, "pattern": "^[^\\u0000\\r\\n]*\\S[^\\u0000\\r\\n]*$"},
               "enable": {"type": "boolean"},
               "label": {"type": "string", "maxLength": 255, "pattern": "^[^\\u0000\\r\\n#|]*$"},
               "show_on_mapping_start": {"type": "boolean"},

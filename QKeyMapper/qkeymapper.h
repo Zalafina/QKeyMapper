@@ -2347,13 +2347,13 @@ public:
     GeneralUiPreferencesSettings getGeneralUiPreferencesSettings() const;
     bool applyProcessListVisibleSetting(bool visible);
     bool applyWindowSwitchKeySetting(const QString &canonicalKey);
-    bool applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSettings &settings);
+    bool applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSettings &settings, bool includeWindowSwitchKey = true);
     GeneralBehaviorSettings getGeneralBehaviorSettings() const;
     bool applyGeneralBehaviorSettings(const GeneralBehaviorSettings &settings, bool markCloseToSystemTrayDecided = false);
     MappingHotkeysSettings getMappingHotkeysSettings() const;
     bool applyMappingStartKeySetting(const QString &canonicalKey);
     bool applyMappingStopKeySetting(const QString &canonicalKey);
-    bool applyMappingHotkeysSettings(const MappingHotkeysSettings &settings);
+    bool applyMappingHotkeysSettings(const MappingHotkeysSettings &settings, bool includeStartKey = true, bool includeStopKey = true);
     bool isProfileDescriptionEditable() const;
     QString getProfileDescriptionSetting() const;
     bool applyProfileDescriptionSetting(const QString &description);

@@ -466,11 +466,13 @@ async def check_contract(exe):
                             "hover_effect_strength": 200, "hover_glow_strength": 0, "hover_contrast_mode": 3,
                             "hover_custom_color": "#CC556677", "hover_animation_duration": 500,
                             "reference_point": 11, "x_offset": -50000, "y_offset": 50000},
-                           {"style_code": "FBS1;w=120;h=40", "enable": True}):
+                           {"style_code": "FBS1;w=120;h=40", "enable": True},
+                           {"style_code": "FBS1;w=120;ff=" + ("%E4%B8%AD" * 255)}):
                 request = fb_base | {"floating_button": fields}
                 validator.validate(request)
                 expect_not_connected(await client.call_tool("qkm_preview_changes", request))
             for bad_fields in ({}, {"style_code": "   "}, {"style_code": "FBS1;w=1\n2"},
+                               {"style_code": "A" * 4097},
                                {"label": "bad#label"}, {"label": "bad|label"}, {"label": "bad\nlabel"},
                                {"font_family": "Consolas\nX"}, {"sync_group_id": -1}, {"sync_group_id": 1000},
                                {"button_color": "#12345"}, {"border_width": 51}, {"width": 3}, {"height": 641},

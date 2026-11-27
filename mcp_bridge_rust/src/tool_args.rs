@@ -1957,7 +1957,7 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                     };
                     let valid_style_code = |s: &str| {
                         !s.trim().is_empty()
-                            && s.encode_utf16().count() <= 1024
+                            && s.encode_utf16().count() <= 4096
                             && single_line(s)
                     };
                     let valid_label = |s: &str| {
@@ -3623,6 +3623,13 @@ mod tests {
         });
         assert_eq!(preview(&style_wire).unwrap(), *style_wire.as_object().unwrap());
 
+        let long_style_wire = json!({
+            "action": "mapping.set_floating_button",
+            "source_ref": row,
+            "floating_button": {"style_code": format!("FBS1;w=120;ff={}", "%E4%B8%AD".repeat(255))}
+        });
+        assert_eq!(preview(&long_style_wire).unwrap(), *long_style_wire.as_object().unwrap());
+
         assert!(preview(&json!({
             "action": "mapping.set_floating_button",
             "source_tab_ref": tab,
@@ -3634,7 +3641,7 @@ mod tests {
             json!({}),
             json!({"style_code": "   "}),
             json!({"style_code": "FBS1;w=1\n2"}),
-            json!({"style_code": "A".repeat(1025)}),
+            json!({"style_code": "A".repeat(4097)}),
             json!({"label": "bad#label"}),
             json!({"label": "bad|label"}),
             json!({"label": "bad\nlabel"}),

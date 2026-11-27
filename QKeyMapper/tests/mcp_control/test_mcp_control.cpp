@@ -2072,6 +2072,14 @@ static void verifyFloatingButtonValidation(const QString &previewMethod, const Q
     QCOMPARE(withStyleCode.update.floatingButton->styleCode, std::optional<QString>(QStringLiteral("FBS1;w=120;h=40")));
     QCOMPARE(withStyleCode.update.floatingButton->enable, std::optional<bool>(true));
 
+    QString encodedFontFamily;
+    encodedFontFamily.reserve(255 * 9);
+    for (int i = 0; i < 255; ++i) encodedFontFamily += QStringLiteral("%E4%B8%AD");
+    const auto withLongStyleCode = validateFloatingButton({
+        {QStringLiteral("style_code"), QStringLiteral("FBS1;w=120;ff=") + encodedFontFamily},
+    });
+    QVERIFY(withLongStyleCode.ok() && withLongStyleCode.update.floatingButton.has_value());
+
     QVERIFY(!previewRequestValid(previewMethod, {
         {QStringLiteral("action"), QStringLiteral("mapping.set_floating_button")},
         {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")},
@@ -2081,7 +2089,7 @@ static void verifyFloatingButtonValidation(const QString &previewMethod, const Q
         QJsonObject{},
         QJsonObject{{QStringLiteral("style_code"), QStringLiteral("   ")}},
         QJsonObject{{QStringLiteral("style_code"), QStringLiteral("FBS1;w=1\n2")}},
-        QJsonObject{{QStringLiteral("style_code"), QString(1025, QLatin1Char('A'))}},
+        QJsonObject{{QStringLiteral("style_code"), QString(4097, QLatin1Char('A'))}},
         QJsonObject{{QStringLiteral("label"), QStringLiteral("bad#label")}},
         QJsonObject{{QStringLiteral("label"), QStringLiteral("bad|label")}},
         QJsonObject{{QStringLiteral("label"), QStringLiteral("bad\nlabel")}},
