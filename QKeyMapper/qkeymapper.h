@@ -634,6 +634,23 @@ struct GeneralBehaviorSettings
     }
 };
 
+struct MappingHotkeysSettings
+{
+    QString mappingStartKey;
+    QString mappingStopKey;
+
+    bool operator==(const MappingHotkeysSettings &other) const
+    {
+        return mappingStartKey == other.mappingStartKey
+            && mappingStopKey == other.mappingStopKey;
+    }
+
+    bool operator!=(const MappingHotkeysSettings &other) const
+    {
+        return !(*this == other);
+    }
+};
+
 struct ActiveKeyMappingRowSourceInfo
 {
     int SourceTabIndex = -1;
@@ -2321,6 +2338,13 @@ public:
     bool applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSettings &settings);
     GeneralBehaviorSettings getGeneralBehaviorSettings() const;
     bool applyGeneralBehaviorSettings(const GeneralBehaviorSettings &settings, bool markCloseToSystemTrayDecided = false);
+    MappingHotkeysSettings getMappingHotkeysSettings() const;
+    bool applyMappingStartKeySetting(const QString &canonicalKey);
+    bool applyMappingStopKeySetting(const QString &canonicalKey);
+    bool applyMappingHotkeysSettings(const MappingHotkeysSettings &settings);
+    bool isProfileDescriptionEditable() const;
+    QString getProfileDescriptionSetting() const;
+    bool applyProfileDescriptionSetting(const QString &description);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;

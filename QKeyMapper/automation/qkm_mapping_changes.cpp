@@ -1441,6 +1441,57 @@ static bool parseGeneralBehaviorUpdate(const QJsonValue &raw,
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+static bool parseMappingHotkeysUpdate(const QJsonValue &raw,
+    MappingHotkeysUpdate &out, const char *&errorOut)
+{
+    const auto failMsg = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const QJsonObject fields = raw.toObject();
+    if (!raw.isObject() || fields.isEmpty()) {
+        return failMsg("mapping_hotkeys must be a non-empty object.");
+    }
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        if (it.key() != QStringLiteral("mapping_start_key")
+            && it.key() != QStringLiteral("mapping_stop_key")) {
+            return failMsg("Unknown field in mapping_hotkeys.");
+        }
+    }
+    const auto parseHotkey = [&](const QString &key, std::optional<QString> &target, const char *errMsg) -> bool {
+        if (!fields.contains(key)) {
+            return true;
+        }
+        const auto v = fields.value(key);
+        const QString text = v.toString();
+        if (!v.isString()
+            || text.size() > 256
+            || text.trimmed().isEmpty()
+            || text.contains(QLatin1Char('\0'))
+            || text.contains(QLatin1Char('\r'))
+            || text.contains(QLatin1Char('\n'))) {
+            return failMsg(errMsg);
+        }
+        target = text;
+        return true;
+    };
+    if (!parseHotkey(QStringLiteral("mapping_start_key"), out.mappingStartKey,
+            "mapping_hotkeys.mapping_start_key must be a non-empty single-line string of at most 256 UTF-16 code units.")) {
+        return false;
+    }
+    if (!parseHotkey(QStringLiteral("mapping_stop_key"), out.mappingStopKey,
+            "mapping_hotkeys.mapping_stop_key must be a non-empty single-line string of at most 256 UTF-16 code units.")) {
+        return false;
+    }
+    if (!out.hasAny()) {
+        return failMsg("mapping_hotkeys requires at least one supported field.");
+    }
+    return true;
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJsonObject &arguments,
     const QJsonValue &reference, const QString &revision, MappingUpdateArguments &update, const char *&errorOut)
 {
@@ -1473,6 +1524,8 @@ static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJ
     const bool floatingButtonSyncGroupMovePreview = action == QLatin1String("mapping.move_floating_button_sync_group");
     const bool generalUiPreferencesPreview = action == QLatin1String("general.set_ui_preferences");
     const bool generalBehaviorPreview = action == QLatin1String("general.set_behavior");
+    const bool mappingHotkeysPreview = action == QLatin1String("configuration.set_mapping_hotkeys");
+    const bool profileDescriptionPreview = action == QLatin1String("configuration.set_description");
     const bool processIconTrayPreview = action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = action == QLatin1String("configuration.set_custom_notification");
@@ -1577,6 +1630,23 @@ static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJ
                 return false;
             }
             update.generalBehavior = parsedBehavior;
+        }
+        if (mappingHotkeysPreview) {
+            MappingHotkeysUpdate parsedHotkeys;
+            if (!parseMappingHotkeysUpdate(arguments.value(QStringLiteral("mapping_hotkeys")), parsedHotkeys, errorOut)) {
+                return false;
+            }
+            update.mappingHotkeys = parsedHotkeys;
+        }
+        if (profileDescriptionPreview) {
+            const auto value = arguments.value(QStringLiteral("description"));
+            const QString desc = value.toString();
+            if (!value.isString() || desc.size() > WindowMatchTextMaxLength
+                || desc.contains(QLatin1Char('\0')) || desc.contains(QLatin1Char('\r'))
+                || desc.contains(QLatin1Char('\n'))) {
+                return failMsg("A single-line description string of at most 1024 UTF-16 code units is required.");
+            }
+            update.profileDescription = desc;
         }
         if (globalSwitchTimeoutPreview) {
             using namespace QKeyMapperConstants;
@@ -2196,6 +2266,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool floatingButtonSyncGroupMovePreview = preview && action == QLatin1String("mapping.move_floating_button_sync_group");
     const bool generalUiPreferencesPreview = preview && action == QLatin1String("general.set_ui_preferences");
     const bool generalBehaviorPreview = preview && action == QLatin1String("general.set_behavior");
+    const bool mappingHotkeysPreview = preview && action == QLatin1String("configuration.set_mapping_hotkeys");
+    const bool profileDescriptionPreview = preview && action == QLatin1String("configuration.set_description");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -2221,7 +2293,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview
         || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || tabFloatingWindowPreview || tabCustomImagePreview
-        || floatingButtonDragCoordPreview || floatingButtonSyncGroupNotePreview || floatingButtonSyncGroupMovePreview || generalUiPreferencesPreview || generalBehaviorPreview || processIconTrayPreview
+        || floatingButtonDragCoordPreview || floatingButtonSyncGroupNotePreview || floatingButtonSyncGroupMovePreview || generalUiPreferencesPreview || generalBehaviorPreview || mappingHotkeysPreview || profileDescriptionPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -2243,6 +2315,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : floatingButtonSyncGroupMovePreview ? "sync_group_move"
         : generalUiPreferencesPreview ? "general_ui_preferences"
         : generalBehaviorPreview ? "general_behavior"
+        : mappingHotkeysPreview ? "mapping_hotkeys"
+        : profileDescriptionPreview ? "description"
         : globalSwitchTimeoutPreview ? "timeout_ms"
         : fullscreenGlobalMappingPreview ? "fullscreen_global_mapping"
         : key2MousePreview ? "key2mouse"
@@ -3227,6 +3301,60 @@ void appendGeneralBehaviorCapabilities(QJsonArray &capabilities, const Capabilit
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendProfileHotkeysAndDescriptionCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    const QJsonObject hotkeyStrSchema{
+        {QStringLiteral("type"), QStringLiteral("string")},
+        {QStringLiteral("minLength"), 1},
+        {QStringLiteral("maxLength"), 256},
+        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*\\S[^\\u0000\\r\\n]*$")},
+    };
+    const QJsonObject hotkeysSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("mapping_start_key"), hotkeyStrSchema},
+            {QStringLiteral("mapping_stop_key"), hotkeyStrSchema},
+        }},
+    };
+    auto hotkeysPreviewCap = CapabilitySchemaContext::capability("configuration.set_mapping_hotkeys.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_mapping_hotkeys")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("mapping_hotkeys"), hotkeysSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("mapping_hotkeys")}));
+    auto hotkeysApplyCap = CapabilitySchemaContext::capability("configuration.set_mapping_hotkeys.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&hotkeysPreviewCap, &hotkeysApplyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("canonicalizes_combination_hotkey"), QStringLiteral("idle_after_completed_cleanup"),
+            QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+
+    const QJsonObject descSchema{
+        {QStringLiteral("type"), QStringLiteral("string")},
+        {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
+        {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*$")},
+    };
+    auto descPreviewCap = CapabilitySchemaContext::capability("configuration.set_description.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_description")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("description"), descSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("description")}));
+    auto descApplyCap = CapabilitySchemaContext::capability("configuration.set_description.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&descPreviewCap, &descApplyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("disabled_for_global_configuration"), QStringLiteral("single_line_max_1024_utf16"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -3366,6 +3494,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     appendMappingFloatingButtonSyncCapabilities(capabilities, ctx);
     appendGeneralUiPreferencesCapabilities(capabilities, ctx);
     appendGeneralBehaviorCapabilities(capabilities, ctx);
+    appendProfileHotkeysAndDescriptionCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

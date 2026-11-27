@@ -968,6 +968,31 @@ struct GeneralBehavior {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct MappingHotkeysFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mapping_start_key: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mapping_stop_key: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct MappingHotkeys {
+    action: String,
+    source_tab_ref: String,
+    mapping_hotkeys: MappingHotkeysFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct ProfileDescription {
+    action: String,
+    source_tab_ref: String,
+    description: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -2061,6 +2086,35 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                         tab_ref(&v.source_tab_ref)
                             && has_any
                             && f.mapping_start_action_mode.is_none_or(|n| (0..=1).contains(&n))
+                    });
+                }
+                Some("configuration.set_mapping_hotkeys") => {
+                    if arguments
+                        .get("mapping_hotkeys")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    let valid_hotkey = |key: &str| {
+                        !key.trim().is_empty()
+                            && key.encode_utf16().count() <= 256
+                            && single_line(key)
+                    };
+                    return typed(arguments, |v: &MappingHotkeys| {
+                        let f = &v.mapping_hotkeys;
+                        let has_any = f.mapping_start_key.is_some() || f.mapping_stop_key.is_some();
+                        tab_ref(&v.source_tab_ref)
+                            && has_any
+                            && f.mapping_start_key.as_deref().is_none_or(valid_hotkey)
+                            && f.mapping_stop_key.as_deref().is_none_or(valid_hotkey)
+                    });
+                }
+                Some("configuration.set_description") => {
+                    return typed(arguments, |v: &ProfileDescription| {
+                        tab_ref(&v.source_tab_ref)
+                            && v.description.encode_utf16().count() <= 1024
+                            && single_line(&v.description)
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -3715,6 +3769,65 @@ mod tests {
                 "action": "general.set_behavior",
                 "source_tab_ref": tab,
                 "general_behavior": bad
+            }))
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn profile_hotkeys_and_description_validation() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let wire_hotkeys = json!({
+            "action": "configuration.set_mapping_hotkeys",
+            "source_tab_ref": tab,
+            "mapping_hotkeys": {
+                "mapping_start_key": "L-Ctrl+F8",
+                "mapping_stop_key": "L-Shift+F9"
+            }
+        });
+        assert_eq!(preview(&wire_hotkeys).unwrap(), *wire_hotkeys.as_object().unwrap());
+        let wire_desc = json!({
+            "action": "configuration.set_description",
+            "source_tab_ref": tab,
+            "description": "测试说明🎮"
+        });
+        assert_eq!(preview(&wire_desc).unwrap(), *wire_desc.as_object().unwrap());
+        let clear_desc = json!({
+            "action": "configuration.set_description",
+            "source_tab_ref": tab,
+            "description": ""
+        });
+        assert_eq!(preview(&clear_desc).unwrap(), *clear_desc.as_object().unwrap());
+        for bad in [
+            json!({}),
+            json!({"mapping_start_key": ""}),
+            json!({"mapping_stop_key": "   "}),
+            json!({"mapping_start_key": null}),
+            json!({"mapping_stop_key": 123}),
+            json!({"mapping_start_key": "L-Ctrl+A\nB"}),
+            json!({"mapping_stop_key": "A".repeat(257)}),
+            json!({"mapping_start_key": "F8", "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "configuration.set_mapping_hotkeys",
+                "source_tab_ref": tab,
+                "mapping_hotkeys": bad
+            }))
+            .is_err());
+        }
+        for bad_desc in [
+            json!(null),
+            json!(123),
+            json!("Line1\nLine2"),
+            json!("Line1\rLine2"),
+            json!("A".repeat(1025)),
+        ] {
+            assert!(preview(&json!({
+                "action": "configuration.set_description",
+                "source_tab_ref": tab,
+                "description": bad_desc
             }))
             .is_err());
         }

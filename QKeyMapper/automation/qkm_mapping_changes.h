@@ -220,6 +220,16 @@ struct GeneralBehaviorUpdate {
     }
 };
 
+struct MappingHotkeysUpdate {
+    std::optional<QString> mappingStartKey;
+    std::optional<QString> mappingStopKey;
+
+    bool hasAny() const
+    {
+        return mappingStartKey.has_value() || mappingStopKey.has_value();
+    }
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -293,6 +303,8 @@ struct MappingUpdateArguments {
     std::optional<FloatingButtonSyncGroupMoveUpdate> floatingButtonSyncGroupMove;
     std::optional<GeneralUiPreferencesUpdate> generalUiPreferences;
     std::optional<GeneralBehaviorUpdate> generalBehavior;
+    std::optional<MappingHotkeysUpdate> mappingHotkeys;
+    std::optional<QString> profileDescription;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

@@ -19437,6 +19437,88 @@ bool QKeyMapper::applyGeneralBehaviorSettings(const GeneralBehaviorSettings &set
     return changed;
 }
 
+MappingHotkeysSettings QKeyMapper::getMappingHotkeysSettings() const
+{
+    return {s_MappingStartKeyString, s_MappingStopKeyString};
+}
+
+bool QKeyMapper::applyMappingStartKeySetting(const QString &canonicalKey)
+{
+    if (canonicalKey.isEmpty()) {
+        return false;
+    }
+    const bool changed = (s_MappingStartKeyString != canonicalKey);
+    if (changed) {
+        updateMappingStartKeyString(canonicalKey);
+    }
+    if (ui && ui->mappingStartKeyLineEdit && ui->mappingStartKeyLineEdit->text() != s_MappingStartKeyString) {
+        ui->mappingStartKeyLineEdit->setText(s_MappingStartKeyString);
+    }
+    if (changed) {
+        markSaveSettingDirty();
+    }
+    return changed;
+}
+
+bool QKeyMapper::applyMappingStopKeySetting(const QString &canonicalKey)
+{
+    if (canonicalKey.isEmpty()) {
+        return false;
+    }
+    const bool changed = (s_MappingStopKeyString != canonicalKey);
+    if (changed) {
+        updateMappingStopKeyString(canonicalKey);
+    }
+    if (ui && ui->mappingStopKeyLineEdit && ui->mappingStopKeyLineEdit->text() != s_MappingStopKeyString) {
+        ui->mappingStopKeyLineEdit->setText(s_MappingStopKeyString);
+    }
+    if (changed) {
+        markSaveSettingDirty();
+    }
+    return changed;
+}
+
+bool QKeyMapper::applyMappingHotkeysSettings(const MappingHotkeysSettings &settings)
+{
+    bool changed = false;
+    if (applyMappingStartKeySetting(settings.mappingStartKey)) {
+        changed = true;
+    }
+    if (applyMappingStopKeySetting(settings.mappingStopKey)) {
+        changed = true;
+    }
+    if (changed) {
+        ++m_AutomationSourceEpoch;
+        requestSaveSettingDirty();
+    }
+    return changed;
+}
+
+bool QKeyMapper::isProfileDescriptionEditable() const
+{
+    return ui && ui->descriptionLineEdit && ui->descriptionLineEdit->isEnabled()
+        && !ui->descriptionLineEdit->isReadOnly();
+}
+
+QString QKeyMapper::getProfileDescriptionSetting() const
+{
+    return (ui && ui->descriptionLineEdit) ? ui->descriptionLineEdit->text() : QString();
+}
+
+bool QKeyMapper::applyProfileDescriptionSetting(const QString &description)
+{
+    if (!isProfileDescriptionEditable()) {
+        return false;
+    }
+    if (ui->descriptionLineEdit->text() == description) {
+        return false;
+    }
+    ui->descriptionLineEdit->setText(description);
+    ++m_AutomationSourceEpoch;
+    requestSaveSettingDirty();
+    return true;
+}
+
 bool QKeyMapper::setMappingTabCommonInheritance(int tabIndex, bool includeCommon)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) return false;
@@ -20214,20 +20296,14 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
                 }
             }
             else if (lineEdit->objectName() == MAPPINGSTARTKEY_LINEEDIT_NAME) {
-                if (s_MappingStartKeyString != ori_hotkeystring) {
-                    updateMappingStartKeyString(ori_hotkeystring);
-                    hotkeyChanged = true;
+                if (applyMappingStartKeySetting(ori_hotkeystring)) {
                     showInformationPopup(tr("MappingStartKey update success : ") + ori_hotkeystring);
                 }
-                lineEdit->setText(s_MappingStartKeyString);
             }
             else if (lineEdit->objectName() == MAPPINGSTOPKEY_LINEEDIT_NAME) {
-                if (s_MappingStopKeyString != ori_hotkeystring) {
-                    updateMappingStopKeyString(ori_hotkeystring);
-                    hotkeyChanged = true;
+                if (applyMappingStopKeySetting(ori_hotkeystring)) {
                     showInformationPopup(tr("MappingStopKey update success : ") + ori_hotkeystring);
                 }
-                lineEdit->setText(s_MappingStopKeyString);
             }
         }
         else
@@ -39126,6 +39202,18 @@ static QJsonObject automationGeneralBehavior(const GeneralBehaviorSettings &sett
         {QStringLiteral("mapping_start_action_mode"), settings.mappingStartActionMode}};
 }
 
+static QJsonObject automationMappingHotkeys(const MappingHotkeysSettings &settings)
+{
+    return {{QStringLiteral("mapping_start_key"), settings.mappingStartKey},
+        {QStringLiteral("mapping_stop_key"), settings.mappingStopKey}};
+}
+
+static QJsonObject automationProfileDescription(const QString &description, bool editable)
+{
+    return {{QStringLiteral("description"), description},
+        {QStringLiteral("editable"), editable}};
+}
+
 static QMappingAdvancedDialog::GamepadThresholdSettings readCurrentGamepadThresholds(QMappingAdvancedDialog *dialog)
 {
     return {
@@ -39976,6 +40064,10 @@ QJsonObject QKeyMapper::collectAutomationState(bool includeAssetMetadata) const
         automationGeneralUiPreferences(getGeneralUiPreferencesSettings()));
     result.insert(QStringLiteral("general_behavior"),
         automationGeneralBehavior(getGeneralBehaviorSettings()));
+    result.insert(QStringLiteral("mapping_hotkeys"),
+        automationMappingHotkeys(getMappingHotkeysSettings()));
+    result.insert(QStringLiteral("profile_description"),
+        automationProfileDescription(getProfileDescriptionSetting(), isProfileDescriptionEditable()));
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
         {QStringLiteral("available"), m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()},
@@ -42324,6 +42416,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool movingFloatingButtonSyncGroup = updating && update.floatingButtonSyncGroupMove.has_value();
         const bool changingGeneralUiPreferences = updating && update.generalUiPreferences.has_value();
         const bool changingGeneralBehavior = updating && update.generalBehavior.has_value();
+        const bool changingMappingHotkeys = updating && update.mappingHotkeys.has_value();
+        const bool changingProfileDescription = updating && update.profileDescription.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
@@ -42334,7 +42428,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
-        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || changingFloatingButtonDragCoord || changingSyncGroupNote || movingFloatingButtonSyncGroup || changingGeneralUiPreferences || changingGeneralBehavior || addingBlankTab || copyingTab || removingTabData
+        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || changingFloatingButtonDragCoord || changingSyncGroupNote || movingFloatingButtonSyncGroup || changingGeneralUiPreferences || changingGeneralBehavior || changingMappingHotkeys || changingProfileDescription || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel
@@ -42362,7 +42456,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || (changingCustomNotificationStyle && (!m_MappingAdvancedDialog || !m_CustomNotificationSetupDialog || !m_NotificationSetupDialog || m_CustomNotificationSetupDialog->isVisible()))
             || (changingTrayIcons && (!m_TrayIconSelectDialog || m_TrayIconSelectDialog->isVisible()))
             || (changingGeneralUiPreferences && (!ui || !ui->languageComboBox || !ui->themeComboBox || !ui->notificationComboBox || !ui->updateSiteComboBox || !ui->startupMinimizedCheckBox || !ui->windowswitchkeyLineEdit || (update.generalUiPreferences->windowSwitchKey.has_value() && ui->windowswitchkeyLineEdit->text() != s_WindowSwitchKeyString)))
-            || (changingGeneralBehavior && (!ui || !ui->startupAutoMonitoringCheckBox || !ui->closeToSystemTrayCheckBox))) {
+            || (changingGeneralBehavior && (!ui || !ui->startupAutoMonitoringCheckBox || !ui->closeToSystemTrayCheckBox))
+            || (changingMappingHotkeys && (!ui || !ui->mappingStartKeyLineEdit || !ui->mappingStopKeyLineEdit || (update.mappingHotkeys->mappingStartKey.has_value() && ui->mappingStartKeyLineEdit->text() != s_MappingStartKeyString) || (update.mappingHotkeys->mappingStopKey.has_value() && ui->mappingStopKeyLineEdit->text() != s_MappingStopKeyString)))
+            || (changingProfileDescription && (!ui || !ui->descriptionLineEdit))) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
@@ -42372,7 +42468,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && !changingGeneralNotificationStyle && !changingCustomNotificationStyle && !changingTrayIcons && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale && !changingTabCustomImage
-            && !changingFloatingButtonDragCoord && !changingSyncGroupNote && !movingFloatingButtonSyncGroup && !changingGeneralUiPreferences && !changingGeneralBehavior
+            && !changingFloatingButtonDragCoord && !changingSyncGroupNote && !movingFloatingButtonSyncGroup && !changingGeneralUiPreferences && !changingGeneralBehavior && !changingMappingHotkeys && !changingProfileDescription
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
@@ -42393,9 +42489,13 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel || changingCustomNotificationStyle || changingProcessIconAsTrayIcon
                 || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria
-                || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingSyncGroupNote)
+                || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingSyncGroupNote || changingMappingHotkeys || changingProfileDescription)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
+            return;
+        }
+        if (changingProfileDescription && !isProfileDescriptionEditable()) {
+            reject(QStringLiteral("unsupported_capability"), QStringLiteral("Profile description is disabled for the loaded configuration."));
             return;
         }
         if (changingWindowDisplayMode && !ui->checkDisplayModeComboBox->isEnabled()) {
@@ -43416,6 +43516,47 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("before"), automationGeneralBehavior(before)},
                     {QStringLiteral("after"), automationGeneralBehavior(after)},
                     {QStringLiteral("persisted"), false}};
+            } else if (changingMappingHotkeys) {
+                const MappingHotkeysSettings before = getMappingHotkeysSettings();
+                MappingHotkeysSettings after = before;
+                const auto &hkUpdate = *update.mappingHotkeys;
+                if (hkUpdate.mappingStartKey) {
+                    const auto analyzed = analyzeHotKeyLineEditText(*hkUpdate.mappingStartKey);
+                    if (!analyzed.second.isValid || analyzed.first.isEmpty()) {
+                        reject(QStringLiteral("invalid_arguments"),
+                            analyzed.second.errorMessage.isEmpty()
+                                ? QStringLiteral("Invalid mapping start hotkey.")
+                                : analyzed.second.errorMessage);
+                        return;
+                    }
+                    after.mappingStartKey = analyzed.first;
+                }
+                if (hkUpdate.mappingStopKey) {
+                    const auto analyzed = analyzeHotKeyLineEditText(*hkUpdate.mappingStopKey);
+                    if (!analyzed.second.isValid || analyzed.first.isEmpty()) {
+                        reject(QStringLiteral("invalid_arguments"),
+                            analyzed.second.errorMessage.isEmpty()
+                                ? QStringLiteral("Invalid mapping stop hotkey.")
+                                : analyzed.second.errorMessage);
+                        return;
+                    }
+                    after.mappingStopKey = analyzed.first;
+                }
+                modified = (before != after);
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_mapping_hotkeys")},
+                    {QStringLiteral("before"), automationMappingHotkeys(before)},
+                    {QStringLiteral("after"), automationMappingHotkeys(after)},
+                    {QStringLiteral("persisted"), false}};
+            } else if (changingProfileDescription) {
+                const QString before = getProfileDescriptionSetting();
+                const QString &after = *update.profileDescription;
+                modified = (before != after);
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_profile_description")},
+                    {QStringLiteral("before"), automationProfileDescription(before, true)},
+                    {QStringLiteral("after"), automationProfileDescription(after, true)},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingTabCustomImage) {
                 const auto &before = preparedTabImage.expectedBefore;
                 const auto &after = preparedTabImage.after;
@@ -43851,6 +43992,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : movingFloatingButtonSyncGroup ? QStringLiteral("mapping.move_floating_button_sync_group")
             : changingGeneralUiPreferences ? QStringLiteral("general.set_ui_preferences")
             : changingGeneralBehavior ? QStringLiteral("general.set_behavior")
+            : changingMappingHotkeys ? QStringLiteral("configuration.set_mapping_hotkeys")
+            : changingProfileDescription ? QStringLiteral("configuration.set_description")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -44074,6 +44217,38 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 if (bhUpdate.mappingStartActionMode) after.mappingStartActionMode = *bhUpdate.mappingStartActionMode;
                 if (modified) {
                     applyGeneralBehaviorSettings(after, bhUpdate.closeToSystemTray.has_value());
+                }
+            } else if (changingMappingHotkeys) {
+                MappingHotkeysSettings after = getMappingHotkeysSettings();
+                const auto &hkUpdate = *update.mappingHotkeys;
+                if (hkUpdate.mappingStartKey) {
+                    const auto analyzed = analyzeHotKeyLineEditText(*hkUpdate.mappingStartKey);
+                    if (!analyzed.second.isValid || analyzed.first.isEmpty()) {
+                        reject(QStringLiteral("invalid_arguments"),
+                            analyzed.second.errorMessage.isEmpty()
+                                ? QStringLiteral("Invalid mapping start hotkey.")
+                                : analyzed.second.errorMessage);
+                        return;
+                    }
+                    after.mappingStartKey = analyzed.first;
+                }
+                if (hkUpdate.mappingStopKey) {
+                    const auto analyzed = analyzeHotKeyLineEditText(*hkUpdate.mappingStopKey);
+                    if (!analyzed.second.isValid || analyzed.first.isEmpty()) {
+                        reject(QStringLiteral("invalid_arguments"),
+                            analyzed.second.errorMessage.isEmpty()
+                                ? QStringLiteral("Invalid mapping stop hotkey.")
+                                : analyzed.second.errorMessage);
+                        return;
+                    }
+                    after.mappingStopKey = analyzed.first;
+                }
+                if (modified) {
+                    applyMappingHotkeysSettings(after);
+                }
+            } else if (changingProfileDescription) {
+                if (modified) {
+                    applyProfileDescriptionSetting(*update.profileDescription);
                 }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);

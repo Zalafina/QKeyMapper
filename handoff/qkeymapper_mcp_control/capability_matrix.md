@@ -637,7 +637,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-main/checkClassNameComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 静态见 WIN-CRITERIA；249 私有模式＋MCP `3`/保存重载与双 Qt 读回选验（实际匹配与 Win10 待验） |
 | `U-main/classNameLineEdit` | QLineEdit | `connect returnPressed @4036` | 静态见 WIN-CRITERIA；249 私有 `keyClicks`＋MCP 文本保存、冷启动与双 Qt 读回选验（实际匹配与 Win10 待验） |
 | `U-main/checkDisplayModeComboBox` | QComboBox | currentIndexChanged → dirty | WIN-DISPLAY-217 真 GUI 三档与正式 Rust 保存冷读；实际窗口匹配待验 |
-| `U-main/descriptionLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
+| `U-main/descriptionLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | `SET-MAPPING-HOTKEYS-271 [Gemini]` 已选验 `configuration.set_description`、`get_state.profile_description`、全局禁改 `unsupported_capability`、Common 切换保存与双 Qt INI 读回（待 Codex 复核） |
 | `U-main/selectSettingCustomIconButton` | QPushButton；Select Custom Icon | `on_selectSettingCustomIconButton_clicked @50032`<br>`connect customContextMenuRequested @3375` | 运行约束待核 |
 | `U-main/ignoreRulesListButton` | QPushButton；Ignore Rules List | `on_ignoreRulesListButton_clicked @50001` | 运行约束待核 |
 | `U-main/windowswitchkeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | `SET-GENERAL-UI-269 [Gemini]` 已重构 `onHotKeyLineEditEditingFinished()` 共用 `applyWindowSwitchKeySetting()`，私有桌面 `run6` 选验合法规范化／非法拒绝、冷启与双 Qt INI 读回（禁用 FakerInput 连接），待 Codex 复核 |
@@ -654,9 +654,9 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-main/generalAdvancedButton` | QPushButton；General Advanced | `on_generalAdvancedButton_clicked @49935` | 运行约束待核 |
 | `U-main/closeToSystemTrayCheckBox` | QCheckBox；Minimize to tray on close | `connect clicked @37182` | `SET-GENERAL-BEHAVIOR-270 [Gemini]` 已选验 `close_to_system_tray`＋只读 `close_to_system_tray_decided`（未决→已决）及双 Qt INI 读回（首关弹窗与真实托盘隐藏待验），待 Codex 复核 |
 | `U-main/themeComboBox` | QComboBox | `on_themeComboBox_currentIndexChanged @49896` | `SET-GENERAL-UI-269 [Gemini]` 已选验 `0..2` 切换、冷启及双 Qt INI 读回（实屏主题视觉待验），待 Codex 复核 |
-| `U-main/mappingStartKeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
+| `U-main/mappingStartKeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | `SET-MAPPING-HOTKEYS-271 [Gemini]` 已重构 `onHotKeyLineEditEditingFinished()` 共用 `applyMappingStartKeySetting()`，选验合法规范化／非法回滚／全局与 Common 编辑及双 Qt INI 读回（待 Codex 复核） |
 | `U-main/autoStartMappingCheckBox` | QCheckBox；Auto Match Foreground | `on_autoStartMappingCheckBox_stateChanged @49333` | 静态见 WIN-AUTOSTART；业务／运行未验 |
-| `U-main/mappingStopKeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
+| `U-main/mappingStopKeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | `SET-MAPPING-HOTKEYS-271 [Gemini]` 已重构 `onHotKeyLineEditEditingFinished()` 共用 `applyMappingStopKeySetting()`，选验 `run.actual_stop_shortcut` 同步、托盘文案及双 Qt INI 读回（待 Codex 复核） |
 | `U-main/enableSystemFilterKeyButton` | QPushButton；SystemFilterKey | `connect clicked @34357` | 运行约束待核 |
 | `U-main/mappingAdvancedSettingButton` | QPushButton；Mapping Advanced | `on_mappingAdvancedSettingButton_clicked @49940` | 运行约束待核 |
 | `U-main/sendToSameTitleWindowsCheckBox` | QCheckBox；Send To Same Windows | 手动／间接绑定待逐项定位 | 静态见 WIN-SAME-WINDOWS；业务／运行未验 |

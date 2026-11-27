@@ -576,6 +576,41 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), bad_behavior
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            hotkeys = {"action": "configuration.set_mapping_hotkeys", "source_tab_ref": tab}
+            assert validator.is_valid({**hotkeys, "mapping_hotkeys": {
+                "mapping_start_key": "L-Ctrl+F8",
+                "mapping_stop_key": "L-Shift+F9",
+            }})
+            for bad_hotkeys in (
+                {"mapping_hotkeys": {}},
+                {"mapping_hotkeys": {"mapping_start_key": ""}},
+                {"mapping_hotkeys": {"mapping_stop_key": "   "}},
+                {"mapping_hotkeys": {"mapping_start_key": None}},
+                {"mapping_hotkeys": {"mapping_stop_key": 123}},
+                {"mapping_hotkeys": {"mapping_start_key": "F8\nF9"}},
+                {"mapping_hotkeys": {"mapping_stop_key": "A" * 257}},
+                {"mapping_hotkeys": {"mapping_start_key": "F8", "extra": 1}},
+                {"mapping_hotkeys": {"mapping_start_key": "F8"}, "extra": 1},
+            ):
+                request = {**hotkeys, **bad_hotkeys}
+                assert not validator.is_valid(request), bad_hotkeys
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
+            profile_desc = {"action": "configuration.set_description", "source_tab_ref": tab}
+            assert validator.is_valid({**profile_desc, "description": "测试说明🎮"})
+            assert validator.is_valid({**profile_desc, "description": ""})
+            for bad_desc in (
+                {"description": None},
+                {"description": 123},
+                {"description": "Line1\nLine2"},
+                {"description": "Line1\rLine2"},
+                {"description": "A" * 1025},
+                {"description": "ok", "extra": 1},
+            ):
+                request = {**profile_desc, **bad_desc}
+                assert not validator.is_valid(request), bad_desc
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -765,7 +800,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "show_drag_coordinate", "sync_group_note", "sync_group_move", "general_ui_preferences", "general_behavior", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "show_drag_coordinate", "sync_group_note", "sync_group_move", "general_ui_preferences", "general_behavior", "mapping_hotkeys", "description", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

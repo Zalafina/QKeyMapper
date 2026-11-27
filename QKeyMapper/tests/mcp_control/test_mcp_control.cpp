@@ -1163,9 +1163,9 @@ __declspec(noinline)
 #endif
 static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabilities)
 {
-    QCOMPARE(capabilities.size(), 154);
+    QCOMPARE(capabilities.size(), 158);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 146);
+    QCOMPARE(demoCapabilities.size(), 150);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1260,14 +1260,28 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QCOMPARE(capabilities.at(146).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_behavior.apply"));
     QCOMPARE(capabilities.at(146).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     QVERIFY(!capabilities.at(146).toObject().value(QStringLiteral("read_only")).toBool());
-    QCOMPARE(capabilities.at(151).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(152).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(147).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_hotkeys.preview"));
+    QCOMPARE(capabilities.at(147).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capabilities.at(147).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(148).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_mapping_hotkeys.apply"));
+    QCOMPARE(capabilities.at(148).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!capabilities.at(148).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(149).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_description.preview"));
+    QCOMPARE(capabilities.at(149).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capabilities.at(149).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(150).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_description.apply"));
+    QCOMPARE(capabilities.at(150).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!capabilities.at(150).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(155).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(156).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     for (const char *demoId : {
             "general.set_floating_button_drag_coordinate.apply",
             "configuration.set_floating_button_sync_group_note.apply",
             "mapping.move_floating_button_sync_group.apply",
             "general.set_ui_preferences.apply",
             "general.set_behavior.apply",
+            "configuration.set_mapping_hotkeys.apply",
+            "configuration.set_description.apply",
         }) {
         QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [demoId](const QJsonValue &item) {
             return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String(demoId);
@@ -2302,6 +2316,68 @@ static void verifyGeneralBehaviorValidation(const QString &previewMethod, const 
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+static void verifyProfileHotkeysAndDescriptionValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    const QString tabRef = input.value(QStringLiteral("source_tab_ref")).toString();
+    QVERIFY(previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("configuration.set_mapping_hotkeys")},
+        {QStringLiteral("source_tab_ref"), tabRef},
+        {QStringLiteral("mapping_hotkeys"), QJsonObject{
+            {QStringLiteral("mapping_start_key"), QStringLiteral("L-Ctrl+F8")},
+            {QStringLiteral("mapping_stop_key"), QStringLiteral("L-Shift+F9")},
+        }}}));
+    QVERIFY(previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("configuration.set_mapping_hotkeys")},
+        {QStringLiteral("source_tab_ref"), tabRef},
+        {QStringLiteral("mapping_hotkeys"), QJsonObject{
+            {QStringLiteral("mapping_stop_key"), QStringLiteral("F10")},
+        }}}));
+    for (const QJsonObject &badHotkeys : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("mapping_start_key"), QString()}},
+        QJsonObject{{QStringLiteral("mapping_stop_key"), QStringLiteral("   ")}},
+        QJsonObject{{QStringLiteral("mapping_start_key"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("mapping_stop_key"), 123}},
+        QJsonObject{{QStringLiteral("mapping_start_key"), QStringLiteral("F8\nF9")}},
+        QJsonObject{{QStringLiteral("mapping_stop_key"), QString(257, QLatin1Char('A'))}},
+        QJsonObject{{QStringLiteral("mapping_start_key"), QStringLiteral("F8")}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!previewRequestValid(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("configuration.set_mapping_hotkeys")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("mapping_hotkeys"), badHotkeys}}));
+    }
+
+    QVERIFY(previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("configuration.set_description")},
+        {QStringLiteral("source_tab_ref"), tabRef},
+        {QStringLiteral("description"), QStringLiteral("测试说明🎮")}}));
+    QVERIFY(previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("configuration.set_description")},
+        {QStringLiteral("source_tab_ref"), tabRef},
+        {QStringLiteral("description"), QString()}}));
+    QVERIFY(previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("configuration.set_description")},
+        {QStringLiteral("source_tab_ref"), tabRef},
+        {QStringLiteral("description"), QString(1024, QLatin1Char('D'))}}));
+    for (const QJsonValue &badDesc : {
+        QJsonValue(QJsonValue::Null),
+        QJsonValue(123),
+        QJsonValue(QStringLiteral("Line1\nLine2")),
+        QJsonValue(QStringLiteral("Line1\rLine2")),
+        QJsonValue(QString(QChar(0))),
+        QJsonValue(QString(1025, QLatin1Char('D'))),
+    }) {
+        QVERIFY(!previewRequestValid(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("configuration.set_description")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("description"), badDesc}}));
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 static void verifyTabManagementArgumentsValidation(const QString &previewMethod, const QString &revision, const QString &sourceRef)
 {
     QJsonObject changed;
@@ -3169,6 +3245,7 @@ void McpControlTest::mappingChangeArguments()
     verifyFloatingButtonSyncValidation(previewMethod, input);
     verifyGeneralUiPreferencesValidation(previewMethod, input);
     verifyGeneralBehaviorValidation(previewMethod, input);
+    verifyProfileHotkeysAndDescriptionValidation(previewMethod, input);
     verifyWindowAndTrayArgumentsValidation(previewMethod, input);
     verifyWindowMatchAndStartupValidation(previewMethod, input);
     if (QTest::currentTestFailed()) return;
