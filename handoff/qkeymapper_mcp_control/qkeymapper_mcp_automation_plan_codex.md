@@ -1,6 +1,6 @@
 # QKeyMapper MCP 开发计划：操作等价性、阶段排期与双机交接
 
-更新日期：2026-11-26（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
+更新日期：2026-11-27（前序验收保留实际发生日期）。初始源码核对基线：`d49a9f57d280d3b3cecc8204372ae7dc13bf6e0d`。
 
 本文件是本任务唯一的计划、进度、决策及最新交接状态来源。相关入口：[目录规则](../README.md)、[能力与等价性矩阵](capability_matrix.md)、[验证记录](validation.md)。
 
@@ -14,22 +14,23 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 | 项目 | 当前记录 |
 |---|---|
-| 当前切片 | `DOC-TRIM-266 [Gemini]`（基于已推远端基线 `8cbf5eb3` 独立纯文档精简切片；无源码改动，代码沿用 `9560d278`；状态：**已完成精简验收，待 Codex 轻量只读复审**；暂停条件：复审通过后暂停等待用户推送与后续指示，不自动开启 `UI-FLOAT-267`） |
-| 同步与评审锚点 | **上次已审／远端基线**：`8cbf5eb3`（`origin/codex/qkeymapper-mcp-control`，`dd21d790..8cbf5eb3` 共 18 条提交已由 Codex r3 PASS 收口并推送，代码终点 `9560d278`）。<br>**当前待审纯文档切片**：`8cbf5eb3..<HEAD>`（仅压缩 `104～133`／`135～136A`／`138～256` 历史明细；送审与复审入口见 `out/codex_review/LATEST.md`） |
+| 当前切片 | `DOC-TRIM-266-P2 [Gemini]`（基于已推远端基线 `f591483f` 的纯文档收口提交：落实现有 `02_codex_review_r1.md` 两项非阻断 `[P2]` 证据口径微调，无源码改动；代码沿用 `9560d278`；随后按无缓存先行策略继续推进 `UI-FLOAT-267 [Gemini]` 非提权准备） |
+| 同步与评审锚点 | **上次已审／远端基线**：`f591483f`（`origin/codex/qkeymapper-mcp-control`：`dd21d790..8cbf5eb3` 共 18 条提交经 Codex r3 PASS 收口，\`f591483f\` 纯文档精简经 \`02_codex_review_r1.md\` \`PASS_WITH_P2_P3\` 收口并已推送；代码终点 \`9560d278\`，历史全文固定锚点 \`8cbf5eb3\`）。<br>**待 Codex 验收（Gemini 切片）**：本纯文档微调提交 \`DOC-TRIM-266-P2\`（`<HEAD>`，本地提交后记录）；此前 \`257～266\` 与 \`DOC-TRIM-266\` 均已在远端基线收口 |
 | 执行机器 | `PC-W11`（Qt 6.8.3／Qt 5.15.2、MSVC、Rust Sidecar）。Win10 正式 Release 与跨系统验收仍待 |
-| 目标分支／接纳点 | `codex/qkeymapper-mcp-control`，`D:/work/mygithub/QKeyMapper/QKeyMapper`；仅聚焦本地文档提交（未推送） |
+| 目标分支／接纳点 | `codex/qkeymapper-mcp-control`，`D:/work/mygithub/QKeyMapper/QKeyMapper`；仅本地 commit，严禁推送 |
 | 核心基线 | `RUST-D4` `349d889c`；`154` `8f902531`；`155` `c9283438`；`IbInput` `e73f719b`（`MCP 94f0bb84` ＋ 固定输入 `b5b484a6`）；**历史全文固定回溯基线 `8cbf5eb3`**（代码终点 `9560d278`） |
 | 当前已完成 | 按里程碑汇总（维持 **M2-A 进行中**；`UI-002 3/3`、`UI-003 3/3` 仅计设置能力，视觉与外设单列；终验时按 [capability_matrix.md](capability_matrix.md) 逐项核对本地代码完成度）：<br>- **M1／DEMO／PERSIST 已选验基线**：`104～133`、`135～137B`（同登录）、`149～161`、`UI-73`（详见下方与锚点 `8cbf5eb3`）；<br>- **M2-A（进行中）**：排序 `162～167`、Tab 与行属性 `168～194`、触发 `195～196`、复制 `197～201`、宏与导入 `202～212`、单表／普通组传输 `215/216/218～220/222～224/226/228～231`；<br>- **M2-B（进行中）**：设置 `213/214/217/221/225/227/232/234～257`、`261`（面板）、`262`（双通知）、`263`（托盘）、`264`（悬浮窗）、`265`（准星 `UI-003`）、`266`（Tab 图片 `UI-002`），含 r1～r3 修复 `d2c742aa`/`5db982a9`/`9560d278`；<br>- **M3-A（进行中，仅配置子项）**：阈值 `258`、触摸板 `259`、接受虚拟手柄输入 `260` |
-| 当前验证／证据 | 本切片仅纯文档精简（未改源码、未构建、未启动产品）：产品与源码验证沿用 Codex r3 PASS `9560d278`／`8cbf5eb3`（Qt6 Release `71E69EE6`、Rust `4EDB6880` 6/6 合同、Qt6/Qt5 组件 `E4EA7AD3`/`48BE2252`、隔离产品 `D0D50D37` + `run3` 全通，见下 `REVIEW-FIX-257-266-R3` 与 `out/codex_review/20261126_257_266/08_codex_recheck_r3.md`）。文档检查覆盖防遗漏对照、`git show 8cbf5eb3:...` 回溯抽检、全量出站／入站锚点 0 断链、`capability_matrix.md` 未改动、UTF-8 无 BOM／LF 及单文件 `< 256 KiB` |
-| 当前控制器 | r3 收尾时外部控制器 PID `33224` 已清零；本纯文档切片未调用 gsudo、未启动产品（后续特权测试前先按技能只读检查实时状态） |
-| 下一项动作 | 待 Codex 完成 `out/codex_review/20261126_doc_trim_100_256/02_codex_review_r1.md` 轻量只读复审；通过后暂停等待用户推送与后续指示（下一功能候选 `UI-FLOAT-267` 及剩余 M2-B 对话框） |
+| 当前验证／证据 | 本提交仅纯文档微调（未改源码、未构建、未启动产品）：产品与源码验证沿用 Codex r3 PASS `9560d278`／`8cbf5eb3`（Qt6 Release `71E69EE6`、Rust `4EDB6880` 6/6 合同、Qt6/Qt5 组件 `E4EA7AD3`/`48BE2252`、隔离产品 `D0D50D37` + `run3` 全通，见下 `REVIEW-FIX-257-266-R3` 与 `out/codex_review/20261126_257_266/08_codex_recheck_r3.md`）。文档格式检查覆盖 UTF-8 无 BOM／LF、`git diff --check`、单文件 `< 256 KiB` 与锚点有效 |
+| 当前控制器 | 2026-11-27 开工只读检查确认 `controller: null`（无活跃外部控制器）；本纯文档提交不调用 gsudo、不启动产品 |
+| 下一项动作 | 立即推进 `UI-FLOAT-267 [Gemini]`（单条浮动按钮设定 `mapping.set_floating_button`）全部非提权编码、双 Qt/Rust 构建、组件测试与隔离夹具准备，备妥后请用户外部开启 gsudo 控制器执行私有桌面产品验收 |
 | 剩余估算与外部待办 | 剩余有效作业时间沿用第 3 节（原 60–106 小时，预留 75–135 小时 ＋ DEMO 待估）。外部待办：**PC-W11**：开启 FakerInput 连接、OS 文件级 symlink、实际视觉绘制与托盘/通知/悬浮窗/面板/准星渲染及穿透热键、原生文件选择器、Qt5 全量组件及整体产品、真实物理外设与虚拟手柄反馈、`PERSIST-137` 跨登录／重启、`TARGET-DESIGN-47`/`DESIGN-58` 多实例前台绑定与整窗提示、`IbInput` 主动连接检查／试发、`AGY-160` 整包与同轮图像消费；**PC-W10**：Win10 正式 Release／三包与 PE 烟测、跨系统等价性复验、hermes／QQBot gateway 联调 |
 
 ### DOC-TRIM-266 [Gemini]：历史正文压缩与固定 Git 锚点收口（2026-11-26）
 
 - **基线与压缩范围**：以已核实远端固定检查点 `8cbf5eb3` 为历史全文回溯锚点（代码终点 `9560d278`），按第 5 节精简约定将 `138～256`（含 `FORZA-MERGE-20261031`、`TRAY-MCP-FIX`、`REVIEW-FIX-241-*`、`CACHE-REGISTRY-233`、`ORDERED-MAP-209`、`DOC-140`、`CACHE-139A`）、`DEMO-104～133` 与 `PERSIST-135～136A` 历史执行明细压缩为结构化索引，保持总文件体积回归 `handoff/README.md` 建议的 `256 KiB` 以内；原件全文随时可通过 `git show 8cbf5eb3:handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md` 完整取回。
-- **原样保留内容**：全文保留最近业务切片 `257～266`（含 `IGNORE-BUILTIN-DESC-FIX` 与 `REVIEW-FIX-257-266` r1～r3）、`UI-73`、第 1 节全部架构与防跑偏契约（`REVIEW-59`、`TARGET-DESIGN-47`、`DEMO-SESSION` 设计规则、`M1 v0.1`、`PERSIST-134`、`PERSIST-137-A/B`、`M0.3b` 摘要与必备矩阵）、第 2～5 节操作等价性／阶段排期／任务队列／管理规则／交叉决定、`capability_matrix.md`、`validation.md` 及其他证据页；`RUST-D4`、`EDIT-GUI-141`、`EDIT-142` 三处被外部引用锚点标题原字面保留；文中所有 `out/` 路径均标明为 `PC-W11` 本机 `.gitignore` 忽略产物（不随 Git 同步），可按仓库既有脚本重新生成。
+- **原样保留内容**：全文保留最近业务切片 `257～266`（含 `IGNORE-BUILTIN-DESC-FIX` 与 `REVIEW-FIX-257-266` r1～r3）、`UI-73`、第 1 节全部架构与防跑偏契约（`REVIEW-59`、`TARGET-DESIGN-47`、`DEMO-SESSION` 设计规则、`M1 v0.1`、`PERSIST-134`、`PERSIST-137-A/B`、`M0.3b` 摘要与必备矩阵）、第 2～5 节操作等价性／阶段排期／任务队列／管理规则／交叉决定、`capability_matrix.md`、`validation.md` 及其他证据页；`RUST-D4`、`EDIT-GUI-141`、`EDIT-142` 三处被外部引用锚点标题原字面保留；文中所有 `out/` 路径均为各自执行机本机 `.gitignore` 忽略产物（不随 Git 同步；除 `FORZA-MERGE-20261031` 原件属 `PC-W10` 外，其余所列 MCP 切片与测试产物均在 `PC-W11`），已有随仓脚本的用例可重跑重取，仅存原机的夹具或日志按[目录规则](../README.md#L31)向原机索取。
 - **文档验收口径**：不修改源码、不构建或运行产品；完成精简前后活跃状态／未闭环／外部待办对照、`git show 8cbf5eb3:...` 回溯抽读、全文件出站与跨文件入站锚点校验、`capability_matrix.md` 未改动校验、UTF-8 无 BOM／纯 LF／`git diff --check` 与单文件／目录大小核对，详证见 `out/codex_review/20261126_doc_trim_100_256/01_gemini_submission.md`。
+  - **r1 `[P2]` 口径微调（2026-11-27）**：按 `out/codex_review/20261126_doc_trim_100_256/02_codex_review_r1.md` 第 3 节修正两处非阻断表述：区分 `out/` 原件来源机（`FORZA-MERGE-20261031` 单列 `PC-W10`，其余所列切片为 `PC-W11`）及“随仓脚本重跑／仅存原机按交接规则向原机索取”的跨机重取路径，并将 `238` FakerInput 风险拦截与 `PERSIST-136A` 预检规则恢复为实际证据层级。
 
 ### REVIEW-FIX-257-266-R3 [Gemini]：Codex r2 复审（`06_codex_recheck_r2.md`）全部 2 项发现收口
 
@@ -145,7 +146,7 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 
 ### 历史切片压缩索引（FORZA-MERGE ～ SET-SCALE-256，全文固定锚点 `8cbf5eb3`）
 
-> 本节压缩 `SET-SCALE-256` 往前至 `FORZA-MERGE-20261031` 的历史已选验段落；完整逐行细节固定保存在 Git `8cbf5eb3`，可通过 `git show 8cbf5eb3:handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md` 取回全文。以下提及的所有 `out/` 路径均仅存 `PC-W11` 本机（`.gitignore` 忽略，不随 Git 同步），跨机需按对应仓库脚本复跑；**从 `238` 起的隔离运行副本均禁用了 FakerInput 分配与连接**（以免退出触发 Neutral Report），开启连接运行单列为待验项。
+> 本节压缩 `SET-SCALE-256` 往前至 `FORZA-MERGE-20261031` 的历史已选验段落；完整逐行细节固定保存在 Git `8cbf5eb3`，可通过 `git show 8cbf5eb3:handoff/qkeymapper_mcp_control/qkeymapper_mcp_automation_plan_codex.md` 取回全文。表中各行除 `FORZA-MERGE-20261031` 在 `PC-W10` 执行外，其余切片均在 `PC-W11` 执行；所涉 `out/` 路径均为各自执行机本机 `.gitignore` 忽略产物（不随 Git 同步），已有随仓脚本的用例可在本机复跑重取，仅存原机的夹具或日志按[目录规则](../README.md#L31)向原机索取；**从 `238` 起的隔离运行副本均因启动前自动审批阶段提示风险拦截而禁用了 FakerInput 分配与连接**，开启连接运行持续列为待验项。
 
 | 切片范围 | 代码基线 / 关键修复 | 接入能力／核心变更与关键验证结论（PC-W11 选验） | 剩余未闭环与依赖约束 |
 |---|---|---|---|
@@ -181,11 +182,11 @@ Rust 是唯一受支持的 Sidecar。Python 实现与对照证据原地封存，
 | `RUNTIME-BUG01-149` / `BUG02-150` / `BUG02-FOLLOWUP-151` | `ec2daf69` / `fe2eb674` / `3fefc26a` | 实键双列表与两叶锁（149）、虚拟列表与待释放 DOWN（150）、序列身份/FakerInput 释放隔离/UP 记账（151）；双 Qt/ASan/维护目标 Default G HUB & Razer 通过，详见[runtime_bugfix_validation.md](runtime_bugfix_validation.md) 与 [151 边界](runtime_bugfix_validation.md#bug02-followup-151三项运行时边界补充2026-11-17选定完成) | 同 VK、松开受阻、真实物理输入与普通 Release 全设备验收 |
 | `EDIT-143～148`（不含 `141/142` 单独锚点段） | `c35aa57d`..`5a80dd06` | `143` 简单键值、`144` 禁用 GUI 基线（[144 证据](mapping_edit_validation.md#edit-gui-144禁用开关原gui基线)）、`145` `disabled` 字段（[145 证据](mapping_edit_validation.md#edit-145独立禁用字段正式接线)）、`146` 原键互斥 GUI（[146 证据](mapping_edit_validation.md#edit-gui-146原键互斥与common确认gui基线)）、`147` 共用冲突分析（[147 证据](mapping_edit_validation.md#edit-147共用纯冲突分析)）、`148` 普通冲突禁本行（[148 证据](mapping_edit_validation.md#edit-148普通原键冲突仅禁用本行)）；详表另见 [mapping_edit_validation.md](mapping_edit_validation.md) | 复杂原键扩展、真实输入输出、Default/Win10 |
 | `DOC-140` / `CACHE-139A` / `IB-MCP-138～139` | `987e840f` / `395e684d` / `e73f719b` | `140` 文档压缩；`139A` `write_json` winerror=5 有限退避替换（99 项单测通过）；`138` IbInput 合流 `MCP 94f0bb84`＋固定输入 `b5b484a6`；`139` `window_role=ibinput_settings` 观察/捕获/关闭；详见[选定证据页](ibinput_mcp_integration_validation.md) | 主动连接检查／试发、普通 PrintWindow High 读、长期并发锁竞争、Default/Win10/ASan |
-| `FORZA-MERGE-20261031` | `97963bf4` / `0d053c17` | 将 master 仅含维护测试的 `0d053c17` 并入 MCP 分支（保持停止准入/排空），补建 [现有Forza维护测试](../../QKeyMapper/tests/forza_auto_state/README.md) 实际 Worker 入口 147 项 ASan 无报错；FH4/FH6 沿 `85422ea9` 实测 | 合并版未重跑实车、Qt5、性能、完整停止协调与驱动 |
+| `FORZA-MERGE-20261031` | `97963bf4` / `0d053c17` | `PC-W10` 选验：将 master 仅含维护测试的 `0d053c17` 并入 MCP 分支（保持停止准入/排空），补建 [现有Forza维护测试](../../QKeyMapper/tests/forza_auto_state/README.md) 实际 Worker 入口 147 项 ASan 无报错；FH4/FH6 沿 `85422ea9` 实测（该轮原件存 `PC-W10`） | 合并版未重跑实车、Qt5、性能、完整停止协调与驱动 |
 
 #### 历史区间跨切片持续有效约束与未闭环汇总
 
-- **FakerInput 隔离测试口径（`238～266` 共同约束）**：因 `238` 证实关闭含原驱动连接的新版副本可能触发键鼠中性报告，`238～266` 所有隔离回归运行副本均在夹具 Worker 禁用 FakerInput 分配与连接，**开启 FakerInput 连接的真实运行持续作为待验门槛**，不以禁用驱动副本替代完整硬件/驱动验收。
+- **FakerInput 隔离测试口径（`238～266` 共同约束）**：因 `238` 在启动前自动审批阶段提示“关闭含原驱动连接的新版副本可能触发键鼠中性报告”并予以拦截（属启动前风险拦截，非实机运行证实），随后 `238～266` 所有隔离回归运行副本均在夹具 Worker 禁用 FakerInput 分配与连接；**开启 FakerInput 连接的真实运行持续作为待验门槛**，不以禁用驱动副本替代完整硬件/驱动验收。
 - **局部能力待扩展或待补验子项**：`configuration.remove` 仅支持非当前组（当前组与 GUI 右键待补）；`configuration.import` 首轮排除含外部路径、自动匹配前台、FilterKeys、当前已加载组覆盖、全局/General 组；`macro.upsert`/`import` 首轮限字母/数字序列且宏真实运行时执行仍待；`EDIT-COMMON-154/155` 禁用行连带、完整冲突与独立开关组合待补；`AGY-160` 整包与同回合图像读取待完成；`IB-MCP-138/139` 主动连接检查与试发待接；`RUN-WRITE-161` 与 `ACTIVE-STOP-159` 普通产品活动态及真实键鼠物理输出、`BUG02-FOLLOWUP-151` 同 VK/受阻 UP 待验。
 
 ### RUST-D4：Sidecar 迁移结项
@@ -760,7 +761,7 @@ Qt6最终IPC构建05、Qt5构建05均native0／零编译链接警告。Qt6私有
 |---|---|---|---|
 | `PERSIST-135` | 复用 `mcpServers`/固定 `command`/`argv` 与 `231` 三秒等待→`pipe_busy`（未认证前不宣称占用者），显式共享配对 | 5 管道＋7 结果＋3 独立桥接 `A→B→A` 认证与 `B` 并发 `pipe_busy` 通过；[135 证据](map67c1_validation.md#persist-135workspace先后复用与明确忙碌2026-10-30pc-w11) | 真实 Agent 自动加载、产品重启、撤权/写失败、跨登录/重启（续 `137`） |
 | `PERSIST-136` | 管理窗新增明确保存开关、`startup.json`（canonical EXE＋角色）、`S1–S9` 三语；用户批准豁免 Qt6 `lupdate-pro` 确切 `winextras` 提示 | 双 Qt 28+7 组件（含真实冷进程）、9+3 三语图、QM `1193` 往返一致；[136 证据](map67c1_validation.md#persist-136用户明确保存启动选择2026-10-30pc-w11) | 仅组件冷进程；`136A` 修复并补普通 Release 默认路径实测 |
-| `PERSIST-136A` | 修正 `applicationName` 拼入完整 EXE 路径导致保存 `io_error`：改为 `GenericDataLocation/QKeyMapper/MCP/startup-v1/<hash>` | 普通 Qt6 Release 4 阶段（未选关闭→启用保存重启→配对 `Read+Configure` 建例保存→重启复用冷读→关闭保存，8 次退出 0）通过；[136A 证据](map67c1_validation.md#persist-136a真实普通release启动选择与同登录复用2026-11-02pc-w11) | FakerInput 根/驱动在场拒绝启动（避免关闭中性报告）、跨登录/PC 重启/`137`/Win10/Qt5/QQ |
+| `PERSIST-136A` | 修正 `applicationName` 拼入完整 EXE 路径导致保存 `io_error`：改为 `GenericDataLocation/QKeyMapper/MCP/startup-v1/<hash>` | 普通 Qt6 Release 4 阶段（未选关闭→启用保存重启→配对 `Read+Configure` 建例保存→重启复用冷读→关闭保存，8 次退出 0）通过；[136A 证据](map67c1_validation.md#persist-136a真实普通release启动选择与同登录复用2026-11-02pc-w11) | 本轮未检测到 FakerInput 设备（检测到在场时拒启属测试预检规则，非在场实测）；开启 FakerInput 连接运行、跨登录/PC 重启/`137`/Win10/Qt5/QQ |
 
 
 #### M0.3b 鉴权与传输细化（历史设计，当前实现以顶部为准）
