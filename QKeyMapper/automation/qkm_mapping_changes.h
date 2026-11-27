@@ -186,6 +186,27 @@ struct FloatingButtonSyncGroupMoveUpdate {
     int deltaY = 0;
 };
 
+struct GeneralUiPreferencesUpdate {
+    std::optional<int> language;
+    std::optional<int> theme;
+    std::optional<int> notificationPosition;
+    std::optional<bool> showProcessList;
+    std::optional<int> updateSite;
+    std::optional<bool> startupMinimized;
+    std::optional<QString> windowSwitchKey;
+
+    bool hasAny() const
+    {
+        return language.has_value()
+            || theme.has_value()
+            || notificationPosition.has_value()
+            || showProcessList.has_value()
+            || updateSite.has_value()
+            || startupMinimized.has_value()
+            || windowSwitchKey.has_value();
+    }
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -257,6 +278,7 @@ struct MappingUpdateArguments {
     std::optional<bool> floatingButtonShowDragCoordinate;
     std::optional<FloatingButtonSyncGroupNoteUpdate> floatingButtonSyncGroupNote;
     std::optional<FloatingButtonSyncGroupMoveUpdate> floatingButtonSyncGroupMove;
+    std::optional<GeneralUiPreferencesUpdate> generalUiPreferences;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

@@ -252,10 +252,10 @@ ENV-38 保留为 PC-W10 的版本／漂移检查历史。ENV-39 已在 PC-W11 �
 | CFG-002 | 配置／单表导入导出、备份及恢复 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)、[Tab 设定](../../QKeyMapper/qtablesetupdialog.cpp) | 内存与磁盘来源、全局组范围、覆盖、校验和已有草稿 | M2-A／EQ-TRANSFER-001 |
 | WIN-001 | 窗口条件、进程信息、自动匹配与回退 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 实际匹配条件、前台目标、定时器／事件、加载或切换影响 | M2-B／EQ-MATCH-001 |
 | WIN-002 | 忽略窗口规则、恢复默认及正则条件 | [忽略规则窗口](../../QKeyMapper/qignorewindowinfolistdialog.cpp) | 条件、禁用与全局范围、匹配缓存和保存；入口待逐项核对 | M2-B／EQ-IGNORE-001 |
-| SET-001 | 语言 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`on_languageComboBox_currentIndexChanged()` | 语言重载、字体、进程表及列宽；不是仅改变选择索引 | M2-B／EQ-LANGUAGE-001 |
-| SET-002 | 主题及显示相关设置 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`on_themeComboBox_currentIndexChanged()` | `setUITheme()`、Tab 显示及全表刷新，逐显示选项待盘点 | M2-B／EQ-THEME-001 |
+| SET-001 | 语言 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`on_languageComboBox_currentIndexChanged()` | `SET-GENERAL-UI-269 [Gemini]` 已接入 `general.set_ui_preferences`（`language` `0..2`）与 `get_state.general_ui_preferences`；Qt6 `82C7A474`/Sidecar `DEC4B419`/双 Qt 组件 `A3772351`/`923B02E4`、私有桌面 `run6`（禁用 FakerInput 连接，验证中文→英文→中文联动刷新 Common Tab 名与内置忽略规则翻译、冷启及双 Qt INI 读回 `53F167DC`/`CFC14A11` `changed_other_keys=2`）通过，待 Codex 复核 | M2-B／EQ-LANGUAGE-001 |
+| SET-002 | 主题及显示相关设置 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`on_themeComboBox_currentIndexChanged()` | `SET-GENERAL-UI-269 [Gemini]` 已覆盖 `theme`（`0..2`）及 `notification_position`（`0..6`）、`show_process_list`（见下）；实屏主题视觉观感与开启 FakerInput 待验，待 Codex 复核 | M2-B／EQ-THEME-001 |
 | SET-003 | 实时缩放及启动缩放 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)，`initScaleMenu()`／`onScaleComboBoxActivated()` | `activated` 与索引变化区别；实际目标比例、补偿、布局、dirty、重载 | M2-B／EQ-SCALE-001 |
-| SET-004 | 启动、托盘、窗口尺寸／位置及通用高级 | [通用高级窗口](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 运行值、即时／保存／重启时机、系统启动项副作用 | M2-B／EQ-GENERAL-001 |
+| SET-004 | 启动、托盘、窗口尺寸／位置及通用高级 | [通用高级窗口](../../QKeyMapper/qgeneraladvanceddialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 运行值、即时／保存／重启时机、系统启动项副作用；`SET-GENERAL-UI-269 [Gemini]` 已补齐 `startup_minimized`（布尔，`StartupMinimized`）、`update_site`（`0..1`）、`window_switch_key`（经 `analyzeHotKeyLineEditText()` 规范化与校验），`closeToSystemTray`/`startupAutoMonitoring`/`autoStartup` 等仍待 | M2-B／EQ-GENERAL-001 |
 | SET-005 | 开始／停止快捷键、系统筛选键及映射高级 | [qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp)、[映射高级](../../QKeyMapper/qmappingadvanceddialog.cpp) | 停止入口、系统筛选键会话恢复、驱动筛选的区别；高风险参数逐项列出 | M2-B／EQ-FILTER-001 |
 | UI-001 | 浮动按钮、样式及同步组 | [浮动按钮设定](../../QKeyMapper/qfloatingbuttonsetupdialog.cpp)、[qkeymapper.cpp](../../QKeyMapper/qkeymapper.cpp) | 应用／恢复、三态外观、派生布局、组状态及保存 | M2-B／EQ-FBUTTON-001；`UI-FLOAT-267`＋`UI-FLOAT-SYNC-268 [Gemini]` 已选验全部设置与联动子项（视觉绘制、实际拖动与 Win10 待验） |
 | UI-002 | 悬浮窗口、Tab 图片及虚拟按钮面板 | [悬浮窗口](../../QKeyMapper/qfloatingwindowsetupdialog.cpp)、[面板设定](../../QKeyMapper/qvbuttonpanelsetupdialog.cpp)、[Tab 设定](../../QKeyMapper/qtablesetupdialog.cpp) | 显示对象、位置／参考点、鼠标穿透、刷新及配置；拆为独立能力 | M2-B／EQ-PANEL-001；`UI-PANEL-261` 已选验虚拟按钮面板，`UI-FWINDOW-264` 已选验 Tab 悬浮窗口设定，`UI-TAB-IMAGE-266` 已选验 Tab 自定义图片设定（3/3） |
@@ -422,7 +422,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | ACT-TABLE-CLEAR | 清空当前表 | `clearCurrentMappingTable`／`tab.clear`，TAB-CLEAR-173 选验整源、明确确认与保存重载 |
 | ACT-TABLE-EXPORT | 导出映射表 | `exportMappingTableByTabIndex`／`exportKeyMappingDataToFile`；M2-A；导出内存还是磁盘、覆盖与文件权限 |
 | ACT-TABLE-IMPORT | 导入映射表 | `importMappingTableByTabIndex`／`importKeyMappingDataFromFile`；M2-A；219／220 选验追加、校验、跨表确认、草稿和保存冷读 |
-| ACT-VIEW-PROCESS | 显示／隐藏进程列表 | `m_ActionShowProcessList`；M2-B；真实布局、尺寸和保存范围 |
+| ACT-VIEW-PROCESS | 显示／隐藏进程列表 | `m_ActionShowProcessList`／`applyProcessListVisibleSetting()`；M2-B；`SET-GENERAL-UI-269 [Gemini]` 已通过 `general.set_ui_preferences.show_process_list` 与 `get_state.general_ui_preferences` 选验布局切换、dirty、冷启及双 Qt INI 读回（禁用 FakerInput 连接），待 Codex 复核 |
 | ACT-VIEW-POINT | 显示／隐藏坐标拾取 | `m_ActionShowPointPicker`；M2-B／M3-A；实际采集和真实输入权限 |
 | ACT-VIEW-CATEGORY | 显示／隐藏分类列 | `setCategoryColumnVisible`；M2-A；187 选验列、清除当前筛选、草稿与保存冷读 |
 | ACT-VIEW-NOTES | 显示／隐藏映射备注 | `m_ActionShowNotes` 及表格右键；M2-A；187 选验原键旁实际文字及保存冷读 |
@@ -640,20 +640,20 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-main/descriptionLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
 | `U-main/selectSettingCustomIconButton` | QPushButton；Select Custom Icon | `on_selectSettingCustomIconButton_clicked @50032`<br>`connect customContextMenuRequested @3375` | 运行约束待核 |
 | `U-main/ignoreRulesListButton` | QPushButton；Ignore Rules List | `on_ignoreRulesListButton_clicked @50001` | 运行约束待核 |
-| `U-main/windowswitchkeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-main/languageComboBox` | QComboBox | `on_languageComboBox_currentIndexChanged @46285` | UI选项=中文, English, 日本語 |
+| `U-main/windowswitchkeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | `SET-GENERAL-UI-269 [Gemini]` 已重构 `onHotKeyLineEditEditingFinished()` 共用 `applyWindowSwitchKeySetting()`，私有桌面 `run6` 选验合法规范化／非法拒绝、冷启与双 Qt INI 读回（禁用 FakerInput 连接），待 Codex 复核 |
+| `U-main/languageComboBox` | QComboBox | `on_languageComboBox_currentIndexChanged @46285` | UI选项=中文, English, 日本語；`SET-GENERAL-UI-269 [Gemini]` 已选验 `0/1/2` 切换、Common Tab 刷新、冷启及双 Qt INI 读回，待 Codex 复核 |
 | `U-main/selectTrayIconButton` | QPushButton；Select Tray Icon | `on_selectTrayIconButton_clicked @49591` | 运行约束待核 |
 | `U-main/autoStartupCheckBox` | QCheckBox；Auto Startup | `on_autoStartupCheckBox_stateChanged @46215` | 运行约束待核 |
-| `U-main/notificationComboBox` | QComboBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
+| `U-main/notificationComboBox` | QComboBox | 手动／间接绑定待逐项定位 | `SET-GENERAL-UI-269 [Gemini]` 已选验 `0..6` 切换、冷启及双 Qt INI 读回，待 Codex 复核 |
 | `U-main/notificationAdvancedSettingButton` | QPushButton；Noti Advanced | `on_notificationAdvancedSettingButton_clicked @49596` | 运行约束待核 |
-| `U-main/startupMinimizedCheckBox` | QCheckBox；Startup Minimized | `on_startupMinimizedCheckBox_stateChanged @49316` | 运行约束待核 |
-| `U-main/updateSiteComboBox` | QComboBox | 手动／间接绑定待逐项定位 | UI选项=Github, Gitee |
+| `U-main/startupMinimizedCheckBox` | QCheckBox；Startup Minimized | `on_startupMinimizedCheckBox_stateChanged @49316`（`#if 0`，由通用 dirty 连接读写） | `SET-GENERAL-UI-269 [Gemini]` 已选验布尔切换及 `min_true`/`final` 双 Qt INI 读回（真实启动托盘落态待验），待 Codex 复核 |
+| `U-main/updateSiteComboBox` | QComboBox | 手动／间接绑定待逐项定位 | UI选项=Github, Gitee；`SET-GENERAL-UI-269 [Gemini]` 已选验 `0..1` 切换、冷启及双 Qt INI 读回（在线请求待验），待 Codex 复核 |
 | `U-main/checkUpdateButton` | QPushButton；Check Updates | `on_checkUpdateButton_clicked @49445` | 运行约束待核 |
 | `U-main/startupAutoMonitoringCheckBox` | QCheckBox；Startup AutoMonitoring | 手动／间接绑定待逐项定位 | 运行约束待核 |
 | `U-main/scaleComboBox` | QComboBox | `connect activated @3767`<br>`connect currentIndexChanged @16595` | 运行约束待核 |
 | `U-main/generalAdvancedButton` | QPushButton；General Advanced | `on_generalAdvancedButton_clicked @49935` | 运行约束待核 |
 | `U-main/closeToSystemTrayCheckBox` | QCheckBox；Minimize to tray on close | `connect clicked @37182` | 运行约束待核 |
-| `U-main/themeComboBox` | QComboBox | `on_themeComboBox_currentIndexChanged @49896` | 运行约束待核 |
+| `U-main/themeComboBox` | QComboBox | `on_themeComboBox_currentIndexChanged @49896` | `SET-GENERAL-UI-269 [Gemini]` 已选验 `0..2` 切换、冷启及双 Qt INI 读回（实屏主题视觉待验），待 Codex 复核 |
 | `U-main/mappingStartKeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
 | `U-main/autoStartMappingCheckBox` | QCheckBox；Auto Match Foreground | `on_autoStartMappingCheckBox_stateChanged @49333` | 静态见 WIN-AUTOSTART；业务／运行未验 |
 | `U-main/mappingStopKeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |

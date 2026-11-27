@@ -586,6 +586,33 @@ struct FloatingButtonSyncGroupOffsetChange
     int afterY = 0;
 };
 
+struct GeneralUiPreferencesSettings
+{
+    int language = QKeyMapperConstants::LANGUAGE_CHINESE;
+    int theme = QKeyMapperConstants::UI_PALETTE_SYSTEMDEFAULT;
+    int notificationPosition = QKeyMapperConstants::NOTIFICATION_POSITION_DEFAULT;
+    bool showProcessList = true;
+    int updateSite = QKeyMapperConstants::UPDATE_SITE_GITHUB;
+    bool startupMinimized = false;
+    QString windowSwitchKey = QString::fromLatin1(QKeyMapperConstants::DISPLAYSWITCH_KEY_DEFAULT);
+
+    bool operator==(const GeneralUiPreferencesSettings &other) const
+    {
+        return language == other.language
+            && theme == other.theme
+            && notificationPosition == other.notificationPosition
+            && showProcessList == other.showProcessList
+            && updateSite == other.updateSite
+            && startupMinimized == other.startupMinimized
+            && windowSwitchKey == other.windowSwitchKey;
+    }
+
+    bool operator!=(const GeneralUiPreferencesSettings &other) const
+    {
+        return !(*this == other);
+    }
+};
+
 struct ActiveKeyMappingRowSourceInfo
 {
     int SourceTabIndex = -1;
@@ -2267,6 +2294,10 @@ public:
         bool notifySourceChange = false);
     MappingFloatingButtonSettings getMappingSourceRowFloatingButtonSettings(int tabIndex, int row) const;
     bool setMappingSourceRowFloatingButtonSettings(int tabIndex, int row, const MappingFloatingButtonSettings &settings);
+    GeneralUiPreferencesSettings getGeneralUiPreferencesSettings() const;
+    bool applyProcessListVisibleSetting(bool visible);
+    bool applyWindowSwitchKeySetting(const QString &canonicalKey);
+    bool applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSettings &settings);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;

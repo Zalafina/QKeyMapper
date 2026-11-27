@@ -922,6 +922,33 @@ struct FloatingButtonSyncGroupMove {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct GeneralUiPreferencesFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    language: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    theme: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    notification_position: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_process_list: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    update_site: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    startup_minimized: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    window_switch_key: Option<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct GeneralUiPreferences {
+    action: String,
+    source_tab_ref: String,
+    general_ui_preferences: GeneralUiPreferencesFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1967,6 +1994,36 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && f.delta_x.is_none_or(|n| (-100000..=100000).contains(&n))
                             && f.delta_y.is_none_or(|n| (-100000..=100000).contains(&n))
                             && (dx != 0 || dy != 0)
+                    });
+                }
+                Some("general.set_ui_preferences") => {
+                    if arguments
+                        .get("general_ui_preferences")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &GeneralUiPreferences| {
+                        let f = &v.general_ui_preferences;
+                        let has_any = f.language.is_some()
+                            || f.theme.is_some()
+                            || f.notification_position.is_some()
+                            || f.show_process_list.is_some()
+                            || f.update_site.is_some()
+                            || f.startup_minimized.is_some()
+                            || f.window_switch_key.is_some();
+                        tab_ref(&v.source_tab_ref)
+                            && has_any
+                            && f.language.is_none_or(|n| (0..=2).contains(&n))
+                            && f.theme.is_none_or(|n| (0..=2).contains(&n))
+                            && f.notification_position.is_none_or(|n| (0..=6).contains(&n))
+                            && f.update_site.is_none_or(|n| (0..=1).contains(&n))
+                            && f.window_switch_key.as_ref().is_none_or(|key| {
+                                !key.trim().is_empty()
+                                    && key.encode_utf16().count() <= 256
+                                    && single_line(key)
+                            })
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -3532,6 +3589,53 @@ mod tests {
                 "action": "mapping.move_floating_button_sync_group",
                 "source_tab_ref": tab,
                 "sync_group_move": bad
+            }))
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn general_ui_preferences_validation() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let wire = json!({
+            "action": "general.set_ui_preferences",
+            "source_tab_ref": tab,
+            "general_ui_preferences": {
+                "language": 1,
+                "theme": 2,
+                "notification_position": 5,
+                "show_process_list": false,
+                "update_site": 1,
+                "startup_minimized": true,
+                "window_switch_key": "L-Ctrl+F7"
+            }
+        });
+        assert_eq!(preview(&wire).unwrap(), *wire.as_object().unwrap());
+        for bad in [
+            json!({}),
+            json!({"language": -1}),
+            json!({"language": 3}),
+            json!({"language": null}),
+            json!({"theme": -1}),
+            json!({"theme": 3}),
+            json!({"notification_position": -1}),
+            json!({"notification_position": 7}),
+            json!({"show_process_list": "true"}),
+            json!({"update_site": -1}),
+            json!({"update_site": 2}),
+            json!({"startup_minimized": 1}),
+            json!({"window_switch_key": ""}),
+            json!({"window_switch_key": "   "}),
+            json!({"window_switch_key": "L-Ctrl+A\nB"}),
+            json!({"window_switch_key": "A".repeat(257)}),
+            json!({"language": 0, "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "general.set_ui_preferences",
+                "source_tab_ref": tab,
+                "general_ui_preferences": bad
             }))
             .is_err());
         }

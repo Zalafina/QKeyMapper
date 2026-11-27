@@ -19290,6 +19290,102 @@ int QKeyMapper::applyFloatingButtonSyncGroupOffsetDelta(
     return changedCount;
 }
 
+GeneralUiPreferencesSettings QKeyMapper::getGeneralUiPreferencesSettings() const
+{
+    GeneralUiPreferencesSettings settings;
+    if (!ui) {
+        return settings;
+    }
+    if (ui->languageComboBox) {
+        settings.language = ui->languageComboBox->currentIndex();
+    }
+    if (ui->themeComboBox) {
+        settings.theme = ui->themeComboBox->currentIndex();
+    }
+    if (ui->notificationComboBox) {
+        settings.notificationPosition = ui->notificationComboBox->currentIndex();
+    }
+    settings.showProcessList = m_ProcessListVisible;
+    if (ui->updateSiteComboBox) {
+        settings.updateSite = ui->updateSiteComboBox->currentIndex();
+    }
+    if (ui->startupMinimizedCheckBox) {
+        settings.startupMinimized = ui->startupMinimizedCheckBox->isChecked();
+    }
+    settings.windowSwitchKey = s_WindowSwitchKeyString;
+    return settings;
+}
+
+bool QKeyMapper::applyProcessListVisibleSetting(bool visible)
+{
+    const bool changed = (m_ProcessListVisible != visible);
+    if (changed) {
+        setProcessListVisible(visible);
+    }
+    if (m_ActionShowProcessList && m_ActionShowProcessList->isChecked() != m_ProcessListVisible) {
+        const QSignalBlocker blocker(m_ActionShowProcessList);
+        m_ActionShowProcessList->setChecked(m_ProcessListVisible);
+    }
+    return changed;
+}
+
+bool QKeyMapper::applyWindowSwitchKeySetting(const QString &canonicalKey)
+{
+    if (canonicalKey.isEmpty()) {
+        return false;
+    }
+    const bool changed = (s_WindowSwitchKeyString != canonicalKey);
+    if (changed) {
+        updateWindowSwitchKeyString(canonicalKey);
+    }
+    if (ui && ui->windowswitchkeyLineEdit && ui->windowswitchkeyLineEdit->text() != s_WindowSwitchKeyString) {
+        ui->windowswitchkeyLineEdit->setText(s_WindowSwitchKeyString);
+    }
+    if (changed) {
+        markSaveSettingDirty();
+    }
+    return changed;
+}
+
+bool QKeyMapper::applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSettings &settings)
+{
+    if (!ui) {
+        return false;
+    }
+    bool changed = false;
+    if (ui->languageComboBox && ui->languageComboBox->currentIndex() != settings.language) {
+        ui->languageComboBox->setCurrentIndex(settings.language);
+        changed = true;
+    }
+    if (ui->themeComboBox && ui->themeComboBox->currentIndex() != settings.theme) {
+        ui->themeComboBox->setCurrentIndex(settings.theme);
+        changed = true;
+    }
+    if (ui->notificationComboBox && ui->notificationComboBox->currentIndex() != settings.notificationPosition) {
+        ui->notificationComboBox->setCurrentIndex(settings.notificationPosition);
+        changed = true;
+    }
+    if (applyProcessListVisibleSetting(settings.showProcessList)) {
+        changed = true;
+    }
+    if (ui->updateSiteComboBox && ui->updateSiteComboBox->currentIndex() != settings.updateSite) {
+        ui->updateSiteComboBox->setCurrentIndex(settings.updateSite);
+        changed = true;
+    }
+    if (ui->startupMinimizedCheckBox && ui->startupMinimizedCheckBox->isChecked() != settings.startupMinimized) {
+        ui->startupMinimizedCheckBox->setChecked(settings.startupMinimized);
+        changed = true;
+    }
+    if (applyWindowSwitchKeySetting(settings.windowSwitchKey)) {
+        changed = true;
+    }
+    if (changed) {
+        ++m_AutomationSourceEpoch;
+        requestSaveSettingDirty();
+    }
+    return changed;
+}
+
 bool QKeyMapper::setMappingTabCommonInheritance(int tabIndex, bool includeCommon)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) return false;
@@ -20062,12 +20158,9 @@ void QKeyMapper::onHotKeyLineEditEditingFinished()
         if (validationResult.isValid)
         {
             if (lineEdit->objectName() == WINDOWSWITCHKEY_LINEEDIT_NAME) {
-                if (s_WindowSwitchKeyString != ori_hotkeystring) {
-                    updateWindowSwitchKeyString(ori_hotkeystring);
-                    hotkeyChanged = true;
+                if (applyWindowSwitchKeySetting(ori_hotkeystring)) {
                     showInformationPopup(tr("WindowSwitchKey update success : ") + ori_hotkeystring);
                 }
-                lineEdit->setText(s_WindowSwitchKeyString);
             }
             else if (lineEdit->objectName() == MAPPINGSTARTKEY_LINEEDIT_NAME) {
                 if (s_MappingStartKeyString != ori_hotkeystring) {
@@ -38951,6 +39044,17 @@ static QJsonObject automationGyro2MouseOptions(int mouseXSource, int mouseYSourc
         {QStringLiteral("mouse_y_revert"), mouseYRevert}};
 }
 
+static QJsonObject automationGeneralUiPreferences(const GeneralUiPreferencesSettings &settings)
+{
+    return {{QStringLiteral("language"), settings.language},
+        {QStringLiteral("theme"), settings.theme},
+        {QStringLiteral("notification_position"), settings.notificationPosition},
+        {QStringLiteral("show_process_list"), settings.showProcessList},
+        {QStringLiteral("update_site"), settings.updateSite},
+        {QStringLiteral("startup_minimized"), settings.startupMinimized},
+        {QStringLiteral("window_switch_key"), settings.windowSwitchKey}};
+}
+
 static QMappingAdvancedDialog::GamepadThresholdSettings readCurrentGamepadThresholds(QMappingAdvancedDialog *dialog)
 {
     return {
@@ -39797,6 +39901,8 @@ QJsonObject QKeyMapper::collectAutomationState(bool includeAssetMetadata) const
             m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXRevert(),
             m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseYRevert()));
     }
+    result.insert(QStringLiteral("general_ui_preferences"),
+        automationGeneralUiPreferences(getGeneralUiPreferencesSettings()));
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
         {QStringLiteral("available"), m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()},
@@ -42143,6 +42249,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingFloatingButtonDragCoord = updating && update.floatingButtonShowDragCoordinate.has_value();
         const bool changingSyncGroupNote = updating && update.floatingButtonSyncGroupNote.has_value();
         const bool movingFloatingButtonSyncGroup = updating && update.floatingButtonSyncGroupMove.has_value();
+        const bool changingGeneralUiPreferences = updating && update.generalUiPreferences.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
@@ -42153,7 +42260,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
-        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || changingFloatingButtonDragCoord || changingSyncGroupNote || movingFloatingButtonSyncGroup || addingBlankTab || copyingTab || removingTabData
+        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || changingFloatingButtonDragCoord || changingSyncGroupNote || movingFloatingButtonSyncGroup || changingGeneralUiPreferences || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel
@@ -42179,7 +42286,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || (changingVButtonPanel && (!m_VButtonPanel || !m_VButtonPanelSetupDialog || m_VButtonPanelSetupDialog->isVisible()))
             || (changingGeneralNotificationStyle && (!m_NotificationSetupDialog || m_NotificationSetupDialog->isVisible()))
             || (changingCustomNotificationStyle && (!m_MappingAdvancedDialog || !m_CustomNotificationSetupDialog || !m_NotificationSetupDialog || m_CustomNotificationSetupDialog->isVisible()))
-            || (changingTrayIcons && (!m_TrayIconSelectDialog || m_TrayIconSelectDialog->isVisible()))) {
+            || (changingTrayIcons && (!m_TrayIconSelectDialog || m_TrayIconSelectDialog->isVisible()))
+            || (changingGeneralUiPreferences && (!ui || !ui->languageComboBox || !ui->themeComboBox || !ui->notificationComboBox || !ui->updateSiteComboBox || !ui->startupMinimizedCheckBox || !ui->windowswitchkeyLineEdit || (update.generalUiPreferences->windowSwitchKey.has_value() && ui->windowswitchkeyLineEdit->text() != s_WindowSwitchKeyString)))) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
@@ -42189,7 +42297,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && !changingGeneralNotificationStyle && !changingCustomNotificationStyle && !changingTrayIcons && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale && !changingTabCustomImage
-            && !changingFloatingButtonDragCoord && !changingSyncGroupNote && !movingFloatingButtonSyncGroup
+            && !changingFloatingButtonDragCoord && !changingSyncGroupNote && !movingFloatingButtonSyncGroup && !changingGeneralUiPreferences
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
@@ -43188,6 +43296,34 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("includes_common"), includesCommon},
                     {QStringLiteral("affected_rows"), affectedRows},
                     {QStringLiteral("persisted"), false}};
+            } else if (changingGeneralUiPreferences) {
+                const GeneralUiPreferencesSettings before = getGeneralUiPreferencesSettings();
+                GeneralUiPreferencesSettings after = before;
+                const auto &uiUpdate = *update.generalUiPreferences;
+                if (uiUpdate.language) after.language = *uiUpdate.language;
+                if (uiUpdate.theme) after.theme = *uiUpdate.theme;
+                if (uiUpdate.notificationPosition) after.notificationPosition = *uiUpdate.notificationPosition;
+                if (uiUpdate.showProcessList) after.showProcessList = *uiUpdate.showProcessList;
+                if (uiUpdate.updateSite) after.updateSite = *uiUpdate.updateSite;
+                if (uiUpdate.startupMinimized) after.startupMinimized = *uiUpdate.startupMinimized;
+                if (uiUpdate.windowSwitchKey) {
+                    const auto analyzed = analyzeHotKeyLineEditText(*uiUpdate.windowSwitchKey);
+                    if (!analyzed.second.isValid || analyzed.first.isEmpty()) {
+                        reject(QStringLiteral("invalid_arguments"),
+                            analyzed.second.errorMessage.isEmpty()
+                                ? QStringLiteral("Invalid window switch hotkey.")
+                                : analyzed.second.errorMessage);
+                        return;
+                    }
+                    after.windowSwitchKey = analyzed.first;
+                }
+                modified = (before != after);
+                target.insert(QStringLiteral("scope"), QStringLiteral("general"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_general_ui_preferences")},
+                    {QStringLiteral("scope"), QStringLiteral("general")},
+                    {QStringLiteral("before"), automationGeneralUiPreferences(before)},
+                    {QStringLiteral("after"), automationGeneralUiPreferences(after)},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingTabCustomImage) {
                 const auto &before = preparedTabImage.expectedBefore;
                 const auto &after = preparedTabImage.after;
@@ -43621,6 +43757,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingFloatingButtonDragCoord ? QStringLiteral("general.set_floating_button_drag_coordinate")
             : changingSyncGroupNote ? QStringLiteral("configuration.set_floating_button_sync_group_note")
             : movingFloatingButtonSyncGroup ? QStringLiteral("mapping.move_floating_button_sync_group")
+            : changingGeneralUiPreferences ? QStringLiteral("general.set_ui_preferences")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -43809,6 +43946,29 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                             QStringLiteral("The sync group no longer accepts offset updates."));
                         return;
                     }
+                }
+            } else if (changingGeneralUiPreferences) {
+                GeneralUiPreferencesSettings after = getGeneralUiPreferencesSettings();
+                const auto &uiUpdate = *update.generalUiPreferences;
+                if (uiUpdate.language) after.language = *uiUpdate.language;
+                if (uiUpdate.theme) after.theme = *uiUpdate.theme;
+                if (uiUpdate.notificationPosition) after.notificationPosition = *uiUpdate.notificationPosition;
+                if (uiUpdate.showProcessList) after.showProcessList = *uiUpdate.showProcessList;
+                if (uiUpdate.updateSite) after.updateSite = *uiUpdate.updateSite;
+                if (uiUpdate.startupMinimized) after.startupMinimized = *uiUpdate.startupMinimized;
+                if (uiUpdate.windowSwitchKey) {
+                    const auto analyzed = analyzeHotKeyLineEditText(*uiUpdate.windowSwitchKey);
+                    if (!analyzed.second.isValid || analyzed.first.isEmpty()) {
+                        reject(QStringLiteral("invalid_arguments"),
+                            analyzed.second.errorMessage.isEmpty()
+                                ? QStringLiteral("Invalid window switch hotkey.")
+                                : analyzed.second.errorMessage);
+                        return;
+                    }
+                    after.windowSwitchKey = analyzed.first;
+                }
+                if (modified) {
+                    applyGeneralUiPreferencesSettings(after);
                 }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);

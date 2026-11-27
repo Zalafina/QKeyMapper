@@ -524,6 +524,37 @@ async def check_contract(exe):
                     assert not validator.is_valid(request), bad_fields
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            ui_prefs = {"action": "general.set_ui_preferences", "source_tab_ref": tab}
+            assert validator.is_valid({**ui_prefs, "general_ui_preferences": {
+                "language": 1,
+                "theme": 2,
+                "notification_position": 5,
+                "show_process_list": False,
+                "update_site": 1,
+                "startup_minimized": True,
+                "window_switch_key": "L-Ctrl+F7",
+            }})
+            for bad_prefs in (
+                {"general_ui_preferences": {}},
+                {"general_ui_preferences": {"language": -1}},
+                {"general_ui_preferences": {"language": 3}},
+                {"general_ui_preferences": {"language": None}},
+                {"general_ui_preferences": {"theme": 3}},
+                {"general_ui_preferences": {"notification_position": 7}},
+                {"general_ui_preferences": {"show_process_list": "false"}},
+                {"general_ui_preferences": {"update_site": 2}},
+                {"general_ui_preferences": {"startup_minimized": 1}},
+                {"general_ui_preferences": {"window_switch_key": ""}},
+                {"general_ui_preferences": {"window_switch_key": "   "}},
+                {"general_ui_preferences": {"window_switch_key": "L-Ctrl+A\nB"}},
+                {"general_ui_preferences": {"window_switch_key": "A" * 257}},
+                {"general_ui_preferences": {"language": 1, "extra": 1}},
+                {"general_ui_preferences": {"language": 1}, "extra": 1},
+            ):
+                request = {**ui_prefs, **bad_prefs}
+                assert not validator.is_valid(request), bad_prefs
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -713,7 +744,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "show_drag_coordinate", "sync_group_note", "sync_group_move", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "show_drag_coordinate", "sync_group_note", "sync_group_move", "general_ui_preferences", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
