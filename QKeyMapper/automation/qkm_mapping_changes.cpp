@@ -1390,6 +1390,57 @@ static bool parseGeneralUiPreferencesUpdate(const QJsonValue &raw,
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+static bool parseGeneralBehaviorUpdate(const QJsonValue &raw,
+    GeneralBehaviorUpdate &out, const char *&errorOut)
+{
+    using namespace QKeyMapperConstants;
+    const auto failMsg = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const QJsonObject fields = raw.toObject();
+    if (!raw.isObject() || fields.isEmpty()) {
+        return failMsg("general_behavior must be a non-empty object.");
+    }
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        const QString &k = it.key();
+        if (k != QStringLiteral("startup_auto_monitoring")
+            && k != QStringLiteral("close_to_system_tray")
+            && k != QStringLiteral("mapping_start_action_mode")) {
+            return failMsg("Unknown field in general_behavior.");
+        }
+    }
+    if (fields.contains(QStringLiteral("startup_auto_monitoring"))) {
+        const auto v = fields.value(QStringLiteral("startup_auto_monitoring"));
+        if (!v.isBool()) {
+            return failMsg("general_behavior.startup_auto_monitoring must be a boolean.");
+        }
+        out.startupAutoMonitoring = v.toBool();
+    }
+    if (fields.contains(QStringLiteral("close_to_system_tray"))) {
+        const auto v = fields.value(QStringLiteral("close_to_system_tray"));
+        if (!v.isBool()) {
+            return failMsg("general_behavior.close_to_system_tray must be a boolean.");
+        }
+        out.closeToSystemTray = v.toBool();
+    }
+    if (fields.contains(QStringLiteral("mapping_start_action_mode"))) {
+        const auto v = fields.value(QStringLiteral("mapping_start_action_mode"));
+        const int parsed = v.toInt(-1);
+        if (!v.isDouble() || v.toDouble() != parsed || parsed < 0 || parsed > 1) {
+            return failMsg("general_behavior.mapping_start_action_mode must be an integer between 0 and 1.");
+        }
+        out.mappingStartActionMode = parsed;
+    }
+    if (!out.hasAny()) {
+        return failMsg("general_behavior requires at least one supported field.");
+    }
+    return true;
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJsonObject &arguments,
     const QJsonValue &reference, const QString &revision, MappingUpdateArguments &update, const char *&errorOut)
 {
@@ -1421,6 +1472,7 @@ static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJ
     const bool floatingButtonSyncGroupNotePreview = action == QLatin1String("configuration.set_floating_button_sync_group_note");
     const bool floatingButtonSyncGroupMovePreview = action == QLatin1String("mapping.move_floating_button_sync_group");
     const bool generalUiPreferencesPreview = action == QLatin1String("general.set_ui_preferences");
+    const bool generalBehaviorPreview = action == QLatin1String("general.set_behavior");
     const bool processIconTrayPreview = action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = action == QLatin1String("configuration.set_custom_notification");
@@ -1518,6 +1570,13 @@ static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJ
                 return false;
             }
             update.generalUiPreferences = parsedUiPrefs;
+        }
+        if (generalBehaviorPreview) {
+            GeneralBehaviorUpdate parsedBehavior;
+            if (!parseGeneralBehaviorUpdate(arguments.value(QStringLiteral("general_behavior")), parsedBehavior, errorOut)) {
+                return false;
+            }
+            update.generalBehavior = parsedBehavior;
         }
         if (globalSwitchTimeoutPreview) {
             using namespace QKeyMapperConstants;
@@ -2136,6 +2195,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool floatingButtonSyncGroupNotePreview = preview && action == QLatin1String("configuration.set_floating_button_sync_group_note");
     const bool floatingButtonSyncGroupMovePreview = preview && action == QLatin1String("mapping.move_floating_button_sync_group");
     const bool generalUiPreferencesPreview = preview && action == QLatin1String("general.set_ui_preferences");
+    const bool generalBehaviorPreview = preview && action == QLatin1String("general.set_behavior");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -2161,7 +2221,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview
         || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || tabFloatingWindowPreview || tabCustomImagePreview
-        || floatingButtonDragCoordPreview || floatingButtonSyncGroupNotePreview || floatingButtonSyncGroupMovePreview || generalUiPreferencesPreview || processIconTrayPreview
+        || floatingButtonDragCoordPreview || floatingButtonSyncGroupNotePreview || floatingButtonSyncGroupMovePreview || generalUiPreferencesPreview || generalBehaviorPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -2182,6 +2242,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : floatingButtonSyncGroupNotePreview ? "sync_group_note"
         : floatingButtonSyncGroupMovePreview ? "sync_group_move"
         : generalUiPreferencesPreview ? "general_ui_preferences"
+        : generalBehaviorPreview ? "general_behavior"
         : globalSwitchTimeoutPreview ? "timeout_ms"
         : fullscreenGlobalMappingPreview ? "fullscreen_global_mapping"
         : key2MousePreview ? "key2mouse"
@@ -3134,6 +3195,38 @@ void appendGeneralUiPreferencesCapabilities(QJsonArray &capabilities, const Capa
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendGeneralBehaviorCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    using namespace QKeyMapperConstants;
+    const QJsonObject behaviorSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("startup_auto_monitoring"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("close_to_system_tray"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+            {QStringLiteral("mapping_start_action_mode"), CapabilitySchemaContext::boundedInteger(0, 1)},
+        }},
+    };
+    auto previewCap = CapabilitySchemaContext::capability("general.set_behavior.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_behavior")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("general_behavior"), behaviorSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("general_behavior")}));
+    auto applyCap = CapabilitySchemaContext::capability("general.set_behavior.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&previewCap, &applyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("general_global_preference"),
+            QStringLiteral("startup_auto_monitoring_takes_effect_on_next_launch"),
+            QStringLiteral("setting_close_to_system_tray_marks_prompt_decided"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -3272,6 +3365,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     appendMappingFloatingButtonCapabilities(capabilities, ctx);
     appendMappingFloatingButtonSyncCapabilities(capabilities, ctx);
     appendGeneralUiPreferencesCapabilities(capabilities, ctx);
+    appendGeneralBehaviorCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

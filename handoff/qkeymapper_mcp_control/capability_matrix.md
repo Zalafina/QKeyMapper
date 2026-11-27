@@ -643,16 +643,16 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-main/windowswitchkeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | `SET-GENERAL-UI-269 [Gemini]` 已重构 `onHotKeyLineEditEditingFinished()` 共用 `applyWindowSwitchKeySetting()`，私有桌面 `run6` 选验合法规范化／非法拒绝、冷启与双 Qt INI 读回（禁用 FakerInput 连接），待 Codex 复核 |
 | `U-main/languageComboBox` | QComboBox | `on_languageComboBox_currentIndexChanged @46285` | UI选项=中文, English, 日本語；`SET-GENERAL-UI-269 [Gemini]` 已选验 `0/1/2` 切换、Common Tab 刷新、冷启及双 Qt INI 读回，待 Codex 复核 |
 | `U-main/selectTrayIconButton` | QPushButton；Select Tray Icon | `on_selectTrayIconButton_clicked @49591` | 运行约束待核 |
-| `U-main/autoStartupCheckBox` | QCheckBox；Auto Startup | `on_autoStartupCheckBox_stateChanged @46215` | 运行约束待核 |
+| `U-main/autoStartupCheckBox` | QCheckBox；Auto Startup | `on_autoStartupCheckBox_stateChanged @46215` | `SET-GENERAL-BEHAVIOR-270` 因调用 Windows `schtasks` 计划任务系统副作用明确排除 |
 | `U-main/notificationComboBox` | QComboBox | 手动／间接绑定待逐项定位 | `SET-GENERAL-UI-269 [Gemini]` 已选验 `0..6` 切换、冷启及双 Qt INI 读回，待 Codex 复核 |
 | `U-main/notificationAdvancedSettingButton` | QPushButton；Noti Advanced | `on_notificationAdvancedSettingButton_clicked @49596` | 运行约束待核 |
 | `U-main/startupMinimizedCheckBox` | QCheckBox；Startup Minimized | `on_startupMinimizedCheckBox_stateChanged @49316`（`#if 0`，由通用 dirty 连接读写） | `SET-GENERAL-UI-269 [Gemini]` 已选验布尔切换及 `min_true`/`final` 双 Qt INI 读回（真实启动托盘落态待验），待 Codex 复核 |
 | `U-main/updateSiteComboBox` | QComboBox | 手动／间接绑定待逐项定位 | UI选项=Github, Gitee；`SET-GENERAL-UI-269 [Gemini]` 已选验 `0..1` 切换、冷启及双 Qt INI 读回（在线请求待验），待 Codex 复核 |
 | `U-main/checkUpdateButton` | QPushButton；Check Updates | `on_checkUpdateButton_clicked @49445` | 运行约束待核 |
-| `U-main/startupAutoMonitoringCheckBox` | QCheckBox；Startup AutoMonitoring | 手动／间接绑定待逐项定位 | 运行约束待核 |
+| `U-main/startupAutoMonitoringCheckBox` | QCheckBox；Startup AutoMonitoring | 手动／间接绑定待逐项定位 | `SET-GENERAL-BEHAVIOR-270 [Gemini]` 已选验 `general.set_behavior`、`get_state.general_behavior` 与 `automon_true`/`final` 双 Qt INI 读回（冷启自动开始监测待验），待 Codex 复核 |
 | `U-main/scaleComboBox` | QComboBox | `connect activated @3767`<br>`connect currentIndexChanged @16595` | 运行约束待核 |
 | `U-main/generalAdvancedButton` | QPushButton；General Advanced | `on_generalAdvancedButton_clicked @49935` | 运行约束待核 |
-| `U-main/closeToSystemTrayCheckBox` | QCheckBox；Minimize to tray on close | `connect clicked @37182` | 运行约束待核 |
+| `U-main/closeToSystemTrayCheckBox` | QCheckBox；Minimize to tray on close | `connect clicked @37182` | `SET-GENERAL-BEHAVIOR-270 [Gemini]` 已选验 `close_to_system_tray`＋只读 `close_to_system_tray_decided`（未决→已决）及双 Qt INI 读回（首关弹窗与真实托盘隐藏待验），待 Codex 复核 |
 | `U-main/themeComboBox` | QComboBox | `on_themeComboBox_currentIndexChanged @49896` | `SET-GENERAL-UI-269 [Gemini]` 已选验 `0..2` 切换、冷启及双 Qt INI 读回（实屏主题视觉待验），待 Codex 复核 |
 | `U-main/mappingStartKeyLineEdit` | QLineEdit | 手动／间接绑定待逐项定位 | 运行约束待核 |
 | `U-main/autoStartMappingCheckBox` | QCheckBox；Auto Match Foreground | `on_autoStartMappingCheckBox_stateChanged @49333` | 静态见 WIN-AUTOSTART；业务／运行未验 |
@@ -714,7 +714,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-main/mouseSelectComboBox` | QComboBox | `on_mouseSelectComboBox_currentIndexChanged @49815` | 运行约束待核 |
 | `U-main/sendTextPlainTextEdit` | QPlainTextEdit | `on_sendTextPlainTextEdit_textChanged @49906` | 运行约束待核 |
 | `U-main/gamepadSelectComboBox` | QComboBox | `on_gamepadSelectComboBox_currentIndexChanged @49822` | 运行约束待核 |
-| `U-main/keymapButton` | MappingStartToolButton；MappingStart | `on_keymapButton_clicked @16372` | 运行约束待核 |
+| `U-main/keymapButton` | MappingStartToolButton；MappingStart | `on_keymapButton_clicked @16372` | 启停见 `mapping.start`/`mapping.stop`；下拉启动动作模式 `mapping_start_action_mode`（`0..1`）已在 `SET-GENERAL-BEHAVIOR-270 [Gemini]` 选验（待 Codex 复核） |
 
 ### record（4 项）
 

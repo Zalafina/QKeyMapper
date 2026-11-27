@@ -949,6 +949,25 @@ struct GeneralUiPreferences {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct GeneralBehaviorFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    startup_auto_monitoring: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    close_to_system_tray: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mapping_start_action_mode: Option<i64>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct GeneralBehavior {
+    action: String,
+    source_tab_ref: String,
+    general_behavior: GeneralBehaviorFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -2024,6 +2043,24 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                                     && key.encode_utf16().count() <= 256
                                     && single_line(key)
                             })
+                    });
+                }
+                Some("general.set_behavior") => {
+                    if arguments
+                        .get("general_behavior")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &GeneralBehavior| {
+                        let f = &v.general_behavior;
+                        let has_any = f.startup_auto_monitoring.is_some()
+                            || f.close_to_system_tray.is_some()
+                            || f.mapping_start_action_mode.is_some();
+                        tab_ref(&v.source_tab_ref)
+                            && has_any
+                            && f.mapping_start_action_mode.is_none_or(|n| (0..=1).contains(&n))
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -3636,6 +3673,48 @@ mod tests {
                 "action": "general.set_ui_preferences",
                 "source_tab_ref": tab,
                 "general_ui_preferences": bad
+            }))
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn general_behavior_validation() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let wire = json!({
+            "action": "general.set_behavior",
+            "source_tab_ref": tab,
+            "general_behavior": {
+                "startup_auto_monitoring": true,
+                "close_to_system_tray": false,
+                "mapping_start_action_mode": 1
+            }
+        });
+        assert_eq!(preview(&wire).unwrap(), *wire.as_object().unwrap());
+        let partial = json!({
+            "action": "general.set_behavior",
+            "source_tab_ref": tab,
+            "general_behavior": {
+                "close_to_system_tray": true
+            }
+        });
+        assert_eq!(preview(&partial).unwrap(), *partial.as_object().unwrap());
+        for bad in [
+            json!({}),
+            json!({"startup_auto_monitoring": 1}),
+            json!({"startup_auto_monitoring": null}),
+            json!({"close_to_system_tray": "false"}),
+            json!({"mapping_start_action_mode": -1}),
+            json!({"mapping_start_action_mode": 2}),
+            json!({"mapping_start_action_mode": null}),
+            json!({"startup_auto_monitoring": true, "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "general.set_behavior",
+                "source_tab_ref": tab,
+                "general_behavior": bad
             }))
             .is_err());
         }

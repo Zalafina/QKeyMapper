@@ -555,6 +555,27 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), bad_prefs
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            behavior = {"action": "general.set_behavior", "source_tab_ref": tab}
+            assert validator.is_valid({**behavior, "general_behavior": {
+                "startup_auto_monitoring": True,
+                "close_to_system_tray": False,
+                "mapping_start_action_mode": 1,
+            }})
+            for bad_behavior in (
+                {"general_behavior": {}},
+                {"general_behavior": {"startup_auto_monitoring": 1}},
+                {"general_behavior": {"startup_auto_monitoring": None}},
+                {"general_behavior": {"close_to_system_tray": "false"}},
+                {"general_behavior": {"mapping_start_action_mode": -1}},
+                {"general_behavior": {"mapping_start_action_mode": 2}},
+                {"general_behavior": {"mapping_start_action_mode": None}},
+                {"general_behavior": {"close_to_system_tray": True, "extra": 1}},
+                {"general_behavior": {"close_to_system_tray": True}, "extra": 1},
+            ):
+                request = {**behavior, **bad_behavior}
+                assert not validator.is_valid(request), bad_behavior
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -744,7 +765,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "show_drag_coordinate", "sync_group_note", "sync_group_move", "general_ui_preferences", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "show_drag_coordinate", "sync_group_note", "sync_group_move", "general_ui_preferences", "general_behavior", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

@@ -207,6 +207,19 @@ struct GeneralUiPreferencesUpdate {
     }
 };
 
+struct GeneralBehaviorUpdate {
+    std::optional<bool> startupAutoMonitoring;
+    std::optional<bool> closeToSystemTray;
+    std::optional<int> mappingStartActionMode;
+
+    bool hasAny() const
+    {
+        return startupAutoMonitoring.has_value()
+            || closeToSystemTray.has_value()
+            || mappingStartActionMode.has_value();
+    }
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -279,6 +292,7 @@ struct MappingUpdateArguments {
     std::optional<FloatingButtonSyncGroupNoteUpdate> floatingButtonSyncGroupNote;
     std::optional<FloatingButtonSyncGroupMoveUpdate> floatingButtonSyncGroupMove;
     std::optional<GeneralUiPreferencesUpdate> generalUiPreferences;
+    std::optional<GeneralBehaviorUpdate> generalBehavior;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

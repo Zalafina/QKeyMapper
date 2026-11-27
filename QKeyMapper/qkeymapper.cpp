@@ -16771,7 +16771,7 @@ void QKeyMapper::setMappingStartActionMode(MappingStartActionMode actionMode, bo
     updateMappingStartActionTexts();
     updateSysTrayIconMenuText();
 
-    if (persist) {
+    if (persist && !QkmAutomation::denyDemoEffect()) {
         QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
         QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
         settingFile.setValue(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
@@ -19377,6 +19377,57 @@ bool QKeyMapper::applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSet
         changed = true;
     }
     if (applyWindowSwitchKeySetting(settings.windowSwitchKey)) {
+        changed = true;
+    }
+    if (changed) {
+        ++m_AutomationSourceEpoch;
+        requestSaveSettingDirty();
+    }
+    return changed;
+}
+
+GeneralBehaviorSettings QKeyMapper::getGeneralBehaviorSettings() const
+{
+    GeneralBehaviorSettings settings;
+    if (!ui) {
+        return settings;
+    }
+    if (ui->startupAutoMonitoringCheckBox) {
+        settings.startupAutoMonitoring = ui->startupAutoMonitoringCheckBox->isChecked();
+    }
+    if (ui->closeToSystemTrayCheckBox) {
+        settings.closeToSystemTray = ui->closeToSystemTrayCheckBox->isChecked();
+    }
+    settings.closeToSystemTrayDecided = m_CloseToSystemTrayDecided;
+    settings.mappingStartActionMode = static_cast<int>(m_MappingStartActionMode);
+    return settings;
+}
+
+bool QKeyMapper::applyGeneralBehaviorSettings(const GeneralBehaviorSettings &settings, bool markCloseToSystemTrayDecided)
+{
+    if (!ui) {
+        return false;
+    }
+    bool changed = false;
+    if (ui->startupAutoMonitoringCheckBox
+        && ui->startupAutoMonitoringCheckBox->isChecked() != settings.startupAutoMonitoring) {
+        ui->startupAutoMonitoringCheckBox->setChecked(settings.startupAutoMonitoring);
+        changed = true;
+    }
+    if (ui->closeToSystemTrayCheckBox
+        && ui->closeToSystemTrayCheckBox->isChecked() != settings.closeToSystemTray) {
+        ui->closeToSystemTrayCheckBox->setChecked(settings.closeToSystemTray);
+        changed = true;
+    }
+    if (markCloseToSystemTrayDecided) {
+        if (!m_CloseToSystemTrayDecided) {
+            changed = true;
+        }
+        m_CloseToSystemTrayDecided = true;
+        m_PendingCloseToSystemTrayDecided = true;
+    }
+    if (static_cast<int>(m_MappingStartActionMode) != settings.mappingStartActionMode) {
+        setMappingStartActionMode(static_cast<MappingStartActionMode>(settings.mappingStartActionMode), false);
         changed = true;
     }
     if (changed) {
@@ -22489,6 +22540,9 @@ OrderedMap<QString, QVariant> QKeyMapper::collectGeneralSettingSaveValues(int la
     values.insert(STARTUP_MINIMIZED, ui->startupMinimizedCheckBox->isChecked());
     values.insert(STARTUP_AUTOMONITORING, ui->startupAutoMonitoringCheckBox->isChecked());
     values.insert(CLOSETO_SYSTEMTRAY, ui->closeToSystemTrayCheckBox->isChecked());
+    if (m_PendingCloseToSystemTrayDecided) {
+        values.insert(CLOSETO_SYSTEMTRAY_DECIDED, true);
+    }
     values.insert(MAPPINGSTART_ACTION_MODE, static_cast<int>(m_MappingStartActionMode));
     values.insert(SHOW_PROCESSLIST, m_ProcessListVisible);
     values.insert(SHOW_NOTES, m_ShowNotes);
@@ -25909,6 +25963,10 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
             qDebug() << "[loadKeyMapSetting]" << "Do not contains CloseToSystemtray, Close to System Tray set to Unchecked.";
 #endif
         }
+        m_CloseToSystemTrayDecided = settingFile.contains(CLOSETO_SYSTEMTRAY_DECIDED)
+            ? settingFile.value(CLOSETO_SYSTEMTRAY_DECIDED).toBool()
+            : false;
+        m_PendingCloseToSystemTrayDecided = false;
 
         if (true == settingFile.contains(MAPPINGSTART_ACTION_MODE)){
             int mappingStartActionMode = settingFile.value(MAPPINGSTART_ACTION_MODE).toInt();
@@ -30579,6 +30637,10 @@ void QKeyMapper::loadGeneralSetting()
         qDebug() << "[loadGeneralSetting]" << "Do not contains CloseToSystemtray, Close to System Tray set to Unchecked.";
 #endif
     }
+    m_CloseToSystemTrayDecided = settingFile.contains(CLOSETO_SYSTEMTRAY_DECIDED)
+        ? settingFile.value(CLOSETO_SYSTEMTRAY_DECIDED).toBool()
+        : false;
+    m_PendingCloseToSystemTrayDecided = false;
 
     if (true == settingFile.contains(MAPPINGSTART_ACTION_MODE)){
         int mappingStartActionMode = settingFile.value(MAPPINGSTART_ACTION_MODE).toInt();
@@ -34880,6 +34942,7 @@ bool QKeyMapper::isCloseToSystemtray()
         }
         settingFile.setValue(CLOSETO_SYSTEMTRAY, closeto_systemtray);
         settingFile.setValue(CLOSETO_SYSTEMTRAY_DECIDED, true);
+        m_CloseToSystemTrayDecided = true;
         ui->closeToSystemTrayCheckBox->setChecked(closeto_systemtray);
 #ifdef DEBUG_LOGOUT_ON
         qDebug().noquote() << QString("\033[1;34m[isCloseToSystemtray] First time close dialog. User chose: %1\033[0m").arg(closeto_systemtray ? "Minimize to Tray" : "Exit Directly");
@@ -39055,6 +39118,14 @@ static QJsonObject automationGeneralUiPreferences(const GeneralUiPreferencesSett
         {QStringLiteral("window_switch_key"), settings.windowSwitchKey}};
 }
 
+static QJsonObject automationGeneralBehavior(const GeneralBehaviorSettings &settings)
+{
+    return {{QStringLiteral("startup_auto_monitoring"), settings.startupAutoMonitoring},
+        {QStringLiteral("close_to_system_tray"), settings.closeToSystemTray},
+        {QStringLiteral("close_to_system_tray_decided"), settings.closeToSystemTrayDecided},
+        {QStringLiteral("mapping_start_action_mode"), settings.mappingStartActionMode}};
+}
+
 static QMappingAdvancedDialog::GamepadThresholdSettings readCurrentGamepadThresholds(QMappingAdvancedDialog *dialog)
 {
     return {
@@ -39903,6 +39974,8 @@ QJsonObject QKeyMapper::collectAutomationState(bool includeAssetMetadata) const
     }
     result.insert(QStringLiteral("general_ui_preferences"),
         automationGeneralUiPreferences(getGeneralUiPreferencesSettings()));
+    result.insert(QStringLiteral("general_behavior"),
+        automationGeneralBehavior(getGeneralBehaviorSettings()));
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
         {QStringLiteral("available"), m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()},
@@ -42250,6 +42323,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingSyncGroupNote = updating && update.floatingButtonSyncGroupNote.has_value();
         const bool movingFloatingButtonSyncGroup = updating && update.floatingButtonSyncGroupMove.has_value();
         const bool changingGeneralUiPreferences = updating && update.generalUiPreferences.has_value();
+        const bool changingGeneralBehavior = updating && update.generalBehavior.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
@@ -42260,7 +42334,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
-        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || changingFloatingButtonDragCoord || changingSyncGroupNote || movingFloatingButtonSyncGroup || changingGeneralUiPreferences || addingBlankTab || copyingTab || removingTabData
+        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || changingFloatingButtonDragCoord || changingSyncGroupNote || movingFloatingButtonSyncGroup || changingGeneralUiPreferences || changingGeneralBehavior || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel
@@ -42287,7 +42361,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || (changingGeneralNotificationStyle && (!m_NotificationSetupDialog || m_NotificationSetupDialog->isVisible()))
             || (changingCustomNotificationStyle && (!m_MappingAdvancedDialog || !m_CustomNotificationSetupDialog || !m_NotificationSetupDialog || m_CustomNotificationSetupDialog->isVisible()))
             || (changingTrayIcons && (!m_TrayIconSelectDialog || m_TrayIconSelectDialog->isVisible()))
-            || (changingGeneralUiPreferences && (!ui || !ui->languageComboBox || !ui->themeComboBox || !ui->notificationComboBox || !ui->updateSiteComboBox || !ui->startupMinimizedCheckBox || !ui->windowswitchkeyLineEdit || (update.generalUiPreferences->windowSwitchKey.has_value() && ui->windowswitchkeyLineEdit->text() != s_WindowSwitchKeyString)))) {
+            || (changingGeneralUiPreferences && (!ui || !ui->languageComboBox || !ui->themeComboBox || !ui->notificationComboBox || !ui->updateSiteComboBox || !ui->startupMinimizedCheckBox || !ui->windowswitchkeyLineEdit || (update.generalUiPreferences->windowSwitchKey.has_value() && ui->windowswitchkeyLineEdit->text() != s_WindowSwitchKeyString)))
+            || (changingGeneralBehavior && (!ui || !ui->startupAutoMonitoringCheckBox || !ui->closeToSystemTrayCheckBox))) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
@@ -42297,7 +42372,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && !changingGeneralNotificationStyle && !changingCustomNotificationStyle && !changingTrayIcons && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale && !changingTabCustomImage
-            && !changingFloatingButtonDragCoord && !changingSyncGroupNote && !movingFloatingButtonSyncGroup && !changingGeneralUiPreferences
+            && !changingFloatingButtonDragCoord && !changingSyncGroupNote && !movingFloatingButtonSyncGroup && !changingGeneralUiPreferences && !changingGeneralBehavior
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
@@ -43324,6 +43399,23 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("before"), automationGeneralUiPreferences(before)},
                     {QStringLiteral("after"), automationGeneralUiPreferences(after)},
                     {QStringLiteral("persisted"), false}};
+            } else if (changingGeneralBehavior) {
+                const GeneralBehaviorSettings before = getGeneralBehaviorSettings();
+                GeneralBehaviorSettings after = before;
+                const auto &bhUpdate = *update.generalBehavior;
+                if (bhUpdate.startupAutoMonitoring) after.startupAutoMonitoring = *bhUpdate.startupAutoMonitoring;
+                if (bhUpdate.closeToSystemTray) {
+                    after.closeToSystemTray = *bhUpdate.closeToSystemTray;
+                    after.closeToSystemTrayDecided = true;
+                }
+                if (bhUpdate.mappingStartActionMode) after.mappingStartActionMode = *bhUpdate.mappingStartActionMode;
+                modified = (before != after);
+                target.insert(QStringLiteral("scope"), QStringLiteral("general"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_general_behavior")},
+                    {QStringLiteral("scope"), QStringLiteral("general")},
+                    {QStringLiteral("before"), automationGeneralBehavior(before)},
+                    {QStringLiteral("after"), automationGeneralBehavior(after)},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingTabCustomImage) {
                 const auto &before = preparedTabImage.expectedBefore;
                 const auto &after = preparedTabImage.after;
@@ -43758,6 +43850,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingSyncGroupNote ? QStringLiteral("configuration.set_floating_button_sync_group_note")
             : movingFloatingButtonSyncGroup ? QStringLiteral("mapping.move_floating_button_sync_group")
             : changingGeneralUiPreferences ? QStringLiteral("general.set_ui_preferences")
+            : changingGeneralBehavior ? QStringLiteral("general.set_behavior")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -43969,6 +44062,18 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 }
                 if (modified) {
                     applyGeneralUiPreferencesSettings(after);
+                }
+            } else if (changingGeneralBehavior) {
+                GeneralBehaviorSettings after = getGeneralBehaviorSettings();
+                const auto &bhUpdate = *update.generalBehavior;
+                if (bhUpdate.startupAutoMonitoring) after.startupAutoMonitoring = *bhUpdate.startupAutoMonitoring;
+                if (bhUpdate.closeToSystemTray) {
+                    after.closeToSystemTray = *bhUpdate.closeToSystemTray;
+                    after.closeToSystemTrayDecided = true;
+                }
+                if (bhUpdate.mappingStartActionMode) after.mappingStartActionMode = *bhUpdate.mappingStartActionMode;
+                if (modified) {
+                    applyGeneralBehaviorSettings(after, bhUpdate.closeToSystemTray.has_value());
                 }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);
@@ -45215,7 +45320,12 @@ void QKeyMapper::connectSettingDirtySignals(void)
     connectCheckable(ui->startupMinimizedCheckBox);
     connectCheckable(ui->startupAutoMonitoringCheckBox);
     connectCheckable(ui->closeToSystemTrayCheckBox);
-    QObject::connect(ui->closeToSystemTrayCheckBox, &QCheckBox::clicked, this, []() {
+    QObject::connect(ui->closeToSystemTrayCheckBox, &QCheckBox::clicked, this, [this]() {
+        m_CloseToSystemTrayDecided = true;
+        m_PendingCloseToSystemTrayDecided = true;
+        if (QkmAutomation::denyDemoEffect()) {
+            return;
+        }
         QSettings settingFile(CONFIG_FILENAME, QSettings::IniFormat);
         QKeyMapperQtCompat::setIniCodecUtf8(settingFile);
         settingFile.setValue(CLOSETO_SYSTEMTRAY_DECIDED, true);

@@ -613,6 +613,27 @@ struct GeneralUiPreferencesSettings
     }
 };
 
+struct GeneralBehaviorSettings
+{
+    bool startupAutoMonitoring = false;
+    bool closeToSystemTray = false;
+    bool closeToSystemTrayDecided = false;
+    int mappingStartActionMode = 0;
+
+    bool operator==(const GeneralBehaviorSettings &other) const
+    {
+        return startupAutoMonitoring == other.startupAutoMonitoring
+            && closeToSystemTray == other.closeToSystemTray
+            && closeToSystemTrayDecided == other.closeToSystemTrayDecided
+            && mappingStartActionMode == other.mappingStartActionMode;
+    }
+
+    bool operator!=(const GeneralBehaviorSettings &other) const
+    {
+        return !(*this == other);
+    }
+};
+
 struct ActiveKeyMappingRowSourceInfo
 {
     int SourceTabIndex = -1;
@@ -2298,6 +2319,8 @@ public:
     bool applyProcessListVisibleSetting(bool visible);
     bool applyWindowSwitchKeySetting(const QString &canonicalKey);
     bool applyGeneralUiPreferencesSettings(const GeneralUiPreferencesSettings &settings);
+    GeneralBehaviorSettings getGeneralBehaviorSettings() const;
+    bool applyGeneralBehaviorSettings(const GeneralBehaviorSettings &settings, bool markCloseToSystemTrayDecided = false);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;
@@ -2694,6 +2717,8 @@ private:
     QAction *m_MappingStartOnlyAction = Q_NULLPTR;
     QAction *m_MappingStartSaveAction = Q_NULLPTR;
     MappingStartActionMode m_MappingStartActionMode = MAPPINGSTART_ACTION_ONLY;
+    bool m_CloseToSystemTrayDecided = false;
+    bool m_PendingCloseToSystemTrayDecided = false;
     bool m_MainWindowCtrlPressed = false;
     bool m_MainWindowCtrlOverrideActive = false;
     bool m_SaveSettingDirty = false;
