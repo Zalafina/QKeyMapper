@@ -1163,9 +1163,9 @@ __declspec(noinline)
 #endif
 static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabilities)
 {
-    QCOMPARE(capabilities.size(), 158);
+    QCOMPARE(capabilities.size(), 160);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 150);
+    QCOMPARE(demoCapabilities.size(), 152);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1272,8 +1272,14 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QCOMPARE(capabilities.at(150).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_description.apply"));
     QCOMPARE(capabilities.at(150).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     QVERIFY(!capabilities.at(150).toObject().value(QStringLiteral("read_only")).toBool());
-    QCOMPARE(capabilities.at(155).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(156).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(151).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_gyro2mouse_params.preview"));
+    QCOMPARE(capabilities.at(151).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capabilities.at(151).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(152).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_gyro2mouse_params.apply"));
+    QCOMPARE(capabilities.at(152).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!capabilities.at(152).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(157).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(158).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     for (const char *demoId : {
             "general.set_floating_button_drag_coordinate.apply",
             "configuration.set_floating_button_sync_group_note.apply",
@@ -1282,6 +1288,7 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
             "general.set_behavior.apply",
             "configuration.set_mapping_hotkeys.apply",
             "configuration.set_description.apply",
+            "configuration.set_gyro2mouse_params.apply",
         }) {
         QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [demoId](const QJsonValue &item) {
             return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String(demoId);
@@ -2378,6 +2385,57 @@ static void verifyProfileHotkeysAndDescriptionValidation(const QString &previewM
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+static void verifyGyro2MouseParamsValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    const QString tabRef = input.value(QStringLiteral("source_tab_ref")).toString();
+    QVERIFY(previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("configuration.set_gyro2mouse_params")},
+        {QStringLiteral("source_tab_ref"), tabRef},
+        {QStringLiteral("gyro2mouse_params"), QJsonObject{
+            {QStringLiteral("x_speed"), 12.35},
+            {QStringLiteral("y_speed"), 99.99},
+            {QStringLiteral("min_x_sensitivity"), 0.0},
+            {QStringLiteral("max_x_sensitivity"), 200.0},
+            {QStringLiteral("min_y_sensitivity"), 7.5},
+            {QStringLiteral("max_y_sensitivity"), 7.5},
+            {QStringLiteral("min_threshold"), 1.5},
+            {QStringLiteral("max_threshold"), 500.0},
+        }}}));
+    QVERIFY(previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("configuration.set_gyro2mouse_params")},
+        {QStringLiteral("source_tab_ref"), tabRef},
+        {QStringLiteral("gyro2mouse_params"), QJsonObject{
+            {QStringLiteral("y_speed"), -0.0},
+        }}}));
+    for (const QJsonObject &badParams : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("x_speed"), -0.01}},
+        QJsonObject{{QStringLiteral("y_speed"), 100.0}},
+        QJsonObject{{QStringLiteral("x_speed"), 1.234}},
+        QJsonObject{{QStringLiteral("min_x_sensitivity"), -0.1}},
+        QJsonObject{{QStringLiteral("max_x_sensitivity"), 200.1}},
+        QJsonObject{{QStringLiteral("min_y_sensitivity"), 7.25}},
+        QJsonObject{{QStringLiteral("max_y_sensitivity"), 15.12}},
+        QJsonObject{{QStringLiteral("min_threshold"), -0.1}},
+        QJsonObject{{QStringLiteral("max_threshold"), 500.1}},
+        QJsonObject{{QStringLiteral("min_threshold"), 1.55}},
+        QJsonObject{{QStringLiteral("min_x_sensitivity"), 20.1}, {QStringLiteral("max_x_sensitivity"), 20.0}},
+        QJsonObject{{QStringLiteral("min_y_sensitivity"), 30.0}, {QStringLiteral("max_y_sensitivity"), 15.0}},
+        QJsonObject{{QStringLiteral("min_threshold"), 50.1}, {QStringLiteral("max_threshold"), 50.0}},
+        QJsonObject{{QStringLiteral("x_speed"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("x_speed"), QStringLiteral("3.0")}},
+        QJsonObject{{QStringLiteral("x_speed"), 3.0}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!previewRequestValid(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("configuration.set_gyro2mouse_params")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("gyro2mouse_params"), badParams}}));
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 static void verifyTabManagementArgumentsValidation(const QString &previewMethod, const QString &revision, const QString &sourceRef)
 {
     QJsonObject changed;
@@ -3246,6 +3304,7 @@ void McpControlTest::mappingChangeArguments()
     verifyGeneralUiPreferencesValidation(previewMethod, input);
     verifyGeneralBehaviorValidation(previewMethod, input);
     verifyProfileHotkeysAndDescriptionValidation(previewMethod, input);
+    verifyGyro2MouseParamsValidation(previewMethod, input);
     verifyWindowAndTrayArgumentsValidation(previewMethod, input);
     verifyWindowMatchAndStartupValidation(previewMethod, input);
     if (QTest::currentTestFailed()) return;

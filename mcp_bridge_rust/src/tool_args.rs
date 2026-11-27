@@ -993,6 +993,35 @@ struct ProfileDescription {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct Gyro2MouseParamsFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    x_speed: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    y_speed: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    min_x_sensitivity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_x_sensitivity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    min_y_sensitivity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_y_sensitivity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    min_threshold: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    max_threshold: Option<f64>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct Gyro2MouseParamsSettings {
+    action: String,
+    source_tab_ref: String,
+    gyro2mouse_params: Gyro2MouseParamsFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -2115,6 +2144,50 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                         tab_ref(&v.source_tab_ref)
                             && v.description.encode_utf16().count() <= 1024
                             && single_line(&v.description)
+                    });
+                }
+                Some("configuration.set_gyro2mouse_params") => {
+                    if arguments
+                        .get("gyro2mouse_params")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &Gyro2MouseParamsSettings| {
+                        let valid_scaled = |raw: f64, max_val: f64, scale: f64| {
+                            let val = if raw == 0.0 { 0.0 } else { raw };
+                            val.is_finite()
+                                && (0.0..=max_val).contains(&val)
+                                && ((val * scale) - (val * scale).round()).abs() <= 1e-6
+                        };
+                        let pair_ok = |min_opt: Option<f64>, max_opt: Option<f64>| {
+                            min_opt
+                                .zip(max_opt)
+                                .is_none_or(|(mn, mx)| (mn * 10.0).round() as i64 <= (mx * 10.0).round() as i64)
+                        };
+                        let f = &v.gyro2mouse_params;
+                        let has_any = f.x_speed.is_some()
+                            || f.y_speed.is_some()
+                            || f.min_x_sensitivity.is_some()
+                            || f.max_x_sensitivity.is_some()
+                            || f.min_y_sensitivity.is_some()
+                            || f.max_y_sensitivity.is_some()
+                            || f.min_threshold.is_some()
+                            || f.max_threshold.is_some();
+                        tab_ref(&v.source_tab_ref)
+                            && has_any
+                            && f.x_speed.is_none_or(|n| valid_scaled(n, 99.99, 100.0))
+                            && f.y_speed.is_none_or(|n| valid_scaled(n, 99.99, 100.0))
+                            && f.min_x_sensitivity.is_none_or(|n| valid_scaled(n, 200.0, 10.0))
+                            && f.max_x_sensitivity.is_none_or(|n| valid_scaled(n, 200.0, 10.0))
+                            && f.min_y_sensitivity.is_none_or(|n| valid_scaled(n, 200.0, 10.0))
+                            && f.max_y_sensitivity.is_none_or(|n| valid_scaled(n, 200.0, 10.0))
+                            && f.min_threshold.is_none_or(|n| valid_scaled(n, 500.0, 10.0))
+                            && f.max_threshold.is_none_or(|n| valid_scaled(n, 500.0, 10.0))
+                            && pair_ok(f.min_x_sensitivity, f.max_x_sensitivity)
+                            && pair_ok(f.min_y_sensitivity, f.max_y_sensitivity)
+                            && pair_ok(f.min_threshold, f.max_threshold)
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -3828,6 +3901,62 @@ mod tests {
                 "action": "configuration.set_description",
                 "source_tab_ref": tab,
                 "description": bad_desc
+            }))
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn configuration_gyro2mouse_params_checks_bounds_precision_and_pairs() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let wire = json!({
+            "action": "configuration.set_gyro2mouse_params",
+            "source_tab_ref": tab,
+            "gyro2mouse_params": {
+                "x_speed": 12.35,
+                "y_speed": 99.99,
+                "min_x_sensitivity": 0.0,
+                "max_x_sensitivity": 200.0,
+                "min_y_sensitivity": 7.5,
+                "max_y_sensitivity": 7.5,
+                "min_threshold": 1.5,
+                "max_threshold": 500.0
+            }
+        });
+        assert_eq!(preview(&wire).unwrap(), *wire.as_object().unwrap());
+
+        let neg_zero = json!({
+            "action": "configuration.set_gyro2mouse_params",
+            "source_tab_ref": tab,
+            "gyro2mouse_params": {"y_speed": -0.0}
+        });
+        assert!(preview(&neg_zero).is_ok());
+
+        for bad in [
+            json!({}),
+            json!({"x_speed": -0.01}),
+            json!({"y_speed": 100.0}),
+            json!({"x_speed": 1.234}),
+            json!({"min_x_sensitivity": -0.1}),
+            json!({"max_x_sensitivity": 200.1}),
+            json!({"min_y_sensitivity": 7.25}),
+            json!({"max_y_sensitivity": 15.12}),
+            json!({"min_threshold": -0.1}),
+            json!({"max_threshold": 500.1}),
+            json!({"min_threshold": 1.55}),
+            json!({"min_x_sensitivity": 20.1, "max_x_sensitivity": 20.0}),
+            json!({"min_y_sensitivity": 30.0, "max_y_sensitivity": 15.0}),
+            json!({"min_threshold": 50.1, "max_threshold": 50.0}),
+            json!({"x_speed": null}),
+            json!({"x_speed": "3.0"}),
+            json!({"x_speed": 3.0, "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "configuration.set_gyro2mouse_params",
+                "source_tab_ref": tab,
+                "gyro2mouse_params": bad
             }))
             .is_err());
         }

@@ -651,6 +651,18 @@ struct MappingHotkeysSettings
     }
 };
 
+struct Gyro2MouseParamsSettings
+{
+    double xSpeed = QKeyMapperConstants::GYRO2MOUSE_SPEED_DEFAULT;
+    double ySpeed = QKeyMapperConstants::GYRO2MOUSE_SPEED_DEFAULT;
+    double minXSensitivity = QKeyMapperConstants::GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT;
+    double maxXSensitivity = QKeyMapperConstants::GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT;
+    double minYSensitivity = QKeyMapperConstants::GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT;
+    double maxYSensitivity = QKeyMapperConstants::GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT;
+    double minThreshold = QKeyMapperConstants::GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT;
+    double maxThreshold = QKeyMapperConstants::GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT;
+};
+
 struct ActiveKeyMappingRowSourceInfo
 {
     int SourceTabIndex = -1;
@@ -2345,6 +2357,9 @@ public:
     bool isProfileDescriptionEditable() const;
     QString getProfileDescriptionSetting() const;
     bool applyProfileDescriptionSetting(const QString &description);
+    Gyro2MouseParamsSettings getGyro2MouseParamsSettings(void) const;
+    bool applyGyro2MouseParamsSettings(const Gyro2MouseParamsSettings &settings);
+    void resetGyro2MouseParamsToDefaults(void);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;

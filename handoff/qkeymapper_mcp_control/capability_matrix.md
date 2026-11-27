@@ -675,15 +675,15 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-main/vJoyInvertXCheckBox` | QCheckBox；InvertX | 手动／间接绑定待逐项定位 | 运行约束待核 |
 | `U-main/vJoyYSensSpinBox` | QSpinBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
 | `U-main/vJoyInvertYCheckBox` | QCheckBox；InvertY | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-main/Gyro2MouseXSpeedSpinBox` | QDoubleSpinBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-main/Gyro2MouseMinXSensSpinBox` | QDoubleSpinBox | `connect valueChanged @34724` | decimals=1 |
-| `U-main/Gyro2MouseMaxXSensSpinBox` | QDoubleSpinBox | `connect valueChanged @34727` | decimals=1 |
-| `U-main/Gyro2MouseYSpeedSpinBox` | QDoubleSpinBox | 手动／间接绑定待逐项定位 | 运行约束待核 |
-| `U-main/Gyro2MouseMinYSensSpinBox` | QDoubleSpinBox | `connect valueChanged @34732` | decimals=1 |
-| `U-main/Gyro2MouseMaxYSensSpinBox` | QDoubleSpinBox | `connect valueChanged @34735` | decimals=1 |
-| `U-main/Gyro2MouseAdvancedSettingButton` | QPushButton；Advanced | `on_Gyro2MouseAdvancedSettingButton_clicked @49586` | 运行约束待核 |
-| `U-main/Gyro2MouseMinThresholdSpinBox` | QDoubleSpinBox | `connect valueChanged @34740` | decimals=1 |
-| `U-main/Gyro2MouseMaxThresholdSpinBox` | QDoubleSpinBox | `connect valueChanged @34743` | decimals=1 |
+| `U-main/Gyro2MouseXSpeedSpinBox` | QDoubleSpinBox | 手动／间接绑定待逐项定位 | `SET-GYRO-PARAMS-272 [Gemini]` 已实现共用 `getGyro2MouseParamsSettings()`/`applyGyro2MouseParamsSettings()`（0..99.99、2 位小数），私有 `run4` 与双 Qt INI 读回已选验（待 Codex 复核） |
+| `U-main/Gyro2MouseMinXSensSpinBox` | QDoubleSpinBox | `connect valueChanged @34724` | `decimals=1`；`SET-GYRO-PARAMS-272 [Gemini]` 已实现 0..200.0、1 位小数、`Min<=Max` 合并校验与原子解锁写回（顺修冷启/切组静默 clamp），私有 `run4` 与双 Qt INI 已选验（待 Codex 复核） |
+| `U-main/Gyro2MouseMaxXSensSpinBox` | QDoubleSpinBox | `connect valueChanged @34727` | `decimals=1`；`SET-GYRO-PARAMS-272 [Gemini]` 已实现 0..200.0、1 位小数与 `Min<=Max` 原子写回，私有 `run4` 与双 Qt INI 已选验（待 Codex 复核） |
+| `U-main/Gyro2MouseYSpeedSpinBox` | QDoubleSpinBox | 手动／间接绑定待逐项定位 | `SET-GYRO-PARAMS-272 [Gemini]` 已实现 0..99.99、2 位小数（含 `-0.0 -> 0.0`），私有 `run4` 与双 Qt INI 已选验（待 Codex 复核） |
+| `U-main/Gyro2MouseMinYSensSpinBox` | QDoubleSpinBox | `connect valueChanged @34732` | `decimals=1`；`SET-GYRO-PARAMS-272 [Gemini]` 已实现 0..200.0、1 位小数、`Min<=Max` 合并校验与原子写回，私有 `run4` 与双 Qt INI 已选验（待 Codex 复核） |
+| `U-main/Gyro2MouseMaxYSensSpinBox` | QDoubleSpinBox | `connect valueChanged @34735` | `decimals=1`；`SET-GYRO-PARAMS-272 [Gemini]` 已实现 0..200.0、1 位小数与 `Min<=Max` 原子写回，私有 `run4` 与双 Qt INI 已选验（待 Codex 复核） |
+| `U-main/Gyro2MouseAdvancedSettingButton` | QPushButton；Advanced | `on_Gyro2MouseAdvancedSettingButton_clicked @49586` | 见 `GYRO-257`（已接入 `configuration.set_gyro2mouse_options`） |
+| `U-main/Gyro2MouseMinThresholdSpinBox` | QDoubleSpinBox | `connect valueChanged @34740` | `decimals=1`；`SET-GYRO-PARAMS-272 [Gemini]` 已实现 0..500.0、1 位小数、`Min<=Max` 合并校验与原子写回，私有 `run4` 与双 Qt INI 已选验（待 Codex 复核） |
+| `U-main/Gyro2MouseMaxThresholdSpinBox` | QDoubleSpinBox | `connect valueChanged @34743` | `decimals=1`；`SET-GYRO-PARAMS-272 [Gemini]` 已实现 0..500.0、1 位小数与 `Min<=Max` 原子写回，私有 `run4` 与双 Qt INI 已选验（待 Codex 复核） |
 | `U-main/multiInputEnableCheckBox` | QCheckBox；Enable Multi-Device Support | `on_multiInputEnableCheckBox_stateChanged @47283` | 运行约束待核 |
 | `U-main/multiInputDeviceListButton` | QPushButton；DeviceList | `on_multiInputDeviceListButton_clicked @47278` | 运行约束待核 |
 | `U-main/installInterceptionButton` | QPushButton；Install Driver | `on_installInterceptionButton_clicked @47199` | 运行约束待核 |

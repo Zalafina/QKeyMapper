@@ -19519,6 +19519,136 @@ bool QKeyMapper::applyProfileDescriptionSetting(const QString &description)
     return true;
 }
 
+static double canonicalizeGyroSpeed(double value)
+{
+    const double rounded = double(qRound(value * 100.0)) / 100.0;
+    return rounded == 0.0 ? 0.0 : rounded;
+}
+
+static double canonicalizeGyroTenth(double value)
+{
+    const double rounded = double(qRound(value * 10.0)) / 10.0;
+    return rounded == 0.0 ? 0.0 : rounded;
+}
+
+static bool gyro2MouseParamsEqual(const Gyro2MouseParamsSettings &a, const Gyro2MouseParamsSettings &b)
+{
+    return qRound(a.xSpeed * 100.0) == qRound(b.xSpeed * 100.0)
+        && qRound(a.ySpeed * 100.0) == qRound(b.ySpeed * 100.0)
+        && qRound(a.minXSensitivity * 10.0) == qRound(b.minXSensitivity * 10.0)
+        && qRound(a.maxXSensitivity * 10.0) == qRound(b.maxXSensitivity * 10.0)
+        && qRound(a.minYSensitivity * 10.0) == qRound(b.minYSensitivity * 10.0)
+        && qRound(a.maxYSensitivity * 10.0) == qRound(b.maxYSensitivity * 10.0)
+        && qRound(a.minThreshold * 10.0) == qRound(b.minThreshold * 10.0)
+        && qRound(a.maxThreshold * 10.0) == qRound(b.maxThreshold * 10.0);
+}
+
+Gyro2MouseParamsSettings QKeyMapper::getGyro2MouseParamsSettings(void) const
+{
+    Gyro2MouseParamsSettings settings;
+    if (!ui || !ui->Gyro2MouseXSpeedSpinBox || !ui->Gyro2MouseYSpeedSpinBox
+        || !ui->Gyro2MouseMinXSensSpinBox || !ui->Gyro2MouseMaxXSensSpinBox
+        || !ui->Gyro2MouseMinYSensSpinBox || !ui->Gyro2MouseMaxYSensSpinBox
+        || !ui->Gyro2MouseMinThresholdSpinBox || !ui->Gyro2MouseMaxThresholdSpinBox) {
+        return settings;
+    }
+    settings.xSpeed = canonicalizeGyroSpeed(ui->Gyro2MouseXSpeedSpinBox->value());
+    settings.ySpeed = canonicalizeGyroSpeed(ui->Gyro2MouseYSpeedSpinBox->value());
+    settings.minXSensitivity = canonicalizeGyroTenth(ui->Gyro2MouseMinXSensSpinBox->value());
+    settings.maxXSensitivity = canonicalizeGyroTenth(ui->Gyro2MouseMaxXSensSpinBox->value());
+    settings.minYSensitivity = canonicalizeGyroTenth(ui->Gyro2MouseMinYSensSpinBox->value());
+    settings.maxYSensitivity = canonicalizeGyroTenth(ui->Gyro2MouseMaxYSensSpinBox->value());
+    settings.minThreshold = canonicalizeGyroTenth(ui->Gyro2MouseMinThresholdSpinBox->value());
+    settings.maxThreshold = canonicalizeGyroTenth(ui->Gyro2MouseMaxThresholdSpinBox->value());
+    return settings;
+}
+
+bool QKeyMapper::applyGyro2MouseParamsSettings(const Gyro2MouseParamsSettings &settings)
+{
+    if (!ui || !ui->Gyro2MouseXSpeedSpinBox || !ui->Gyro2MouseYSpeedSpinBox
+        || !ui->Gyro2MouseMinXSensSpinBox || !ui->Gyro2MouseMaxXSensSpinBox
+        || !ui->Gyro2MouseMinYSensSpinBox || !ui->Gyro2MouseMaxYSensSpinBox
+        || !ui->Gyro2MouseMinThresholdSpinBox || !ui->Gyro2MouseMaxThresholdSpinBox) {
+        return false;
+    }
+
+    auto clampSpeed = [](double val) -> double {
+        const double finiteVal = qIsFinite(val) ? val : GYRO2MOUSE_SPEED_DEFAULT;
+        return canonicalizeGyroSpeed(qBound(GYRO2MOUSE_SPEED_MIN, finiteVal, GYRO2MOUSE_SPEED_MAX));
+    };
+    auto clampTenth = [](double val, double minBound, double maxBound, double fallback) -> double {
+        const double finiteVal = qIsFinite(val) ? val : fallback;
+        return canonicalizeGyroTenth(qBound(minBound, finiteVal, maxBound));
+    };
+
+    Gyro2MouseParamsSettings normalized;
+    normalized.xSpeed = clampSpeed(settings.xSpeed);
+    normalized.ySpeed = clampSpeed(settings.ySpeed);
+    normalized.maxXSensitivity = clampTenth(settings.maxXSensitivity, GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX, GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+    normalized.minXSensitivity = clampTenth(settings.minXSensitivity, GYRO2MOUSE_GYRO_SENS_MIN, normalized.maxXSensitivity, GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
+    normalized.maxYSensitivity = clampTenth(settings.maxYSensitivity, GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX, GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
+    normalized.minYSensitivity = clampTenth(settings.minYSensitivity, GYRO2MOUSE_GYRO_SENS_MIN, normalized.maxYSensitivity, GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
+    normalized.maxThreshold = clampTenth(settings.maxThreshold, GYRO2MOUSE_GYRO_THRESHOLD_MIN, GYRO2MOUSE_GYRO_THRESHOLD_MAX, GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT);
+    normalized.minThreshold = clampTenth(settings.minThreshold, GYRO2MOUSE_GYRO_THRESHOLD_MIN, normalized.maxThreshold, GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT);
+
+    const bool changed = !gyro2MouseParamsEqual(getGyro2MouseParamsSettings(), normalized);
+
+    QDoubleSpinBox *const spins[8] = {
+        ui->Gyro2MouseXSpeedSpinBox,
+        ui->Gyro2MouseYSpeedSpinBox,
+        ui->Gyro2MouseMinXSensSpinBox,
+        ui->Gyro2MouseMaxXSensSpinBox,
+        ui->Gyro2MouseMinYSensSpinBox,
+        ui->Gyro2MouseMaxYSensSpinBox,
+        ui->Gyro2MouseMinThresholdSpinBox,
+        ui->Gyro2MouseMaxThresholdSpinBox,
+    };
+    bool prevBlocked[8]{};
+    for (int i = 0; i < 8; ++i) {
+        prevBlocked[i] = spins[i]->blockSignals(true);
+    }
+
+    // Unlock min/max bounds before setting values so sequential updates cannot silently clamp paired limits.
+    ui->Gyro2MouseXSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
+    ui->Gyro2MouseYSpeedSpinBox->setRange(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
+    ui->Gyro2MouseMinXSensSpinBox->setRange(GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX);
+    ui->Gyro2MouseMaxXSensSpinBox->setRange(GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX);
+    ui->Gyro2MouseMinYSensSpinBox->setRange(GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX);
+    ui->Gyro2MouseMaxYSensSpinBox->setRange(GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX);
+    ui->Gyro2MouseMinThresholdSpinBox->setRange(GYRO2MOUSE_GYRO_THRESHOLD_MIN, GYRO2MOUSE_GYRO_THRESHOLD_MAX);
+    ui->Gyro2MouseMaxThresholdSpinBox->setRange(GYRO2MOUSE_GYRO_THRESHOLD_MIN, GYRO2MOUSE_GYRO_THRESHOLD_MAX);
+
+    ui->Gyro2MouseXSpeedSpinBox->setValue(normalized.xSpeed);
+    ui->Gyro2MouseYSpeedSpinBox->setValue(normalized.ySpeed);
+    ui->Gyro2MouseMinXSensSpinBox->setValue(normalized.minXSensitivity);
+    ui->Gyro2MouseMaxXSensSpinBox->setValue(normalized.maxXSensitivity);
+    ui->Gyro2MouseMinYSensSpinBox->setValue(normalized.minYSensitivity);
+    ui->Gyro2MouseMaxYSensSpinBox->setValue(normalized.maxYSensitivity);
+    ui->Gyro2MouseMinThresholdSpinBox->setValue(normalized.minThreshold);
+    ui->Gyro2MouseMaxThresholdSpinBox->setValue(normalized.maxThreshold);
+
+    ui->Gyro2MouseMaxXSensSpinBox->setMinimum(ui->Gyro2MouseMinXSensSpinBox->value());
+    ui->Gyro2MouseMinXSensSpinBox->setMaximum(ui->Gyro2MouseMaxXSensSpinBox->value());
+    ui->Gyro2MouseMaxYSensSpinBox->setMinimum(ui->Gyro2MouseMinYSensSpinBox->value());
+    ui->Gyro2MouseMinYSensSpinBox->setMaximum(ui->Gyro2MouseMaxYSensSpinBox->value());
+    ui->Gyro2MouseMaxThresholdSpinBox->setMinimum(ui->Gyro2MouseMinThresholdSpinBox->value());
+    ui->Gyro2MouseMinThresholdSpinBox->setMaximum(ui->Gyro2MouseMaxThresholdSpinBox->value());
+
+    for (int i = 0; i < 8; ++i) {
+        spins[i]->blockSignals(prevBlocked[i]);
+    }
+
+    if (changed) {
+        markSaveSettingDirty();
+    }
+    return changed;
+}
+
+void QKeyMapper::resetGyro2MouseParamsToDefaults(void)
+{
+    applyGyro2MouseParamsSettings(Gyro2MouseParamsSettings{});
+}
+
 bool QKeyMapper::setMappingTabCommonInheritance(int tabIndex, bool includeCommon)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) return false;
@@ -29092,93 +29222,31 @@ QString QKeyMapper::loadKeyMapSetting(const QString &settingtext, bool load_all,
         m_MappingAdvancedDialog->setGamepadTouchpadInvertY(false);
     }
 
-    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_X_SPEED)){
-        double gyro2mouseXSpeed = settingFile.value(settingSelectStr+GYRO2MOUSE_X_SPEED).toDouble();
-        ui->Gyro2MouseXSpeedSpinBox->setValue(gyro2mouseXSpeed);
+    auto readGyroDouble = [&](const char *key, double defaultVal) -> double {
+        const QString fullKey = settingSelectStr + QLatin1String(key);
+        if (settingFile.contains(fullKey)) {
+            bool ok = false;
+            const double val = settingFile.value(fullKey).toDouble(&ok);
+            if (ok && qIsFinite(val)) {
 #ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse X Speed =" << gyro2mouseXSpeed;
+                qDebug() << "[loadKeyMapSetting]" << key << "=" << val;
 #endif
-    }
-    else {
-        ui->Gyro2MouseXSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_Y_SPEED)){
-        double gyro2mouseYSpeed = settingFile.value(settingSelectStr+GYRO2MOUSE_Y_SPEED).toDouble();
-        ui->Gyro2MouseYSpeedSpinBox->setValue(gyro2mouseYSpeed);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Y Speed =" << gyro2mouseYSpeed;
-#endif
-    }
-    else {
-        ui->Gyro2MouseYSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY)){
-        double gyro2mouseMinXSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY).toDouble();
-        ui->Gyro2MouseMinXSensSpinBox->setValue(gyro2mouseMinXSensitivity);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Min Gyro X Sensitivity =" << gyro2mouseMinXSensitivity;
-#endif
-    }
-    else {
-        ui->Gyro2MouseMinXSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MIN_GYRO_Y_SENSITIVITY)){
-        double gyro2mouseMinYSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_MIN_GYRO_Y_SENSITIVITY).toDouble();
-        ui->Gyro2MouseMinYSensSpinBox->setValue(gyro2mouseMinYSensitivity);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Min Gyro Y Sensitivity =" << gyro2mouseMinYSensitivity;
-#endif
-    }
-    else {
-        ui->Gyro2MouseMinYSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MAX_GYRO_X_SENSITIVITY)){
-        double gyro2mouseMaxXSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_MAX_GYRO_X_SENSITIVITY).toDouble();
-        ui->Gyro2MouseMaxXSensSpinBox->setValue(gyro2mouseMaxXSensitivity);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Max Gyro X Sensitivity =" << gyro2mouseMaxXSensitivity;
-#endif
-    }
-    else {
-        ui->Gyro2MouseMaxXSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MAX_GYRO_Y_SENSITIVITY)){
-        double gyro2mouseMaxYSensitivity = settingFile.value(settingSelectStr+GYRO2MOUSE_MAX_GYRO_Y_SENSITIVITY).toDouble();
-        ui->Gyro2MouseMaxYSensSpinBox->setValue(gyro2mouseMaxYSensitivity);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Max Gyro Y Sensitivity =" << gyro2mouseMaxYSensitivity;
-#endif
-    }
-    else {
-        ui->Gyro2MouseMaxYSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MIN_GYRO_THRESHOLD)){
-        double gyro2mouseMinThreshold = settingFile.value(settingSelectStr+GYRO2MOUSE_MIN_GYRO_THRESHOLD).toDouble();
-        ui->Gyro2MouseMinThresholdSpinBox->setValue(gyro2mouseMinThreshold);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Min Gyro Threshold =" << gyro2mouseMinThreshold;
-#endif
-    }
-    else {
-        ui->Gyro2MouseMinThresholdSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT);
-    }
-
-    if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MAX_GYRO_THRESHOLD)){
-        double gyro2mouseMaxThreshold = settingFile.value(settingSelectStr+GYRO2MOUSE_MAX_GYRO_THRESHOLD).toDouble();
-        ui->Gyro2MouseMaxThresholdSpinBox->setValue(gyro2mouseMaxThreshold);
-#ifdef DEBUG_LOGOUT_ON
-        qDebug() << "[loadKeyMapSetting]" << "Gyro2Mouse Max Gyro Threshold =" << gyro2mouseMaxThreshold;
-#endif
-    }
-    else {
-        ui->Gyro2MouseMaxThresholdSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT);
-    }
+                return val;
+            }
+        }
+        return defaultVal;
+    };
+    const Gyro2MouseParamsSettings gyroParams{
+        readGyroDouble(GYRO2MOUSE_X_SPEED, GYRO2MOUSE_SPEED_DEFAULT),
+        readGyroDouble(GYRO2MOUSE_Y_SPEED, GYRO2MOUSE_SPEED_DEFAULT),
+        readGyroDouble(GYRO2MOUSE_MIN_GYRO_X_SENSITIVITY, GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT),
+        readGyroDouble(GYRO2MOUSE_MAX_GYRO_X_SENSITIVITY, GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT),
+        readGyroDouble(GYRO2MOUSE_MIN_GYRO_Y_SENSITIVITY, GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT),
+        readGyroDouble(GYRO2MOUSE_MAX_GYRO_Y_SENSITIVITY, GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT),
+        readGyroDouble(GYRO2MOUSE_MIN_GYRO_THRESHOLD, GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT),
+        readGyroDouble(GYRO2MOUSE_MAX_GYRO_THRESHOLD, GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT),
+    };
+    applyGyro2MouseParamsSettings(gyroParams);
 
     if (true == settingFile.contains(settingSelectStr+GYRO2MOUSE_MOUSE_X_SOURCE)){
         int gyro2mouseXSourceIndex = settingFile.value(settingSelectStr+GYRO2MOUSE_MOUSE_X_SOURCE).toInt();
@@ -29875,14 +29943,7 @@ void QKeyMapper::loadEmptyMapSetting()
     m_MappingAdvancedDialog->setGamepadTouchpadYSpeed(GAMEPAD_TOUCHPAD_SPEED_DEFAULT);
     m_MappingAdvancedDialog->setGamepadTouchpadInvertX(false);
     m_MappingAdvancedDialog->setGamepadTouchpadInvertY(false);
-    ui->Gyro2MouseXSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
-    ui->Gyro2MouseYSpeedSpinBox->setValue(GYRO2MOUSE_SPEED_DEFAULT);
-    ui->Gyro2MouseMinXSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
-    ui->Gyro2MouseMinYSensSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_SENS_DEFAULT);
-    ui->Gyro2MouseMaxXSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
-    ui->Gyro2MouseMaxYSensSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_SENS_DEFAULT);
-    ui->Gyro2MouseMinThresholdSpinBox->setValue(GYRO2MOUSE_MIN_GYRO_THRESHOLD_DEFAULT);
-    ui->Gyro2MouseMaxThresholdSpinBox->setValue(GYRO2MOUSE_MAX_GYRO_THRESHOLD_DEFAULT);
+    resetGyro2MouseParamsToDefaults();
     m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseXSource(GYRO2MOUSE_MOUSE_X_INPUT_SOURCE_DEFAULT);
     m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseYSource(GYRO2MOUSE_MOUSE_Y_INPUT_SOURCE_DEFAULT);
     m_Gyro2MouseOptionDialog->setGyro2Mouse_MouseXRevert(false);
@@ -39183,6 +39244,18 @@ static QJsonObject automationGyro2MouseOptions(int mouseXSource, int mouseYSourc
         {QStringLiteral("mouse_y_revert"), mouseYRevert}};
 }
 
+static QJsonObject automationGyro2MouseParams(const Gyro2MouseParamsSettings &settings)
+{
+    return {{QStringLiteral("x_speed"), canonicalizeGyroSpeed(settings.xSpeed)},
+        {QStringLiteral("y_speed"), canonicalizeGyroSpeed(settings.ySpeed)},
+        {QStringLiteral("min_x_sensitivity"), canonicalizeGyroTenth(settings.minXSensitivity)},
+        {QStringLiteral("max_x_sensitivity"), canonicalizeGyroTenth(settings.maxXSensitivity)},
+        {QStringLiteral("min_y_sensitivity"), canonicalizeGyroTenth(settings.minYSensitivity)},
+        {QStringLiteral("max_y_sensitivity"), canonicalizeGyroTenth(settings.maxYSensitivity)},
+        {QStringLiteral("min_threshold"), canonicalizeGyroTenth(settings.minThreshold)},
+        {QStringLiteral("max_threshold"), canonicalizeGyroTenth(settings.maxThreshold)}};
+}
+
 static QJsonObject automationGeneralUiPreferences(const GeneralUiPreferencesSettings &settings)
 {
     return {{QStringLiteral("language"), settings.language},
@@ -40068,6 +40141,8 @@ QJsonObject QKeyMapper::collectAutomationState(bool includeAssetMetadata) const
         automationMappingHotkeys(getMappingHotkeysSettings()));
     result.insert(QStringLiteral("profile_description"),
         automationProfileDescription(getProfileDescriptionSetting(), isProfileDescriptionEditable()));
+    result.insert(QStringLiteral("gyro2mouse_params"),
+        automationGyro2MouseParams(getGyro2MouseParamsSettings()));
     const auto categoryFilter = getCurrentCategoryFilters();
     result.insert(QStringLiteral("category_view"), QJsonObject{
         {QStringLiteral("available"), m_KeyMappingDataTable && m_KeyMappingDataTable->isCategoryColumnVisible()},
@@ -42418,6 +42493,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingGeneralBehavior = updating && update.generalBehavior.has_value();
         const bool changingMappingHotkeys = updating && update.mappingHotkeys.has_value();
         const bool changingProfileDescription = updating && update.profileDescription.has_value();
+        const bool changingGyro2MouseParams = updating && update.gyro2MouseParams.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
@@ -42428,7 +42504,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
-        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || changingFloatingButtonDragCoord || changingSyncGroupNote || movingFloatingButtonSyncGroup || changingGeneralUiPreferences || changingGeneralBehavior || changingMappingHotkeys || changingProfileDescription || addingBlankTab || copyingTab || removingTabData
+        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || changingFloatingButtonDragCoord || changingSyncGroupNote || movingFloatingButtonSyncGroup || changingGeneralUiPreferences || changingGeneralBehavior || changingMappingHotkeys || changingProfileDescription || changingGyro2MouseParams || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel
@@ -42446,6 +42522,26 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const auto preferenceArguments = applying && preferencesUpdate ? *applyingPreview->preferences : validation.preferences;
         const int sourceTab = updating ? update.sourceTabRef.section(QLatin1Char(':'), 2, 2).toInt() : s_KeyMappingTabWidgetCurrentIndex;
         const int tab = update.copyTargetTabRef.isEmpty() ? sourceTab : update.copyTargetTabRef.section(QLatin1Char(':'), 2, 2).toInt();
+        auto gyro2MouseParamsBusy = [this, changingGyro2MouseParams]() -> bool {
+            if (!changingGyro2MouseParams) {
+                return false;
+            }
+            if (!ui || !ui->Gyro2MouseXSpeedSpinBox || !ui->Gyro2MouseYSpeedSpinBox
+                || !ui->Gyro2MouseMinXSensSpinBox || !ui->Gyro2MouseMaxXSensSpinBox
+                || !ui->Gyro2MouseMinYSensSpinBox || !ui->Gyro2MouseMaxYSensSpinBox
+                || !ui->Gyro2MouseMinThresholdSpinBox || !ui->Gyro2MouseMaxThresholdSpinBox) {
+                return true;
+            }
+            for (QDoubleSpinBox *spin : {ui->Gyro2MouseXSpeedSpinBox, ui->Gyro2MouseYSpeedSpinBox,
+                ui->Gyro2MouseMinXSensSpinBox, ui->Gyro2MouseMaxXSensSpinBox,
+                ui->Gyro2MouseMinYSensSpinBox, ui->Gyro2MouseMaxYSensSpinBox,
+                ui->Gyro2MouseMinThresholdSpinBox, ui->Gyro2MouseMaxThresholdSpinBox}) {
+                if (spin->hasFocus() && !spin->hasAcceptableInput()) {
+                    return true;
+                }
+            }
+            return false;
+        };
         if (!mappingAdditionAllowed(tab) || hasOpenMappingEditor() || QApplication::activePopupWidget()
             || m_KeyMappingDataTable->hasActiveEditor()
             || (changingGeneralPreference && !m_GeneralAdvancedDialog)
@@ -42458,7 +42554,8 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             || (changingGeneralUiPreferences && (!ui || !ui->languageComboBox || !ui->themeComboBox || !ui->notificationComboBox || !ui->updateSiteComboBox || !ui->startupMinimizedCheckBox || !ui->windowswitchkeyLineEdit || (update.generalUiPreferences->windowSwitchKey.has_value() && ui->windowswitchkeyLineEdit->text() != s_WindowSwitchKeyString)))
             || (changingGeneralBehavior && (!ui || !ui->startupAutoMonitoringCheckBox || !ui->closeToSystemTrayCheckBox))
             || (changingMappingHotkeys && (!ui || !ui->mappingStartKeyLineEdit || !ui->mappingStopKeyLineEdit || (update.mappingHotkeys->mappingStartKey.has_value() && ui->mappingStartKeyLineEdit->text() != s_MappingStartKeyString) || (update.mappingHotkeys->mappingStopKey.has_value() && ui->mappingStopKeyLineEdit->text() != s_MappingStopKeyString)))
-            || (changingProfileDescription && (!ui || !ui->descriptionLineEdit))) {
+            || (changingProfileDescription && (!ui || !ui->descriptionLineEdit))
+            || gyro2MouseParamsBusy()) {
             reject(QStringLiteral("context_busy"), QStringLiteral("Settings updates require the current idle source and completed cleanup, with no open editor or popup."));
             return;
         }
@@ -42468,7 +42565,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && !changingGeneralNotificationStyle && !changingCustomNotificationStyle && !changingTrayIcons && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale && !changingTabCustomImage
-            && !changingFloatingButtonDragCoord && !changingSyncGroupNote && !movingFloatingButtonSyncGroup && !changingGeneralUiPreferences && !changingGeneralBehavior && !changingMappingHotkeys && !changingProfileDescription
+            && !changingFloatingButtonDragCoord && !changingSyncGroupNote && !movingFloatingButtonSyncGroup && !changingGeneralUiPreferences && !changingGeneralBehavior && !changingMappingHotkeys && !changingProfileDescription && !changingGyro2MouseParams
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
@@ -42489,7 +42586,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel || changingCustomNotificationStyle || changingProcessIconAsTrayIcon
                 || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria
-                || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingSyncGroupNote || changingMappingHotkeys || changingProfileDescription)
+                || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingSyncGroupNote || changingMappingHotkeys || changingProfileDescription || changingGyro2MouseParams)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
             return;
@@ -43557,6 +43654,32 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("before"), automationProfileDescription(before, true)},
                     {QStringLiteral("after"), automationProfileDescription(after, true)},
                     {QStringLiteral("persisted"), false}};
+            } else if (changingGyro2MouseParams) {
+                const Gyro2MouseParamsSettings before = getGyro2MouseParamsSettings();
+                Gyro2MouseParamsSettings after = before;
+                const auto &gp = *update.gyro2MouseParams;
+                if (gp.xSpeed) after.xSpeed = *gp.xSpeed;
+                if (gp.ySpeed) after.ySpeed = *gp.ySpeed;
+                if (gp.minXSensitivity) after.minXSensitivity = *gp.minXSensitivity;
+                if (gp.maxXSensitivity) after.maxXSensitivity = *gp.maxXSensitivity;
+                if (gp.minYSensitivity) after.minYSensitivity = *gp.minYSensitivity;
+                if (gp.maxYSensitivity) after.maxYSensitivity = *gp.maxYSensitivity;
+                if (gp.minThreshold) after.minThreshold = *gp.minThreshold;
+                if (gp.maxThreshold) after.maxThreshold = *gp.maxThreshold;
+                if (qRound(after.minXSensitivity * 10.0) > qRound(after.maxXSensitivity * 10.0)
+                    || qRound(after.minYSensitivity * 10.0) > qRound(after.maxYSensitivity * 10.0)
+                    || qRound(after.minThreshold * 10.0) > qRound(after.maxThreshold * 10.0)) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("Each gyro2mouse min/max pair must satisfy min <= max after merging with current values."));
+                    return;
+                }
+                modified = !gyro2MouseParamsEqual(before, after);
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_gyro2mouse_params")},
+                    {QStringLiteral("before"), automationGyro2MouseParams(before)},
+                    {QStringLiteral("after"), automationGyro2MouseParams(after)},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingTabCustomImage) {
                 const auto &before = preparedTabImage.expectedBefore;
                 const auto &after = preparedTabImage.after;
@@ -43994,6 +44117,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingGeneralBehavior ? QStringLiteral("general.set_behavior")
             : changingMappingHotkeys ? QStringLiteral("configuration.set_mapping_hotkeys")
             : changingProfileDescription ? QStringLiteral("configuration.set_description")
+            : changingGyro2MouseParams ? QStringLiteral("configuration.set_gyro2mouse_params")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -44249,6 +44373,28 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             } else if (changingProfileDescription) {
                 if (modified) {
                     applyProfileDescriptionSetting(*update.profileDescription);
+                }
+            } else if (changingGyro2MouseParams) {
+                const Gyro2MouseParamsSettings before = getGyro2MouseParamsSettings();
+                Gyro2MouseParamsSettings after = before;
+                const auto &gp = *update.gyro2MouseParams;
+                if (gp.xSpeed) after.xSpeed = *gp.xSpeed;
+                if (gp.ySpeed) after.ySpeed = *gp.ySpeed;
+                if (gp.minXSensitivity) after.minXSensitivity = *gp.minXSensitivity;
+                if (gp.maxXSensitivity) after.maxXSensitivity = *gp.maxXSensitivity;
+                if (gp.minYSensitivity) after.minYSensitivity = *gp.minYSensitivity;
+                if (gp.maxYSensitivity) after.maxYSensitivity = *gp.maxYSensitivity;
+                if (gp.minThreshold) after.minThreshold = *gp.minThreshold;
+                if (gp.maxThreshold) after.maxThreshold = *gp.maxThreshold;
+                if (qRound(after.minXSensitivity * 10.0) > qRound(after.maxXSensitivity * 10.0)
+                    || qRound(after.minYSensitivity * 10.0) > qRound(after.maxYSensitivity * 10.0)
+                    || qRound(after.minThreshold * 10.0) > qRound(after.maxThreshold * 10.0)) {
+                    reject(QStringLiteral("invalid_arguments"),
+                        QStringLiteral("Each gyro2mouse min/max pair must satisfy min <= max after merging with current values."));
+                    return;
+                }
+                if (!gyro2MouseParamsEqual(before, after)) {
+                    applyGyro2MouseParamsSettings(after);
                 }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);

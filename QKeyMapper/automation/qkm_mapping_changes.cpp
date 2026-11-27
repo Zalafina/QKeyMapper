@@ -1492,6 +1492,80 @@ static bool parseMappingHotkeysUpdate(const QJsonValue &raw,
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+static bool parseGyro2MouseParamsUpdate(const QJsonValue &raw,
+    Gyro2MouseParamsUpdate &out, const char *&errorOut)
+{
+    using namespace QKeyMapperConstants;
+    const auto failMsg = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const QJsonObject fields = raw.toObject();
+    if (!raw.isObject() || fields.isEmpty()) {
+        return failMsg("Provide at least one gyro2mouse_params field.");
+    }
+    const QSet<QString> allowedFields{
+        QStringLiteral("x_speed"), QStringLiteral("y_speed"),
+        QStringLiteral("min_x_sensitivity"), QStringLiteral("max_x_sensitivity"),
+        QStringLiteral("min_y_sensitivity"), QStringLiteral("max_y_sensitivity"),
+        QStringLiteral("min_threshold"), QStringLiteral("max_threshold"),
+    };
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        if (!allowedFields.contains(it.key())) {
+            return failMsg("Unknown field in gyro2mouse_params.");
+        }
+    }
+    const auto parseScaledDecimal = [&](const QString &key, double minVal, double maxVal,
+                                        double scale, std::optional<double> &target) -> bool {
+        if (!fields.contains(key)) {
+            return true;
+        }
+        const auto val = fields.value(key);
+        if (!val.isDouble()) {
+            return false;
+        }
+        const double d = val.toDouble();
+        if (!std::isfinite(d) || d < minVal || d > maxVal) {
+            return false;
+        }
+        if (std::abs(d * scale - std::round(d * scale)) > 1e-6) {
+            return false;
+        }
+        double canonical = std::round(d * scale) / scale;
+        if (canonical == 0.0) {
+            canonical = 0.0;
+        }
+        target = canonical;
+        return true;
+    };
+    if (!parseScaledDecimal(QStringLiteral("x_speed"), GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX, 100.0, out.xSpeed)
+        || !parseScaledDecimal(QStringLiteral("y_speed"), GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX, 100.0, out.ySpeed)) {
+        return failMsg("gyro2mouse_params x_speed and y_speed must be finite numbers in 0..99.99 with at most 2 decimal places.");
+    }
+    if (!parseScaledDecimal(QStringLiteral("min_x_sensitivity"), GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX, 10.0, out.minXSensitivity)
+        || !parseScaledDecimal(QStringLiteral("max_x_sensitivity"), GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX, 10.0, out.maxXSensitivity)
+        || !parseScaledDecimal(QStringLiteral("min_y_sensitivity"), GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX, 10.0, out.minYSensitivity)
+        || !parseScaledDecimal(QStringLiteral("max_y_sensitivity"), GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX, 10.0, out.maxYSensitivity)) {
+        return failMsg("gyro2mouse_params sensitivity fields must be finite numbers in 0..200 with at most 1 decimal place.");
+    }
+    if (!parseScaledDecimal(QStringLiteral("min_threshold"), GYRO2MOUSE_GYRO_THRESHOLD_MIN, GYRO2MOUSE_GYRO_THRESHOLD_MAX, 10.0, out.minThreshold)
+        || !parseScaledDecimal(QStringLiteral("max_threshold"), GYRO2MOUSE_GYRO_THRESHOLD_MIN, GYRO2MOUSE_GYRO_THRESHOLD_MAX, 10.0, out.maxThreshold)) {
+        return failMsg("gyro2mouse_params threshold fields must be finite numbers in 0..500 with at most 1 decimal place.");
+    }
+    if (!out.hasAny()) {
+        return failMsg("Provide at least one gyro2mouse_params field.");
+    }
+    if ((out.minXSensitivity && out.maxXSensitivity && qRound(*out.minXSensitivity * 10.0) > qRound(*out.maxXSensitivity * 10.0))
+        || (out.minYSensitivity && out.maxYSensitivity && qRound(*out.minYSensitivity * 10.0) > qRound(*out.maxYSensitivity * 10.0))
+        || (out.minThreshold && out.maxThreshold && qRound(*out.minThreshold * 10.0) > qRound(*out.maxThreshold * 10.0))) {
+        return failMsg("Each gyro2mouse min/max pair must satisfy min <= max.");
+    }
+    return true;
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJsonObject &arguments,
     const QJsonValue &reference, const QString &revision, MappingUpdateArguments &update, const char *&errorOut)
 {
@@ -1526,6 +1600,7 @@ static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJ
     const bool generalBehaviorPreview = action == QLatin1String("general.set_behavior");
     const bool mappingHotkeysPreview = action == QLatin1String("configuration.set_mapping_hotkeys");
     const bool profileDescriptionPreview = action == QLatin1String("configuration.set_description");
+    const bool gyro2MouseParamsPreview = action == QLatin1String("configuration.set_gyro2mouse_params");
     const bool processIconTrayPreview = action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = action == QLatin1String("configuration.set_custom_notification");
@@ -1647,6 +1722,13 @@ static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJ
                 return failMsg("A single-line description string of at most 1024 UTF-16 code units is required.");
             }
             update.profileDescription = desc;
+        }
+        if (gyro2MouseParamsPreview) {
+            Gyro2MouseParamsUpdate parsedGyroParams;
+            if (!parseGyro2MouseParamsUpdate(arguments.value(QStringLiteral("gyro2mouse_params")), parsedGyroParams, errorOut)) {
+                return false;
+            }
+            update.gyro2MouseParams = parsedGyroParams;
         }
         if (globalSwitchTimeoutPreview) {
             using namespace QKeyMapperConstants;
@@ -2268,6 +2350,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool generalBehaviorPreview = preview && action == QLatin1String("general.set_behavior");
     const bool mappingHotkeysPreview = preview && action == QLatin1String("configuration.set_mapping_hotkeys");
     const bool profileDescriptionPreview = preview && action == QLatin1String("configuration.set_description");
+    const bool gyro2MouseParamsPreview = preview && action == QLatin1String("configuration.set_gyro2mouse_params");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -2293,7 +2376,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview
         || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || tabFloatingWindowPreview || tabCustomImagePreview
-        || floatingButtonDragCoordPreview || floatingButtonSyncGroupNotePreview || floatingButtonSyncGroupMovePreview || generalUiPreferencesPreview || generalBehaviorPreview || mappingHotkeysPreview || profileDescriptionPreview || processIconTrayPreview
+        || floatingButtonDragCoordPreview || floatingButtonSyncGroupNotePreview || floatingButtonSyncGroupMovePreview || generalUiPreferencesPreview || generalBehaviorPreview || mappingHotkeysPreview || profileDescriptionPreview || gyro2MouseParamsPreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -2317,6 +2400,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : generalBehaviorPreview ? "general_behavior"
         : mappingHotkeysPreview ? "mapping_hotkeys"
         : profileDescriptionPreview ? "description"
+        : gyro2MouseParamsPreview ? "gyro2mouse_params"
         : globalSwitchTimeoutPreview ? "timeout_ms"
         : fullscreenGlobalMappingPreview ? "fullscreen_global_mapping"
         : key2MousePreview ? "key2mouse"
@@ -3355,6 +3439,52 @@ void appendProfileHotkeysAndDescriptionCapabilities(QJsonArray &capabilities, co
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendGyro2MouseParamsCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    using namespace QKeyMapperConstants;
+    const auto decimalSchema = [](double minVal, double maxVal) {
+        return QJsonObject{
+            {QStringLiteral("type"), QStringLiteral("number")},
+            {QStringLiteral("minimum"), minVal},
+            {QStringLiteral("maximum"), maxVal},
+        };
+    };
+    const QJsonObject speedSchema = decimalSchema(GYRO2MOUSE_SPEED_MIN, GYRO2MOUSE_SPEED_MAX);
+    const QJsonObject sensSchema = decimalSchema(GYRO2MOUSE_GYRO_SENS_MIN, GYRO2MOUSE_GYRO_SENS_MAX);
+    const QJsonObject thresholdSchema = decimalSchema(GYRO2MOUSE_GYRO_THRESHOLD_MIN, GYRO2MOUSE_GYRO_THRESHOLD_MAX);
+    const QJsonObject gyroParamsSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("x_speed"), speedSchema},
+            {QStringLiteral("y_speed"), speedSchema},
+            {QStringLiteral("min_x_sensitivity"), sensSchema},
+            {QStringLiteral("max_x_sensitivity"), sensSchema},
+            {QStringLiteral("min_y_sensitivity"), sensSchema},
+            {QStringLiteral("max_y_sensitivity"), sensSchema},
+            {QStringLiteral("min_threshold"), thresholdSchema},
+            {QStringLiteral("max_threshold"), thresholdSchema},
+        }},
+    };
+    auto previewCap = CapabilitySchemaContext::capability("configuration.set_gyro2mouse_params.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_gyro2mouse_params")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("gyro2mouse_params"), gyroParamsSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("gyro2mouse_params")}));
+    auto applyCap = CapabilitySchemaContext::capability("configuration.set_gyro2mouse_params.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&previewCap, &applyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("speed_2_decimals_sens_and_threshold_1_decimal"), QStringLiteral("min_le_max_after_merge"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -3495,6 +3625,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     appendGeneralUiPreferencesCapabilities(capabilities, ctx);
     appendGeneralBehaviorCapabilities(capabilities, ctx);
     appendProfileHotkeysAndDescriptionCapabilities(capabilities, ctx);
+    appendGyro2MouseParamsCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

@@ -230,6 +230,29 @@ struct MappingHotkeysUpdate {
     }
 };
 
+struct Gyro2MouseParamsUpdate {
+    std::optional<double> xSpeed;
+    std::optional<double> ySpeed;
+    std::optional<double> minXSensitivity;
+    std::optional<double> maxXSensitivity;
+    std::optional<double> minYSensitivity;
+    std::optional<double> maxYSensitivity;
+    std::optional<double> minThreshold;
+    std::optional<double> maxThreshold;
+
+    bool hasAny() const
+    {
+        return xSpeed.has_value()
+            || ySpeed.has_value()
+            || minXSensitivity.has_value()
+            || maxXSensitivity.has_value()
+            || minYSensitivity.has_value()
+            || maxYSensitivity.has_value()
+            || minThreshold.has_value()
+            || maxThreshold.has_value();
+    }
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -305,6 +328,7 @@ struct MappingUpdateArguments {
     std::optional<GeneralBehaviorUpdate> generalBehavior;
     std::optional<MappingHotkeysUpdate> mappingHotkeys;
     std::optional<QString> profileDescription;
+    std::optional<Gyro2MouseParamsUpdate> gyro2MouseParams;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

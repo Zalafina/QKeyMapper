@@ -611,6 +611,43 @@ async def check_contract(exe):
                 assert not validator.is_valid(request), bad_desc
                 denied = await client.call_tool("qkm_preview_changes", request)
                 assert denied.is_error is True and denied.structured_content is None
+            gyro_params = {"action": "configuration.set_gyro2mouse_params", "source_tab_ref": tab}
+            assert validator.is_valid({**gyro_params, "gyro2mouse_params": {
+                "x_speed": 12.35, "y_speed": 99.99,
+                "min_x_sensitivity": 0.0, "max_x_sensitivity": 200.0,
+                "min_y_sensitivity": 7.5, "max_y_sensitivity": 7.5,
+                "min_threshold": 1.5, "max_threshold": 500.0,
+            }})
+            assert validator.is_valid({**gyro_params, "gyro2mouse_params": {"x_speed": 0}})
+            for bad_gyro_params in (
+                {"gyro2mouse_params": {}},
+                {"gyro2mouse_params": {"x_speed": -0.01}},
+                {"gyro2mouse_params": {"y_speed": 100.0}},
+                {"gyro2mouse_params": {"min_x_sensitivity": -0.1}},
+                {"gyro2mouse_params": {"max_x_sensitivity": 200.1}},
+                {"gyro2mouse_params": {"min_threshold": -0.1}},
+                {"gyro2mouse_params": {"max_threshold": 500.1}},
+                {"gyro2mouse_params": {"x_speed": None}},
+                {"gyro2mouse_params": {"x_speed": "3.0"}},
+                {"gyro2mouse_params": {"x_speed": 3.0, "extra": 1}},
+                {"gyro2mouse_params": {"x_speed": 3.0}, "extra": 1},
+            ):
+                request = {**gyro_params, **bad_gyro_params}
+                assert not validator.is_valid(request), bad_gyro_params
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
+            for bad_precision_or_pair in (
+                {"x_speed": 1.234},
+                {"min_x_sensitivity": 7.25},
+                {"min_threshold": 1.55},
+                {"min_x_sensitivity": 20.1, "max_x_sensitivity": 20.0},
+                {"min_y_sensitivity": 30.0, "max_y_sensitivity": 15.0},
+                {"min_threshold": 50.1, "max_threshold": 50.0},
+            ):
+                request = {**gyro_params, "gyro2mouse_params": bad_precision_or_pair}
+                assert validator.is_valid(request), bad_precision_or_pair
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -800,7 +837,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "show_drag_coordinate", "sync_group_note", "sync_group_move", "general_ui_preferences", "general_behavior", "mapping_hotkeys", "description", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "show_drag_coordinate", "sync_group_note", "sync_group_move", "general_ui_preferences", "general_behavior", "mapping_hotkeys", "description", "gyro2mouse_params", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
