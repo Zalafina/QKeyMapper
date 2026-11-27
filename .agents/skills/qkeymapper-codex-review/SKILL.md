@@ -56,7 +56,7 @@ out/codex_review/
 
 | 取值 | 含义 | Reviewer 允许动作 |
 |---|---|---|
-| `pause_for_user`（默认） | 本批评审收口后直接暂停 | 结论与第 6 节回传提示词只能指示 Gemini 确认收口并暂停等待用户推送／后续指示；**禁止自行追加“通过后继续下一切片”** |
+| `pause_for_user`（默认） | 本批评审收口后直接暂停 | 退回 `CHANGES_REQUESTED` 时仅核实本批并指示按用户安排修复报复审；通过 `PASS` / `PASS_WITH_P2_P3` 时指示确认收口并暂停等待用户推送／后续指示；**禁止自行追加“通过后继续下一切片”** |
 | `fix_only_then_pause` | 仅修完本批发现并复审收口后暂停 | 同上，仅围绕当前批次闭环 |
 | `continue_after_pass` | 用户已明确授权通过后自动衔接下一项 | 仅当送审单显式声明且与用户指示一致时，方可在第 6 节写出既定下一项 |
 
@@ -71,10 +71,10 @@ out/codex_review/
 ### Reviewer（默认 Codex）
 
 1. 读取 `out/codex_review/LATEST.md` 与当前 `01_gemini_submission.md`（或最新 `03/05` 回复单），**默认严格只读**：
-   - 以真实 `git log <base>..<head>`、`git diff`、工作区源码及已有 `out/` 产物／SHA256 为最终事实依据，`01_gemini_submission.md` 仅作导航；
+   - 以真实 `git --no-optional-locks log <base>..<head>`、`git --no-optional-locks diff`、工作区源码及已有 `out/` 产物／SHA256 为最终事实依据，`01_gemini_submission.md` 仅作导航；
    - **禁止修改任何 Git 跟踪文件**，禁止执行 `git commit` / `git push`；
    - **禁止触发 UAC、调用 gsudo 修改状态或启停需要提权的产品进程**；如仅需非提权静态核验，或用户单独授权额外只读检查，须在评审单中如实写明命令与范围。
-2. 若提交范围改动了 `handoff/` 主计划或能力矩阵，额外按 [references/mcp-handoff-checklist.md](references/mcp-handoff-checklist.md) 逐项复核。
+2. 当送审批次声明 `review_profile=handoff-plan`，或提交范围涉及 `handoff/<任务目录>/` 下的主计划、`capability_matrix.md` 或验证记录时（仅改顶层导航 `handoff/README.md` 除外），额外按 [references/mcp-handoff-checklist.md](references/mcp-handoff-checklist.md) 逐项复核。
 3. 将结果写入当前批次下一个偶数文件（`02_codex_review_r1.md`、`04_codex_recheck_r1.md`...）并更新 `LATEST.md`；严格遵循模板输出，并将可直接复制回传给 Author 的 2–4 句确认提示词**同时附在评审文件第 6 节及对用户的聊天回复末尾**（严格继承 `post_review_action`）。
 
 ## 问题严重级与总体结论定义
@@ -87,13 +87,13 @@ out/codex_review/
 
 ## 辅助脚手架用法（非提权 Python 3）
 
-从仓库根目录运行（本机首选 `out/mcp_bridge/venv/Scripts/python.exe -B -X utf8`，其他同步仓库且无该 venv 的 PC 可改用 `python -B -X utf8`）：
+从仓库根目录运行（本机首选 `out/mcp_bridge/venv/Scripts/python.exe -B -X utf8`，其他同步仓库且无该 venv 的 PC 可改用 `python -B -X utf8`）；脚本全程使用 `--no-optional-locks` 只读查 Git、`O_CREAT | O_EXCL` 独占创建 `01` 并原子更新 `LATEST.md`（不覆盖既有 `01` 原件，拒绝符号链接／NTFS 联接／硬链接及工作区外链接）：
 
 ```powershell
 # 1. 查看当前评审指针与 Git 本地待审状态
 & out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 .agents/skills/qkeymapper-codex-review/scripts/review_helper.py status
 
-# 2. 基于真实 git log 初始化送审目录与 LATEST.md（要求工作区干净，否则需 --allow-dirty）
+# 2. 基于真实 git log 初始化送审目录与 LATEST.md（要求工作区干净，否则需 --allow-dirty；涉及 handoff/<任务>/ 时必选 handoff-plan）
 & out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 .agents/skills/qkeymapper-codex-review/scripts/review_helper.py init `
   --batch 20261127_example_tag --base <base_sha> --head <head_sha> --post-action pause_for_user --profile general
 

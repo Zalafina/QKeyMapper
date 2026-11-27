@@ -51,10 +51,10 @@
 | `code_head` | `<code_head_sha>` |
 | `doc_head` | `<doc_head_sha>` |
 | `post_review_action` | `pause_for_user` |
-| `review_profile` | `general`（或 `handoff-plan`） |
+| `review_profile` | `general`（仅顶层 `handoff/README.md` 亦属此项；涉及 `handoff/<任务>/` 下主计划／矩阵／验证记录时必为 `handoff-plan`） |
 
 - **现场核对**：`git status --short` 为空；`git diff --check <base_sha>..<doc_head_sha>` 退出 0；本批未执行 `git push`。
-- **评审约束**：请 Codex 按 [qkeymapper-codex-review SKILL](../../../.agents/skills/qkeymapper-codex-review/SKILL.md) 执行只读评审，将结论写入 `out/codex_review/<YYYYMMDD_tag>/02_codex_review_r1.md` 并更新 [LATEST.md](../LATEST.md)；收口或发回时严格遵守 `post_review_action`。
+- **评审约束**：请 Codex 按 [qkeymapper-codex-review SKILL](../../../.agents/skills/qkeymapper-codex-review/SKILL.md) 执行只读评审，将结论写入 `02_codex_review_r1.md` 并更新 [LATEST.md](../LATEST.md)；收口或发回时严格继承 `post_review_action`，并将简短「回传给 Gemini 的确认提示词」同时附在评审文件第 6 节及对用户的聊天回复末尾。
 
 ---
 

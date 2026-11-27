@@ -2,8 +2,8 @@
 """Helper CLI for QKeyMapper local Gemini <-> Codex commit review workflows.
 
 Strict non-elevated utility using Python standard library only. Never executes
-git commit, git push, or elevated uac/gsudo commands. All generated and checked
-review workspace artifacts live under <repo_root>/out/codex_review/.
+git commit, git push, index-mutating optional locks, or elevated uac/gsudo commands.
+All generated and checked review workspace artifacts live inside the repository root.
 """
 
 from __future__ import annotations
@@ -11,11 +11,15 @@ from __future__ import annotations
 import argparse
 from datetime import datetime
 import json
-from pathlib import Path
+import os
+from pathlib import Path, PureWindowsPath
+import posixpath
 import re
+import stat
 import subprocess
 import sys
 from typing import Any
+import uuid
 
 
 BATCH_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
@@ -24,16 +28,39 @@ ROUND_FILE_RE = re.compile(
 )
 FENCE_RE = re.compile(r"^\s*(`{3,}|~{3,})")
 INLINE_CODE_RE = re.compile(r"`+[^`]*`+")
-MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+MD_LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]*)\)")
 LINE_FRAG_RE = re.compile(r"^L(\d+)(?:-L(\d+))?$")
-SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+HEX_SHA_RE = re.compile(r"^[0-9a-fA-F]{7,40}$")
+HEX_RANGE_RE = re.compile(r"^`([0-9a-fA-F]{7,40})\.\.([0-9a-fA-F]{7,40})`")
+WEB_SCHEME_RE = re.compile(r"^(?:https?://|mailto:)", re.IGNORECASE)
+ANY_SCHEME_RE = re.compile(r"^[A-Za-z][A-Za-z0-9+.-]*:")
+TABLE_KV_RE = re.compile(r"^\|\s*`([a-z0-9_]+)`\s*\|\s*(.*?)\s*\|\s*$")
+REMOTE_META_RE = re.compile(r"^`([^`]+)`\s*@\s*`([0-9a-fA-F]{7,40})`$")
+
+FILE_ATTRIBUTE_REPARSE_POINT = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
 
 POST_ACTIONS = ("pause_for_user", "fix_only_then_pause", "continue_after_pass")
 PROFILES = ("general", "handoff-plan")
+REQUIRED_SUBMISSION_KEYS = (
+    "branch",
+    "remote_tracking",
+    "deferred_commits",
+    "review_range",
+    "code_head",
+    "doc_head",
+    "post_review_action",
+    "review_profile",
+)
 
 
 class HelperError(Exception):
     """Domain error with a concise user-facing message."""
+
+
+def is_reparse_or_symlink(st: os.stat_result) -> bool:
+    """Return True if lstat result represents a symlink or Windows reparse point."""
+    attrs = getattr(st, "st_file_attributes", 0)
+    return bool(stat.S_ISLNK(st.st_mode) or (attrs & FILE_ATTRIBUTE_REPARSE_POINT))
 
 
 def find_repo_root(start: Path | None = None) -> Path:
@@ -45,15 +72,72 @@ def find_repo_root(start: Path | None = None) -> Path:
     raise HelperError(f"Could not locate Git repository root from {cur}")
 
 
-def ensure_within(base: Path, target: Path) -> Path:
-    """Ensure target resolves strictly inside base directory."""
-    base_res = base.resolve()
-    target_res = target.resolve()
+def ensure_within_resolved(base_real: Path, target: Path) -> Path:
+    """Verify target.resolve() stays within already-resolved base directory."""
+    target_real = target.resolve()
     try:
-        target_res.relative_to(base_res)
+        target_real.relative_to(base_real)
     except ValueError as exc:
-        raise HelperError(f"Refusing path outside {base_res}: {target_res}") from exc
-    return target_res
+        raise HelperError(f"Refusing path outside {base_real}: {target_real}") from exc
+    return target_real
+
+
+def validate_safe_rel_part(part: str) -> None:
+    """Reject traversal, separators, empty segments, or NUL in single segment."""
+    if not part or part in (".", "..") or "/" in part or "\\" in part or "\x00" in part:
+        raise HelperError(f"Unsafe path segment rejected: {part!r}")
+
+
+def validate_safe_dir_chain(
+    repo_root: Path, rel_parts: tuple[str, ...], *, create_missing: bool = False
+) -> Path:
+    """Walk each segment from repo_root verifying real non-reparse directories."""
+    root_real = repo_root.resolve()
+    if not repo_root.is_dir():
+        raise HelperError(f"Repository root is not a directory: {repo_root}")
+    cur = repo_root
+    for part in rel_parts:
+        validate_safe_rel_part(part)
+        cur = cur / part
+        try:
+            st = os.lstat(cur)
+        except FileNotFoundError as exc:
+            if not create_missing:
+                raise HelperError(f"Missing required directory: {cur}") from exc
+            cur.mkdir(exist_ok=False)
+            st = os.lstat(cur)
+        if is_reparse_or_symlink(st):
+            raise HelperError(f"Refusing symlink or reparse directory: {cur}")
+        if not stat.S_ISDIR(st.st_mode):
+            raise HelperError(f"Expected directory, found non-directory: {cur}")
+    ensure_within_resolved(root_real, cur)
+    return cur
+
+
+def validate_safe_existing_file(
+    repo_root: Path,
+    rel_parts: tuple[str, ...],
+    *,
+    reject_hardlinks: bool = False,
+) -> Path:
+    """Verify parent dir chain and target regular file with no symlink/reparse."""
+    if not rel_parts:
+        raise HelperError("Empty file path.")
+    parent = validate_safe_dir_chain(repo_root, rel_parts[:-1], create_missing=False)
+    validate_safe_rel_part(rel_parts[-1])
+    target = parent / rel_parts[-1]
+    try:
+        st = os.lstat(target)
+    except FileNotFoundError as exc:
+        raise HelperError(f"Missing target file: {target}") from exc
+    if is_reparse_or_symlink(st):
+        raise HelperError(f"Refusing symlink or reparse file: {target}")
+    if not stat.S_ISREG(st.st_mode):
+        raise HelperError(f"Refusing non-regular file: {target}")
+    if reject_hardlinks and st.st_nlink > 1:
+        raise HelperError(f"Refusing hard-linked file (st_nlink={st.st_nlink}): {target}")
+    ensure_within_resolved(repo_root.resolve(), target)
+    return target
 
 
 def validate_batch_name(batch: str) -> str:
@@ -67,9 +151,9 @@ def validate_batch_name(batch: str) -> str:
 
 
 def run_git(repo_root: Path, *args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
-    """Run a read-only git command with UTF-8 decoding."""
+    """Run a read-only git command without updating optional index stat locks."""
     proc = subprocess.run(
-        ["git", *args],
+        ["git", "--no-optional-locks", *args],
         cwd=str(repo_root),
         capture_output=True,
         text=True,
@@ -121,9 +205,22 @@ def upstream_info(repo_root: Path) -> tuple[str | None, str | None]:
     return name, sha
 
 
+def touches_handoff_task_files(changed_files: list[str]) -> bool:
+    """Return True if any changed file is under handoff/<task_dir>/... (excluding top README)."""
+    for rel in changed_files:
+        norm = rel.replace("\\", "/").lstrip("./")
+        parts = norm.split("/")
+        if len(parts) >= 3 and parts[0] == "handoff":
+            return True
+    return False
+
+
 def read_text_lf_strict(path: Path) -> tuple[str | None, list[str]]:
     """Verify UTF-8 without BOM and pure LF line endings. Returns (text, errors)."""
-    raw = path.read_bytes()
+    try:
+        raw = path.read_bytes()
+    except OSError as exc:
+        return None, [f"{path}: cannot read file ({exc})."]
     errs: list[str] = []
     if raw.startswith(b"\xef\xbb\xbf"):
         errs.append(f"{path}: UTF-8 BOM is forbidden; expected UTF-8 without BOM.")
@@ -137,18 +234,62 @@ def read_text_lf_strict(path: Path) -> tuple[str | None, list[str]]:
     return text, errs
 
 
-def write_text_lf(path: Path, content: str) -> None:
-    """Write UTF-8 without BOM and pure LF line endings."""
-    path.parent.mkdir(parents=True, exist_ok=True)
+def normalize_lf_bytes(content: str) -> bytes:
+    """Normalize line endings to LF without BOM and encode as UTF-8 bytes."""
     normalized = content.replace("\r\n", "\n").replace("\r", "\n")
     if not normalized.endswith("\n"):
         normalized += "\n"
-    with path.open("w", encoding="utf-8", newline="\n") as fh:
-        fh.write(normalized)
+    return normalized.encode("utf-8")
+
+
+def write_exclusive_lf(path: Path, content: str) -> None:
+    """Exclusively create path with O_CREAT | O_EXCL, refusing any pre-existing file/link."""
+    data = normalize_lf_bytes(content)
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+    try:
+        fd = os.open(str(path), flags, 0o644)
+    except FileExistsError as exc:
+        raise HelperError(f"{path} already exists; refusing exclusive creation.") from exc
+    except OSError as exc:
+        raise HelperError(f"Failed creating {path}: {exc}") from exc
+    try:
+        view = memoryview(data)
+        written = 0
+        while written < len(data):
+            written += os.write(fd, view[written:])
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def write_atomic_lf(path: Path, content: str) -> None:
+    """Atomically write UTF-8 LF text via same-directory O_EXCL temp file + os.replace."""
+    data = normalize_lf_bytes(content)
+    tmp_path = path.parent / f".{path.name}.{os.getpid()}.{uuid.uuid4().hex[:8]}.tmp"
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0)
+    fd = os.open(str(tmp_path), flags, 0o644)
+    replaced = False
+    try:
+        try:
+            view = memoryview(data)
+            written = 0
+            while written < len(data):
+                written += os.write(fd, view[written:])
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+        os.replace(str(tmp_path), str(path))
+        replaced = True
+    finally:
+        if not replaced:
+            try:
+                tmp_path.unlink(missing_ok=True)
+            except OSError:
+                pass
 
 
 def iter_markdown_links(text: str) -> list[tuple[int, str]]:
-    """Extract (1-based line_no, raw_target) for links outside fenced & inline code."""
+    """Extract (1-based line_no, raw_target) outside fenced and inline code spans."""
     results: list[tuple[int, str]] = []
     fence_char: str | None = None
     fence_len = 0
@@ -167,44 +308,139 @@ def iter_markdown_links(text: str) -> list[tuple[int, str]]:
             continue
         cleaned = INLINE_CODE_RE.sub("", line)
         for match in MD_LINK_RE.finditer(cleaned):
-            raw_target = match.group(1).strip()
-            if raw_target.startswith("<") and ">" in raw_target:
-                raw_target = raw_target[1 : raw_target.index(">")].strip()
+            raw_inner = match.group(1).strip()
+            if not raw_inner:
+                results.append((idx, ""))
+                continue
+            if raw_inner.startswith("<"):
+                if ">" not in raw_inner:
+                    results.append((idx, ""))
+                    continue
+                target = raw_inner[1 : raw_inner.index(">")].strip()
             else:
-                # Strip optional markdown link title: path "title"
-                raw_target = raw_target.split()[0]
-            results.append((idx, raw_target))
+                tokens = raw_inner.split()
+                target = tokens[0] if tokens else ""
+            results.append((idx, target))
     return results
 
 
-def check_markdown_links(md_path: Path, text: str) -> list[str]:
-    """Validate relative file links and optional #L<n>[-L<m>] line bounds."""
+def _reject_lexical_non_repo_target(target: str) -> str | None:
+    """Return error reason before touching filesystem if target is non-relative."""
+    if not target:
+        return "empty link target"
+    if "\x00" in target:
+        return f"NUL byte in link target '{target}'"
+    if WEB_SCHEME_RE.match(target):
+        return None
+    if ANY_SCHEME_RE.match(target):
+        return f"non-relative URI or drive path '{target}' is forbidden"
+    rel_part, _, _ = target.partition("#")
+    if not rel_part:
+        return None
+    if rel_part.startswith(("/", "\\")):
+        return f"rooted or UNC link path '{target}' is forbidden"
+    win_path = PureWindowsPath(rel_part)
+    if win_path.drive or win_path.is_absolute():
+        return f"absolute Windows link path '{target}' is forbidden"
+    return None
+
+
+def check_markdown_links(repo_root: Path, md_path: Path, text: str) -> list[str]:
+    """Validate relative workspace links without escaping repo_root or following reparse points."""
     errs: list[str] = []
+    repo_real = repo_root.resolve()
+    try:
+        md_dir_rel = md_path.parent.resolve().relative_to(repo_real).as_posix()
+    except ValueError:
+        return [f"{md_path}: file lies outside repository root {repo_real}."]
+    if md_dir_rel == ".":
+        md_dir_rel = ""
+
     line_count_cache: dict[Path, int] = {}
     for line_no, target in iter_markdown_links(text):
-        if not target or SCHEME_RE.match(target):
+        if WEB_SCHEME_RE.match(target):
             continue
+        lexical_err = _reject_lexical_non_repo_target(target)
+        if lexical_err:
+            errs.append(f"{md_path}:{line_no}: {lexical_err}.")
+            continue
+
         rel_part, has_hash, fragment = target.partition("#")
         if not rel_part:
             target_file = md_path
         else:
-            target_file = (md_path.parent / rel_part).resolve()
-            if not target_file.exists():
-                errs.append(f"{md_path}:{line_no}: broken link target '{target}' (resolved {target_file}).")
+            joined = f"{md_dir_rel}/{rel_part}" if md_dir_rel else rel_part
+            joined_posix = joined.replace("\\", "/")
+            norm_posix = posixpath.normpath(joined_posix)
+            if norm_posix == ".." or norm_posix.startswith("../") or posixpath.isabs(norm_posix):
+                errs.append(
+                    f"{md_path}:{line_no}: link target '{target}' lexically escapes repository root."
+                )
                 continue
+
+            parts = [] if norm_posix == "." else [p for p in norm_posix.split("/") if p and p != "."]
+            cur = repo_root
+            traversal_failed = False
+            for idx_part, part in enumerate(parts):
+                cur = cur / part
+                try:
+                    st = os.lstat(cur)
+                except FileNotFoundError:
+                    errs.append(
+                        f"{md_path}:{line_no}: broken link target '{target}' (missing {cur})."
+                    )
+                    traversal_failed = True
+                    break
+                except OSError as exc:
+                    errs.append(
+                        f"{md_path}:{line_no}: cannot stat link target '{target}' ({exc})."
+                    )
+                    traversal_failed = True
+                    break
+                if is_reparse_or_symlink(st):
+                    errs.append(
+                        f"{md_path}:{line_no}: link target '{target}' traverses symlink/reparse '{cur}'."
+                    )
+                    traversal_failed = True
+                    break
+                if idx_part < len(parts) - 1 and not stat.S_ISDIR(st.st_mode):
+                    errs.append(
+                        f"{md_path}:{line_no}: broken link target '{target}' (non-directory '{cur}')."
+                    )
+                    traversal_failed = True
+                    break
+            if traversal_failed:
+                continue
+
+            target_real = cur.resolve()
+            try:
+                target_real.relative_to(repo_real)
+            except ValueError:
+                errs.append(
+                    f"{md_path}:{line_no}: resolved link target '{target}' escapes repository root."
+                )
+                continue
+            target_file = target_real
+
         if has_hash and target_file.is_file():
             frag_match = LINE_FRAG_RE.fullmatch(fragment)
             if frag_match:
                 start_line = int(frag_match.group(1))
                 end_line = int(frag_match.group(2) or start_line)
                 if start_line < 1 or end_line < start_line:
-                    errs.append(f"{md_path}:{line_no}: invalid line range '#{fragment}' in '{target}'.")
+                    errs.append(
+                        f"{md_path}:{line_no}: invalid line range '#{fragment}' in '{target}'."
+                    )
                     continue
                 if target_file not in line_count_cache:
                     try:
-                        total_lines = len(target_file.read_text(encoding="utf-8", errors="replace").splitlines())
+                        total_lines = len(
+                            target_file.read_text(encoding="utf-8", errors="replace").splitlines()
+                        )
                     except OSError as exc:
-                        errs.append(f"{md_path}:{line_no}: cannot read link target {target_file}: {exc}")
+                        errs.append(
+                            f"{md_path}:{line_no}: cannot read link target {target_file}: {exc}"
+                        )
                         continue
                     line_count_cache[target_file] = total_lines
                 total = line_count_cache[target_file]
@@ -239,6 +475,7 @@ def build_submission_markdown(
     commits: list[tuple[str, str]],
     diff_stat: str,
     diff_check_ok: bool,
+    changed_files: list[str],
     today: str,
 ) -> str:
     """Render 01_gemini_submission.md using strict relative link levels."""
@@ -249,11 +486,20 @@ def build_submission_markdown(
         f"| {i} | `{sha}` | `{classify_commit_tag(subj)}` | `{subj}` |"
         for i, (sha, subj) in enumerate(commits, start=1)
     )
-    checklist_note = (
-        "- 额外核对 [mcp-handoff-checklist.md](../../../.agents/skills/qkeymapper-codex-review/references/mcp-handoff-checklist.md)。\n"
-        if profile == "handoff-plan"
-        else "- 本批 `review_profile=general`，不涉及 `handoff/` 主计划或能力矩阵变更。\n"
-    )
+    if profile == "handoff-plan":
+        checklist_note = (
+            "- 本批 `review_profile=handoff-plan`，额外核对 "
+            "[mcp-handoff-checklist.md](../../../.agents/skills/qkeymapper-codex-review/references/mcp-handoff-checklist.md)。\n"
+        )
+    elif any(f.replace("\\", "/") == "handoff/README.md" for f in changed_files):
+        checklist_note = (
+            "- 本批 `review_profile=general`，未涉及 `handoff/<任务目录>/` 下的主计划、能力矩阵或验证记录"
+            "（仅包含顶层导航 `handoff/README.md` 入口引用）。\n"
+        )
+    else:
+        checklist_note = (
+            "- 本批 `review_profile=general`，不涉及 `handoff/<任务目录>/` 下的主计划、能力矩阵或验证记录。\n"
+        )
     return f"""# Gemini 本地提交送审单：`{batch}`（`{title}`）
 
 | 字段 | 值 |
@@ -338,8 +584,8 @@ def build_latest_markdown(
 
 
 def extract_previous_closed(latest_path: Path) -> str:
-    """Preserve prior closed batch summary from existing LATEST.md if present."""
-    if not latest_path.is_file():
+    """Preserve prior closed batch summary from an already-validated LATEST.md."""
+    if not os.path.lexists(latest_path):
         return ""
     text = latest_path.read_text(encoding="utf-8", errors="replace")
     for line in text.splitlines():
@@ -359,17 +605,59 @@ def cmd_init(args: argparse.Namespace) -> int:
             + status_out
         )
 
+    cur_head_full, cur_head_short = resolve_commit(repo_root, "HEAD")
     base_full, base_short = resolve_commit(repo_root, args.base)
     head_full, doc_short = resolve_commit(repo_root, args.head)
     if base_full == head_full:
         raise HelperError(f"Empty commit range: base and head resolve to the same commit {base_short}.")
     if not git_ancestor(repo_root, base_full, head_full):
         raise HelperError(f"Base commit {base_short} is not an ancestor of {doc_short}.")
+    if not git_ancestor(repo_root, head_full, cur_head_full):
+        raise HelperError(
+            f"Head commit {doc_short} is not an ancestor of current HEAD {cur_head_short}."
+        )
 
     code_ref = args.code_head or args.head
     code_full, code_short = resolve_commit(repo_root, code_ref)
     if not git_ancestor(repo_root, base_full, code_full) or not git_ancestor(repo_root, code_full, head_full):
         raise HelperError("--code-head must satisfy base <= code_head <= head.")
+
+    up_name, up_full = upstream_info(repo_root)
+    up_short = up_full[:8] if up_full else None
+    if up_full:
+        if git_ancestor(repo_root, head_full, up_full):
+            raise HelperError(
+                f"Target range endpoint {doc_short} is already pushed to {up_name}@{up_short}."
+            )
+        if not git_ancestor(repo_root, up_full, base_full):
+            raise HelperError(
+                f"Upstream {up_name}@{up_short} is not an ancestor of base {base_short}; "
+                "refusing diverged or stale unpushed range."
+            )
+        if up_full == base_full:
+            deferred_note = "无（起点即当前基线）"
+        else:
+            deferred_lines = run_git(
+                repo_root, "log", "--oneline", f"{up_full}..{base_full}"
+            ).stdout.splitlines()
+            deferred_note = (
+                f"`{up_short}..{base_short}`（共 {len(deferred_lines)} 条先导本地提交延后至后续批次回顾，不纳入本批）"
+            )
+    else:
+        deferred_note = "无远端跟踪分支（请人工核对本地起点基线）"
+
+    changed_files = [
+        line.strip()
+        for line in run_git(
+            repo_root, "diff", "--name-only", f"{base_full}..{head_full}"
+        ).stdout.splitlines()
+        if line.strip()
+    ]
+    if touches_handoff_task_files(changed_files) and args.profile != "handoff-plan":
+        raise HelperError(
+            f"Range {base_short}..{doc_short} modifies task files under handoff/<task>/; "
+            "re-run with --profile handoff-plan."
+        )
 
     log_proc = run_git(repo_root, "log", "--reverse", "--format=%H%x09%s", f"{base_full}..{head_full}")
     commits: list[tuple[str, str]] = []
@@ -384,29 +672,23 @@ def cmd_init(args: argparse.Namespace) -> int:
     diff_stat = run_git(repo_root, "diff", "--stat", f"{base_full}..{head_full}").stdout
     diff_check_proc = run_git(repo_root, "diff", "--check", f"{base_full}..{head_full}", check=False)
     diff_check_ok = diff_check_proc.returncode == 0
-
     branch = current_branch(repo_root)
-    up_name, up_full = upstream_info(repo_root)
-    up_short = up_full[:8] if up_full else None
-    if up_full and up_full != base_full:
-        if git_ancestor(repo_root, up_full, base_full):
-            deferred_lines = run_git(
-                repo_root, "log", "--oneline", f"{up_full}..{base_full}"
-            ).stdout.splitlines()
-            deferred_note = (
-                f"`{up_short}..{base_short}`（共 {len(deferred_lines)} 条先导本地提交延后至后续批次回顾，不纳入本批）"
-            )
-        else:
-            deferred_note = f"远端 `{up_short}` 与基线 `{base_short}` 非直系前后继，请人工核对范围"
-    else:
-        deferred_note = "无（起点即当前基线）"
 
-    review_root = ensure_within(repo_root, repo_root / "out" / "codex_review")
-    batch_dir = ensure_within(review_root, review_root / batch)
-    submission_path = ensure_within(batch_dir, batch_dir / "01_gemini_submission.md")
-    if submission_path.exists() and not args.force:
+    # Validate ALL directory chains and existing files BEFORE any write occurs.
+    review_root = validate_safe_dir_chain(repo_root, ("out", "codex_review"), create_missing=True)
+    latest_path = review_root / "LATEST.md"
+    previous_closed = ""
+    if not args.no_update_latest and os.path.lexists(latest_path):
+        validated_latest = validate_safe_existing_file(
+            repo_root, ("out", "codex_review", "LATEST.md"), reject_hardlinks=True
+        )
+        previous_closed = extract_previous_closed(validated_latest)
+
+    batch_dir = validate_safe_dir_chain(repo_root, ("out", "codex_review", batch), create_missing=True)
+    submission_path = batch_dir / "01_gemini_submission.md"
+    if os.path.lexists(submission_path):
         raise HelperError(
-            f"{submission_path} already exists; refusing to overwrite (pass --force to replace)."
+            f"{submission_path} already exists; refusing to overwrite existing submission."
         )
 
     title = args.title or batch
@@ -426,14 +708,11 @@ def cmd_init(args: argparse.Namespace) -> int:
         commits=commits,
         diff_stat=diff_stat,
         diff_check_ok=diff_check_ok,
+        changed_files=changed_files,
         today=today,
     )
-    write_text_lf(submission_path, submission_text)
-
-    latest_path = ensure_within(review_root, review_root / "LATEST.md")
-    if not args.no_update_latest:
-        previous_closed = extract_previous_closed(latest_path)
-        latest_text = build_latest_markdown(
+    latest_text = (
+        build_latest_markdown(
             batch=batch,
             title=title,
             branch=branch,
@@ -447,7 +726,13 @@ def cmd_init(args: argparse.Namespace) -> int:
             profile=args.profile,
             previous_closed=previous_closed,
         )
-        write_text_lf(latest_path, latest_text)
+        if not args.no_update_latest
+        else ""
+    )
+
+    write_exclusive_lf(submission_path, submission_text)
+    if not args.no_update_latest:
+        write_atomic_lf(latest_path, latest_text)
 
     print(
         json.dumps(
@@ -459,6 +744,7 @@ def cmd_init(args: argparse.Namespace) -> int:
                 "commits": len(commits),
                 "range": f"{base_short}..{doc_short}",
                 "post_review_action": args.post_action,
+                "review_profile": args.profile,
             },
             ensure_ascii=False,
         )
@@ -466,50 +752,292 @@ def cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 
-def check_round_sequence(files: list[Path], batch_dir: Path) -> tuple[list[str], list[str]]:
-    """Verify round file naming 01/02/03/... ordering cleanly."""
+def expected_round_filename(seq: int) -> str:
+    """Return canonical filename for 1-based sequence index."""
+    if seq == 1:
+        return "01_gemini_submission.md"
+    if seq == 2:
+        return "02_codex_review_r1.md"
+    rnd = (seq - 1) // 2
+    if seq % 2 == 1:
+        return f"{seq:02d}_gemini_response_r{rnd}.md"
+    return f"{seq:02d}_codex_recheck_r{rnd}.md"
+
+
+def check_round_sequence(files: list[Path], batch_dir: Path) -> list[str]:
+    """Verify strict 1-based canonical filenames and round numbering."""
     errs: list[str] = []
-    warns: list[str] = []
-    numbered: list[tuple[int, Path, str, str]] = []
+    parsed_items: list[tuple[int, Path]] = []
     for path in sorted(files, key=lambda p: p.name):
         match = ROUND_FILE_RE.fullmatch(path.name)
         if not match:
-            warns.append(f"{path}: filename does not follow NN_<role>_<kind>[_rN].md convention.")
+            errs.append(f"{path}: filename does not follow canonical round naming convention.")
             continue
         num = int(match.group(1))
-        role = match.group(2)
-        kind = match.group(3)
-        if num % 2 == 1 and role != "gemini":
-            errs.append(f"{path}: odd sequence {num:02d} must belong to gemini (submission/response).")
-        if num % 2 == 0 and role != "codex":
-            errs.append(f"{path}: even sequence {num:02d} must belong to codex (review/recheck).")
-        if num == 1 and kind != "submission":
-            errs.append(f"{path}: file 01 must be submission.")
-        numbered.append((num, path, role, kind))
+        if num < 1:
+            errs.append(f"{path}: sequence index must be >= 01.")
+            continue
+        parsed_items.append((num, path))
 
-    numbered.sort(key=lambda item: item[0])
+    parsed_items.sort(key=lambda item: (item[0], item[1].name))
     seen: set[int] = set()
-    for idx, (num, path, _, _) in enumerate(numbered, start=1):
+    for expected_idx, (num, path) in enumerate(parsed_items, start=1):
         if num in seen:
             errs.append(f"{path}: duplicate sequence index {num:02d} in {batch_dir.name}.")
+            continue
         seen.add(num)
-        if num != idx:
-            errs.append(f"{path}: expected sequence {idx:02d} without gaps, found {num:02d}.")
-    if numbered and not any(item[0] == 1 for item in numbered):
-        errs.append(f"{batch_dir}: missing initial 01_gemini_submission.md.")
-    return errs, warns
+        if num != expected_idx:
+            errs.append(f"{path}: expected sequence {expected_idx:02d} without gaps, found {num:02d}.")
+        expected_name = expected_round_filename(num)
+        if path.name != expected_name:
+            errs.append(
+                f"{path}: non-canonical filename for slot {num:02d}; expected '{expected_name}'."
+            )
 
-
-def check_submission_metadata(submission_path: Path, text: str) -> list[str]:
-    """Check strict metadata requirements on 01_gemini_submission.md."""
-    errs: list[str] = []
-    if "post_review_action" not in text:
-        errs.append(f"{submission_path}: missing required 'post_review_action' field.")
-    if "review_range" not in text and "审查范围" not in text:
-        errs.append(f"{submission_path}: missing required frozen 'review_range' field.")
-    if "remote_tracking" not in text and "基线" not in text:
-        errs.append(f"{submission_path}: missing 'remote_tracking' / baseline field.")
+    if not any(p.name == "01_gemini_submission.md" for p in files):
+        errs.append(f"{batch_dir}: missing canonical '01_gemini_submission.md'.")
     return errs
+
+
+def parse_submission_table(text: str) -> dict[str, str]:
+    """Extract backtick-keyed metadata rows from 01_gemini_submission.md."""
+    meta: dict[str, str] = {}
+    for line in text.splitlines():
+        match = TABLE_KV_RE.match(line)
+        if match:
+            meta[match.group(1)] = match.group(2).strip()
+    return meta
+
+
+def strip_backticks(value: str) -> str:
+    """Strip single surrounding backticks from scalar markdown table cells."""
+    v = value.strip()
+    if len(v) >= 2 and v.startswith("`") and v.endswith("`"):
+        return v[1:-1].strip()
+    return v
+
+
+def check_submission_metadata(
+    repo_root: Path, submission_path: Path, text: str
+) -> tuple[list[str], dict[str, str]]:
+    """Strictly verify frozen SHAs, branch membership, upstream, profile, and post_review_action."""
+    errs: list[str] = []
+    meta = parse_submission_table(text)
+    for key in REQUIRED_SUBMISSION_KEYS:
+        if not meta.get(key):
+            errs.append(f"{submission_path}: missing required metadata row '{key}'.")
+    if errs:
+        return errs, meta
+
+    post_action = strip_backticks(meta["post_review_action"])
+    if post_action not in POST_ACTIONS:
+        errs.append(
+            f"{submission_path}: invalid post_review_action '{post_action}'; expected one of {POST_ACTIONS}."
+        )
+
+    profile = strip_backticks(meta["review_profile"])
+    if profile not in PROFILES:
+        errs.append(
+            f"{submission_path}: invalid review_profile '{profile}'; expected one of {PROFILES}."
+        )
+
+    range_match = HEX_RANGE_RE.match(meta["review_range"])
+    if not range_match:
+        errs.append(
+            f"{submission_path}: review_range must start with fixed `<hex>..<hex>` SHAs "
+            f"(got {meta['review_range']!r}); drifting refs like HEAD are forbidden."
+        )
+        return errs, meta
+
+    base_raw, doc_range_raw = range_match.group(1), range_match.group(2)
+    code_raw = strip_backticks(meta["code_head"])
+    doc_raw = strip_backticks(meta["doc_head"])
+    if not HEX_SHA_RE.fullmatch(code_raw):
+        errs.append(f"{submission_path}: code_head must be a hex SHA (got {meta['code_head']!r}).")
+        return errs, meta
+    if not HEX_SHA_RE.fullmatch(doc_raw):
+        errs.append(f"{submission_path}: doc_head must be a hex SHA (got {meta['doc_head']!r}).")
+        return errs, meta
+
+    try:
+        base_full, base_short = resolve_commit(repo_root, base_raw)
+        range_end_full, range_end_short = resolve_commit(repo_root, doc_range_raw)
+        code_full, code_short = resolve_commit(repo_root, code_raw)
+        doc_full, doc_short = resolve_commit(repo_root, doc_raw)
+        cur_head_full, cur_head_short = resolve_commit(repo_root, "HEAD")
+    except HelperError as exc:
+        errs.append(f"{submission_path}: {exc}")
+        return errs, meta
+
+    if doc_full != range_end_full:
+        errs.append(
+            f"{submission_path}: doc_head ({doc_short}) does not match review_range endpoint ({range_end_short})."
+        )
+    if base_full == doc_full:
+        errs.append(f"{submission_path}: review_range {base_short}..{doc_short} is empty.")
+    if not git_ancestor(repo_root, base_full, code_full) or not git_ancestor(repo_root, code_full, doc_full):
+        errs.append(
+            f"{submission_path}: commits must satisfy base ({base_short}) <= code_head ({code_short}) <= doc_head ({doc_short})."
+        )
+    if not git_ancestor(repo_root, doc_full, cur_head_full):
+        errs.append(
+            f"{submission_path}: doc_head ({doc_short}) does not belong to current HEAD ({cur_head_short}) history."
+        )
+
+    branch_val = strip_backticks(meta["branch"])
+    actual_branch = current_branch(repo_root)
+    if actual_branch != "DETACHED" and branch_val != actual_branch:
+        errs.append(
+            f"{submission_path}: branch '{branch_val}' does not match active branch '{actual_branch}'."
+        )
+
+    up_name, up_full = upstream_info(repo_root)
+    remote_raw = meta["remote_tracking"].strip()
+    deferred_raw = meta["deferred_commits"].strip()
+    if up_full:
+        up_short = up_full[:8]
+        remote_match = REMOTE_META_RE.fullmatch(remote_raw)
+        if not remote_match:
+            errs.append(
+                f"{submission_path}: remote_tracking must record `<ref>` @ `<hex>` (got {remote_raw!r})."
+            )
+        else:
+            recorded_ref, recorded_sha_raw = remote_match.group(1), remote_match.group(2)
+            try:
+                recorded_full, recorded_short = resolve_commit(repo_root, recorded_sha_raw)
+                if up_name and recorded_ref != up_name:
+                    errs.append(
+                        f"{submission_path}: remote_tracking ref '{recorded_ref}' differs from upstream '{up_name}'."
+                    )
+                if recorded_full != up_full and not git_ancestor(repo_root, recorded_full, base_full):
+                    errs.append(
+                        f"{submission_path}: remote_tracking SHA {recorded_short} is invalid relative to base {base_short}."
+                    )
+            except HelperError as exc:
+                errs.append(f"{submission_path}: {exc}")
+        if git_ancestor(repo_root, doc_full, up_full):
+            errs.append(
+                f"{submission_path}: doc_head ({doc_short}) is already reachable from upstream {up_name}@{up_short}."
+            )
+        if not git_ancestor(repo_root, up_full, base_full):
+            errs.append(
+                f"{submission_path}: upstream {up_name}@{up_short} is not an ancestor of base ({base_short})."
+            )
+        elif up_full != base_full and f"{up_short}..{base_short}" not in deferred_raw:
+            errs.append(
+                f"{submission_path}: deferred_commits must explicitly record `{up_short}..{base_short}` "
+                "when local commits precede base."
+            )
+    else:
+        if "无远端跟踪分支" not in remote_raw:
+            errs.append(
+                f"{submission_path}: repository has no upstream branch; remote_tracking must explicitly state 无远端跟踪分支."
+            )
+
+    parsed_info = {
+        "base_full": base_full,
+        "base_short": base_short,
+        "doc_full": doc_full,
+        "post_review_action": post_action,
+        "review_profile": profile,
+    }
+    return errs, parsed_info
+
+
+def check_latest_pointer(
+    repo_root: Path,
+    latest_path: Path,
+    latest_text: str,
+    batch: str,
+    submission_info: dict[str, str],
+) -> list[str]:
+    """Cross-check structured active fields in LATEST.md against the target batch."""
+    errs: list[str] = []
+    fields: dict[str, str] = {}
+    for line in latest_text.splitlines():
+        if line.startswith("- **") and "**：" in line:
+            label_part, _, val_part = line.partition("**：")
+            label = label_part[4:].strip()
+            fields[label] = val_part.strip()
+
+    active_val = fields.get("当前活跃评审批次", "")
+    if not active_val.startswith(f"`{batch}`"):
+        errs.append(
+            f"{latest_path}: active batch field must start with `{batch}` (found {active_val!r})."
+        )
+
+    post_val = strip_backticks(fields.get("终止边界（`post_review_action`）", ""))
+    expected_post = submission_info.get("post_review_action", "")
+    if expected_post and post_val != expected_post:
+        errs.append(
+            f"{latest_path}: post_review_action '{post_val}' does not match submission '{expected_post}'."
+        )
+
+    range_val = fields.get("本轮冻结审查范围", "")
+    range_match = re.match(
+        r"^`([0-9a-fA-F]{7,40})\.\.([0-9a-fA-F]{7,40})`.*代码终点\s*`([0-9a-fA-F]{7,40})`.*文档终点\s*`([0-9a-fA-F]{7,40})`",
+        range_val,
+    )
+    if not range_match:
+        errs.append(
+            f"{latest_path}: 本轮冻结审查范围 must record fixed `<base>..<doc>` with code & doc hex SHAs."
+        )
+    else:
+        l_base_raw, l_end_raw, l_code_raw, l_doc_raw = range_match.groups()
+        try:
+            l_base_full, l_base_short = resolve_commit(repo_root, l_base_raw)
+            l_end_full, l_end_short = resolve_commit(repo_root, l_end_raw)
+            l_code_full, l_code_short = resolve_commit(repo_root, l_code_raw)
+            l_doc_full, l_doc_short = resolve_commit(repo_root, l_doc_raw)
+            cur_head_full, cur_head_short = resolve_commit(repo_root, "HEAD")
+        except HelperError as exc:
+            errs.append(f"{latest_path}: {exc}")
+        else:
+            if submission_info.get("base_full") and l_base_full != submission_info["base_full"]:
+                errs.append(
+                    f"{latest_path}: base {l_base_short} differs from submission base {submission_info['base_short']}."
+                )
+            if l_end_full != l_doc_full:
+                errs.append(
+                    f"{latest_path}: range endpoint {l_end_short} differs from doc_head {l_doc_short}."
+                )
+            if not git_ancestor(repo_root, l_base_full, l_code_full) or not git_ancestor(repo_root, l_code_full, l_doc_full):
+                errs.append(
+                    f"{latest_path}: commits must satisfy base <= code_head <= doc_head."
+                )
+            if submission_info.get("doc_full") and not git_ancestor(repo_root, submission_info["doc_full"], l_doc_full):
+                errs.append(
+                    f"{latest_path}: doc_head ({l_doc_short}) precedes initial submission endpoint."
+                )
+            if not git_ancestor(repo_root, l_doc_full, cur_head_full):
+                errs.append(
+                    f"{latest_path}: doc_head ({l_doc_short}) does not belong to current HEAD ({cur_head_short})."
+                )
+
+    sub_doc_field = fields.get("最新送审／回复文档", "") or fields.get("最新送审文档", "")
+    if f"({batch}/" not in sub_doc_field:
+        errs.append(f"{latest_path}: latest author link must target '{batch}/...'.")
+    return errs
+
+
+def _repo_rel_parts_from_arg(repo_root: Path, raw_file: str) -> tuple[str, ...]:
+    """Convert raw --files CLI argument to safe relative path parts inside repo_root."""
+    if "\x00" in raw_file:
+        raise HelperError(f"Invalid path with NUL byte: {raw_file!r}")
+    p = Path(raw_file)
+    if p.is_absolute():
+        try:
+            rel = p.relative_to(repo_root)
+        except ValueError as exc:
+            raise HelperError(f"Refusing path outside repository root: {raw_file}") from exc
+    else:
+        rel = p
+    if rel.drive or rel.is_absolute():
+        raise HelperError(f"Refusing non-relative path: {raw_file}")
+    parts = [part for part in rel.parts if part not in ("", ".")]
+    if not parts or any(part == ".." for part in parts):
+        raise HelperError(f"Refusing path traversal outside repository root: {raw_file}")
+    return tuple(parts)
 
 
 def cmd_check(args: argparse.Namespace) -> int:
@@ -518,51 +1046,90 @@ def cmd_check(args: argparse.Namespace) -> int:
     warnings: list[str] = []
     checked_files: list[str] = []
 
-    if args.files:
+    if args.files is not None:
+        if not args.files:
+            raise HelperError("--files requires at least one file path.")
         for raw_file in args.files:
-            path = ensure_within(repo_root, (repo_root / raw_file) if not Path(raw_file).is_absolute() else Path(raw_file))
-            if not path.is_file():
-                errors.append(f"Missing target file: {path}")
+            try:
+                rel_parts = _repo_rel_parts_from_arg(repo_root, raw_file)
+                safe_path = validate_safe_existing_file(repo_root, rel_parts)
+            except HelperError as exc:
+                errors.append(str(exc))
                 continue
-            text, fmt_errs = read_text_lf_strict(path)
+            text, fmt_errs = read_text_lf_strict(safe_path)
             errors.extend(fmt_errs)
             if text is not None:
-                errors.extend(check_markdown_links(path, text))
-            checked_files.append(str(path))
+                errors.extend(check_markdown_links(repo_root, safe_path, text))
+            checked_files.append(str(safe_path))
     else:
-        review_root = ensure_within(repo_root, repo_root / "out" / "codex_review")
-        batch_name = args.batch
-        if not batch_name:
+        if not args.batch:
             raise HelperError("Specify either --batch <name> or --files <path...>.")
-        batch = validate_batch_name(batch_name)
-        batch_dir = ensure_within(review_root, review_root / batch)
-        if not batch_dir.is_dir():
-            raise HelperError(f"Review batch directory not found: {batch_dir}")
-        md_files = sorted(batch_dir.glob("*.md"))
+        batch = validate_batch_name(args.batch)
+        batch_dir = validate_safe_dir_chain(repo_root, ("out", "codex_review", batch), create_missing=False)
+        batch_real = batch_dir.resolve()
+
+        md_files: list[Path] = []
+        try:
+            entries = sorted(batch_dir.iterdir(), key=lambda p: p.name)
+        except OSError as exc:
+            raise HelperError(f"Failed listing {batch_dir}: {exc}") from exc
+
+        for entry in entries:
+            if not entry.name.endswith(".md"):
+                continue
+            try:
+                st = os.lstat(entry)
+            except OSError as exc:
+                errors.append(f"{entry}: cannot stat entry ({exc}).")
+                continue
+            if is_reparse_or_symlink(st):
+                errors.append(f"{entry}: symlink or reparse markdown file is forbidden.")
+                continue
+            if not stat.S_ISREG(st.st_mode):
+                errors.append(f"{entry}: non-regular markdown entry is forbidden.")
+                continue
+            if entry.resolve().parent != batch_real:
+                errors.append(f"{entry}: resolved path leaves batch directory {batch_real}.")
+                continue
+            md_files.append(entry)
+
         if not md_files:
-            raise HelperError(f"No markdown files found in {batch_dir}")
-        seq_errs, seq_warns = check_round_sequence(md_files, batch_dir)
-        errors.extend(seq_errs)
-        warnings.extend(seq_warns)
+            raise HelperError(f"No valid regular markdown files found in {batch_dir}")
+
+        errors.extend(check_round_sequence(md_files, batch_dir))
+        submission_info: dict[str, str] = {}
+        has_canonical_submission = False
+
         for path in md_files:
             text, fmt_errs = read_text_lf_strict(path)
             errors.extend(fmt_errs)
             if text is not None:
-                errors.extend(check_markdown_links(path, text))
-                if args.strict_meta and path.name == "01_gemini_submission.md":
-                    errors.extend(check_submission_metadata(path, text))
+                errors.extend(check_markdown_links(repo_root, path, text))
+                if path.name == "01_gemini_submission.md":
+                    has_canonical_submission = True
+                    if args.strict_meta:
+                        meta_errs, submission_info = check_submission_metadata(repo_root, path, text)
+                        errors.extend(meta_errs)
             checked_files.append(str(path))
+
+        if args.strict_meta and not has_canonical_submission:
+            errors.append(f"{batch_dir}: --strict-meta requires canonical '01_gemini_submission.md'.")
+
         if args.check_latest:
-            latest_path = ensure_within(review_root, review_root / "LATEST.md")
-            if not latest_path.is_file():
-                errors.append(f"Missing LATEST.md at {latest_path}")
+            try:
+                latest_path = validate_safe_existing_file(
+                    repo_root, ("out", "codex_review", "LATEST.md")
+                )
+            except HelperError as exc:
+                errors.append(str(exc))
             else:
                 text, fmt_errs = read_text_lf_strict(latest_path)
                 errors.extend(fmt_errs)
                 if text is not None:
-                    errors.extend(check_markdown_links(latest_path, text))
-                    if batch not in text:
-                        errors.append(f"{latest_path}: active batch '{batch}' is not referenced.")
+                    errors.extend(check_markdown_links(repo_root, latest_path, text))
+                    errors.extend(
+                        check_latest_pointer(repo_root, latest_path, text, batch, submission_info)
+                    )
                 checked_files.append(str(latest_path))
 
     result = {
@@ -589,8 +1156,12 @@ def cmd_check(args: argparse.Namespace) -> int:
 
 def cmd_status(args: argparse.Namespace) -> int:
     repo_root = find_repo_root(args.repo_root)
-    review_root = ensure_within(repo_root, repo_root / "out" / "codex_review")
-    latest_path = review_root / "LATEST.md"
+    out_dir = repo_root / "out"
+    review_dir = out_dir / "codex_review"
+
+    review_root: Path | None = None
+    if os.path.lexists(review_dir):
+        review_root = validate_safe_dir_chain(repo_root, ("out", "codex_review"), create_missing=False)
 
     _, head_short = resolve_commit(repo_root, "HEAD")
     branch = current_branch(repo_root)
@@ -598,15 +1169,38 @@ def cmd_status(args: argparse.Namespace) -> int:
     dirty = bool(run_git(repo_root, "status", "--porcelain").stdout.strip())
 
     batches: list[dict[str, Any]] = []
-    if review_root.is_dir():
-        for entry in sorted(review_root.iterdir()):
-            if entry.is_dir() and not entry.name.startswith("."):
-                files = sorted(p.name for p in entry.glob("*.md"))
-                batches.append({"batch": entry.name, "files": files})
+    skipped_entries: list[str] = []
+    if review_root is not None:
+        for entry in sorted(review_root.iterdir(), key=lambda p: p.name):
+            if entry.name.startswith("."):
+                continue
+            try:
+                st = os.lstat(entry)
+            except OSError:
+                continue
+            if is_reparse_or_symlink(st):
+                skipped_entries.append(f"{entry.name} (reparse/symlink skipped)")
+                continue
+            if not stat.S_ISDIR(st.st_mode):
+                continue
+            files: list[str] = []
+            for child in sorted(entry.iterdir(), key=lambda p: p.name):
+                if not child.name.endswith(".md"):
+                    continue
+                cst = os.lstat(child)
+                if not is_reparse_or_symlink(cst) and stat.S_ISREG(cst.st_mode):
+                    files.append(child.name)
+            batches.append({"batch": entry.name, "files": files})
 
     latest_excerpt = ""
-    if latest_path.is_file():
-        latest_excerpt = latest_path.read_text(encoding="utf-8", errors="replace").strip()
+    latest_exists = False
+    if review_root is not None and os.path.lexists(review_root / "LATEST.md"):
+        safe_latest = validate_safe_existing_file(repo_root, ("out", "codex_review", "LATEST.md"))
+        latest_exists = True
+        latest_text, fmt_errs = read_text_lf_strict(safe_latest)
+        if latest_text is None:
+            raise HelperError("; ".join(fmt_errs))
+        latest_excerpt = latest_text.strip()
 
     payload = {
         "repo_root": str(repo_root),
@@ -614,8 +1208,9 @@ def cmd_status(args: argparse.Namespace) -> int:
         "head": head_short,
         "upstream": f"{up_name}@{up_full[:8]}" if up_name and up_full else None,
         "dirty": dirty,
-        "latest_exists": latest_path.is_file(),
+        "latest_exists": latest_exists,
         "batches": batches,
+        "skipped_entries": skipped_entries,
     }
     if args.json:
         print(json.dumps(payload, indent=2, ensure_ascii=False))
@@ -627,6 +1222,8 @@ def cmd_status(args: argparse.Namespace) -> int:
         print(f"Batches under out/codex_review/: {len(batches)}")
         for b in batches:
             print(f"  - {b['batch']}: {', '.join(b['files'])}")
+        for s in skipped_entries:
+            print(f"WARN: skipped {s}")
         if latest_excerpt:
             print("--- LATEST.md ---")
             print(latest_excerpt)
@@ -648,7 +1245,6 @@ def build_parser() -> argparse.ArgumentParser:
     p_init.add_argument("--profile", choices=PROFILES, default="general")
     p_init.add_argument("--title", default=None, help="Human-readable batch title")
     p_init.add_argument("--allow-dirty", action="store_true", help="Allow dirty working tree during init")
-    p_init.add_argument("--force", action="store_true", help="Overwrite existing 01_gemini_submission.md")
     p_init.add_argument("--no-update-latest", action="store_true", help="Do not overwrite LATEST.md")
     p_init.add_argument("--repo-root", type=Path, default=None, help="Override repository root (for tests)")
     p_init.set_defaults(func=cmd_init)
@@ -657,7 +1253,7 @@ def build_parser() -> argparse.ArgumentParser:
     p_check.add_argument("--batch", default=None, help="Batch folder name under out/codex_review/")
     p_check.add_argument("--files", nargs="*", default=None, help="Explicit markdown files relative to repo root")
     p_check.add_argument("--check-latest", action="store_true", help="Also verify out/codex_review/LATEST.md")
-    p_check.add_argument("--strict-meta", action="store_true", help="Require post_review_action and frozen range fields")
+    p_check.add_argument("--strict-meta", action="store_true", help="Strictly verify frozen SHAs, branch/upstream, and post_review_action")
     p_check.add_argument("--json", action="store_true", help="Emit JSON result")
     p_check.add_argument("--repo-root", type=Path, default=None, help="Override repository root (for tests)")
     p_check.set_defaults(func=cmd_check)
