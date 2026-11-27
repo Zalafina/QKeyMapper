@@ -677,6 +677,207 @@ bool parseMappingCrosshairUpdate(const QJsonValue &rawValue, MappingCrosshairUpd
     }
     return true;
 }
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+bool parseMappingFloatingButtonUpdate(const QJsonValue &rawValue, MappingFloatingButtonUpdate &out, const char *&errorOut)
+{
+    using namespace QKeyMapperConstants;
+    const auto fail = [&](const char *msg) {
+        errorOut = msg;
+        return false;
+    };
+    const auto fields = rawValue.toObject();
+    if (!rawValue.isObject() || fields.isEmpty()) {
+        return fail("Provide a non-empty floating_button object.");
+    }
+    static const QSet<QString> allowedFields{
+        QStringLiteral("style_code"), QStringLiteral("enable"), QStringLiteral("label"),
+        QStringLiteral("show_on_mapping_start"), QStringLiteral("show_tool_tip"),
+        QStringLiteral("sync_pressed_locked_state"), QStringLiteral("always_on_top"),
+        QStringLiteral("mouse_pass_through"), QStringLiteral("drag_to_move"),
+        QStringLiteral("sync_group_id"),
+        QStringLiteral("button_color"), QStringLiteral("pressed_color"), QStringLiteral("locked_color"),
+        QStringLiteral("text_color"), QStringLiteral("border_color"), QStringLiteral("border_width"),
+        QStringLiteral("width"), QStringLiteral("height"), QStringLiteral("font_size"),
+        QStringLiteral("font_weight"), QStringLiteral("font_family"), QStringLiteral("radius"),
+        QStringLiteral("normal_opacity"), QStringLiteral("pressed_opacity"), QStringLiteral("locked_opacity"),
+        QStringLiteral("enable_gradient_fill"), QStringLiteral("enable_hover_animation"),
+        QStringLiteral("hover_effect_strength"), QStringLiteral("hover_glow_strength"),
+        QStringLiteral("hover_contrast_mode"), QStringLiteral("hover_custom_color"),
+        QStringLiteral("hover_animation_duration"),
+        QStringLiteral("reference_point"), QStringLiteral("x_offset"), QStringLiteral("y_offset")};
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        if (!allowedFields.contains(it.key())) {
+            return fail("Unknown floating_button field.");
+        }
+    }
+    const auto parseColor = [&](const QString &key, std::optional<QString> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        if (!val.isString()) return false;
+        const QString s = val.toString();
+        static const QRegularExpression re6(QStringLiteral("^#[0-9A-Fa-f]{6}$"));
+        static const QRegularExpression re8(QStringLiteral("^#[0-9A-Fa-f]{8}$"));
+        if (s == QLatin1String("default")) {
+            target = s;
+            return true;
+        }
+        if (re6.match(s).hasMatch()) {
+            target = QStringLiteral("#ff") + s.mid(1).toLower();
+            return true;
+        }
+        if (re8.match(s).hasMatch()) {
+            target = s.toLower();
+            return true;
+        }
+        return false;
+    };
+    const auto parseIntRange = [&](const QString &key, int minVal, int maxVal, std::optional<int> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        const int parsed = val.toInt(minVal - 1);
+        if (!val.isDouble() || std::floor(val.toDouble()) != val.toDouble()
+            || parsed < minVal || parsed > maxVal) {
+            return false;
+        }
+        target = parsed;
+        return true;
+    };
+    const auto parseBoolField = [&](const QString &key, std::optional<bool> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        if (!val.isBool()) return false;
+        target = val.toBool();
+        return true;
+    };
+    const auto parseOpacity = [&](const QString &key, std::optional<double> &target) -> bool {
+        if (!fields.contains(key)) return true;
+        const auto val = fields.value(key);
+        const double rawOpacity = val.toDouble(-1.0);
+        if (!val.isDouble() || !qIsFinite(rawOpacity)
+            || rawOpacity < FLOATINGBUTTON_OPACITY_MIN || rawOpacity > FLOATINGBUTTON_OPACITY_MAX
+            || std::abs(rawOpacity * 100.0 - double(qRound(rawOpacity * 100.0))) > 1e-6) {
+            return false;
+        }
+        target = double(qRound(rawOpacity * 100.0)) / 100.0;
+        return true;
+    };
+
+    if (fields.contains(QStringLiteral("style_code"))) {
+        const auto val = fields.value(QStringLiteral("style_code"));
+        const QString s = val.toString();
+        if (!val.isString() || s.trimmed().isEmpty() || s.size() > 1024
+            || s.contains(QChar(0)) || s.contains(QLatin1Char('\r')) || s.contains(QLatin1Char('\n'))) {
+            return fail("floating_button.style_code must be a non-empty single-line string of at most 1024 UTF-16 code units.");
+        }
+        out.styleCode = s;
+    }
+    if (fields.contains(QStringLiteral("label"))) {
+        const auto val = fields.value(QStringLiteral("label"));
+        const QString s = val.toString();
+        if (!val.isString() || s.size() > 255
+            || s.contains(QChar(0)) || s.contains(QLatin1Char('\r')) || s.contains(QLatin1Char('\n'))
+            || s.contains(QLatin1Char('#')) || s.contains(QLatin1Char('|'))) {
+            return fail("floating_button.label must be a single-line string without '#', '|', or newlines (max 255 UTF-16 code units).");
+        }
+        out.label = s;
+    }
+    if (fields.contains(QStringLiteral("font_family"))) {
+        const auto val = fields.value(QStringLiteral("font_family"));
+        const QString s = val.toString();
+        if (!val.isString() || s.size() > 255
+            || s.contains(QChar(0)) || s.contains(QLatin1Char('\r')) || s.contains(QLatin1Char('\n'))) {
+            return fail("floating_button.font_family must be single-line and at most 255 UTF-16 code units.");
+        }
+        out.fontFamily = s.trimmed();
+    }
+    if (!parseColor(QStringLiteral("button_color"), out.buttonColor)
+        || !parseColor(QStringLiteral("pressed_color"), out.pressedColor)
+        || !parseColor(QStringLiteral("locked_color"), out.lockedColor)
+        || !parseColor(QStringLiteral("text_color"), out.textColor)
+        || !parseColor(QStringLiteral("border_color"), out.borderColor)
+        || !parseColor(QStringLiteral("hover_custom_color"), out.hoverCustomColor)) {
+        return fail("floating_button color fields must be \"default\", #RRGGBB, or #AARRGGBB.");
+    }
+    if (!parseOpacity(QStringLiteral("normal_opacity"), out.normalOpacity)
+        || !parseOpacity(QStringLiteral("pressed_opacity"), out.pressedOpacity)
+        || !parseOpacity(QStringLiteral("locked_opacity"), out.lockedOpacity)) {
+        return fail("floating_button opacity fields must be finite numbers in 0.01..1.00 with at most 2 decimal places.");
+    }
+    if (!parseIntRange(QStringLiteral("sync_group_id"), FLOATINGBUTTON_SYNCGROUPID_MIN, FLOATINGBUTTON_SYNCGROUPID_MAX, out.syncGroupId)
+        || !parseIntRange(QStringLiteral("border_width"), FLOATINGBUTTON_BORDER_WIDTH_MIN, FLOATINGBUTTON_BORDER_WIDTH_MAX, out.borderWidth)
+        || !parseIntRange(QStringLiteral("width"), FLOATINGBUTTON_WIDTH_MIN, FLOATINGBUTTON_WIDTH_MAX, out.width)
+        || !parseIntRange(QStringLiteral("height"), FLOATINGBUTTON_HEIGHT_MIN, FLOATINGBUTTON_HEIGHT_MAX, out.height)
+        || !parseIntRange(QStringLiteral("font_size"), FLOATINGBUTTON_FONT_SIZE_MIN, FLOATINGBUTTON_FONT_SIZE_MAX, out.fontSize)
+        || !parseIntRange(QStringLiteral("font_weight"), FLOATINGBUTTON_FONT_WEIGHT_MIN, FLOATINGBUTTON_FONT_WEIGHT_MAX, out.fontWeight)
+        || !parseIntRange(QStringLiteral("radius"), FLOATINGBUTTON_RADIUS_MIN, FLOATINGBUTTON_RADIUS_MAX, out.radius)
+        || !parseIntRange(QStringLiteral("hover_effect_strength"), FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MIN, FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MAX, out.hoverEffectStrength)
+        || !parseIntRange(QStringLiteral("hover_glow_strength"), FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MIN, FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MAX, out.hoverGlowStrength)
+        || !parseIntRange(QStringLiteral("hover_contrast_mode"), FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN, FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX, out.hoverContrastMode)
+        || !parseIntRange(QStringLiteral("hover_animation_duration"), FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MIN, FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MAX, out.hoverAnimationDuration)
+        || !parseIntRange(QStringLiteral("reference_point"), FLOATINGWINDOW_REFERENCEPOINT_MIN, FLOATINGWINDOW_REFERENCEPOINT_MAX, out.referencePoint)
+        || !parseIntRange(QStringLiteral("x_offset"), FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX, out.xOffset)
+        || !parseIntRange(QStringLiteral("y_offset"), FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX, out.yOffset)) {
+        return fail("A floating_button integer field is invalid or out of range.");
+    }
+    if (!parseBoolField(QStringLiteral("enable"), out.enable)
+        || !parseBoolField(QStringLiteral("show_on_mapping_start"), out.showOnMappingStart)
+        || !parseBoolField(QStringLiteral("show_tool_tip"), out.showToolTip)
+        || !parseBoolField(QStringLiteral("sync_pressed_locked_state"), out.syncPressedLockedState)
+        || !parseBoolField(QStringLiteral("always_on_top"), out.alwaysOnTop)
+        || !parseBoolField(QStringLiteral("mouse_pass_through"), out.mousePassThrough)
+        || !parseBoolField(QStringLiteral("drag_to_move"), out.dragToMove)
+        || !parseBoolField(QStringLiteral("enable_gradient_fill"), out.enableGradientFill)
+        || !parseBoolField(QStringLiteral("enable_hover_animation"), out.enableHoverAnimation)) {
+        return fail("floating_button boolean fields must be booleans.");
+    }
+    return true;
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+bool validateRowAppearancePreview(bool isCrosshair, const QJsonObject &arguments,
+    MappingChangeRequest &result, const char *&errorOut)
+{
+    const auto fail = [&](const char *msg) {
+        errorOut = msg;
+        return false;
+    };
+    const auto reference = arguments.value(QStringLiteral("source_ref"));
+    const QString refStr = reference.toString();
+    const auto parts = refStr.split(QLatin1Char(':'));
+    bool tabOk = false, rowOk = false;
+    const int tab = parts.size() == 4 ? parts.at(2).toInt(&tabOk) : -1;
+    const int row = parts.size() == 4 ? parts.at(3).toInt(&rowOk) : -1;
+    if (!reference.isString() || refStr.size() > 128 || parts.size() != 4
+        || !isLowerHex(parts.at(0), 64) || parts.at(1) != QStringLiteral("row") || !tabOk || !rowOk
+        || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3)) {
+        return fail("A canonical current source row is required.");
+    }
+    result.action = MappingChangeAction::UpdateMapping;
+    result.update.sourceReference = refStr;
+    result.update.sourceRevision = parts.at(0);
+    result.update.sourceTabRef = parts.at(0) + QStringLiteral(":source:") + parts.at(2);
+    result.update.sourceRow = row;
+    result.update.sendMethod = -1;
+    if (isCrosshair) {
+        MappingCrosshairUpdate parsedCrosshair;
+        if (!parseMappingCrosshairUpdate(arguments.value(QStringLiteral("crosshair")), parsedCrosshair, errorOut)) {
+            return false;
+        }
+        result.update.crosshair = parsedCrosshair;
+    } else {
+        MappingFloatingButtonUpdate parsedFloatingButton;
+        if (!parseMappingFloatingButtonUpdate(arguments.value(QStringLiteral("floating_button")), parsedFloatingButton, errorOut)) {
+            return false;
+        }
+        result.update.floatingButton = parsedFloatingButton;
+    }
+    return true;
+}
 }
 
 const char *mappingRowMoveAction(MappingRowMove move)
@@ -1688,6 +1889,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool deletePreview = preview && action.isString() && action.toString() == QStringLiteral("mapping.delete");
     const bool updatePreview = preview && action == QJsonValue(QStringLiteral("mapping.update"));
     const bool crosshairPreview = preview && action == QLatin1String("mapping.set_crosshair");
+    const bool floatingButtonPreview = preview && action == QLatin1String("mapping.set_floating_button");
     const bool duplicatePreview = preview && action == QLatin1String("mapping.duplicate");
     MappingRowMove rowMove = MappingRowMove::None;
     if (preview) {
@@ -1753,7 +1955,7 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
-        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !crosshairPreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
+        || (action.toString() != QStringLiteral("mapping.add") && !savePreview && !deletePreview && !updatePreview && !crosshairPreview && !floatingButtonPreview && !movePreview && !duplicatePreview && !renamePreview && !tabActionPreview && !preferencesPreview))) return fail("Unsupported preview action.");
     const QString idField = query ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
     const char *singleTabField = renamePreview ? "tab_name"
         : tabHotkeyPreview ? "tab_hotkey"
@@ -1808,6 +2010,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         allowed = {QStringLiteral("action"), QStringLiteral("source_tab_ref")};
     } else if (crosshairPreview) {
         allowed = {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("crosshair")};
+    } else if (floatingButtonPreview) {
+        allowed = {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("floating_button")};
     } else if (movePreview) {
         allowed = {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("source_refs")};
     } else if (duplicatePreview) {
@@ -1875,29 +2079,11 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         }
         return result;
     }
-    if (crosshairPreview) {
-        const auto reference = arguments.value(QStringLiteral("source_ref"));
-        const QString refStr = reference.toString();
-        const auto parts = refStr.split(QLatin1Char(':'));
-        bool tabOk = false, rowOk = false;
-        const int tab = parts.size() == 4 ? parts.at(2).toInt(&tabOk) : -1;
-        const int row = parts.size() == 4 ? parts.at(3).toInt(&rowOk) : -1;
-        if (!reference.isString() || refStr.size() > 128 || parts.size() != 4
-            || !isLowerHex(parts.at(0), 64) || parts.at(1) != QStringLiteral("row") || !tabOk || !rowOk
-            || tab < 0 || row < 0 || QString::number(tab) != parts.at(2) || QString::number(row) != parts.at(3))
-            return fail("A canonical current source row is required.");
+    if (crosshairPreview || floatingButtonPreview) {
         const char *parseError = nullptr;
-        MappingCrosshairUpdate parsedCrosshair;
-        if (!parseMappingCrosshairUpdate(arguments.value(QStringLiteral("crosshair")), parsedCrosshair, parseError)) {
+        if (!validateRowAppearancePreview(crosshairPreview, arguments, result, parseError)) {
             return fail(parseError);
         }
-        result.action = MappingChangeAction::UpdateMapping;
-        result.update.sourceReference = refStr;
-        result.update.sourceRevision = parts.at(0);
-        result.update.sourceTabRef = parts.at(0) + QStringLiteral(":source:") + parts.at(2);
-        result.update.sourceRow = row;
-        result.update.sendMethod = -1;
-        result.update.crosshair = parsedCrosshair;
         return result;
     }
     if (updatePreview || movePreview || duplicatePreview) {
@@ -2548,6 +2734,79 @@ void appendMappingCrosshairCapabilities(QJsonArray &capabilities, const Capabili
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendMappingFloatingButtonCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    using namespace QKeyMapperConstants;
+    const QJsonObject rowRefSchema = CapabilitySchemaContext::string(
+        QStringLiteral("^[0-9a-f]{64}:row:(0|[1-9][0-9]{0,9}):(0|[1-9][0-9]{0,9})$"), 128);
+    const QJsonObject colorSchema = CapabilitySchemaContext::string(
+        QStringLiteral("^(default|#[0-9A-Fa-f]{6}|#[0-9A-Fa-f]{8})$"), 9);
+    const QJsonObject boolSchema{{QStringLiteral("type"), QStringLiteral("boolean")}};
+    const QJsonObject opacitySchema{{QStringLiteral("type"), QStringLiteral("number")},
+        {QStringLiteral("minimum"), FLOATINGBUTTON_OPACITY_MIN}, {QStringLiteral("maximum"), FLOATINGBUTTON_OPACITY_MAX}};
+    const QJsonObject floatingButtonSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("minProperties"), 1},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("style_code"), CapabilitySchemaContext::string(QStringLiteral("^[^\\u0000\\r\\n]*\\S[^\\u0000\\r\\n]*$"), 1024)},
+            {QStringLiteral("enable"), boolSchema},
+            {QStringLiteral("label"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")}, {QStringLiteral("maxLength"), 255},
+                {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n#|]*$")}}},
+            {QStringLiteral("show_on_mapping_start"), boolSchema},
+            {QStringLiteral("show_tool_tip"), boolSchema},
+            {QStringLiteral("sync_pressed_locked_state"), boolSchema},
+            {QStringLiteral("always_on_top"), boolSchema},
+            {QStringLiteral("mouse_pass_through"), boolSchema},
+            {QStringLiteral("drag_to_move"), boolSchema},
+            {QStringLiteral("sync_group_id"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_SYNCGROUPID_MIN, FLOATINGBUTTON_SYNCGROUPID_MAX)},
+            {QStringLiteral("button_color"), colorSchema},
+            {QStringLiteral("pressed_color"), colorSchema},
+            {QStringLiteral("locked_color"), colorSchema},
+            {QStringLiteral("text_color"), colorSchema},
+            {QStringLiteral("border_color"), colorSchema},
+            {QStringLiteral("border_width"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_BORDER_WIDTH_MIN, FLOATINGBUTTON_BORDER_WIDTH_MAX)},
+            {QStringLiteral("width"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_WIDTH_MIN, FLOATINGBUTTON_WIDTH_MAX)},
+            {QStringLiteral("height"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_HEIGHT_MIN, FLOATINGBUTTON_HEIGHT_MAX)},
+            {QStringLiteral("font_size"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_FONT_SIZE_MIN, FLOATINGBUTTON_FONT_SIZE_MAX)},
+            {QStringLiteral("font_weight"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_FONT_WEIGHT_MIN, FLOATINGBUTTON_FONT_WEIGHT_MAX)},
+            {QStringLiteral("font_family"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")}, {QStringLiteral("maxLength"), 255},
+                {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*$")}}},
+            {QStringLiteral("radius"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_RADIUS_MIN, FLOATINGBUTTON_RADIUS_MAX)},
+            {QStringLiteral("normal_opacity"), opacitySchema},
+            {QStringLiteral("pressed_opacity"), opacitySchema},
+            {QStringLiteral("locked_opacity"), opacitySchema},
+            {QStringLiteral("enable_gradient_fill"), boolSchema},
+            {QStringLiteral("enable_hover_animation"), boolSchema},
+            {QStringLiteral("hover_effect_strength"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MIN, FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MAX)},
+            {QStringLiteral("hover_glow_strength"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MIN, FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MAX)},
+            {QStringLiteral("hover_contrast_mode"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN, FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX)},
+            {QStringLiteral("hover_custom_color"), colorSchema},
+            {QStringLiteral("hover_animation_duration"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MIN, FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MAX)},
+            {QStringLiteral("reference_point"), CapabilitySchemaContext::boundedInteger(FLOATINGWINDOW_REFERENCEPOINT_MIN, FLOATINGWINDOW_REFERENCEPOINT_MAX)},
+            {QStringLiteral("x_offset"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX)},
+            {QStringLiteral("y_offset"), CapabilitySchemaContext::boundedInteger(FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX)}}}};
+    auto fbPreviewCap = CapabilitySchemaContext::capability("mapping.set_floating_button.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.set_floating_button")}}},
+            {QStringLiteral("source_ref"), rowRefSchema},
+            {QStringLiteral("floating_button"), floatingButtonSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_ref"), QStringLiteral("floating_button")}));
+    auto fbApplyCap = CapabilitySchemaContext::capability("mapping.set_floating_button.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&fbPreviewCap, &fbApplyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_visible_attached_row_only"),
+            QStringLiteral("argb_rgb_hex_or_default_colors"), QStringLiteral("two_decimal_opacity_precision"),
+            QStringLiteral("label_excludes_ini_separators_hash_pipe"),
+            QStringLiteral("hover_custom_color_requires_custom_mode_unless_style_code"),
+            QStringLiteral("supports_normal_and_common_tabs"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -2683,6 +2942,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     appendTabFloatingWindowCapabilities(capabilities, ctx);
     appendTabCustomImageCapabilities(capabilities, ctx);
     appendMappingCrosshairCapabilities(capabilities, ctx);
+    appendMappingFloatingButtonCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

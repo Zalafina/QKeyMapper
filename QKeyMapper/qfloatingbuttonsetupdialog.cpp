@@ -1660,24 +1660,25 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
 
     MAP_KEYDATA &keymapdata = (*mappingDataList)[m_ItemRow];
 
-    keymapdata.FloatingButton_Enable = m_EnableCheckBox->isChecked();
-    keymapdata.FloatingButton_Label = m_LabelLineEdit->text();
-    keymapdata.FloatingButton_ShowOnMappingStart = m_ShowOnStartCheckBox->isChecked();
-    keymapdata.FloatingButton_ShowToolTip = m_ShowToolTipCheckBox->isChecked();
-    keymapdata.FloatingButton_SyncPressedLockedState = m_SyncPressedLockedStateCheckBox->isChecked();
-    keymapdata.FloatingButton_AlwaysOnTop = m_AlwaysOnTopCheckBox->isChecked();
-    keymapdata.FloatingButton_MousePassThrough = m_MousePassThroughCheckBox->isChecked();
-    keymapdata.FloatingButton_DragToMove = m_DragToMoveCheckBox->isChecked();
-    keymapdata.FloatingButton_EnableGradientFill = m_EnableGradientFillCheckBox->isChecked();
-    keymapdata.FloatingButton_EnableHoverAnimation = m_EnableHoverAnimationCheckBox->isChecked();
-    keymapdata.FloatingButton_HoverEffectStrength = m_HoverEffectStrengthSpinBox->value();
-    keymapdata.FloatingButton_HoverGlowStrength = m_HoverGlowStrengthSpinBox->value();
-    keymapdata.FloatingButton_HoverContrastMode = qBound(FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN,
-                                                         m_HoverContrastModeComboBox->currentIndex(),
-                                                         FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX);
-    keymapdata.FloatingButton_HoverAnimationDuration = m_HoverAnimationDurationSpinBox->value();
-    if (keymapdata.FloatingButton_HoverContrastMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM) {
-        keymapdata.FloatingButton_HoverCustomColor = m_HoverCustomColorPicker->getColor();
+    MappingFloatingButtonSettings settings = QKeyMapper::floatingButtonSettingsFromRow(keymapdata);
+    settings.enable = m_EnableCheckBox->isChecked();
+    settings.label = m_LabelLineEdit->text();
+    settings.showOnMappingStart = m_ShowOnStartCheckBox->isChecked();
+    settings.showToolTip = m_ShowToolTipCheckBox->isChecked();
+    settings.syncPressedLockedState = m_SyncPressedLockedStateCheckBox->isChecked();
+    settings.alwaysOnTop = m_AlwaysOnTopCheckBox->isChecked();
+    settings.mousePassThrough = m_MousePassThroughCheckBox->isChecked();
+    settings.dragToMove = m_DragToMoveCheckBox->isChecked();
+    settings.enableGradientFill = m_EnableGradientFillCheckBox->isChecked();
+    settings.enableHoverAnimation = m_EnableHoverAnimationCheckBox->isChecked();
+    settings.hoverEffectStrength = m_HoverEffectStrengthSpinBox->value();
+    settings.hoverGlowStrength = m_HoverGlowStrengthSpinBox->value();
+    settings.hoverContrastMode = qBound(FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN,
+                                        m_HoverContrastModeComboBox->currentIndex(),
+                                        FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX);
+    settings.hoverAnimationDuration = m_HoverAnimationDurationSpinBox->value();
+    if (settings.hoverContrastMode == FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM) {
+        settings.hoverCustomColor = m_HoverCustomColorPicker->getColor();
     }
 
     const int currentTabIndex = QKeyMapper::s_KeyMappingTabWidgetCurrentIndex;
@@ -1691,28 +1692,29 @@ void QFloatingButtonSetupDialog::applyToCurrentItem()
         }
     }
 
-    keymapdata.FloatingButton_Width = m_WidthSpinBox->value();
-    keymapdata.FloatingButton_Height = m_HeightSpinBox->value();
-    keymapdata.FloatingButton_FontSize = m_FontSizeSpinBox->value();
-    keymapdata.FloatingButton_FontWeight = qBound(FLOATINGBUTTON_FONT_WEIGHT_MIN, m_FontWeightComboBox->currentIndex(), FLOATINGBUTTON_FONT_WEIGHT_MAX);
-    keymapdata.FloatingButton_FontFamily = m_FontFamily;
-    keymapdata.FloatingButton_Radius = m_RadiusSpinBox->value();
-    keymapdata.FloatingButton_BorderWidth = m_BorderWidthSpinBox->value();
-    keymapdata.FloatingButton_NormalOpacity = m_NormalOpacitySpinBox->value();
-    keymapdata.FloatingButton_PressedOpacity = m_PressedOpacitySpinBox->value();
-    keymapdata.FloatingButton_LockedOpacity = m_LockedOpacitySpinBox->value();
-    keymapdata.FloatingButton_Opacity = keymapdata.FloatingButton_NormalOpacity;
+    settings.width = m_WidthSpinBox->value();
+    settings.height = m_HeightSpinBox->value();
+    settings.fontSize = m_FontSizeSpinBox->value();
+    settings.fontWeight = qBound(FLOATINGBUTTON_FONT_WEIGHT_MIN, m_FontWeightComboBox->currentIndex(), FLOATINGBUTTON_FONT_WEIGHT_MAX);
+    settings.fontFamily = m_FontFamily;
+    settings.radius = m_RadiusSpinBox->value();
+    settings.borderWidth = m_BorderWidthSpinBox->value();
+    settings.normalOpacity = m_NormalOpacitySpinBox->value();
+    settings.pressedOpacity = m_PressedOpacitySpinBox->value();
+    settings.lockedOpacity = m_LockedOpacitySpinBox->value();
 
-    keymapdata.FloatingButton_ReferencePoint = m_ReferencePointComboBox->currentIndex();
-    keymapdata.FloatingButton_X_Offset = m_OffsetXSpinBox->value();
-    keymapdata.FloatingButton_Y_Offset = m_OffsetYSpinBox->value();
-    keymapdata.FloatingButton_SyncGroupId = m_SyncGroupIdSpinBox->value();
+    settings.referencePoint = m_ReferencePointComboBox->currentIndex();
+    settings.xOffset = m_OffsetXSpinBox->value();
+    settings.yOffset = m_OffsetYSpinBox->value();
+    settings.syncGroupId = m_SyncGroupIdSpinBox->value();
 
-    keymapdata.FloatingButton_ButtonColor = m_ButtonColorPicker->getColor();
-    keymapdata.FloatingButton_PressedColor = m_PressedColorPicker->getColor();
-    keymapdata.FloatingButton_LockedColor = m_LockedColorPicker->getColor();
-    keymapdata.FloatingButton_TextColor = m_TextColorPicker->getColor();
-    keymapdata.FloatingButton_BorderColor = m_BorderColorPicker->getColor();
+    settings.buttonColor = m_ButtonColorPicker->getColor();
+    settings.pressedColor = m_PressedColorPicker->getColor();
+    settings.lockedColor = m_LockedColorPicker->getColor();
+    settings.textColor = m_TextColorPicker->getColor();
+    settings.borderColor = m_BorderColorPicker->getColor();
+
+    QKeyMapper::writeFloatingButtonSettingsToRow(keymapdata, settings);
 
     updateStyleCodeDisplay();
 }

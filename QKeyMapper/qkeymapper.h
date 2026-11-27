@@ -536,6 +536,44 @@ struct MappingCrosshairSettings
     int yOffset = QKeyMapperConstants::CROSSHAIR_Y_OFFSET_DEFAULT;
 };
 
+struct MappingFloatingButtonSettings
+{
+    bool enable = QKeyMapperConstants::FLOATINGBUTTON_ENABLE_DEFAULT;
+    QString label;
+    bool showOnMappingStart = QKeyMapperConstants::FLOATINGBUTTON_SHOWONMAPPINGSTART_DEFAULT;
+    bool showToolTip = QKeyMapperConstants::FLOATINGBUTTON_SHOWTOOLTIP_DEFAULT;
+    bool syncPressedLockedState = QKeyMapperConstants::FLOATINGBUTTON_SYNCPRESSEDLOCKEDSTATE_DEFAULT;
+    bool alwaysOnTop = QKeyMapperConstants::FLOATINGBUTTON_ALWAYSONTOP_DEFAULT;
+    bool mousePassThrough = QKeyMapperConstants::FLOATINGBUTTON_MOUSE_PASSTHROUGH_DEFAULT;
+    bool dragToMove = QKeyMapperConstants::FLOATINGBUTTON_DRAGTOMOVE_DEFAULT;
+    int syncGroupId = QKeyMapperConstants::FLOATINGBUTTON_SYNCGROUPID_DEFAULT;
+    QColor buttonColor = QKeyMapperConstants::FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR;
+    QColor pressedColor = QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR;
+    QColor lockedColor = QKeyMapperConstants::FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR;
+    QColor textColor = QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR;
+    QColor borderColor = QKeyMapperConstants::FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR;
+    int borderWidth = QKeyMapperConstants::FLOATINGBUTTON_BORDER_WIDTH_DEFAULT;
+    int width = QKeyMapperConstants::FLOATINGBUTTON_WIDTH_DEFAULT;
+    int height = QKeyMapperConstants::FLOATINGBUTTON_HEIGHT_DEFAULT;
+    int fontSize = QKeyMapperConstants::FLOATINGBUTTON_FONT_SIZE_DEFAULT;
+    int fontWeight = QKeyMapperConstants::FLOATINGBUTTON_FONT_WEIGHT_DEFAULT;
+    QString fontFamily;
+    int radius = QKeyMapperConstants::FLOATINGBUTTON_RADIUS_DEFAULT;
+    double normalOpacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
+    double pressedOpacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
+    double lockedOpacity = QKeyMapperConstants::FLOATINGBUTTON_OPACITY_DEFAULT;
+    bool enableGradientFill = QKeyMapperConstants::FLOATINGBUTTON_ENABLEGRADIENTFILL_DEFAULT;
+    bool enableHoverAnimation = QKeyMapperConstants::FLOATINGBUTTON_ENABLEHOVERANIMATION_DEFAULT;
+    int hoverEffectStrength = QKeyMapperConstants::FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT;
+    int hoverGlowStrength = QKeyMapperConstants::FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT;
+    int hoverContrastMode = QKeyMapperConstants::FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT;
+    QColor hoverCustomColor = QKeyMapperConstants::FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR;
+    int hoverAnimationDuration = QKeyMapperConstants::FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT;
+    int referencePoint = QKeyMapperConstants::FLOATINGWINDOW_REFERENCEPOINT_DEFAULT;
+    int xOffset = QKeyMapperConstants::FLOATINGBUTTON_X_OFFSET_DEFAULT;
+    int yOffset = QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT;
+};
+
 struct ActiveKeyMappingRowSourceInfo
 {
     int SourceTabIndex = -1;
@@ -2196,6 +2234,12 @@ public:
         bool deferTabDisplayRefresh = false);
     MappingCrosshairSettings getMappingSourceRowCrosshairSettings(int tabIndex, int row) const;
     bool setMappingSourceRowCrosshairSettings(int tabIndex, int row, const MappingCrosshairSettings &settings);
+    static MappingFloatingButtonSettings floatingButtonSettingsFromRow(const MAP_KEYDATA &row);
+    static void writeFloatingButtonSettingsToRow(MAP_KEYDATA &row, const MappingFloatingButtonSettings &settings);
+    static bool isValidFloatingButtonSettings(const MappingFloatingButtonSettings &settings);
+    static bool floatingButtonSettingsEqual(const MappingFloatingButtonSettings &a, const MappingFloatingButtonSettings &b);
+    MappingFloatingButtonSettings getMappingSourceRowFloatingButtonSettings(int tabIndex, int row) const;
+    bool setMappingSourceRowFloatingButtonSettings(int tabIndex, int row, const MappingFloatingButtonSettings &settings);
 private:
     void refreshAllKeyMappingTabWidget(void);
     QString automationSourceReadBasis(void) const;

@@ -454,6 +454,38 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             denied = await client.call_tool("qkm_preview_changes", {"action": "mapping.set_crosshair", "source_tab_ref": tab, "crosshair": {"center_size": 5}})
             assert denied.is_error is True and denied.structured_content is None
+            fb_base = {"action": "mapping.set_floating_button", "source_ref": row}
+            for fields in ({"enable": True, "label": "Attack-01", "show_on_mapping_start": False,
+                            "show_tool_tip": True, "sync_pressed_locked_state": False, "always_on_top": False,
+                            "mouse_pass_through": True, "drag_to_move": False, "sync_group_id": 999,
+                            "button_color": "#80AABBCC", "pressed_color": "#112233", "locked_color": "default",
+                            "text_color": "#FFEEDD", "border_color": "#40010203", "border_width": 50,
+                            "width": 640, "height": 4, "font_size": 72, "font_weight": 2, "font_family": "Consolas",
+                            "radius": 1000, "normal_opacity": 0.01, "pressed_opacity": 0.55, "locked_opacity": 1.0,
+                            "enable_gradient_fill": False, "enable_hover_animation": True,
+                            "hover_effect_strength": 200, "hover_glow_strength": 0, "hover_contrast_mode": 3,
+                            "hover_custom_color": "#CC556677", "hover_animation_duration": 500,
+                            "reference_point": 11, "x_offset": -50000, "y_offset": 50000},
+                           {"style_code": "FBS1;w=120;h=40", "enable": True}):
+                request = fb_base | {"floating_button": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for bad_fields in ({}, {"style_code": "   "}, {"style_code": "FBS1;w=1\n2"},
+                               {"label": "bad#label"}, {"label": "bad|label"}, {"label": "bad\nlabel"},
+                               {"font_family": "Consolas\nX"}, {"sync_group_id": -1}, {"sync_group_id": 1000},
+                               {"button_color": "#12345"}, {"border_width": 51}, {"width": 3}, {"height": 641},
+                               {"font_size": 0}, {"font_weight": 3}, {"radius": 1001},
+                               {"normal_opacity": 0.0}, {"pressed_opacity": 1.01}, {"locked_opacity": 0.123},
+                               {"hover_contrast_mode": 4}, {"hover_animation_duration": 79},
+                               {"reference_point": 12}, {"x_offset": -50001}, {"y_offset": 50001},
+                               {"x_offset": 1.5}, {"enable": 1}, {"enable": None}, {"enable": True, "extra": 1}):
+                request = fb_base | {"floating_button": bad_fields}
+                if bad_fields.get("locked_opacity") != 0.123:
+                    assert not validator.is_valid(request), bad_fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
+            denied = await client.call_tool("qkm_preview_changes", {"action": "mapping.set_floating_button", "source_tab_ref": tab, "floating_button": {"enable": True}})
+            assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -643,7 +675,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]

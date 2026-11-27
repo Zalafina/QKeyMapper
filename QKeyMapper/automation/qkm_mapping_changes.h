@@ -137,6 +137,44 @@ struct MappingCrosshairUpdate {
     std::optional<int> yOffset;
 };
 
+struct MappingFloatingButtonUpdate {
+    std::optional<QString> styleCode;
+    std::optional<bool> enable;
+    std::optional<QString> label;
+    std::optional<bool> showOnMappingStart;
+    std::optional<bool> showToolTip;
+    std::optional<bool> syncPressedLockedState;
+    std::optional<bool> alwaysOnTop;
+    std::optional<bool> mousePassThrough;
+    std::optional<bool> dragToMove;
+    std::optional<int> syncGroupId;
+    std::optional<QString> buttonColor;
+    std::optional<QString> pressedColor;
+    std::optional<QString> lockedColor;
+    std::optional<QString> textColor;
+    std::optional<QString> borderColor;
+    std::optional<int> borderWidth;
+    std::optional<int> width;
+    std::optional<int> height;
+    std::optional<int> fontSize;
+    std::optional<int> fontWeight;
+    std::optional<QString> fontFamily;
+    std::optional<int> radius;
+    std::optional<double> normalOpacity;
+    std::optional<double> pressedOpacity;
+    std::optional<double> lockedOpacity;
+    std::optional<bool> enableGradientFill;
+    std::optional<bool> enableHoverAnimation;
+    std::optional<int> hoverEffectStrength;
+    std::optional<int> hoverGlowStrength;
+    std::optional<int> hoverContrastMode;
+    std::optional<QString> hoverCustomColor;
+    std::optional<int> hoverAnimationDuration;
+    std::optional<int> referencePoint;
+    std::optional<int> xOffset;
+    std::optional<int> yOffset;
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -204,6 +242,7 @@ struct MappingUpdateArguments {
     std::optional<TabFloatingWindowUpdate> tabFloatingWindow;
     std::optional<TabCustomImageUpdate> tabCustomImage;
     std::optional<MappingCrosshairUpdate> crosshair;
+    std::optional<MappingFloatingButtonUpdate> floatingButton;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

@@ -591,7 +591,7 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 | `U-item/keyRecordLineEdit` | QLineEdit | `on_keyRecordLineEdit_textChanged @4302` | 运行约束待核 |
 | `U-item/keyRecordEditModeButton` | QPushButton；Edit | `on_keyRecordEditModeButton_clicked @4254` | 运行约束待核 |
 | `U-item/keyRecordCopyButton` | QPushButton；Copy | `on_keyRecordCopyButton_clicked @4282` | 运行约束待核 |
-| `U-item/floatingButtonSetupButton` | QPushButton；FloatingButton | `on_floatingButtonSetupButton_clicked @4204` | 运行约束待核 |
+| `U-item/floatingButtonSetupButton` | QPushButton；FloatingButton | `on_floatingButtonSetupButton_clicked @4204` | `UI-FLOAT-267 [Gemini]` 已以单行 `mapping.set_floating_button.{preview,apply}`＋既有 `qkm_query(mappings)` 覆盖 34 项单行持久化字段（含同步写入 `FloatingButton_Opacity`）与 `style_code` `FBS1;...` 解析叠加（Qt6 `6BFCDAB5`／Sidecar `14BA7806`／双 Qt 组件 `86697B36`/`C73A5576`／私有桌面 `run1` 与双 Qt INI 读回 `F3D02269`/`81B65528` `changed_other_keys=0` 通过，运行副本禁用 FakerInput 连接）；`m_MousePassThroughSwitchKeyComboBox` 已由 `UI-FWINDOW-264` 覆盖，同步组说明、全局拖动坐标开关与多行同步组偏移联动归 `UI-FLOAT-SYNC-268` |
 | `U-item/itemNoteLineEdit` | QLineEdit | `on_itemNoteLineEdit_textChanged @4324`<br>`connect returnPressed @182` | 运行约束待核 |
 | `U-item/burstCheckBox` | QCheckBox；Burst | `on_burstCheckBox_stateChanged @3721` | 运行约束待核 |
 | `U-item/burstpressSpinBox` | QSpinBox | `on_burstpressSpinBox_valueChanged @3684` | 运行约束待核 |
@@ -896,6 +896,8 @@ PC-W10／a8b8a6fa 的解析及 GUI 链路，当前 WRITE-64 候选不改这些�
 ### 动态 floating_button（48 项）
 
 定义和连接：[qfloatingbuttonsetupdialog.cpp](../../QKeyMapper/qfloatingbuttonsetupdialog.cpp)。局部循环变量（例如 `cb`、`btn`）代表按数据重复创建的一类入口；重命名时保留此定位 ID 或明确记录迁移。
+
+> `UI-FLOAT-267 [Gemini]` 已以单行 `mapping.set_floating_button` 覆盖下表除同步组说明（`m_SyncGroupNoteLineEdit`）、全局拖动坐标（`m_ShowDragCoordinateCheckBox`）与多行同步组偏移联动（`m_SyncGroupMoveCheckBox`）外全部可编辑单行设定及 `style_code`（见 `U-item/floatingButtonSetupButton`）；`m_MousePassThroughSwitchKeyComboBox` 已由 `UI-FWINDOW-264` 覆盖，其余三项归 `UI-FLOAT-SYNC-268`。
 
 | 稳定定位 ID | 类型 | 定位／绑定线索 |
 |---|---|---|

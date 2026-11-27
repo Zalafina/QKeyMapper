@@ -18910,6 +18910,243 @@ bool QKeyMapper::setMappingSourceRowCrosshairSettings(int tabIndex, int row, con
     return true;
 }
 
+MappingFloatingButtonSettings QKeyMapper::floatingButtonSettingsFromRow(const MAP_KEYDATA &d)
+{
+    using namespace QKeyMapperConstants;
+    MappingFloatingButtonSettings settings;
+    const auto normColor = [](const QColor &c, const QColor &fallback) -> QColor {
+        const QColor resolved = c.isValid() ? c : fallback;
+        return QColor::fromRgba(resolved.rgba());
+    };
+    const auto normOpacity = [](double primary, double legacy) -> double {
+        const double resolved = (FLOATINGBUTTON_OPACITY_MIN <= primary && primary <= FLOATINGBUTTON_OPACITY_MAX)
+            ? primary
+            : ((FLOATINGBUTTON_OPACITY_MIN <= legacy && legacy <= FLOATINGBUTTON_OPACITY_MAX)
+                ? legacy : FLOATINGBUTTON_OPACITY_DEFAULT);
+        return double(qRound(resolved * 100.0)) / 100.0;
+    };
+    const auto boundDefault = [](int value, int minVal, int maxVal, int defaultVal) -> int {
+        return (minVal <= value && value <= maxVal) ? value : defaultVal;
+    };
+
+    settings.enable = d.FloatingButton_Enable;
+    settings.label = d.FloatingButton_Label;
+    settings.showOnMappingStart = d.FloatingButton_ShowOnMappingStart;
+    settings.showToolTip = d.FloatingButton_ShowToolTip;
+    settings.syncPressedLockedState = d.FloatingButton_SyncPressedLockedState;
+    settings.alwaysOnTop = d.FloatingButton_AlwaysOnTop;
+    settings.mousePassThrough = d.FloatingButton_MousePassThrough;
+    settings.dragToMove = d.FloatingButton_DragToMove;
+    settings.syncGroupId = boundDefault(d.FloatingButton_SyncGroupId,
+        FLOATINGBUTTON_SYNCGROUPID_MIN, FLOATINGBUTTON_SYNCGROUPID_MAX, FLOATINGBUTTON_SYNCGROUPID_DEFAULT);
+
+    settings.buttonColor = normColor(d.FloatingButton_ButtonColor, FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR);
+    settings.pressedColor = normColor(d.FloatingButton_PressedColor, FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR);
+    settings.lockedColor = normColor(d.FloatingButton_LockedColor, FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR);
+    settings.textColor = normColor(d.FloatingButton_TextColor, FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR);
+    settings.borderColor = normColor(d.FloatingButton_BorderColor, FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR);
+    settings.borderWidth = boundDefault(d.FloatingButton_BorderWidth,
+        FLOATINGBUTTON_BORDER_WIDTH_MIN, FLOATINGBUTTON_BORDER_WIDTH_MAX, FLOATINGBUTTON_BORDER_WIDTH_DEFAULT);
+    settings.width = boundDefault(d.FloatingButton_Width,
+        FLOATINGBUTTON_WIDTH_MIN, FLOATINGBUTTON_WIDTH_MAX, FLOATINGBUTTON_WIDTH_DEFAULT);
+    settings.height = boundDefault(d.FloatingButton_Height,
+        FLOATINGBUTTON_HEIGHT_MIN, FLOATINGBUTTON_HEIGHT_MAX, FLOATINGBUTTON_HEIGHT_DEFAULT);
+    settings.fontSize = boundDefault(d.FloatingButton_FontSize,
+        FLOATINGBUTTON_FONT_SIZE_MIN, FLOATINGBUTTON_FONT_SIZE_MAX, FLOATINGBUTTON_FONT_SIZE_DEFAULT);
+    settings.fontWeight = boundDefault(d.FloatingButton_FontWeight,
+        FLOATINGBUTTON_FONT_WEIGHT_MIN, FLOATINGBUTTON_FONT_WEIGHT_MAX, FLOATINGBUTTON_FONT_WEIGHT_DEFAULT);
+    settings.fontFamily = d.FloatingButton_FontFamily.trimmed();
+    settings.radius = boundDefault(d.FloatingButton_Radius,
+        FLOATINGBUTTON_RADIUS_MIN, FLOATINGBUTTON_RADIUS_MAX, FLOATINGBUTTON_RADIUS_DEFAULT);
+    settings.normalOpacity = normOpacity(d.FloatingButton_NormalOpacity, d.FloatingButton_Opacity);
+    settings.pressedOpacity = normOpacity(d.FloatingButton_PressedOpacity, d.FloatingButton_Opacity);
+    settings.lockedOpacity = normOpacity(d.FloatingButton_LockedOpacity, d.FloatingButton_Opacity);
+    settings.enableGradientFill = d.FloatingButton_EnableGradientFill;
+    settings.enableHoverAnimation = d.FloatingButton_EnableHoverAnimation;
+    settings.hoverEffectStrength = boundDefault(d.FloatingButton_HoverEffectStrength,
+        FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MIN, FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MAX, FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_DEFAULT);
+    settings.hoverGlowStrength = boundDefault(d.FloatingButton_HoverGlowStrength,
+        FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MIN, FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MAX, FLOATINGBUTTON_HOVER_GLOW_STRENGTH_DEFAULT);
+    settings.hoverContrastMode = boundDefault(d.FloatingButton_HoverContrastMode,
+        FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN, FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX, FLOATINGBUTTON_HOVER_CONTRASTMODE_DEFAULT);
+    settings.hoverCustomColor = normColor(d.FloatingButton_HoverCustomColor, FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR);
+    settings.hoverAnimationDuration = boundDefault(d.FloatingButton_HoverAnimationDuration,
+        FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MIN, FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MAX, FLOATINGBUTTON_HOVER_ANIMATION_DURATION_DEFAULT);
+
+    settings.referencePoint = boundDefault(d.FloatingButton_ReferencePoint,
+        FLOATINGWINDOW_REFERENCEPOINT_MIN, FLOATINGWINDOW_REFERENCEPOINT_MAX, FLOATINGWINDOW_REFERENCEPOINT_DEFAULT);
+    settings.xOffset = boundDefault(d.FloatingButton_X_Offset,
+        FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX, FLOATINGBUTTON_X_OFFSET_DEFAULT);
+    settings.yOffset = boundDefault(d.FloatingButton_Y_Offset,
+        FLOATINGBUTTON_OFFSET_MIN, FLOATINGBUTTON_OFFSET_MAX, FLOATINGBUTTON_Y_OFFSET_DEFAULT);
+    return settings;
+}
+
+void QKeyMapper::writeFloatingButtonSettingsToRow(MAP_KEYDATA &d, const MappingFloatingButtonSettings &settings)
+{
+    const auto quantizeOpacity = [](double value) -> double {
+        const double bounded = qBound(QKeyMapperConstants::FLOATINGBUTTON_OPACITY_MIN,
+            value, QKeyMapperConstants::FLOATINGBUTTON_OPACITY_MAX);
+        return double(qRound(bounded * 100.0)) / 100.0;
+    };
+
+    d.FloatingButton_Enable = settings.enable;
+    d.FloatingButton_Label = settings.label;
+    d.FloatingButton_ShowOnMappingStart = settings.showOnMappingStart;
+    d.FloatingButton_ShowToolTip = settings.showToolTip;
+    d.FloatingButton_SyncPressedLockedState = settings.syncPressedLockedState;
+    d.FloatingButton_AlwaysOnTop = settings.alwaysOnTop;
+    d.FloatingButton_MousePassThrough = settings.mousePassThrough;
+    d.FloatingButton_DragToMove = settings.dragToMove;
+    d.FloatingButton_SyncGroupId = settings.syncGroupId;
+
+    d.FloatingButton_ButtonColor = QColor::fromRgba(settings.buttonColor.rgba());
+    d.FloatingButton_PressedColor = QColor::fromRgba(settings.pressedColor.rgba());
+    d.FloatingButton_LockedColor = QColor::fromRgba(settings.lockedColor.rgba());
+    d.FloatingButton_TextColor = QColor::fromRgba(settings.textColor.rgba());
+    d.FloatingButton_BorderColor = QColor::fromRgba(settings.borderColor.rgba());
+    d.FloatingButton_BorderWidth = settings.borderWidth;
+    d.FloatingButton_Width = settings.width;
+    d.FloatingButton_Height = settings.height;
+    d.FloatingButton_FontSize = settings.fontSize;
+    d.FloatingButton_FontWeight = settings.fontWeight;
+    d.FloatingButton_FontFamily = settings.fontFamily.trimmed();
+    d.FloatingButton_Radius = settings.radius;
+    d.FloatingButton_NormalOpacity = quantizeOpacity(settings.normalOpacity);
+    d.FloatingButton_PressedOpacity = quantizeOpacity(settings.pressedOpacity);
+    d.FloatingButton_LockedOpacity = quantizeOpacity(settings.lockedOpacity);
+    d.FloatingButton_Opacity = d.FloatingButton_NormalOpacity;
+    d.FloatingButton_EnableGradientFill = settings.enableGradientFill;
+    d.FloatingButton_EnableHoverAnimation = settings.enableHoverAnimation;
+    d.FloatingButton_HoverEffectStrength = settings.hoverEffectStrength;
+    d.FloatingButton_HoverGlowStrength = settings.hoverGlowStrength;
+    d.FloatingButton_HoverContrastMode = settings.hoverContrastMode;
+    d.FloatingButton_HoverCustomColor = QColor::fromRgba(settings.hoverCustomColor.rgba());
+    d.FloatingButton_HoverAnimationDuration = settings.hoverAnimationDuration;
+
+    d.FloatingButton_ReferencePoint = settings.referencePoint;
+    d.FloatingButton_X_Offset = settings.xOffset;
+    d.FloatingButton_Y_Offset = settings.yOffset;
+}
+
+bool QKeyMapper::isValidFloatingButtonSettings(const MappingFloatingButtonSettings &s)
+{
+    using namespace QKeyMapperConstants;
+    const auto validOpacity = [](double value) -> bool {
+        return qIsFinite(value) && FLOATINGBUTTON_OPACITY_MIN <= value && value <= FLOATINGBUTTON_OPACITY_MAX;
+    };
+    return s.buttonColor.isValid() && s.pressedColor.isValid() && s.lockedColor.isValid()
+        && s.textColor.isValid() && s.borderColor.isValid() && s.hoverCustomColor.isValid()
+        && FLOATINGBUTTON_SYNCGROUPID_MIN <= s.syncGroupId && s.syncGroupId <= FLOATINGBUTTON_SYNCGROUPID_MAX
+        && FLOATINGBUTTON_BORDER_WIDTH_MIN <= s.borderWidth && s.borderWidth <= FLOATINGBUTTON_BORDER_WIDTH_MAX
+        && FLOATINGBUTTON_WIDTH_MIN <= s.width && s.width <= FLOATINGBUTTON_WIDTH_MAX
+        && FLOATINGBUTTON_HEIGHT_MIN <= s.height && s.height <= FLOATINGBUTTON_HEIGHT_MAX
+        && FLOATINGBUTTON_FONT_SIZE_MIN <= s.fontSize && s.fontSize <= FLOATINGBUTTON_FONT_SIZE_MAX
+        && FLOATINGBUTTON_FONT_WEIGHT_MIN <= s.fontWeight && s.fontWeight <= FLOATINGBUTTON_FONT_WEIGHT_MAX
+        && FLOATINGBUTTON_RADIUS_MIN <= s.radius && s.radius <= FLOATINGBUTTON_RADIUS_MAX
+        && validOpacity(s.normalOpacity) && validOpacity(s.pressedOpacity) && validOpacity(s.lockedOpacity)
+        && FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MIN <= s.hoverEffectStrength && s.hoverEffectStrength <= FLOATINGBUTTON_HOVER_EFFECT_STRENGTH_MAX
+        && FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MIN <= s.hoverGlowStrength && s.hoverGlowStrength <= FLOATINGBUTTON_HOVER_GLOW_STRENGTH_MAX
+        && FLOATINGBUTTON_HOVER_CONTRASTMODE_MIN <= s.hoverContrastMode && s.hoverContrastMode <= FLOATINGBUTTON_HOVER_CONTRASTMODE_MAX
+        && FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MIN <= s.hoverAnimationDuration && s.hoverAnimationDuration <= FLOATINGBUTTON_HOVER_ANIMATION_DURATION_MAX
+        && FLOATINGWINDOW_REFERENCEPOINT_MIN <= s.referencePoint && s.referencePoint <= FLOATINGWINDOW_REFERENCEPOINT_MAX
+        && FLOATINGBUTTON_OFFSET_MIN <= s.xOffset && s.xOffset <= FLOATINGBUTTON_OFFSET_MAX
+        && FLOATINGBUTTON_OFFSET_MIN <= s.yOffset && s.yOffset <= FLOATINGBUTTON_OFFSET_MAX;
+}
+
+bool QKeyMapper::floatingButtonSettingsEqual(const MappingFloatingButtonSettings &a, const MappingFloatingButtonSettings &b)
+{
+    return a.enable == b.enable
+        && a.label == b.label
+        && a.showOnMappingStart == b.showOnMappingStart
+        && a.showToolTip == b.showToolTip
+        && a.syncPressedLockedState == b.syncPressedLockedState
+        && a.alwaysOnTop == b.alwaysOnTop
+        && a.mousePassThrough == b.mousePassThrough
+        && a.dragToMove == b.dragToMove
+        && a.syncGroupId == b.syncGroupId
+        && a.buttonColor.rgba() == b.buttonColor.rgba()
+        && a.pressedColor.rgba() == b.pressedColor.rgba()
+        && a.lockedColor.rgba() == b.lockedColor.rgba()
+        && a.textColor.rgba() == b.textColor.rgba()
+        && a.borderColor.rgba() == b.borderColor.rgba()
+        && a.borderWidth == b.borderWidth
+        && a.width == b.width
+        && a.height == b.height
+        && a.fontSize == b.fontSize
+        && a.fontWeight == b.fontWeight
+        && a.fontFamily.trimmed() == b.fontFamily.trimmed()
+        && a.radius == b.radius
+        && qRound(a.normalOpacity * 100.0) == qRound(b.normalOpacity * 100.0)
+        && qRound(a.pressedOpacity * 100.0) == qRound(b.pressedOpacity * 100.0)
+        && qRound(a.lockedOpacity * 100.0) == qRound(b.lockedOpacity * 100.0)
+        && a.enableGradientFill == b.enableGradientFill
+        && a.enableHoverAnimation == b.enableHoverAnimation
+        && a.hoverEffectStrength == b.hoverEffectStrength
+        && a.hoverGlowStrength == b.hoverGlowStrength
+        && a.hoverContrastMode == b.hoverContrastMode
+        && a.hoverCustomColor.rgba() == b.hoverCustomColor.rgba()
+        && a.hoverAnimationDuration == b.hoverAnimationDuration
+        && a.referencePoint == b.referencePoint
+        && a.xOffset == b.xOffset
+        && a.yOffset == b.yOffset;
+}
+
+MappingFloatingButtonSettings QKeyMapper::getMappingSourceRowFloatingButtonSettings(int tabIndex, int row) const
+{
+    MappingFloatingButtonSettings settings;
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
+        return settings;
+    }
+    const KeyMappingTab_Info &tab = s_KeyMappingTabInfoList.at(tabIndex);
+    if (!tab.KeyMappingData || row < 0 || row >= tab.KeyMappingData->size()) {
+        return settings;
+    }
+
+    return floatingButtonSettingsFromRow(tab.KeyMappingData->at(row));
+}
+
+bool QKeyMapper::setMappingSourceRowFloatingButtonSettings(int tabIndex, int row, const MappingFloatingButtonSettings &settings)
+{
+    if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
+        return false;
+    }
+    KeyMappingTab_Info &tab = s_KeyMappingTabInfoList[tabIndex];
+    if (!tab.KeyMappingData || row < 0 || row >= tab.KeyMappingData->size()) {
+        return false;
+    }
+    if (!isValidFloatingButtonSettings(settings)) {
+        return false;
+    }
+
+    const MappingFloatingButtonSettings before = getMappingSourceRowFloatingButtonSettings(tabIndex, row);
+    if (floatingButtonSettingsEqual(before, settings)) {
+        return false;
+    }
+
+    MAP_KEYDATA &d = (*tab.KeyMappingData)[row];
+    writeFloatingButtonSettingsToRow(d, settings);
+
+    ActiveKeyMappingRowSourceInfo sourceInfo;
+    sourceInfo.SourceTabIndex = tabIndex;
+    sourceInfo.SourceRow = row;
+    syncFloatingButtonRuntimeDataToSourceRow(sourceInfo, d);
+    if (!isCommonMappingTabIndex(tabIndex) && tabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+        ++m_AutomationSourceEpoch;
+        updateTableWidgetItem(tabIndex, row, FLOATING_COLUMN);
+    }
+    else {
+        refreshTabsForSourceTabChange(tabIndex);
+    }
+
+    const int displayRow = findCurrentDisplayRowFromFloatingButtonSource(sourceInfo);
+    if (displayRow >= 0) {
+        showFloatingButtonStartForSource(sourceInfo, displayRow, QString());
+    }
+    requestSaveSettingDirty();
+    return true;
+}
+
 bool QKeyMapper::setMappingTabCommonInheritance(int tabIndex, bool includeCommon)
 {
     if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size() || isCommonMappingTabIndex(tabIndex)) return false;
@@ -39007,6 +39244,147 @@ static bool crosshairSettingsEqual(const MappingCrosshairSettings &a, const Mapp
         && a.yOffset == b.yOffset;
 }
 
+static QJsonObject automationFloatingButton(const MappingFloatingButtonSettings &s)
+{
+    MAP_KEYDATA temp;
+    QKeyMapper::writeFloatingButtonSettingsToRow(temp, s);
+    return {
+        {QStringLiteral("enable"), s.enable},
+        {QStringLiteral("label"), s.label},
+        {QStringLiteral("show_on_mapping_start"), s.showOnMappingStart},
+        {QStringLiteral("show_tool_tip"), s.showToolTip},
+        {QStringLiteral("sync_pressed_locked_state"), s.syncPressedLockedState},
+        {QStringLiteral("always_on_top"), s.alwaysOnTop},
+        {QStringLiteral("mouse_pass_through"), s.mousePassThrough},
+        {QStringLiteral("drag_to_move"), s.dragToMove},
+        {QStringLiteral("sync_group_id"), s.syncGroupId},
+        {QStringLiteral("button_color"), s.buttonColor.name(QColor::HexArgb)},
+        {QStringLiteral("pressed_color"), s.pressedColor.name(QColor::HexArgb)},
+        {QStringLiteral("locked_color"), s.lockedColor.name(QColor::HexArgb)},
+        {QStringLiteral("text_color"), s.textColor.name(QColor::HexArgb)},
+        {QStringLiteral("border_color"), s.borderColor.name(QColor::HexArgb)},
+        {QStringLiteral("border_width"), s.borderWidth},
+        {QStringLiteral("width"), s.width},
+        {QStringLiteral("height"), s.height},
+        {QStringLiteral("font_size"), s.fontSize},
+        {QStringLiteral("font_weight"), s.fontWeight},
+        {QStringLiteral("font_family"), s.fontFamily},
+        {QStringLiteral("radius"), s.radius},
+        {QStringLiteral("normal_opacity"), s.normalOpacity},
+        {QStringLiteral("pressed_opacity"), s.pressedOpacity},
+        {QStringLiteral("locked_opacity"), s.lockedOpacity},
+        {QStringLiteral("enable_gradient_fill"), s.enableGradientFill},
+        {QStringLiteral("enable_hover_animation"), s.enableHoverAnimation},
+        {QStringLiteral("hover_effect_strength"), s.hoverEffectStrength},
+        {QStringLiteral("hover_glow_strength"), s.hoverGlowStrength},
+        {QStringLiteral("hover_contrast_mode"), s.hoverContrastMode},
+        {QStringLiteral("hover_custom_color"), s.hoverCustomColor.name(QColor::HexArgb)},
+        {QStringLiteral("hover_animation_duration"), s.hoverAnimationDuration},
+        {QStringLiteral("reference_point"), s.referencePoint},
+        {QStringLiteral("x_offset"), s.xOffset},
+        {QStringLiteral("y_offset"), s.yOffset},
+        {QStringLiteral("style_code"), QKeyMapper::generateFloatingButtonStyleCode(temp)},
+    };
+}
+
+struct FloatingButtonMergeResult {
+    MappingFloatingButtonSettings after;
+    bool styleCodeApplied = false;
+    QJsonObject styleCodeMetadata;
+    QString errorCode;
+    QString message;
+    bool ok() const { return errorCode.isEmpty(); }
+};
+
+static FloatingButtonMergeResult mergeFloatingButtonSettings(
+    const MappingFloatingButtonSettings &base, const QkmAutomation::MappingFloatingButtonUpdate &u)
+{
+    FloatingButtonMergeResult res;
+    res.after = base;
+    if (u.styleCode) {
+        MAP_KEYDATA temp;
+        QKeyMapper::writeFloatingButtonSettingsToRow(temp, res.after);
+        const QKeyMapper::FloatingButtonStyleCodeApplyResult styleRes =
+            QKeyMapper::applyFloatingButtonStyleCode(*u.styleCode, temp);
+        if (!styleRes.success) {
+            res.errorCode = QStringLiteral("invalid_arguments");
+            res.message = styleRes.errorMessage.isEmpty()
+                ? QStringLiteral("Invalid floating button style_code.") : styleRes.errorMessage;
+            return res;
+        }
+        const QString &ff = temp.FloatingButton_FontFamily;
+        if (ff.size() > 255 || ff.contains(QChar(0)) || ff.contains(QLatin1Char('\r')) || ff.contains(QLatin1Char('\n'))) {
+            res.errorCode = QStringLiteral("invalid_arguments");
+            res.message = QStringLiteral("Decoded style_code font_family must be single-line and at most 255 UTF-16 code units.");
+            return res;
+        }
+        res.after = QKeyMapper::floatingButtonSettingsFromRow(temp);
+        res.styleCodeApplied = true;
+        res.styleCodeMetadata = {
+            {QStringLiteral("applied_field_count"), styleRes.appliedFieldCount},
+            {QStringLiteral("partial"), styleRes.partial},
+            {QStringLiteral("ignored_keys"), QJsonArray::fromStringList(styleRes.ignoredKeys)},
+            {QStringLiteral("missing_keys"), QJsonArray::fromStringList(styleRes.missingKeys)},
+        };
+    }
+
+    if (u.hoverContrastMode) res.after.hoverContrastMode = *u.hoverContrastMode;
+    if (u.hoverCustomColor) {
+        if (res.after.hoverContrastMode != QKeyMapperConstants::FLOATINGBUTTON_HOVER_CONTRASTMODE_CUSTOM) {
+            res.errorCode = QStringLiteral("unsupported_capability");
+            res.message = QStringLiteral("Setting hover_custom_color directly requires hover_contrast_mode = 3 (Custom).");
+            return res;
+        }
+        res.after.hoverCustomColor = (*u.hoverCustomColor == QLatin1String("default"))
+            ? QKeyMapperConstants::FLOATINGBUTTON_HOVER_CUSTOM_COLOR_DEFAULT_QCOLOR
+            : QColor(*u.hoverCustomColor);
+    }
+
+    const auto resolveColor = [](const std::optional<QString> &raw, const QColor &defaultColor, QColor &dst) {
+        if (!raw) return;
+        dst = (*raw == QLatin1String("default")) ? defaultColor : QColor(*raw);
+    };
+    if (u.enable) res.after.enable = *u.enable;
+    if (u.label) res.after.label = *u.label;
+    if (u.showOnMappingStart) res.after.showOnMappingStart = *u.showOnMappingStart;
+    if (u.showToolTip) res.after.showToolTip = *u.showToolTip;
+    if (u.syncPressedLockedState) res.after.syncPressedLockedState = *u.syncPressedLockedState;
+    if (u.alwaysOnTop) res.after.alwaysOnTop = *u.alwaysOnTop;
+    if (u.mousePassThrough) res.after.mousePassThrough = *u.mousePassThrough;
+    if (u.dragToMove) res.after.dragToMove = *u.dragToMove;
+    if (u.syncGroupId) res.after.syncGroupId = *u.syncGroupId;
+    resolveColor(u.buttonColor, QKeyMapperConstants::FLOATINGBUTTON_BUTTON_COLOR_DEFAULT_QCOLOR, res.after.buttonColor);
+    resolveColor(u.pressedColor, QKeyMapperConstants::FLOATINGBUTTON_PRESSED_COLOR_DEFAULT_QCOLOR, res.after.pressedColor);
+    resolveColor(u.lockedColor, QKeyMapperConstants::FLOATINGBUTTON_LOCKED_COLOR_DEFAULT_QCOLOR, res.after.lockedColor);
+    resolveColor(u.textColor, QKeyMapperConstants::FLOATINGBUTTON_TEXT_COLOR_DEFAULT_QCOLOR, res.after.textColor);
+    resolveColor(u.borderColor, QKeyMapperConstants::FLOATINGBUTTON_BORDER_COLOR_DEFAULT_QCOLOR, res.after.borderColor);
+    if (u.borderWidth) res.after.borderWidth = *u.borderWidth;
+    if (u.width) res.after.width = *u.width;
+    if (u.height) res.after.height = *u.height;
+    if (u.fontSize) res.after.fontSize = *u.fontSize;
+    if (u.fontWeight) res.after.fontWeight = *u.fontWeight;
+    if (u.fontFamily) res.after.fontFamily = *u.fontFamily;
+    if (u.radius) res.after.radius = *u.radius;
+    if (u.normalOpacity) res.after.normalOpacity = *u.normalOpacity;
+    if (u.pressedOpacity) res.after.pressedOpacity = *u.pressedOpacity;
+    if (u.lockedOpacity) res.after.lockedOpacity = *u.lockedOpacity;
+    if (u.enableGradientFill) res.after.enableGradientFill = *u.enableGradientFill;
+    if (u.enableHoverAnimation) res.after.enableHoverAnimation = *u.enableHoverAnimation;
+    if (u.hoverEffectStrength) res.after.hoverEffectStrength = *u.hoverEffectStrength;
+    if (u.hoverGlowStrength) res.after.hoverGlowStrength = *u.hoverGlowStrength;
+    if (u.hoverAnimationDuration) res.after.hoverAnimationDuration = *u.hoverAnimationDuration;
+    if (u.referencePoint) res.after.referencePoint = *u.referencePoint;
+    if (u.xOffset) res.after.xOffset = *u.xOffset;
+    if (u.yOffset) res.after.yOffset = *u.yOffset;
+
+    if (!QKeyMapper::isValidFloatingButtonSettings(res.after)) {
+        res.errorCode = QStringLiteral("invalid_arguments");
+        res.message = QStringLiteral("The merged floating button settings are out of range.");
+        return res;
+    }
+    return res;
+}
+
 static QJsonObject automationPointDisplayKeys(const QString &windowKey, const QString &screenKey)
 {
     return {{QStringLiteral("window_point_key"), windowKey},
@@ -41866,6 +42244,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         int tabAfter = tab;
         const bool noteUpdate = updating && update.note.has_value();
         const bool crosshairUpdate = updating && update.crosshair.has_value();
+        const bool floatingButtonUpdate = updating && update.floatingButton.has_value();
         const bool categoryUpdate = updating && update.category.has_value();
         const bool rowModeUpdate = updating && !update.rowModes.isEmpty() && !triggerUpdate;
         const bool sendTimingUpdate = updating && update.sendTiming.has_value();
@@ -42718,6 +43097,21 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 {QStringLiteral("before"), automationCrosshair(before)},
                 {QStringLiteral("after"), automationCrosshair(after)},
                 {QStringLiteral("persisted"), false}};
+        } else if (floatingButtonUpdate) {
+            const MappingFloatingButtonSettings before = getMappingSourceRowFloatingButtonSettings(tab, update.sourceRow);
+            const FloatingButtonMergeResult merged = mergeFloatingButtonSettings(before, *update.floatingButton);
+            if (!merged.ok()) {
+                reject(merged.errorCode, merged.message);
+                return;
+            }
+            modified = !floatingButtonSettingsEqual(before, merged.after);
+            change = {{QStringLiteral("kind"), QStringLiteral("set_floating_button")},
+                {QStringLiteral("before"), automationFloatingButton(before)},
+                {QStringLiteral("after"), automationFloatingButton(merged.after)},
+                {QStringLiteral("persisted"), false}};
+            if (merged.styleCodeApplied) {
+                change.insert(QStringLiteral("style_code_applied"), merged.styleCodeMetadata);
+            }
         } else if (categoryUpdate) {
             const QString after = update.category->trimmed();
             const auto rows = update.batchRows.isEmpty() ? QList<int>{update.sourceRow} : update.batchRows;
@@ -43010,6 +43404,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : renamingTab ? QStringLiteral("tab.rename")
             : duplicatingRow ? QStringLiteral("mapping.duplicate")
             : crosshairUpdate ? QStringLiteral("mapping.set_crosshair")
+            : floatingButtonUpdate ? QStringLiteral("mapping.set_floating_button")
             : movingRow ? QString::fromLatin1(mappingRowMoveAction(update.move))
             : updating ? QStringLiteral("mapping.update") : QStringLiteral("ibinput.preferences.update");
         if (!change.isEmpty()) changes.prepend(change);
@@ -43326,6 +43721,17 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                 const MappingCrosshairSettings after = mergeCrosshairSettings(before, *update.crosshair);
                 if (!setMappingSourceRowCrosshairSettings(tab, update.sourceRow, after)) {
                     reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts crosshair changes."));
+                    return;
+                }
+            } else if (floatingButtonUpdate) {
+                const MappingFloatingButtonSettings before = getMappingSourceRowFloatingButtonSettings(tab, update.sourceRow);
+                const FloatingButtonMergeResult merged = mergeFloatingButtonSettings(before, *update.floatingButton);
+                if (!merged.ok()) {
+                    reject(merged.errorCode, merged.message);
+                    return;
+                }
+                if (!setMappingSourceRowFloatingButtonSettings(tab, update.sourceRow, merged.after)) {
+                    reject(QStringLiteral("context_busy"), QStringLiteral("The current row no longer accepts floating button changes."));
                     return;
                 }
             } else if (categoryUpdate) {
@@ -54340,7 +54746,8 @@ void QKeyMapper::onFloatingButtonSettingsApplied()
 
     const MAP_KEYDATA &keymapdata = sourceDataList->at(sourceRow);
     syncFloatingButtonRuntimeDataToSourceRow(sourceInfo, keymapdata);
-    if (sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+    if (!isCommonMappingTabIndex(sourceTabIndex) && sourceTabIndex == s_KeyMappingTabWidgetCurrentIndex) {
+        ++m_AutomationSourceEpoch;
         updateTableWidgetItem(sourceTabIndex, sourceRow, FLOATING_COLUMN);
     }
     else {

@@ -798,6 +798,89 @@ struct MappingCrosshairSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct MappingFloatingButtonFields {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    style_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enable: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    label: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_on_mapping_start: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    show_tool_tip: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sync_pressed_locked_state: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    always_on_top: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    mouse_pass_through: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    drag_to_move: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    sync_group_id: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    button_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pressed_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    locked_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    text_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    border_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    border_width: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    width: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    height: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_size: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_weight: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    font_family: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    radius: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    normal_opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pressed_opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    locked_opacity: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enable_gradient_fill: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    enable_hover_animation: Option<bool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hover_effect_strength: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hover_glow_strength: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hover_contrast_mode: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hover_custom_color: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    hover_animation_duration: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    reference_point: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    x_offset: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    y_offset: Option<i64>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct MappingFloatingButtonSettings {
+    action: String,
+    source_ref: String,
+    floating_button: MappingFloatingButtonFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1713,6 +1796,102 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && f.crosshair_opacity.is_none_or(|n| (0..=255).contains(&n))
                             && f.x_offset.is_none_or(|n| (-5000..=5000).contains(&n))
                             && f.y_offset.is_none_or(|n| (-5000..=5000).contains(&n))
+                    });
+                }
+                Some("mapping.set_floating_button") => {
+                    if arguments
+                        .get("floating_button")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    let valid_opacity = |v: f64| {
+                        v.is_finite()
+                            && (0.01..=1.00).contains(&v)
+                            && ((v * 100.0).round() - v * 100.0).abs() <= 1e-6
+                    };
+                    let valid_fb_color = |c: &str| {
+                        notification_color(c, 6) || notification_color(c, 8)
+                    };
+                    let valid_style_code = |s: &str| {
+                        !s.trim().is_empty()
+                            && s.encode_utf16().count() <= 1024
+                            && single_line(s)
+                    };
+                    let valid_label = |s: &str| {
+                        s.encode_utf16().count() <= 255
+                            && single_line(s)
+                            && !s.contains(['#', '|'])
+                    };
+                    let valid_font_family = |s: &str| {
+                        s.encode_utf16().count() <= 255 && single_line(s)
+                    };
+                    return typed(arguments, |v: &MappingFloatingButtonSettings| {
+                        let f = &v.floating_button;
+                        let any_set = f.style_code.is_some()
+                            || f.enable.is_some()
+                            || f.label.is_some()
+                            || f.show_on_mapping_start.is_some()
+                            || f.show_tool_tip.is_some()
+                            || f.sync_pressed_locked_state.is_some()
+                            || f.always_on_top.is_some()
+                            || f.mouse_pass_through.is_some()
+                            || f.drag_to_move.is_some()
+                            || f.sync_group_id.is_some()
+                            || f.button_color.is_some()
+                            || f.pressed_color.is_some()
+                            || f.locked_color.is_some()
+                            || f.text_color.is_some()
+                            || f.border_color.is_some()
+                            || f.border_width.is_some()
+                            || f.width.is_some()
+                            || f.height.is_some()
+                            || f.font_size.is_some()
+                            || f.font_weight.is_some()
+                            || f.font_family.is_some()
+                            || f.radius.is_some()
+                            || f.normal_opacity.is_some()
+                            || f.pressed_opacity.is_some()
+                            || f.locked_opacity.is_some()
+                            || f.enable_gradient_fill.is_some()
+                            || f.enable_hover_animation.is_some()
+                            || f.hover_effect_strength.is_some()
+                            || f.hover_glow_strength.is_some()
+                            || f.hover_contrast_mode.is_some()
+                            || f.hover_custom_color.is_some()
+                            || f.hover_animation_duration.is_some()
+                            || f.reference_point.is_some()
+                            || f.x_offset.is_some()
+                            || f.y_offset.is_some();
+                        row_ref(&v.source_ref)
+                            && any_set
+                            && f.style_code.as_deref().is_none_or(valid_style_code)
+                            && f.label.as_deref().is_none_or(valid_label)
+                            && f.sync_group_id.is_none_or(|n| (0..=999).contains(&n))
+                            && f.button_color.as_deref().is_none_or(valid_fb_color)
+                            && f.pressed_color.as_deref().is_none_or(valid_fb_color)
+                            && f.locked_color.as_deref().is_none_or(valid_fb_color)
+                            && f.text_color.as_deref().is_none_or(valid_fb_color)
+                            && f.border_color.as_deref().is_none_or(valid_fb_color)
+                            && f.border_width.is_none_or(|n| (0..=50).contains(&n))
+                            && f.width.is_none_or(|n| (4..=640).contains(&n))
+                            && f.height.is_none_or(|n| (4..=640).contains(&n))
+                            && f.font_size.is_none_or(|n| (1..=72).contains(&n))
+                            && f.font_weight.is_none_or(|n| (0..=2).contains(&n))
+                            && f.font_family.as_deref().is_none_or(valid_font_family)
+                            && f.radius.is_none_or(|n| (0..=1000).contains(&n))
+                            && f.normal_opacity.is_none_or(valid_opacity)
+                            && f.pressed_opacity.is_none_or(valid_opacity)
+                            && f.locked_opacity.is_none_or(valid_opacity)
+                            && f.hover_effect_strength.is_none_or(|n| (0..=200).contains(&n))
+                            && f.hover_glow_strength.is_none_or(|n| (0..=200).contains(&n))
+                            && f.hover_contrast_mode.is_none_or(|n| (0..=3).contains(&n))
+                            && f.hover_custom_color.as_deref().is_none_or(valid_fb_color)
+                            && f.hover_animation_duration.is_none_or(|n| (80..=500).contains(&n))
+                            && f.reference_point.is_none_or(|n| (0..=11).contains(&n))
+                            && f.x_offset.is_none_or(|n| (-50000..=50000).contains(&n))
+                            && f.y_offset.is_none_or(|n| (-50000..=50000).contains(&n))
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -3087,6 +3266,116 @@ mod tests {
                 "action": "mapping.set_crosshair",
                 "source_ref": row,
                 "crosshair": bad
+            }))
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn mapping_floating_button_checks_constraints() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let row = format!("{}:row:0:0", "a".repeat(64));
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let valid_full = json!({
+            "enable": true,
+            "label": "Attack-01",
+            "show_on_mapping_start": false,
+            "show_tool_tip": true,
+            "sync_pressed_locked_state": false,
+            "always_on_top": false,
+            "mouse_pass_through": true,
+            "drag_to_move": false,
+            "sync_group_id": 999,
+            "button_color": "#80AABBCC",
+            "pressed_color": "#112233",
+            "locked_color": "default",
+            "text_color": "#FFEEDD",
+            "border_color": "#40010203",
+            "border_width": 50,
+            "width": 640,
+            "height": 4,
+            "font_size": 72,
+            "font_weight": 2,
+            "font_family": "Consolas",
+            "radius": 1000,
+            "normal_opacity": 0.01,
+            "pressed_opacity": 0.55,
+            "locked_opacity": 1.0,
+            "enable_gradient_fill": false,
+            "enable_hover_animation": true,
+            "hover_effect_strength": 200,
+            "hover_glow_strength": 0,
+            "hover_contrast_mode": 3,
+            "hover_custom_color": "#CC556677",
+            "hover_animation_duration": 500,
+            "reference_point": 11,
+            "x_offset": -50000,
+            "y_offset": 50000
+        });
+        let wire = json!({
+            "action": "mapping.set_floating_button",
+            "source_ref": row,
+            "floating_button": valid_full
+        });
+        assert_eq!(preview(&wire).unwrap(), *wire.as_object().unwrap());
+
+        let style_wire = json!({
+            "action": "mapping.set_floating_button",
+            "source_ref": row,
+            "floating_button": {"style_code": "FBS1;w=120;h=40", "enable": true}
+        });
+        assert_eq!(preview(&style_wire).unwrap(), *style_wire.as_object().unwrap());
+
+        assert!(preview(&json!({
+            "action": "mapping.set_floating_button",
+            "source_tab_ref": tab,
+            "floating_button": {"enable": true}
+        }))
+        .is_err());
+
+        for bad in [
+            json!({}),
+            json!({"style_code": "   "}),
+            json!({"style_code": "FBS1;w=1\n2"}),
+            json!({"style_code": "A".repeat(1025)}),
+            json!({"label": "bad#label"}),
+            json!({"label": "bad|label"}),
+            json!({"label": "bad\nlabel"}),
+            json!({"label": "A".repeat(256)}),
+            json!({"font_family": "Consolas\n"}),
+            json!({"font_family": "A".repeat(256)}),
+            json!({"sync_group_id": -1}),
+            json!({"sync_group_id": 1000}),
+            json!({"button_color": "#12345"}),
+            json!({"border_width": 51}),
+            json!({"width": 3}),
+            json!({"width": 641}),
+            json!({"height": 3}),
+            json!({"font_size": 0}),
+            json!({"font_size": 73}),
+            json!({"font_weight": 3}),
+            json!({"radius": 1001}),
+            json!({"normal_opacity": 0.0}),
+            json!({"pressed_opacity": 1.01}),
+            json!({"locked_opacity": 0.123}),
+            json!({"hover_effect_strength": 201}),
+            json!({"hover_glow_strength": -1}),
+            json!({"hover_contrast_mode": 4}),
+            json!({"hover_animation_duration": 79}),
+            json!({"hover_animation_duration": 501}),
+            json!({"reference_point": 12}),
+            json!({"x_offset": -50001}),
+            json!({"y_offset": 50001}),
+            json!({"x_offset": 1.5}),
+            json!({"enable": 1}),
+            json!({"enable": null}),
+            json!({"enable": true, "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "mapping.set_floating_button",
+                "source_ref": row,
+                "floating_button": bad
             }))
             .is_err());
         }

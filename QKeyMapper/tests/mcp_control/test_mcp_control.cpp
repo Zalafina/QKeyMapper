@@ -899,93 +899,140 @@ void McpControlTest::configurationListArgumentsAndOwnership()
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
-static void verifyGamepadAndPanelValidation(const QString &previewMethod, const QJsonObject &input)
+static bool previewRequestValid(const QString &previewMethod, const QJsonObject &arguments)
 {
+    return validateMappingChangeRequest(previewMethod, arguments).ok();
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyGamepadValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    const QJsonValue sourceTabRef = input.value(QStringLiteral("source_tab_ref"));
     const auto validateGyro2MouseOptions = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("configuration.set_gyro2mouse_options")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
                 {QStringLiteral("gyro2mouse_options"), fields}});
     };
-    const auto gyroAll = validateGyro2MouseOptions({
-        {QStringLiteral("mouse_x_source"), 0},
-        {QStringLiteral("mouse_y_source"), 2},
-        {QStringLiteral("mouse_x_revert"), true},
-        {QStringLiteral("mouse_y_revert"), false},
-    });
-    QVERIFY(gyroAll.ok() && gyroAll.update.gyro2MouseXSource == 0 && gyroAll.update.gyro2MouseYSource == 2
-        && gyroAll.update.gyro2MouseXRevert == true && gyroAll.update.gyro2MouseYRevert == false);
-    const auto gyroSubset = validateGyro2MouseOptions({{QStringLiteral("mouse_y_revert"), true}});
-    QVERIFY(gyroSubset.ok() && !gyroSubset.update.gyro2MouseXSource.has_value()
-        && !gyroSubset.update.gyro2MouseYSource.has_value() && !gyroSubset.update.gyro2MouseXRevert.has_value()
-        && gyroSubset.update.gyro2MouseYRevert == true);
-    QVERIFY(validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), 1}, {QStringLiteral("mouse_y_source"), 1}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), -1}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), 3}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_y_source"), -1}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_y_source"), 3}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), 1.5}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_y_source"), true}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), QJsonValue::Null}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_revert"), 1}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_y_revert"), QStringLiteral("true")}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_revert"), QJsonValue::Null}}).ok());
-    QVERIFY(!validateGyro2MouseOptions({{QStringLiteral("mouse_x_source"), 1}, {QStringLiteral("extra"), 1}}).ok());
+    const auto gyro2MouseOptionsValid = [&](const QJsonObject &fields) {
+        return previewRequestValid(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_gyro2mouse_options")},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
+                {QStringLiteral("gyro2mouse_options"), fields}});
+    };
+    {
+        const auto gyroAll = validateGyro2MouseOptions({
+            {QStringLiteral("mouse_x_source"), 0},
+            {QStringLiteral("mouse_y_source"), 2},
+            {QStringLiteral("mouse_x_revert"), true},
+            {QStringLiteral("mouse_y_revert"), false},
+        });
+        QVERIFY(gyroAll.ok() && gyroAll.update.gyro2MouseXSource == 0 && gyroAll.update.gyro2MouseYSource == 2
+            && gyroAll.update.gyro2MouseXRevert == true && gyroAll.update.gyro2MouseYRevert == false);
+    }
+    {
+        const auto gyroSubset = validateGyro2MouseOptions({{QStringLiteral("mouse_y_revert"), true}});
+        QVERIFY(gyroSubset.ok() && !gyroSubset.update.gyro2MouseXSource.has_value()
+            && !gyroSubset.update.gyro2MouseYSource.has_value() && !gyroSubset.update.gyro2MouseXRevert.has_value()
+            && gyroSubset.update.gyro2MouseYRevert == true);
+    }
+    QVERIFY(gyro2MouseOptionsValid({{QStringLiteral("mouse_x_source"), 1}, {QStringLiteral("mouse_y_source"), 1}}));
+    for (const QJsonObject &badGyro : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("mouse_x_source"), -1}},
+        QJsonObject{{QStringLiteral("mouse_x_source"), 3}},
+        QJsonObject{{QStringLiteral("mouse_y_source"), -1}},
+        QJsonObject{{QStringLiteral("mouse_y_source"), 3}},
+        QJsonObject{{QStringLiteral("mouse_x_source"), 1.5}},
+        QJsonObject{{QStringLiteral("mouse_y_source"), true}},
+        QJsonObject{{QStringLiteral("mouse_x_source"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("mouse_x_revert"), 1}},
+        QJsonObject{{QStringLiteral("mouse_y_revert"), QStringLiteral("true")}},
+        QJsonObject{{QStringLiteral("mouse_x_revert"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("mouse_x_source"), 1}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!gyro2MouseOptionsValid(badGyro));
+    }
 
     const auto validateGamepadThresholds = [&](const QJsonObject &groups) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("configuration.set_gamepad_thresholds")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
                 {QStringLiteral("gamepad_thresholds"), groups}});
     };
-    const auto threshAll = validateGamepadThresholds({
-        {QStringLiteral("lt"), QJsonObject{{QStringLiteral("press"), 80}, {QStringLiteral("light_press"), 50}, {QStringLiteral("release"), 20}}},
-        {QStringLiteral("rt"), QJsonObject{{QStringLiteral("press"), 100}, {QStringLiteral("light_press"), 100}, {QStringLiteral("release"), 100}}},
-        {QStringLiteral("ls"), QJsonObject{{QStringLiteral("push"), 0}, {QStringLiteral("light_push"), 0}, {QStringLiteral("release"), 0}}},
-        {QStringLiteral("rs"), QJsonObject{{QStringLiteral("push"), 75}, {QStringLiteral("light_push"), 40}, {QStringLiteral("release"), 10}}},
-    });
-    QVERIFY(threshAll.ok() && threshAll.update.gamepadLtPress == 80 && threshAll.update.gamepadLtLightPress == 50
-        && threshAll.update.gamepadLtRelease == 20 && threshAll.update.gamepadRtPress == 100
-        && threshAll.update.gamepadLsPush == 0 && threshAll.update.gamepadRsRelease == 10);
-    const auto threshSubset = validateGamepadThresholds({
-        {QStringLiteral("rs"), QJsonObject{{QStringLiteral("push"), 85}, {QStringLiteral("light_push"), 45}}},
-    });
-    QVERIFY(threshSubset.ok() && !threshSubset.update.gamepadLtPress.has_value()
-        && threshSubset.update.gamepadRsPush == 85 && threshSubset.update.gamepadRsLightPush == 45
-        && !threshSubset.update.gamepadRsRelease.has_value());
-    QVERIFY(!validateGamepadThresholds({}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("lt"), QJsonObject{}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("unknown"), QJsonObject{{QStringLiteral("press"), 50}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("lt"), QJsonObject{{QStringLiteral("push"), 50}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("ls"), QJsonObject{{QStringLiteral("press"), 50}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("lt"), QJsonObject{{QStringLiteral("press"), -1}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("rt"), QJsonObject{{QStringLiteral("press"), 101}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("ls"), QJsonObject{{QStringLiteral("push"), 1.5}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("rs"), QJsonObject{{QStringLiteral("push"), true}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("lt"), QJsonObject{{QStringLiteral("press"), QJsonValue::Null}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("lt"), QJsonObject{{QStringLiteral("light_press"), 60}, {QStringLiteral("release"), 65}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("rt"), QJsonObject{{QStringLiteral("press"), 40}, {QStringLiteral("light_press"), 45}}}}).ok());
-    QVERIFY(!validateGamepadThresholds({{QStringLiteral("ls"), QJsonObject{{QStringLiteral("push"), 30}, {QStringLiteral("release"), 35}}}}).ok());
+    const auto gamepadThresholdsValid = [&](const QJsonObject &groups) {
+        return previewRequestValid(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_gamepad_thresholds")},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
+                {QStringLiteral("gamepad_thresholds"), groups}});
+    };
+    {
+        const auto threshAll = validateGamepadThresholds({
+            {QStringLiteral("lt"), QJsonObject{{QStringLiteral("press"), 80}, {QStringLiteral("light_press"), 50}, {QStringLiteral("release"), 20}}},
+            {QStringLiteral("rt"), QJsonObject{{QStringLiteral("press"), 100}, {QStringLiteral("light_press"), 100}, {QStringLiteral("release"), 100}}},
+            {QStringLiteral("ls"), QJsonObject{{QStringLiteral("push"), 0}, {QStringLiteral("light_push"), 0}, {QStringLiteral("release"), 0}}},
+            {QStringLiteral("rs"), QJsonObject{{QStringLiteral("push"), 75}, {QStringLiteral("light_push"), 40}, {QStringLiteral("release"), 10}}},
+        });
+        QVERIFY(threshAll.ok() && threshAll.update.gamepadLtPress == 80 && threshAll.update.gamepadLtLightPress == 50
+            && threshAll.update.gamepadLtRelease == 20 && threshAll.update.gamepadRtPress == 100
+            && threshAll.update.gamepadLsPush == 0 && threshAll.update.gamepadRsRelease == 10);
+    }
+    {
+        const auto threshSubset = validateGamepadThresholds({
+            {QStringLiteral("rs"), QJsonObject{{QStringLiteral("push"), 85}, {QStringLiteral("light_push"), 45}}},
+        });
+        QVERIFY(threshSubset.ok() && !threshSubset.update.gamepadLtPress.has_value()
+            && threshSubset.update.gamepadRsPush == 85 && threshSubset.update.gamepadRsLightPush == 45
+            && !threshSubset.update.gamepadRsRelease.has_value());
+    }
+    for (const QJsonObject &badThresholds : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("lt"), QJsonObject{}}},
+        QJsonObject{{QStringLiteral("unknown"), QJsonObject{{QStringLiteral("press"), 50}}}},
+        QJsonObject{{QStringLiteral("lt"), QJsonObject{{QStringLiteral("push"), 50}}}},
+        QJsonObject{{QStringLiteral("ls"), QJsonObject{{QStringLiteral("press"), 50}}}},
+        QJsonObject{{QStringLiteral("lt"), QJsonObject{{QStringLiteral("press"), -1}}}},
+        QJsonObject{{QStringLiteral("rt"), QJsonObject{{QStringLiteral("press"), 101}}}},
+        QJsonObject{{QStringLiteral("ls"), QJsonObject{{QStringLiteral("push"), 1.5}}}},
+        QJsonObject{{QStringLiteral("rs"), QJsonObject{{QStringLiteral("push"), true}}}},
+        QJsonObject{{QStringLiteral("lt"), QJsonObject{{QStringLiteral("press"), QJsonValue::Null}}}},
+        QJsonObject{{QStringLiteral("lt"), QJsonObject{{QStringLiteral("light_press"), 60}, {QStringLiteral("release"), 65}}}},
+        QJsonObject{{QStringLiteral("rt"), QJsonObject{{QStringLiteral("press"), 40}, {QStringLiteral("light_press"), 45}}}},
+        QJsonObject{{QStringLiteral("ls"), QJsonObject{{QStringLiteral("push"), 30}, {QStringLiteral("release"), 35}}}},
+    }) {
+        QVERIFY(!gamepadThresholdsValid(badThresholds));
+    }
 
     const auto validateGamepadTouchpad = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("configuration.set_gamepad_touchpad")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
                 {QStringLiteral("gamepad_touchpad"), fields}});
     };
-    const auto touchpadValid = validateGamepadTouchpad({
-        {QStringLiteral("x_speed"), 0},
-        {QStringLiteral("y_speed"), 200},
-        {QStringLiteral("invert_x"), true},
-        {QStringLiteral("invert_y"), false},
-    });
-    QVERIFY(touchpadValid.ok() && touchpadValid.update.gamepadTouchpadXSpeed == 0.0
-        && touchpadValid.update.gamepadTouchpadYSpeed == 200.0
-        && touchpadValid.update.gamepadTouchpadInvertX == true
-        && touchpadValid.update.gamepadTouchpadInvertY == false);
-    const auto touchpadDecimal = validateGamepadTouchpad({{QStringLiteral("x_speed"), 12.34}});
-    QVERIFY(touchpadDecimal.ok() && qRound(*touchpadDecimal.update.gamepadTouchpadXSpeed * 100.0) == 1234);
+    const auto gamepadTouchpadValid = [&](const QJsonObject &fields) {
+        return previewRequestValid(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_gamepad_touchpad")},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
+                {QStringLiteral("gamepad_touchpad"), fields}});
+    };
+    {
+        const auto touchpadValid = validateGamepadTouchpad({
+            {QStringLiteral("x_speed"), 0},
+            {QStringLiteral("y_speed"), 200},
+            {QStringLiteral("invert_x"), true},
+            {QStringLiteral("invert_y"), false},
+        });
+        QVERIFY(touchpadValid.ok() && touchpadValid.update.gamepadTouchpadXSpeed == 0.0
+            && touchpadValid.update.gamepadTouchpadYSpeed == 200.0
+            && touchpadValid.update.gamepadTouchpadInvertX == true
+            && touchpadValid.update.gamepadTouchpadInvertY == false);
+    }
+    {
+        const auto touchpadDecimal = validateGamepadTouchpad({{QStringLiteral("x_speed"), 12.34}});
+        QVERIFY(touchpadDecimal.ok() && qRound(*touchpadDecimal.update.gamepadTouchpadXSpeed * 100.0) == 1234);
+    }
     for (const QJsonObject &badTouchpad : {
         QJsonObject{},
         QJsonObject{{QStringLiteral("x_speed"), -0.01}},
@@ -999,67 +1046,87 @@ static void verifyGamepadAndPanelValidation(const QString &previewMethod, const 
         QJsonObject{{QStringLiteral("invert_y"), QJsonValue::Null}},
         QJsonObject{{QStringLiteral("invert_x"), true}, {QStringLiteral("extra"), 1}},
     }) {
-        QVERIFY(!validateGamepadTouchpad(badTouchpad).ok());
+        QVERIFY(!gamepadTouchpadValid(badTouchpad));
     }
 
-    const auto validateAcceptVirtualGamepadInput = [&](const QJsonValue &value) {
-        return validateMappingChangeRequest(previewMethod,
+    const auto acceptVirtualGamepadValid = [&](const QJsonValue &value) {
+        return previewRequestValid(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("configuration.set_accept_virtual_gamepad_input")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
                 {QStringLiteral("accept_virtual_gamepad_input"), value}});
     };
     for (bool value : {true, false}) {
-        const auto result = validateAcceptVirtualGamepadInput(value);
+        const auto result = validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_accept_virtual_gamepad_input")},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
+                {QStringLiteral("accept_virtual_gamepad_input"), value}});
         QVERIFY(result.ok() && result.update.acceptVirtualGamepadInput.has_value());
         QCOMPARE(*result.update.acceptVirtualGamepadInput, value);
     }
     for (const auto &value : {QJsonValue(1), QJsonValue(QStringLiteral("true")), QJsonValue(QJsonValue::Null)})
-        QVERIFY(!validateAcceptVirtualGamepadInput(value).ok());
-    QVERIFY(!validateMappingChangeRequest(previewMethod,
+        QVERIFY(!acceptVirtualGamepadValid(value));
+    QVERIFY(!previewRequestValid(previewMethod,
         {{QStringLiteral("action"), QStringLiteral("configuration.set_accept_virtual_gamepad_input")},
-            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))}}).ok());
-    QVERIFY(!validateMappingChangeRequest(previewMethod,
+            {QStringLiteral("source_tab_ref"), sourceTabRef}}));
+    QVERIFY(!previewRequestValid(previewMethod,
         {{QStringLiteral("action"), QStringLiteral("configuration.set_accept_virtual_gamepad_input")},
-            {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+            {QStringLiteral("source_tab_ref"), sourceTabRef},
             {QStringLiteral("accept_virtual_gamepad_input"), true},
-            {QStringLiteral("extra"), 1}}).ok());
+            {QStringLiteral("extra"), 1}}));
+}
 
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyVButtonPanelValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    const QJsonValue sourceTabRef = input.value(QStringLiteral("source_tab_ref"));
     const auto validateVButtonPanel = [&](const QJsonObject &fields) {
         return validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("configuration.set_vbutton_panel_settings")},
-                {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
                 {QStringLiteral("vbutton_panel"), fields}});
     };
-    const auto panelValid = validateVButtonPanel({
-        {QStringLiteral("columns"), 1},
-        {QStringLiteral("max_rows"), 999},
-        {QStringLiteral("button_width"), 4},
-        {QStringLiteral("button_height"), 640},
-        {QStringLiteral("opacity"), 0.75},
-        {QStringLiteral("always_on_top"), false},
-        {QStringLiteral("default_show"), true},
-        {QStringLiteral("margin"), 0},
-        {QStringLiteral("radius"), 100},
-        {QStringLiteral("drag_enabled"), false},
-        {QStringLiteral("reference_point"), 11},
-        {QStringLiteral("offset_x"), -50000},
-        {QStringLiteral("offset_y"), 50000},
-        {QStringLiteral("font_size"), 72},
-        {QStringLiteral("font_weight"), 2},
-        {QStringLiteral("font_family"), QStringLiteral("  Consolas  ")},
-        {QStringLiteral("bg_color"), QStringLiteral("#AA112233")},
-        {QStringLiteral("button_color"), QStringLiteral("#224466")},
-        {QStringLiteral("pressed_color"), QStringLiteral("#ABCDEF")},
-        {QStringLiteral("locked_color"), QStringLiteral("#445566")},
-        {QStringLiteral("text_color"), QStringLiteral("#DDEEFF")},
-    });
-    QVERIFY(panelValid.ok() && panelValid.update.vbuttonPanel.has_value());
-    QCOMPARE(panelValid.update.vbuttonPanel->columns, std::optional<int>(1));
-    QCOMPARE(panelValid.update.vbuttonPanel->fontFamily, std::optional<QString>(QStringLiteral("Consolas")));
-    QCOMPARE(panelValid.update.vbuttonPanel->bgColor, std::optional<QString>(QStringLiteral("#aa112233")));
-    QCOMPARE(panelValid.update.vbuttonPanel->pressedColor, std::optional<QString>(QStringLiteral("#abcdef")));
-    const auto panelEmptyFont = validateVButtonPanel({{QStringLiteral("font_family"), QString()}});
-    QVERIFY(panelEmptyFont.ok() && panelEmptyFont.update.vbuttonPanel->fontFamily == std::optional<QString>(QString()));
+    const auto vbuttonPanelValid = [&](const QJsonObject &fields) {
+        return previewRequestValid(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("configuration.set_vbutton_panel_settings")},
+                {QStringLiteral("source_tab_ref"), sourceTabRef},
+                {QStringLiteral("vbutton_panel"), fields}});
+    };
+    {
+        const auto panelValid = validateVButtonPanel({
+            {QStringLiteral("columns"), 1},
+            {QStringLiteral("max_rows"), 999},
+            {QStringLiteral("button_width"), 4},
+            {QStringLiteral("button_height"), 640},
+            {QStringLiteral("opacity"), 0.75},
+            {QStringLiteral("always_on_top"), false},
+            {QStringLiteral("default_show"), true},
+            {QStringLiteral("margin"), 0},
+            {QStringLiteral("radius"), 100},
+            {QStringLiteral("drag_enabled"), false},
+            {QStringLiteral("reference_point"), 11},
+            {QStringLiteral("offset_x"), -50000},
+            {QStringLiteral("offset_y"), 50000},
+            {QStringLiteral("font_size"), 72},
+            {QStringLiteral("font_weight"), 2},
+            {QStringLiteral("font_family"), QStringLiteral("  Consolas  ")},
+            {QStringLiteral("bg_color"), QStringLiteral("#AA112233")},
+            {QStringLiteral("button_color"), QStringLiteral("#224466")},
+            {QStringLiteral("pressed_color"), QStringLiteral("#ABCDEF")},
+            {QStringLiteral("locked_color"), QStringLiteral("#445566")},
+            {QStringLiteral("text_color"), QStringLiteral("#DDEEFF")},
+        });
+        QVERIFY(panelValid.ok() && panelValid.update.vbuttonPanel.has_value());
+        QCOMPARE(panelValid.update.vbuttonPanel->columns, std::optional<int>(1));
+        QCOMPARE(panelValid.update.vbuttonPanel->fontFamily, std::optional<QString>(QStringLiteral("Consolas")));
+        QCOMPARE(panelValid.update.vbuttonPanel->bgColor, std::optional<QString>(QStringLiteral("#aa112233")));
+        QCOMPARE(panelValid.update.vbuttonPanel->pressedColor, std::optional<QString>(QStringLiteral("#abcdef")));
+    }
+    {
+        const auto panelEmptyFont = validateVButtonPanel({{QStringLiteral("font_family"), QString()}});
+        QVERIFY(panelEmptyFont.ok() && panelEmptyFont.update.vbuttonPanel->fontFamily == std::optional<QString>(QString()));
+    }
     for (const QJsonObject &badPanel : {
         QJsonObject{},
         QJsonObject{{QStringLiteral("columns"), 0}},
@@ -1087,7 +1154,7 @@ static void verifyGamepadAndPanelValidation(const QString &previewMethod, const 
         QJsonObject{{QStringLiteral("columns"), QJsonValue::Null}},
         QJsonObject{{QStringLiteral("columns"), 3}, {QStringLiteral("unknown"), 1}},
     }) {
-        QVERIFY(!validateVButtonPanel(badPanel).ok());
+        QVERIFY(!vbuttonPanelValid(badPanel));
     }
 }
 
@@ -1096,9 +1163,9 @@ __declspec(noinline)
 #endif
 static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabilities)
 {
-    QCOMPARE(capabilities.size(), 142);
+    QCOMPARE(capabilities.size(), 144);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 134);
+    QCOMPARE(demoCapabilities.size(), 136);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1157,8 +1224,14 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QCOMPARE(capabilities.at(134).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_crosshair.apply"));
     QCOMPARE(capabilities.at(134).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     QVERIFY(!capabilities.at(134).toObject().value(QStringLiteral("read_only")).toBool());
-    QCOMPARE(capabilities.at(139).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(140).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(135).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_floating_button.preview"));
+    QCOMPARE(capabilities.at(135).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capabilities.at(135).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(136).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_floating_button.apply"));
+    QCOMPARE(capabilities.at(136).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!capabilities.at(136).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(141).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(142).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("tab.set_custom_image.apply");
     }));
@@ -1191,6 +1264,9 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("mapping.set_crosshair.apply");
+    }));
+    QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
+        return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("mapping.set_floating_button.apply");
     }));
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("ignore_rules.upsert.apply");
@@ -1869,99 +1945,136 @@ static void verifyCrosshairValidation(const QString &previewMethod, const QStrin
     }
 }
 
-void McpControlTest::mappingChangeArguments()
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyFloatingButtonValidation(const QString &previewMethod, const QString &revision)
 {
-    const QString revision(64, QLatin1Char('a'));
-    const QJsonObject input{{QStringLiteral("source_revision"), revision},
+    const QString rowRef = revision + QStringLiteral(":row:0:0");
+    const auto validateFloatingButton = [&](const QJsonObject &fields) {
+        return validateMappingChangeRequest(previewMethod,
+            {{QStringLiteral("action"), QStringLiteral("mapping.set_floating_button")},
+                {QStringLiteral("source_ref"), rowRef},
+                {QStringLiteral("floating_button"), fields}});
+    };
+    const auto valid = validateFloatingButton({
+        {QStringLiteral("enable"), true},
+        {QStringLiteral("label"), QStringLiteral("Attack-01")},
+        {QStringLiteral("show_on_mapping_start"), false},
+        {QStringLiteral("show_tool_tip"), true},
+        {QStringLiteral("sync_pressed_locked_state"), false},
+        {QStringLiteral("always_on_top"), false},
+        {QStringLiteral("mouse_pass_through"), true},
+        {QStringLiteral("drag_to_move"), false},
+        {QStringLiteral("sync_group_id"), 999},
+        {QStringLiteral("button_color"), QStringLiteral("#80AABBCC")},
+        {QStringLiteral("pressed_color"), QStringLiteral("#112233")},
+        {QStringLiteral("locked_color"), QStringLiteral("default")},
+        {QStringLiteral("text_color"), QStringLiteral("#FFEEDD")},
+        {QStringLiteral("border_color"), QStringLiteral("#40010203")},
+        {QStringLiteral("border_width"), 50},
+        {QStringLiteral("width"), 640},
+        {QStringLiteral("height"), 4},
+        {QStringLiteral("font_size"), 72},
+        {QStringLiteral("font_weight"), 2},
+        {QStringLiteral("font_family"), QStringLiteral(" Consolas ")},
+        {QStringLiteral("radius"), 1000},
+        {QStringLiteral("normal_opacity"), 0.01},
+        {QStringLiteral("pressed_opacity"), 0.55},
+        {QStringLiteral("locked_opacity"), 1.0},
+        {QStringLiteral("enable_gradient_fill"), false},
+        {QStringLiteral("enable_hover_animation"), true},
+        {QStringLiteral("hover_effect_strength"), 200},
+        {QStringLiteral("hover_glow_strength"), 0},
+        {QStringLiteral("hover_contrast_mode"), 3},
+        {QStringLiteral("hover_custom_color"), QStringLiteral("#CC556677")},
+        {QStringLiteral("hover_animation_duration"), 500},
+        {QStringLiteral("reference_point"), 11},
+        {QStringLiteral("x_offset"), -50000},
+        {QStringLiteral("y_offset"), 50000},
+    });
+    QVERIFY(valid.ok() && valid.update.floatingButton.has_value());
+    QCOMPARE(valid.update.floatingButton->buttonColor, std::optional<QString>(QStringLiteral("#80aabbcc")));
+    QCOMPARE(valid.update.floatingButton->pressedColor, std::optional<QString>(QStringLiteral("#ff112233")));
+    QCOMPARE(valid.update.floatingButton->lockedColor, std::optional<QString>(QStringLiteral("default")));
+    QCOMPARE(valid.update.floatingButton->fontFamily, std::optional<QString>(QStringLiteral("Consolas")));
+    QCOMPARE(valid.update.floatingButton->syncGroupId, std::optional<int>(999));
+    QCOMPARE(valid.update.floatingButton->xOffset, std::optional<int>(-50000));
+    QCOMPARE(valid.update.floatingButton->yOffset, std::optional<int>(50000));
+
+    const auto withStyleCode = validateFloatingButton({
+        {QStringLiteral("style_code"), QStringLiteral("FBS1;w=120;h=40")},
+        {QStringLiteral("enable"), true},
+    });
+    QVERIFY(withStyleCode.ok() && withStyleCode.update.floatingButton.has_value());
+    QCOMPARE(withStyleCode.update.floatingButton->styleCode, std::optional<QString>(QStringLiteral("FBS1;w=120;h=40")));
+    QCOMPARE(withStyleCode.update.floatingButton->enable, std::optional<bool>(true));
+
+    QVERIFY(!previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("mapping.set_floating_button")},
         {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")},
-        {QStringLiteral("original_key"), QStringLiteral("A")}, {QStringLiteral("mapping_key"), QStringLiteral("B")}};
-    const auto request = validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), input);
-    QVERIFY(request.ok());
-    QCOMPARE(request.addition.originalKey, QStringLiteral("A"));
-    QCOMPARE(request.addition.mappingKey, QStringLiteral("B"));
-    QCOMPARE(request.addition.insertRow, -1);
-    for (const QJsonValue &row : {QJsonValue(QJsonValue::Null), QJsonValue(0), QJsonValue(2147483647)}) {
-        auto changed = input; changed.insert(QStringLiteral("insert_row"), row);
-        QVERIFY(validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+        {QStringLiteral("floating_button"), QJsonObject{{QStringLiteral("enable"), true}}}}));
+
+    for (const QJsonObject &bad : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("style_code"), QStringLiteral("   ")}},
+        QJsonObject{{QStringLiteral("style_code"), QStringLiteral("FBS1;w=1\n2")}},
+        QJsonObject{{QStringLiteral("style_code"), QString(1025, QLatin1Char('A'))}},
+        QJsonObject{{QStringLiteral("label"), QStringLiteral("bad#label")}},
+        QJsonObject{{QStringLiteral("label"), QStringLiteral("bad|label")}},
+        QJsonObject{{QStringLiteral("label"), QStringLiteral("bad\nlabel")}},
+        QJsonObject{{QStringLiteral("label"), QString(256, QLatin1Char('A'))}},
+        QJsonObject{{QStringLiteral("font_family"), QStringLiteral("Consolas\n")}},
+        QJsonObject{{QStringLiteral("font_family"), QString(256, QLatin1Char('A'))}},
+        QJsonObject{{QStringLiteral("sync_group_id"), -1}},
+        QJsonObject{{QStringLiteral("sync_group_id"), 1000}},
+        QJsonObject{{QStringLiteral("button_color"), QStringLiteral("#12345")}},
+        QJsonObject{{QStringLiteral("border_width"), -1}},
+        QJsonObject{{QStringLiteral("border_width"), 51}},
+        QJsonObject{{QStringLiteral("width"), 3}},
+        QJsonObject{{QStringLiteral("width"), 641}},
+        QJsonObject{{QStringLiteral("height"), 3}},
+        QJsonObject{{QStringLiteral("height"), 641}},
+        QJsonObject{{QStringLiteral("font_size"), 0}},
+        QJsonObject{{QStringLiteral("font_size"), 73}},
+        QJsonObject{{QStringLiteral("font_weight"), -1}},
+        QJsonObject{{QStringLiteral("font_weight"), 3}},
+        QJsonObject{{QStringLiteral("radius"), -1}},
+        QJsonObject{{QStringLiteral("radius"), 1001}},
+        QJsonObject{{QStringLiteral("normal_opacity"), 0.0}},
+        QJsonObject{{QStringLiteral("normal_opacity"), 0.009}},
+        QJsonObject{{QStringLiteral("pressed_opacity"), 1.01}},
+        QJsonObject{{QStringLiteral("locked_opacity"), 0.123}},
+        QJsonObject{{QStringLiteral("hover_effect_strength"), -1}},
+        QJsonObject{{QStringLiteral("hover_effect_strength"), 201}},
+        QJsonObject{{QStringLiteral("hover_glow_strength"), -1}},
+        QJsonObject{{QStringLiteral("hover_glow_strength"), 201}},
+        QJsonObject{{QStringLiteral("hover_contrast_mode"), -1}},
+        QJsonObject{{QStringLiteral("hover_contrast_mode"), 4}},
+        QJsonObject{{QStringLiteral("hover_animation_duration"), 79}},
+        QJsonObject{{QStringLiteral("hover_animation_duration"), 501}},
+        QJsonObject{{QStringLiteral("reference_point"), -1}},
+        QJsonObject{{QStringLiteral("reference_point"), 12}},
+        QJsonObject{{QStringLiteral("x_offset"), -50001}},
+        QJsonObject{{QStringLiteral("y_offset"), 50001}},
+        QJsonObject{{QStringLiteral("x_offset"), 1.5}},
+        QJsonObject{{QStringLiteral("enable"), 1}},
+        QJsonObject{{QStringLiteral("enable"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("enable"), true}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!previewRequestValid(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("mapping.set_floating_button")},
+            {QStringLiteral("source_ref"), rowRef},
+            {QStringLiteral("floating_button"), bad}}));
     }
-    for (const QJsonValue &row : {QJsonValue(-1), QJsonValue(.5), QJsonValue(2147483648.0), QJsonValue(true), QJsonValue(QStringLiteral("1"))}) {
-        auto changed = input; changed.insert(QStringLiteral("insert_row"), row);
-        QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
-    }
-    for (const QString &field : {QStringLiteral("original_key"), QStringLiteral("mapping_key")}) {
-        for (const QJsonValue &key : {QJsonValue(QString()), QJsonValue(QStringLiteral("a")), QJsonValue(QStringLiteral("A+B")),
-            QJsonValue(QStringLiteral("Func-Test")), QJsonValue(QStringLiteral("Ａ")), QJsonValue(1), QJsonValue(false)}) {
-            auto changed = input; changed.insert(field, key);
-            QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
-        }
-    }
-    auto changed = input; changed.insert(QStringLiteral("unknown"), true);
-    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
-    changed = input; changed.remove(QStringLiteral("source_revision"));
-    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
-    changed = input; changed.insert(QStringLiteral("source_tab_ref"), QString(64, QLatin1Char('b')) + QStringLiteral(":source:0"));
-    QCOMPARE(validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).errorCode, QStringLiteral("stale_source"));
-    const QString id(32, QLatin1Char('a'));
-    for (const QString &method : {QStringLiteral("qkm_apply_changes"), QStringLiteral("qkm_cancel_changes"), QStringLiteral("qkm_get_operation")}) {
-        const QString field = method == QStringLiteral("qkm_get_operation") ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
-        QVERIFY(validateMappingChangeRequest(method, {{field, id}}).ok());
-        QVERIFY(!validateMappingChangeRequest(method, {{field, QString(32, QLatin1Char('A'))}}).ok());
-        QVERIFY(!validateMappingChangeRequest(method, {{field, id}, {QStringLiteral("extra"), true}}).ok());
-    }
-    QVERIFY(validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
-        {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), true}}).ok());
-    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
-        {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
-    const QString sourceRef = revision + QStringLiteral(":row:0:1");
-    const QJsonObject move{{QStringLiteral("action"), QStringLiteral("mapping.move_up")},
-        {QStringLiteral("source_ref"), sourceRef}};
-    const auto previewMethod = QStringLiteral("qkm_preview_changes");
-    const auto moveRequest = validateMappingChangeRequest(previewMethod, move);
-    QVERIFY(moveRequest.ok() && moveRequest.update.move == MappingRowMove::Up);
-    auto down = move;
-    down.insert(QStringLiteral("action"), QStringLiteral("mapping.move_down"));
-    const auto downRequest = validateMappingChangeRequest(previewMethod, down);
-    QVERIFY(downRequest.ok() && downRequest.update.move == MappingRowMove::Down);
-    down.insert(QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0"));
-    QVERIFY(!validateMappingChangeRequest(previewMethod, down).ok());
-    QCOMPARE(moveRequest.update.sourceRow, 1);
-    QCOMPARE(moveRequest.update.sourceTabRef, revision + QStringLiteral(":source:0"));
-    changed = move; changed.remove(QStringLiteral("source_ref"));
-    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    changed = move; changed.insert(QStringLiteral("source_ref"), revision + QStringLiteral(":row:0:01"));
-    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    changed = move; changed.insert(QStringLiteral("insert_row"), 0);
-    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    for (const auto direction : {MappingRowMove::Top, MappingRowMove::Bottom}) {
-        auto edge = move;
-        edge.insert(QStringLiteral("action"), QString::fromLatin1(mappingRowMoveAction(direction)));
-        const auto request = validateMappingChangeRequest(previewMethod, edge);
-        QVERIFY(request.ok() && request.update.move == direction);
-        edge.insert(QStringLiteral("insert_row"), 0);
-        QVERIFY(!validateMappingChangeRequest(previewMethod, edge).ok());
-    }
-    const QString adjacent = revision + QStringLiteral(":row:0:2");
-    const QJsonObject batch{{QStringLiteral("action"), QStringLiteral("mapping.move_to_top")},
-        {QStringLiteral("source_refs"), QJsonArray{sourceRef, adjacent}}};
-    const auto batchRequest = validateMappingChangeRequest(previewMethod, batch);
-    QVERIFY(batchRequest.ok() && batchRequest.update.move == MappingRowMove::Top);
-    QCOMPARE(batchRequest.update.sourceRow, 1);
-    QCOMPARE(batchRequest.update.rowCount, 2);
-    changed = batch; changed.insert(QStringLiteral("source_ref"), sourceRef);
-    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    for (const auto direction : {MappingRowMove::Up, MappingRowMove::Down, MappingRowMove::Bottom}) {
-        changed = batch; changed.insert(QStringLiteral("action"), QString::fromLatin1(mappingRowMoveAction(direction)));
-        const auto request = validateMappingChangeRequest(previewMethod, changed);
-        QVERIFY(request.ok() && request.update.move == direction);
-        QCOMPARE(request.update.rowCount, 2);
-    }
-    for (const auto &invalid : {QJsonArray{sourceRef}, QJsonArray{sourceRef, sourceRef}, QJsonArray{adjacent, sourceRef},
-        QJsonArray{sourceRef, revision + QStringLiteral(":row:0:3")}, QJsonArray{sourceRef, revision + QStringLiteral(":row:1:2")},
-        QJsonArray{sourceRef, QString(64, QLatin1Char('b')) + QStringLiteral(":row:0:2")},
-        QJsonArray{revision + QStringLiteral(":row:0:2147483647"), revision + QStringLiteral(":row:0:2147483648")}}) {
-        changed = batch; changed.insert(QStringLiteral("source_refs"), invalid);
-        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
-    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyTabManagementArgumentsValidation(const QString &previewMethod, const QString &revision, const QString &sourceRef)
+{
+    QJsonObject changed;
     const QJsonObject rename{{QStringLiteral("action"), QStringLiteral("tab.rename")},
         {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")},
         {QStringLiteral("tab_name"), QStringLiteral("测试 Tab")}};
@@ -2112,6 +2225,14 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
     changed = colors; changed.insert(QStringLiteral("notification_background_color"), QJsonValue(QJsonValue::Null));
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyRowUpdateAndCopyArgumentsValidation(const QString &previewMethod, const QString &revision, const QString &sourceRef)
+{
+    QJsonObject changed;
     const QJsonObject noteUpdate{{QStringLiteral("action"), QStringLiteral("mapping.update")},
         {QStringLiteral("source_ref"), sourceRef}, {QStringLiteral("note"), QStringLiteral("  测试#分组|備考😀  ")}};
     const auto noteRequest = validateMappingChangeRequest(previewMethod, noteUpdate);
@@ -2319,6 +2440,14 @@ void McpControlTest::mappingChangeArguments()
     }
     changed = sendTiming; changed.insert(QStringLiteral("key_up_mapping_key"), QStringLiteral("B"));
     QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyMacroAndTableArgumentsValidation(const QString &previewMethod, const QString &revision, const QString &sourceRef, const QJsonObject &input)
+{
+    QJsonObject changed;
     const QJsonObject macroFields{{QStringLiteral("catalog_revision"), revision}, {QStringLiteral("scope"), QStringLiteral("universal")},
         {QStringLiteral("name"), QStringLiteral("Shared macro")}, {QStringLiteral("content"), QStringLiteral("A")},
         {QStringLiteral("note"), QStringLiteral("")}};
@@ -2442,7 +2571,13 @@ void McpControlTest::mappingChangeArguments()
     auto tablePath = tableImport;
     tablePath.insert(QStringLiteral("file_name"), QStringLiteral("backup.ini"));
     QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), tablePath).ok());
+}
 
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyGeneralAndKey2MouseArgumentsValidation(const QString &previewMethod, const QJsonObject &input)
+{
     const auto validateSaveWindowSize = [&](const QJsonValue &value) {
         return validateMappingChangeRequest(previewMethod, {{QStringLiteral("action"), QStringLiteral("general.set_save_window_size")},
             {QStringLiteral("source_tab_ref"), input.value(QStringLiteral("source_tab_ref"))},
@@ -2551,19 +2686,13 @@ void McpControlTest::mappingChangeArguments()
     QVERIFY(!validateKey2Mouse({{QStringLiteral("y_speed"), true}}).ok());
     QVERIFY(!validateKey2Mouse({{QStringLiteral("polling_interval_ms"), QJsonValue::Null}}).ok());
     QVERIFY(!validateKey2Mouse({{QStringLiteral("x_speed"), 3}, {QStringLiteral("extra"), 1}}).ok());
+}
 
-    verifyGamepadAndPanelValidation(previewMethod, input);
-    if (QTest::currentTestFailed()) return;
-
-    verifyNotificationStyleValidation(previewMethod, input);
-    verifyTrayIconsValidation(previewMethod, input);
-    verifyTabFloatingWindowValidation(previewMethod, input);
-    verifyTabCustomImageValidation(previewMethod, input);
-    verifyCrosshairValidation(previewMethod, revision);
-    verifyWindowAndTrayArgumentsValidation(previewMethod, input);
-    verifyWindowMatchAndStartupValidation(previewMethod, input);
-    if (QTest::currentTestFailed()) return;
-
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyDisplayScaleAndIgnoreRulesValidation(const QString &previewMethod, const QString &revision, const QJsonObject &input)
+{
     for (const int scale : {0, 1, 2, 5, 6, 10}) {
         const auto validScale = validateMappingChangeRequest(previewMethod,
             {{QStringLiteral("action"), QStringLiteral("general.set_display_scale")},
@@ -2696,6 +2825,124 @@ void McpControlTest::mappingChangeArguments()
     QCOMPARE(ignoreStore.operation({QStringLiteral("inst"), QStringLiteral("pair"), 1}, ignorePreview->id)
         .value(QStringLiteral("target")).toObject().value(QStringLiteral("rule_name")).toString(),
         QStringLiteral("CustomRule"));
+}
+
+void McpControlTest::mappingChangeArguments()
+{
+    const QString revision(64, QLatin1Char('a'));
+    const QJsonObject input{{QStringLiteral("source_revision"), revision},
+        {QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0")},
+        {QStringLiteral("original_key"), QStringLiteral("A")}, {QStringLiteral("mapping_key"), QStringLiteral("B")}};
+    const auto request = validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), input);
+    QVERIFY(request.ok());
+    QCOMPARE(request.addition.originalKey, QStringLiteral("A"));
+    QCOMPARE(request.addition.mappingKey, QStringLiteral("B"));
+    QCOMPARE(request.addition.insertRow, -1);
+    for (const QJsonValue &row : {QJsonValue(QJsonValue::Null), QJsonValue(0), QJsonValue(2147483647)}) {
+        auto changed = input; changed.insert(QStringLiteral("insert_row"), row);
+        QVERIFY(validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+    }
+    for (const QJsonValue &row : {QJsonValue(-1), QJsonValue(.5), QJsonValue(2147483648.0), QJsonValue(true), QJsonValue(QStringLiteral("1"))}) {
+        auto changed = input; changed.insert(QStringLiteral("insert_row"), row);
+        QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+    }
+    for (const QString &field : {QStringLiteral("original_key"), QStringLiteral("mapping_key")}) {
+        for (const QJsonValue &key : {QJsonValue(QString()), QJsonValue(QStringLiteral("a")), QJsonValue(QStringLiteral("A+B")),
+            QJsonValue(QStringLiteral("Func-Test")), QJsonValue(QStringLiteral("Ａ")), QJsonValue(1), QJsonValue(false)}) {
+            auto changed = input; changed.insert(field, key);
+            QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+        }
+    }
+    auto changed = input; changed.insert(QStringLiteral("unknown"), true);
+    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+    changed = input; changed.remove(QStringLiteral("source_revision"));
+    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).ok());
+    changed = input; changed.insert(QStringLiteral("source_tab_ref"), QString(64, QLatin1Char('b')) + QStringLiteral(":source:0"));
+    QCOMPARE(validateMappingChangeRequest(QStringLiteral("qkm_preview_changes"), changed).errorCode, QStringLiteral("stale_source"));
+    const QString id(32, QLatin1Char('a'));
+    for (const QString &method : {QStringLiteral("qkm_apply_changes"), QStringLiteral("qkm_cancel_changes"), QStringLiteral("qkm_get_operation")}) {
+        const QString field = method == QStringLiteral("qkm_get_operation") ? QStringLiteral("operation_id") : QStringLiteral("preview_id");
+        QVERIFY(validateMappingChangeRequest(method, {{field, id}}).ok());
+        QVERIFY(!validateMappingChangeRequest(method, {{field, QString(32, QLatin1Char('A'))}}).ok());
+        QVERIFY(!validateMappingChangeRequest(method, {{field, id}, {QStringLiteral("extra"), true}}).ok());
+    }
+    QVERIFY(validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
+        {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), true}}).ok());
+    QVERIFY(!validateMappingChangeRequest(QStringLiteral("qkm_apply_changes"),
+        {{QStringLiteral("preview_id"), id}, {QStringLiteral("confirm_conflicts"), 1}}).ok());
+    const QString sourceRef = revision + QStringLiteral(":row:0:1");
+    const QJsonObject move{{QStringLiteral("action"), QStringLiteral("mapping.move_up")},
+        {QStringLiteral("source_ref"), sourceRef}};
+    const auto previewMethod = QStringLiteral("qkm_preview_changes");
+    const auto moveRequest = validateMappingChangeRequest(previewMethod, move);
+    QVERIFY(moveRequest.ok() && moveRequest.update.move == MappingRowMove::Up);
+    auto down = move;
+    down.insert(QStringLiteral("action"), QStringLiteral("mapping.move_down"));
+    const auto downRequest = validateMappingChangeRequest(previewMethod, down);
+    QVERIFY(downRequest.ok() && downRequest.update.move == MappingRowMove::Down);
+    down.insert(QStringLiteral("source_tab_ref"), revision + QStringLiteral(":source:0"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, down).ok());
+    QCOMPARE(moveRequest.update.sourceRow, 1);
+    QCOMPARE(moveRequest.update.sourceTabRef, revision + QStringLiteral(":source:0"));
+    changed = move; changed.remove(QStringLiteral("source_ref"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = move; changed.insert(QStringLiteral("source_ref"), revision + QStringLiteral(":row:0:01"));
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    changed = move; changed.insert(QStringLiteral("insert_row"), 0);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    for (const auto direction : {MappingRowMove::Top, MappingRowMove::Bottom}) {
+        auto edge = move;
+        edge.insert(QStringLiteral("action"), QString::fromLatin1(mappingRowMoveAction(direction)));
+        const auto request = validateMappingChangeRequest(previewMethod, edge);
+        QVERIFY(request.ok() && request.update.move == direction);
+        edge.insert(QStringLiteral("insert_row"), 0);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, edge).ok());
+    }
+    const QString adjacent = revision + QStringLiteral(":row:0:2");
+    const QJsonObject batch{{QStringLiteral("action"), QStringLiteral("mapping.move_to_top")},
+        {QStringLiteral("source_refs"), QJsonArray{sourceRef, adjacent}}};
+    const auto batchRequest = validateMappingChangeRequest(previewMethod, batch);
+    QVERIFY(batchRequest.ok() && batchRequest.update.move == MappingRowMove::Top);
+    QCOMPARE(batchRequest.update.sourceRow, 1);
+    QCOMPARE(batchRequest.update.rowCount, 2);
+    changed = batch; changed.insert(QStringLiteral("source_ref"), sourceRef);
+    QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    for (const auto direction : {MappingRowMove::Up, MappingRowMove::Down, MappingRowMove::Bottom}) {
+        changed = batch; changed.insert(QStringLiteral("action"), QString::fromLatin1(mappingRowMoveAction(direction)));
+        const auto request = validateMappingChangeRequest(previewMethod, changed);
+        QVERIFY(request.ok() && request.update.move == direction);
+        QCOMPARE(request.update.rowCount, 2);
+    }
+    for (const auto &invalid : {QJsonArray{sourceRef}, QJsonArray{sourceRef, sourceRef}, QJsonArray{adjacent, sourceRef},
+        QJsonArray{sourceRef, revision + QStringLiteral(":row:0:3")}, QJsonArray{sourceRef, revision + QStringLiteral(":row:1:2")},
+        QJsonArray{sourceRef, QString(64, QLatin1Char('b')) + QStringLiteral(":row:0:2")},
+        QJsonArray{revision + QStringLiteral(":row:0:2147483647"), revision + QStringLiteral(":row:0:2147483648")}}) {
+        changed = batch; changed.insert(QStringLiteral("source_refs"), invalid);
+        QVERIFY(!validateMappingChangeRequest(previewMethod, changed).ok());
+    }
+    verifyTabManagementArgumentsValidation(previewMethod, revision, sourceRef);
+    verifyRowUpdateAndCopyArgumentsValidation(previewMethod, revision, sourceRef);
+    verifyMacroAndTableArgumentsValidation(previewMethod, revision, sourceRef, input);
+    verifyGeneralAndKey2MouseArgumentsValidation(previewMethod, input);
+    if (QTest::currentTestFailed()) return;
+
+    verifyGamepadValidation(previewMethod, input);
+    verifyVButtonPanelValidation(previewMethod, input);
+    if (QTest::currentTestFailed()) return;
+
+    verifyNotificationStyleValidation(previewMethod, input);
+    verifyTrayIconsValidation(previewMethod, input);
+    verifyTabFloatingWindowValidation(previewMethod, input);
+    verifyTabCustomImageValidation(previewMethod, input);
+    verifyCrosshairValidation(previewMethod, revision);
+    verifyFloatingButtonValidation(previewMethod, revision);
+    verifyWindowAndTrayArgumentsValidation(previewMethod, input);
+    verifyWindowMatchAndStartupValidation(previewMethod, input);
+    if (QTest::currentTestFailed()) return;
+
+    verifyDisplayScaleAndIgnoreRulesValidation(previewMethod, revision, input);
+    if (QTest::currentTestFailed()) return;
+
     verifyCapabilityListContracts();
 }
 
