@@ -126,6 +126,8 @@
 
 ## 五、`03_gemini_response_r*.md` 修复回复模板
 
+> `check --strict-meta --check-latest` 与 `sync-latest` 会严格解析并链式绑定下方 `前置基线 → 新增本地提交`（须为固定十六进制 `<prev>..<new>`）与 `post_review_action` 两行，请保留精确前缀且不要重复填写。
+
 ```markdown
 # Gemini 评审修复与确认回复 r1：`out/codex_review/<YYYYMMDD_tag>`
 

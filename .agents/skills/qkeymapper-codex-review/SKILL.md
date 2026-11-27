@@ -87,7 +87,7 @@ out/codex_review/
 
 ## 辅助脚手架用法（非提权 Python 3）
 
-从仓库根目录运行（本机首选 `out/mcp_bridge/venv/Scripts/python.exe -B -X utf8`，其他同步仓库且无该 venv 的 PC 可改用 `python -B -X utf8`）；脚本全程使用 `--no-optional-locks` 只读查 Git、`O_CREAT | O_EXCL` 独占创建 `01` 并原子更新 `LATEST.md`（不覆盖既有 `01` 原件，拒绝符号链接／NTFS 联接／硬链接及工作区外链接）：
+从仓库根目录运行（本机首选 `out/mcp_bridge/venv/Scripts/python.exe -B -X utf8`，其他同步仓库且无该 venv 的 PC 可改用 `python -B -X utf8`）；脚本全程使用 `--no-optional-locks` 只读查 Git、`O_CREAT | O_EXCL` 独占创建 `01` 并原子更新 `LATEST.md`（不覆盖既有 `01` 原件，拒绝符号链接／NTFS 联接／硬链接及工作区外链接；作者后续写入 `03/05` 回复单时须沿用 [templates.md](references/templates.md) 的冻结范围与 `post_review_action` 头字段以供 `--strict-meta --check-latest` 绑定校验）：
 
 ```powershell
 # 1. 查看当前评审指针与 Git 本地待审状态
@@ -97,7 +97,11 @@ out/codex_review/
 & out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 .agents/skills/qkeymapper-codex-review/scripts/review_helper.py init `
   --batch 20261127_example_tag --base <base_sha> --head <head_sha> --post-action pause_for_user --profile general
 
-# 3. 校验送审单／评审单／LATEST.md 的编码（UTF-8 无 BOM / LF）、命名顺序、相对链接与行号
+# 3. 写入 03/05 回复单后，或 init 更新 LATEST.md 失败后，在不触碰已有原件前提下原子同步 LATEST.md
+& out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 .agents/skills/qkeymapper-codex-review/scripts/review_helper.py sync-latest `
+  --batch 20261127_example_tag --status WAITING_R1_RECHECK
+
+# 4. 校验送审单／回复单／评审单／LATEST.md 的编码（UTF-8 无 BOM / LF）、命名顺序、相对链接与元信息绑定
 & out/mcp_bridge/venv/Scripts/python.exe -B -X utf8 .agents/skills/qkeymapper-codex-review/scripts/review_helper.py check `
   --batch 20261127_example_tag --check-latest --strict-meta
 ```
