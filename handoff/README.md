@@ -16,7 +16,7 @@ Rust 迁移的选择、实现和验证保留在原文件；剩余发行与宿主
 
 固定IbInput与MCP核心接纳的源码／范围／原件索引见[选定验证记录](qkeymapper_mcp_control/ibinput_mcp_integration_validation.md)，提交及停止位置仍以两项唯一计划的顶部卡片为准。
 
-工作区工具：[临时 gsudo PID 缓存技能](../.agents/skills/qkeymapper-gsudo-cache/SKILL.md)、[使用与日常运行复查说明](../.agents/skills/qkeymapper-gsudo-cache/references/usage.md)。[公共测试接入](../.agents/skills/qkeymapper-gsudo-cache/references/test-actions.md)。实施状态仍在上述唯一主计划维护；[验证与观察边界](qkeymapper_mcp_control/gsudo_cache_pending_validation.md)只记录证据索引和实际覆盖。
+工作区工具：[临时 gsudo PID 缓存技能](../.agents/skills/qkeymapper-gsudo-cache/SKILL.md)、[使用与日常运行复查说明](../.agents/skills/qkeymapper-gsudo-cache/references/usage.md)、[本地提交双端评审工作流](../.agents/skills/qkeymapper-codex-review/SKILL.md)。[公共测试接入](../.agents/skills/qkeymapper-gsudo-cache/references/test-actions.md)。实施状态仍在上述唯一主计划维护；[验证与观察边界](qkeymapper_mcp_control/gsudo_cache_pending_validation.md)只记录证据索引和实际覆盖。
 
 ## 目录与文件规则
 

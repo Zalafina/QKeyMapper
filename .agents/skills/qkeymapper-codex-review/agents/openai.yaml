@@ -1,0 +1,4 @@
+interface:
+  display_name: "QKeyMapper 本地提交双端评审"
+  short_description: "按仓库规范在 out/codex_review/ 对本地未推送提交执行只读评审、复审与回传闭环"
+  default_prompt: "使用 $qkeymapper-codex-review 读取 out/codex_review/LATEST.md 与对应送审单，按仓库红线执行严格只读代码评审或复审。"
