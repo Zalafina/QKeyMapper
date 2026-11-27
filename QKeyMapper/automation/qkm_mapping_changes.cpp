@@ -1215,6 +1215,97 @@ static bool validateConfigMacroAndIgnorePreview(const QJsonValue &action, const 
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+static bool parseFloatingButtonSyncGroupNoteUpdate(const QJsonValue &raw,
+    FloatingButtonSyncGroupNoteUpdate &out, const char *&errorOut)
+{
+    using namespace QKeyMapperConstants;
+    const auto failMsg = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const QJsonObject fields = raw.toObject();
+    if (!raw.isObject() || fields.size() != 2
+        || !fields.contains(QStringLiteral("group_id")) || !fields.contains(QStringLiteral("note"))) {
+        return failMsg("sync_group_note must be an object with exact group_id and note fields.");
+    }
+    const auto groupVal = fields.value(QStringLiteral("group_id"));
+    const int groupId = groupVal.toInt(0);
+    if (!groupVal.isDouble() || groupVal.toDouble() != groupId
+        || groupId < 1 || groupId > FLOATINGBUTTON_SYNCGROUPID_MAX) {
+        return failMsg("sync_group_note group_id must be an integer between 1 and 999.");
+    }
+    const auto noteVal = fields.value(QStringLiteral("note"));
+    const QString noteText = noteVal.toString();
+    if (!noteVal.isString() || noteText.size() > WindowMatchTextMaxLength
+        || noteText.contains(QLatin1Char('\0')) || noteText.contains(QLatin1Char('\r'))
+        || noteText.contains(QLatin1Char('\n'))) {
+        return failMsg("sync_group_note note must be a single-line string of at most 1024 UTF-16 code units.");
+    }
+    out.groupId = groupId;
+    out.note = noteText;
+    return true;
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static bool parseFloatingButtonSyncGroupMoveUpdate(const QJsonValue &raw,
+    FloatingButtonSyncGroupMoveUpdate &out, const char *&errorOut)
+{
+    using namespace QKeyMapperConstants;
+    const auto failMsg = [&](const char *message) {
+        errorOut = message;
+        return false;
+    };
+    const QJsonObject fields = raw.toObject();
+    if (!raw.isObject() || !fields.contains(QStringLiteral("group_id"))) {
+        return failMsg("sync_group_move must be an object containing group_id and delta_x or delta_y.");
+    }
+    bool hasDeltaX = false;
+    bool hasDeltaY = false;
+    for (auto it = fields.constBegin(); it != fields.constEnd(); ++it) {
+        if (it.key() == QStringLiteral("delta_x")) hasDeltaX = true;
+        else if (it.key() == QStringLiteral("delta_y")) hasDeltaY = true;
+        else if (it.key() != QStringLiteral("group_id")) {
+            return failMsg("Unknown field in sync_group_move.");
+        }
+    }
+    if (!hasDeltaX && !hasDeltaY) {
+        return failMsg("sync_group_move requires at least one of delta_x or delta_y.");
+    }
+    const auto groupVal = fields.value(QStringLiteral("group_id"));
+    const int groupId = groupVal.toInt(0);
+    if (!groupVal.isDouble() || groupVal.toDouble() != groupId
+        || groupId < 1 || groupId > FLOATINGBUTTON_SYNCGROUPID_MAX) {
+        return failMsg("sync_group_move group_id must be an integer between 1 and 999.");
+    }
+    const auto parseDelta = [&](const QString &key, bool present, int &target) -> bool {
+        if (!present) {
+            target = 0;
+            return true;
+        }
+        const auto val = fields.value(key);
+        const int parsed = val.toInt(-200000);
+        if (!val.isDouble() || val.toDouble() != parsed || parsed < -100000 || parsed > 100000) {
+            return false;
+        }
+        target = parsed;
+        return true;
+    };
+    if (!parseDelta(QStringLiteral("delta_x"), hasDeltaX, out.deltaX)
+        || !parseDelta(QStringLiteral("delta_y"), hasDeltaY, out.deltaY)) {
+        return failMsg("sync_group_move delta_x and delta_y must be integers between -100000 and 100000.");
+    }
+    if (out.deltaX == 0 && out.deltaY == 0) {
+        return failMsg("sync_group_move requires a non-zero delta_x or delta_y.");
+    }
+    out.groupId = groupId;
+    return true;
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJsonObject &arguments,
     const QJsonValue &reference, const QString &revision, MappingUpdateArguments &update, const char *&errorOut)
 {
@@ -1242,6 +1333,9 @@ static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJ
     const bool trayIconsPreview = action == QLatin1String("general.set_tray_icons");
     const bool tabFloatingWindowPreview = action == QLatin1String("tab.set_floating_window");
     const bool tabCustomImagePreview = action == QLatin1String("tab.set_custom_image");
+    const bool floatingButtonDragCoordPreview = action == QLatin1String("general.set_floating_button_drag_coordinate");
+    const bool floatingButtonSyncGroupNotePreview = action == QLatin1String("configuration.set_floating_button_sync_group_note");
+    const bool floatingButtonSyncGroupMovePreview = action == QLatin1String("mapping.move_floating_button_sync_group");
     const bool processIconTrayPreview = action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = action == QLatin1String("configuration.set_custom_notification");
@@ -1313,6 +1407,25 @@ static bool parseTabAndSettingsPreviewUpdates(const QJsonValue &action, const QJ
             const auto value = arguments.value(QStringLiteral("play_sound_effect"));
             if (!value.isBool()) return failMsg("Provide an explicit boolean play_sound_effect.");
             update.playSoundEffect = value.toBool();
+        }
+        if (floatingButtonDragCoordPreview) {
+            const auto value = arguments.value(QStringLiteral("show_drag_coordinate"));
+            if (!value.isBool()) return failMsg("Provide an explicit boolean show_drag_coordinate.");
+            update.floatingButtonShowDragCoordinate = value.toBool();
+        }
+        if (floatingButtonSyncGroupNotePreview) {
+            FloatingButtonSyncGroupNoteUpdate parsedNote;
+            if (!parseFloatingButtonSyncGroupNoteUpdate(arguments.value(QStringLiteral("sync_group_note")), parsedNote, errorOut)) {
+                return false;
+            }
+            update.floatingButtonSyncGroupNote = parsedNote;
+        }
+        if (floatingButtonSyncGroupMovePreview) {
+            FloatingButtonSyncGroupMoveUpdate parsedMove;
+            if (!parseFloatingButtonSyncGroupMoveUpdate(arguments.value(QStringLiteral("sync_group_move")), parsedMove, errorOut)) {
+                return false;
+            }
+            update.floatingButtonSyncGroupMove = parsedMove;
         }
         if (globalSwitchTimeoutPreview) {
             using namespace QKeyMapperConstants;
@@ -1927,6 +2040,9 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
     const bool trayIconsPreview = preview && action == QLatin1String("general.set_tray_icons");
     const bool tabFloatingWindowPreview = preview && action == QLatin1String("tab.set_floating_window");
     const bool tabCustomImagePreview = preview && action == QLatin1String("tab.set_custom_image");
+    const bool floatingButtonDragCoordPreview = preview && action == QLatin1String("general.set_floating_button_drag_coordinate");
+    const bool floatingButtonSyncGroupNotePreview = preview && action == QLatin1String("configuration.set_floating_button_sync_group_note");
+    const bool floatingButtonSyncGroupMovePreview = preview && action == QLatin1String("mapping.move_floating_button_sync_group");
     const bool processIconTrayPreview = preview && action == QLatin1String("configuration.set_process_icon_as_tray_icon");
     const bool pointDisplayKeysPreview = preview && action == QLatin1String("configuration.set_point_display_keys");
     const bool customNotificationPreview = preview && action == QLatin1String("configuration.set_custom_notification");
@@ -1951,7 +2067,8 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         || disabledVisibilityPreview || mappingDisplayPreview || insertModePreview || editTriggerPreview
         || windowDisplayModePreview || saveWindowSizePreview || saveSplitterPositionPreview || playSoundEffectPreview
         || globalSwitchTimeoutPreview || fullscreenGlobalMappingPreview || key2MousePreview || gyro2MouseOptionsPreview || gamepadThresholdsPreview || gamepadTouchpadPreview || acceptVirtualGamepadInputPreview || vbuttonPanelPreview
-        || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || tabFloatingWindowPreview || tabCustomImagePreview || processIconTrayPreview
+        || generalNotificationStylePreview || customNotificationStylePreview || trayIconsPreview || tabFloatingWindowPreview || tabCustomImagePreview
+        || floatingButtonDragCoordPreview || floatingButtonSyncGroupNotePreview || floatingButtonSyncGroupMovePreview || processIconTrayPreview
         || pointDisplayKeysPreview || customNotificationPreview || windowMatchCriteriaPreview || autoMatchForegroundPreview || sendToSameWindowsPreview || restoreProcessPathPreview || displayScalePreview || startupPositionPreview;
     const bool preferencesPreview = preview && action == QJsonValue(QStringLiteral("ibinput.preferences.update"));
     if (preview && !action.isUndefined() && (!action.isString()
@@ -1968,6 +2085,9 @@ MappingChangeRequest validateMappingChangeRequest(const QString &method, const Q
         : saveWindowSizePreview ? "save_window_size"
         : saveSplitterPositionPreview ? "save_splitter_position"
         : playSoundEffectPreview ? "play_sound_effect"
+        : floatingButtonDragCoordPreview ? "show_drag_coordinate"
+        : floatingButtonSyncGroupNotePreview ? "sync_group_note"
+        : floatingButtonSyncGroupMovePreview ? "sync_group_move"
         : globalSwitchTimeoutPreview ? "timeout_ms"
         : fullscreenGlobalMappingPreview ? "fullscreen_global_mapping"
         : key2MousePreview ? "key2mouse"
@@ -2807,6 +2927,81 @@ void appendMappingFloatingButtonCapabilities(QJsonArray &capabilities, const Cap
 #ifdef Q_CC_MSVC
 __declspec(noinline)
 #endif
+void appendMappingFloatingButtonSyncCapabilities(QJsonArray &capabilities, const CapabilitySchemaContext &ctx)
+{
+    using namespace QKeyMapperConstants;
+    const auto dragCoordSchema = CapabilitySchemaContext::schema({
+        {QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("general.set_floating_button_drag_coordinate")}}},
+        {QStringLiteral("source_tab_ref"), ctx.reference},
+        {QStringLiteral("show_drag_coordinate"), QJsonObject{{QStringLiteral("type"), QStringLiteral("boolean")}}},
+    }, {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("show_drag_coordinate")});
+    auto dragPreviewCap = CapabilitySchemaContext::capability("general.set_floating_button_drag_coordinate.preview", "qkm_preview_changes", Read | Configure, true, dragCoordSchema);
+    auto dragApplyCap = CapabilitySchemaContext::capability("general.set_floating_button_drag_coordinate.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&dragPreviewCap, &dragApplyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("general_global_preference"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+
+    const QJsonObject noteObjSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("required"), QJsonArray{QStringLiteral("group_id"), QStringLiteral("note")}},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("group_id"), CapabilitySchemaContext::boundedInteger(1, FLOATINGBUTTON_SYNCGROUPID_MAX)},
+            {QStringLiteral("note"), QJsonObject{{QStringLiteral("type"), QStringLiteral("string")},
+                {QStringLiteral("maxLength"), WindowMatchTextMaxLength},
+                {QStringLiteral("pattern"), QStringLiteral("^[^\\u0000\\r\\n]*$")}}},
+        }},
+    };
+    auto notePreviewCap = CapabilitySchemaContext::capability("configuration.set_floating_button_sync_group_note.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.set_floating_button_sync_group_note")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("sync_group_note"), noteObjSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("sync_group_note")}));
+    auto noteApplyCap = CapabilitySchemaContext::capability("configuration.set_floating_button_sync_group_note.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&notePreviewCap, &noteApplyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("loaded_configuration_profile"),
+            QStringLiteral("empty_note_removes_entry"), QStringLiteral("single_line_max_1024_utf16"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+
+    const QJsonObject deltaSchema = CapabilitySchemaContext::boundedInteger(-100000, 100000);
+    const QJsonObject moveObjSchema{
+        {QStringLiteral("type"), QStringLiteral("object")},
+        {QStringLiteral("additionalProperties"), false},
+        {QStringLiteral("required"), QJsonArray{QStringLiteral("group_id")}},
+        {QStringLiteral("anyOf"), QJsonArray{
+            QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("delta_x")}}},
+            QJsonObject{{QStringLiteral("required"), QJsonArray{QStringLiteral("delta_y")}}},
+        }},
+        {QStringLiteral("properties"), QJsonObject{
+            {QStringLiteral("group_id"), CapabilitySchemaContext::boundedInteger(1, FLOATINGBUTTON_SYNCGROUPID_MAX)},
+            {QStringLiteral("delta_x"), deltaSchema},
+            {QStringLiteral("delta_y"), deltaSchema},
+        }},
+    };
+    auto movePreviewCap = CapabilitySchemaContext::capability("mapping.move_floating_button_sync_group.preview", "qkm_preview_changes", Read | Configure, true,
+        CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("mapping.move_floating_button_sync_group")}}},
+            {QStringLiteral("source_tab_ref"), ctx.reference},
+            {QStringLiteral("sync_group_move"), moveObjSchema}},
+            {QStringLiteral("action"), QStringLiteral("source_tab_ref"), QStringLiteral("sync_group_move")}));
+    auto moveApplyCap = CapabilitySchemaContext::capability("mapping.move_floating_button_sync_group.apply", "qkm_apply_changes", Read | Configure, false, ctx.settingsApplySchema);
+    for (auto *item : {&movePreviewCap, &moveApplyCap}) {
+        item->insert(QStringLiteral("limitations"), QJsonArray{QStringLiteral("current_attached_source_and_inherited_common_only"),
+            QStringLiteral("clamps_offsets_to_minus50000_plus50000"), QStringLiteral("requires_non_zero_delta_and_member"),
+            QStringLiteral("idle_after_completed_cleanup"), QStringLiteral("memory_only_no_save_or_start")});
+        item->insert(QStringLiteral("validation_budget_ms"), MappingChangeBudgetMs);
+        capabilities.append(*item);
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
 void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities, bool standardMode, const CapabilitySchemaContext &ctx)
 {
     auto restoreProcessPathPreviewCap = CapabilitySchemaContext::capability("configuration.restore_process_path.preview", "qkm_preview_changes", Read | Configure, true,
@@ -2943,6 +3138,7 @@ void appendScaleGyroThresholdAndConfigLoadCapabilities(QJsonArray &capabilities,
     appendTabCustomImageCapabilities(capabilities, ctx);
     appendMappingCrosshairCapabilities(capabilities, ctx);
     appendMappingFloatingButtonCapabilities(capabilities, ctx);
+    appendMappingFloatingButtonSyncCapabilities(capabilities, ctx);
     if (standardMode) {
         auto load = CapabilitySchemaContext::capability("configuration.load.preview", "qkm_preview_changes", Read | Configure, true,
             CapabilitySchemaContext::schema({{QStringLiteral("action"), QJsonObject{{QStringLiteral("const"), QStringLiteral("configuration.load")}}},

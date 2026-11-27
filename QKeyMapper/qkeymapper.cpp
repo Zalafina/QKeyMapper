@@ -16237,8 +16237,7 @@ bool QKeyMapper::eventFilter(QObject *object, QEvent *event)
                         requestSaveSettingDirty();
                     }
                     else if (selectedAction == toggleDragCoordAction) {
-                        m_FloatingButton_ShowDragCoordinate = !m_FloatingButton_ShowDragCoordinate;
-                        requestSaveSettingDirty();
+                        applyFloatingButtonDragCoordinateSetting(!m_FloatingButton_ShowDragCoordinate);
                     }
                     else if (selectedAction == copyStyleCodeAction) {
                         const QString styleCode = generateFloatingButtonStyleCode(keymapdata);
@@ -19139,12 +19138,156 @@ bool QKeyMapper::setMappingSourceRowFloatingButtonSettings(int tabIndex, int row
         refreshTabsForSourceTabChange(tabIndex);
     }
 
-    const int displayRow = findCurrentDisplayRowFromFloatingButtonSource(sourceInfo);
-    if (displayRow >= 0) {
-        showFloatingButtonStartForSource(sourceInfo, displayRow, QString());
-    }
     requestSaveSettingDirty();
     return true;
+}
+
+bool QKeyMapper::applyFloatingButtonDragCoordinateSetting(bool enabled)
+{
+    if (m_FloatingButton_ShowDragCoordinate == enabled) {
+        return false;
+    }
+
+    m_FloatingButton_ShowDragCoordinate = enabled;
+    ++m_AutomationSourceEpoch;
+    requestSaveSettingDirty();
+    return true;
+}
+
+bool QKeyMapper::setFloatingButtonSyncGroupNoteSetting(int groupId, const QString &note)
+{
+    if (groupId < 1 || groupId > QKeyMapperConstants::FLOATINGBUTTON_SYNCGROUPID_MAX) {
+        return false;
+    }
+
+    if (m_FloatingButtonSyncGroupNotes.value(groupId) == note) {
+        return false;
+    }
+
+    setSyncGroupNote(groupId, note);
+    ++m_AutomationSourceEpoch;
+    requestSaveSettingDirty();
+    return true;
+}
+
+QList<FloatingButtonSyncGroupOffsetChange> QKeyMapper::planFloatingButtonSyncGroupOffsetDelta(
+    int sourceTabIndex,
+    int groupId,
+    int deltaX,
+    int deltaY,
+    int excludeSourceRow) const
+{
+    using namespace QKeyMapperConstants;
+    QList<FloatingButtonSyncGroupOffsetChange> changes;
+    if (groupId < 1 || groupId > FLOATINGBUTTON_SYNCGROUPID_MAX || (deltaX == 0 && deltaY == 0)) {
+        return changes;
+    }
+    if (sourceTabIndex < 0 || sourceTabIndex >= s_KeyMappingTabInfoList.size()) {
+        return changes;
+    }
+
+    const auto appendTabMatches = [&](int tabIndex, int excludeRow, bool isCommon) {
+        if (tabIndex < 0 || tabIndex >= s_KeyMappingTabInfoList.size()) {
+            return;
+        }
+        const QList<MAP_KEYDATA> *dataList = s_KeyMappingTabInfoList.at(tabIndex).KeyMappingData;
+        if (dataList == Q_NULLPTR) {
+            return;
+        }
+        for (int row = 0; row < dataList->size(); ++row) {
+            if (row == excludeRow) {
+                continue;
+            }
+            const MAP_KEYDATA &data = dataList->at(row);
+            if (data.FloatingButton_SyncGroupId != groupId) {
+                continue;
+            }
+            FloatingButtonSyncGroupOffsetChange entry;
+            entry.sourceTabIndex = tabIndex;
+            entry.sourceRow = row;
+            entry.isCommon = isCommon;
+            entry.originalKey = data.Original_Key;
+            entry.beforeX = data.FloatingButton_X_Offset;
+            entry.beforeY = data.FloatingButton_Y_Offset;
+            entry.afterX = static_cast<int>(qBound(
+                qint64(FLOATINGBUTTON_OFFSET_MIN),
+                qint64(entry.beforeX) + qint64(deltaX),
+                qint64(FLOATINGBUTTON_OFFSET_MAX)));
+            entry.afterY = static_cast<int>(qBound(
+                qint64(FLOATINGBUTTON_OFFSET_MIN),
+                qint64(entry.beforeY) + qint64(deltaY),
+                qint64(FLOATINGBUTTON_OFFSET_MAX)));
+            changes.append(entry);
+        }
+    };
+
+    const bool sourceIsCommon = isCommonMappingTabIndex(sourceTabIndex);
+    appendTabMatches(sourceTabIndex, excludeSourceRow, sourceIsCommon);
+
+    if (isCommonMappingFeatureEnabled()) {
+        const int commonTabIndex = findCommonMappingTabIndex();
+        if (commonTabIndex >= 0) {
+            if (!sourceIsCommon && shouldAppendCommonMappingRows(sourceTabIndex) && commonTabIndex != sourceTabIndex) {
+                appendTabMatches(commonTabIndex, -1, true);
+            } else if (sourceIsCommon) {
+                const int displayTab = s_KeyMappingTabWidgetCurrentIndex;
+                if (displayTab >= 0 && displayTab != commonTabIndex && shouldAppendCommonMappingRows(displayTab)) {
+                    appendTabMatches(displayTab, -1, false);
+                }
+            }
+        }
+    }
+
+    return changes;
+}
+
+int QKeyMapper::applyFloatingButtonSyncGroupOffsetDelta(
+    int sourceTabIndex,
+    int groupId,
+    int deltaX,
+    int deltaY,
+    int excludeSourceRow,
+    bool notifySourceChange)
+{
+    const QList<FloatingButtonSyncGroupOffsetChange> plan =
+        planFloatingButtonSyncGroupOffsetDelta(sourceTabIndex, groupId, deltaX, deltaY, excludeSourceRow);
+    int changedCount = 0;
+    bool touchedCommon = false;
+    for (const FloatingButtonSyncGroupOffsetChange &entry : plan) {
+        if (entry.afterX == entry.beforeX && entry.afterY == entry.beforeY) {
+            continue;
+        }
+        if (entry.sourceTabIndex < 0 || entry.sourceTabIndex >= s_KeyMappingTabInfoList.size()) {
+            continue;
+        }
+        QList<MAP_KEYDATA> *dataList = s_KeyMappingTabInfoList.at(entry.sourceTabIndex).KeyMappingData;
+        if (dataList == Q_NULLPTR || entry.sourceRow < 0 || entry.sourceRow >= dataList->size()) {
+            continue;
+        }
+        MAP_KEYDATA &data = (*dataList)[entry.sourceRow];
+        data.FloatingButton_X_Offset = entry.afterX;
+        data.FloatingButton_Y_Offset = entry.afterY;
+
+        ActiveKeyMappingRowSourceInfo info;
+        info.SourceTabIndex = entry.sourceTabIndex;
+        info.SourceRow = entry.sourceRow;
+        refreshFloatingButtonPositionForSource(info);
+
+        ++changedCount;
+        touchedCommon = touchedCommon || entry.isCommon;
+    }
+
+    if (notifySourceChange && changedCount > 0) {
+        ++m_AutomationSourceEpoch;
+        if (touchedCommon) {
+            const int commonTabIndex = findCommonMappingTabIndex();
+            if (commonTabIndex >= 0) {
+                refreshTabsForSourceTabChange(commonTabIndex);
+            }
+        }
+        requestSaveSettingDirty();
+    }
+    return changedCount;
 }
 
 bool QKeyMapper::setMappingTabCommonInheritance(int tabIndex, bool includeCommon)
@@ -39627,6 +39770,26 @@ QJsonObject QKeyMapper::collectAutomationState(bool includeAssetMetadata) const
         imgObj.insert(QStringLiteral("editable_display"), !isCommonMappingTab(tab));
         result.insert(QStringLiteral("tab_custom_image"), imgObj);
     }
+    {
+        QList<int> noteGroupIds;
+        for (auto it = m_FloatingButtonSyncGroupNotes.constBegin(); it != m_FloatingButtonSyncGroupNotes.constEnd(); ++it) {
+            if (it.key() > 0 && !it.value().isEmpty()) {
+                noteGroupIds.append(it.key());
+            }
+        }
+        std::sort(noteGroupIds.begin(), noteGroupIds.end());
+        QJsonArray notesArray;
+        for (int groupId : std::as_const(noteGroupIds)) {
+            notesArray.append(QJsonObject{
+                {QStringLiteral("group_id"), groupId},
+                {QStringLiteral("note"), m_FloatingButtonSyncGroupNotes.value(groupId)},
+            });
+        }
+        result.insert(QStringLiteral("floating_button_settings"), QJsonObject{
+            {QStringLiteral("show_drag_coordinate"), m_FloatingButton_ShowDragCoordinate},
+            {QStringLiteral("sync_group_notes"), notesArray},
+        });
+    }
     if (m_Gyro2MouseOptionDialog) {
         result.insert(QStringLiteral("gyro2mouse_options"), automationGyro2MouseOptions(
             m_Gyro2MouseOptionDialog->getGyro2Mouse_MouseXSource(),
@@ -41977,6 +42140,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && (!update.tabNotificationFontColor.isEmpty() || !update.tabNotificationBackgroundColor.isEmpty());
         const bool changingTabFloatingWindow = updating && update.tabFloatingWindow.has_value();
         const bool changingTabCustomImage = updating && update.tabCustomImage.has_value();
+        const bool changingFloatingButtonDragCoord = updating && update.floatingButtonShowDragCoordinate.has_value();
+        const bool changingSyncGroupNote = updating && update.floatingButtonSyncGroupNote.has_value();
+        const bool movingFloatingButtonSyncGroup = updating && update.floatingButtonSyncGroupMove.has_value();
         const bool addingBlankTab = updating && update.addBlankTab;
         const bool copyingTab = updating && update.copyTab;
         const bool deletingTab = updating && update.deleteTab;
@@ -41987,7 +42153,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         const bool changingCommon = updating && update.tabIncludeCommon.has_value();
         const bool collapsingCommon = updating && update.tabCommonCollapsed.has_value();
         const bool changingCommonFeature = updating && update.commonFeatureEnabled.has_value();
-        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || addingBlankTab || copyingTab || removingTabData
+        const bool editingTab = renamingTab || changingTabHotkey || changingTabNotification || changingTabNotificationColors || changingTabFloatingWindow || changingTabCustomImage || changingFloatingButtonDragCoord || changingSyncGroupNote || movingFloatingButtonSyncGroup || addingBlankTab || copyingTab || removingTabData
             || movingTab || changingCommon || collapsingCommon || changingCommonFeature || selectingTab
             || filteringCategories || settingDisabledVisibility || changingMappingDisplay || changingGeneralPreference
             || changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel
@@ -42023,6 +42189,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             && !changingGeneralNotificationStyle && !changingCustomNotificationStyle && !changingTrayIcons && !changingProcessIconAsTrayIcon
             && !changingPointDisplayKeys && !changingCustomNotification && !changingWindowMatchCriteria
             && !changingAutoMatchForeground && !changingSendToSameWindows && !restoringProcessPath && !changingDisplayScale && !changingTabCustomImage
+            && !changingFloatingButtonDragCoord && !changingSyncGroupNote && !movingFloatingButtonSyncGroup
             && isCommonMappingTabIndex(tab)) {
             reject(QStringLiteral("unsupported_capability"), QStringLiteral("This Tab action requires the current normal source."));
             return;
@@ -42043,7 +42210,7 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
         }
         if ((changingWindowDisplayMode || changingKey2Mouse || changingGyro2MouseOptions || changingGamepadThresholds || changingGamepadTouchpad || changingAcceptVirtualGamepadInput || changingVButtonPanel || changingCustomNotificationStyle || changingProcessIconAsTrayIcon
                 || changingPointDisplayKeys || changingCustomNotification || changingWindowMatchCriteria
-                || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath)
+                || changingAutoMatchForeground || changingSendToSameWindows || restoringProcessPath || changingSyncGroupNote)
             && currentSettingSelectGroupName() != m_LoadedMappingSettingGroup) {
             reject(QStringLiteral("stale_source"), QStringLiteral("The selected configuration does not match the loaded source."));
             return;
@@ -42955,6 +43122,72 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                     {QStringLiteral("after"), automationTabFloatingWindow(after)},
                     {QStringLiteral("show_as_floating_window"), tabInfo.TabCustomImage_ShowAsFloatingWindow},
                     {QStringLiteral("persisted"), false}};
+            } else if (changingFloatingButtonDragCoord) {
+                const bool before = isFloatingButtonDragCoordinateEnabled();
+                const bool after = *update.floatingButtonShowDragCoordinate;
+                modified = before != after;
+                target.insert(QStringLiteral("scope"), QStringLiteral("general"));
+                change = {{QStringLiteral("kind"), QStringLiteral("set_floating_button_drag_coordinate")},
+                    {QStringLiteral("scope"), QStringLiteral("general")},
+                    {QStringLiteral("before"), before},
+                    {QStringLiteral("after"), after},
+                    {QStringLiteral("persisted"), false}};
+            } else if (changingSyncGroupNote) {
+                const int groupId = update.floatingButtonSyncGroupNote->groupId;
+                const QString before = getSyncGroupNote(groupId);
+                const QString &after = update.floatingButtonSyncGroupNote->note;
+                modified = before != after;
+                target.insert(QStringLiteral("scope"), QStringLiteral("loaded_configuration"));
+                target.insert(QStringLiteral("group"), m_LoadedMappingSettingGroup);
+                change = {{QStringLiteral("kind"), QStringLiteral("set_floating_button_sync_group_note")},
+                    {QStringLiteral("scope"), QStringLiteral("loaded_configuration")},
+                    {QStringLiteral("group_id"), groupId},
+                    {QStringLiteral("before"), before},
+                    {QStringLiteral("after"), after},
+                    {QStringLiteral("persisted"), false}};
+            } else if (movingFloatingButtonSyncGroup) {
+                const auto &moveArgs = *update.floatingButtonSyncGroupMove;
+                const QList<FloatingButtonSyncGroupOffsetChange> plan =
+                    planFloatingButtonSyncGroupOffsetDelta(tab, moveArgs.groupId, moveArgs.deltaX, moveArgs.deltaY, -1);
+                if (plan.isEmpty()) {
+                    reject(QStringLiteral("invalid_target"),
+                        QStringLiteral("No floating button members belong to the specified sync group in this source context."));
+                    return;
+                }
+                int changedCount = 0;
+                bool includesCommon = false;
+                QJsonArray affectedRows;
+                for (const FloatingButtonSyncGroupOffsetChange &entry : plan) {
+                    const bool rowChanged = (entry.afterX != entry.beforeX || entry.afterY != entry.beforeY);
+                    if (rowChanged) {
+                        ++changedCount;
+                    }
+                    includesCommon = includesCommon || entry.isCommon;
+                    const bool clamped =
+                        (qint64(entry.beforeX) + qint64(moveArgs.deltaX) != qint64(entry.afterX))
+                        || (qint64(entry.beforeY) + qint64(moveArgs.deltaY) != qint64(entry.afterY));
+                    affectedRows.append(QJsonObject{
+                        {QStringLiteral("source_tab_index"), entry.sourceTabIndex},
+                        {QStringLiteral("source_row"), entry.sourceRow},
+                        {QStringLiteral("is_common"), entry.isCommon},
+                        {QStringLiteral("original_key"), entry.originalKey},
+                        {QStringLiteral("before_x_offset"), entry.beforeX},
+                        {QStringLiteral("before_y_offset"), entry.beforeY},
+                        {QStringLiteral("after_x_offset"), entry.afterX},
+                        {QStringLiteral("after_y_offset"), entry.afterY},
+                        {QStringLiteral("clamped"), clamped},
+                    });
+                }
+                modified = changedCount > 0;
+                change = {{QStringLiteral("kind"), QStringLiteral("move_floating_button_sync_group")},
+                    {QStringLiteral("group_id"), moveArgs.groupId},
+                    {QStringLiteral("delta_x"), moveArgs.deltaX},
+                    {QStringLiteral("delta_y"), moveArgs.deltaY},
+                    {QStringLiteral("member_count"), int(plan.size())},
+                    {QStringLiteral("changed_count"), changedCount},
+                    {QStringLiteral("includes_common"), includesCommon},
+                    {QStringLiteral("affected_rows"), affectedRows},
+                    {QStringLiteral("persisted"), false}};
             } else if (changingTabCustomImage) {
                 const auto &before = preparedTabImage.expectedBefore;
                 const auto &after = preparedTabImage.after;
@@ -43385,6 +43618,9 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
             : changingGeneralNotificationStyle ? QStringLiteral("general.set_notification_style")
             : changingCustomNotificationStyle ? QStringLiteral("configuration.set_custom_notification_style")
             : changingTrayIcons ? QStringLiteral("general.set_tray_icons")
+            : changingFloatingButtonDragCoord ? QStringLiteral("general.set_floating_button_drag_coordinate")
+            : changingSyncGroupNote ? QStringLiteral("configuration.set_floating_button_sync_group_note")
+            : movingFloatingButtonSyncGroup ? QStringLiteral("mapping.move_floating_button_sync_group")
             : changingProcessIconAsTrayIcon ? QStringLiteral("configuration.set_process_icon_as_tray_icon")
             : changingPointDisplayKeys ? QStringLiteral("configuration.set_point_display_keys")
             : changingCustomNotification ? QStringLiteral("configuration.set_custom_notification")
@@ -43557,6 +43793,22 @@ void QKeyMapper::handleAutomationMappingChange(const QkmAutomation::AutomationRe
                         return;
                     }
                     deferredTrayDisplayRefresh = true;
+                }
+            } else if (changingFloatingButtonDragCoord) {
+                applyFloatingButtonDragCoordinateSetting(*update.floatingButtonShowDragCoordinate);
+            } else if (changingSyncGroupNote) {
+                setFloatingButtonSyncGroupNoteSetting(
+                    update.floatingButtonSyncGroupNote->groupId,
+                    update.floatingButtonSyncGroupNote->note);
+            } else if (movingFloatingButtonSyncGroup) {
+                if (modified) {
+                    const auto &moveArgs = *update.floatingButtonSyncGroupMove;
+                    if (applyFloatingButtonSyncGroupOffsetDelta(
+                            tab, moveArgs.groupId, moveArgs.deltaX, moveArgs.deltaY, -1, true) <= 0) {
+                        reject(QStringLiteral("context_busy"),
+                            QStringLiteral("The sync group no longer accepts offset updates."));
+                        return;
+                    }
                 }
             } else if (changingProcessIconAsTrayIcon) {
                 m_MappingAdvancedDialog->setProcessIconAsTrayIcon(*update.processIconAsTrayIcon);

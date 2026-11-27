@@ -175,6 +175,17 @@ struct MappingFloatingButtonUpdate {
     std::optional<int> yOffset;
 };
 
+struct FloatingButtonSyncGroupNoteUpdate {
+    int groupId = 0;
+    QString note;
+};
+
+struct FloatingButtonSyncGroupMoveUpdate {
+    int groupId = 0;
+    int deltaX = 0;
+    int deltaY = 0;
+};
+
 struct MappingUpdateArguments {
     QString sourceReference;
     QString sourceRevision;
@@ -243,6 +254,9 @@ struct MappingUpdateArguments {
     std::optional<TabCustomImageUpdate> tabCustomImage;
     std::optional<MappingCrosshairUpdate> crosshair;
     std::optional<MappingFloatingButtonUpdate> floatingButton;
+    std::optional<bool> floatingButtonShowDragCoordinate;
+    std::optional<FloatingButtonSyncGroupNoteUpdate> floatingButtonSyncGroupNote;
+    std::optional<FloatingButtonSyncGroupMoveUpdate> floatingButtonSyncGroupMove;
     std::optional<bool> processIconAsTrayIcon;
     std::optional<QString> showWindowPointKey;
     std::optional<QString> showScreenPointKey;

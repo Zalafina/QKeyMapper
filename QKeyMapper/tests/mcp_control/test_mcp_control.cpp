@@ -1163,9 +1163,9 @@ __declspec(noinline)
 #endif
 static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabilities)
 {
-    QCOMPARE(capabilities.size(), 144);
+    QCOMPARE(capabilities.size(), 150);
     const auto demoCapabilities = mappingChangeCapabilities(false);
-    QCOMPARE(demoCapabilities.size(), 136);
+    QCOMPARE(demoCapabilities.size(), 142);
     QCOMPARE(capabilities.at(85).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.preview"));
     QCOMPARE(capabilities.at(86).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_sound_effect.apply"));
     QCOMPARE(capabilities.at(87).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_global_switch_timeout.preview"));
@@ -1230,8 +1230,35 @@ static void verifyExtendedMappingChangeCapabilities(const QJsonArray &capabiliti
     QCOMPARE(capabilities.at(136).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.set_floating_button.apply"));
     QCOMPARE(capabilities.at(136).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
     QVERIFY(!capabilities.at(136).toObject().value(QStringLiteral("read_only")).toBool());
-    QCOMPARE(capabilities.at(141).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
-    QCOMPARE(capabilities.at(142).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    QCOMPARE(capabilities.at(137).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_floating_button_drag_coordinate.preview"));
+    QCOMPARE(capabilities.at(137).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capabilities.at(137).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(138).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("general.set_floating_button_drag_coordinate.apply"));
+    QCOMPARE(capabilities.at(138).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!capabilities.at(138).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(139).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_floating_button_sync_group_note.preview"));
+    QCOMPARE(capabilities.at(139).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capabilities.at(139).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(140).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_floating_button_sync_group_note.apply"));
+    QCOMPARE(capabilities.at(140).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!capabilities.at(140).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(141).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_floating_button_sync_group.preview"));
+    QCOMPARE(capabilities.at(141).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(capabilities.at(141).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(142).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("mapping.move_floating_button_sync_group.apply"));
+    QCOMPARE(capabilities.at(142).toObject().value(QStringLiteral("required_scopes")).toInt(), int(Read | Configure));
+    QVERIFY(!capabilities.at(142).toObject().value(QStringLiteral("read_only")).toBool());
+    QCOMPARE(capabilities.at(147).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.preview"));
+    QCOMPARE(capabilities.at(148).toObject().value(QStringLiteral("id")).toString(), QStringLiteral("configuration.set_auto_match_foreground.apply"));
+    for (const char *demoId : {
+            "general.set_floating_button_drag_coordinate.apply",
+            "configuration.set_floating_button_sync_group_note.apply",
+            "mapping.move_floating_button_sync_group.apply",
+        }) {
+        QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [demoId](const QJsonValue &item) {
+            return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String(demoId);
+        }));
+    }
     QVERIFY(std::any_of(demoCapabilities.begin(), demoCapabilities.end(), [](const QJsonValue &item) {
         return item.toObject().value(QStringLiteral("id")).toString() == QLatin1String("tab.set_custom_image.apply");
     }));
@@ -2066,6 +2093,114 @@ static void verifyFloatingButtonValidation(const QString &previewMethod, const Q
             {QStringLiteral("action"), QStringLiteral("mapping.set_floating_button")},
             {QStringLiteral("source_ref"), rowRef},
             {QStringLiteral("floating_button"), bad}}));
+    }
+}
+
+#ifdef Q_CC_MSVC
+__declspec(noinline)
+#endif
+static void verifyFloatingButtonSyncValidation(const QString &previewMethod, const QJsonObject &input)
+{
+    const QJsonValue tabRef = input.value(QStringLiteral("source_tab_ref"));
+    {
+        const auto dragReq = validateMappingChangeRequest(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("general.set_floating_button_drag_coordinate")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("show_drag_coordinate"), false}});
+        QVERIFY(dragReq.ok() && dragReq.update.floatingButtonShowDragCoordinate == std::optional<bool>(false));
+    }
+    QVERIFY(!previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("general.set_floating_button_drag_coordinate")},
+        {QStringLiteral("source_tab_ref"), tabRef}}));
+    QVERIFY(!previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("general.set_floating_button_drag_coordinate")},
+        {QStringLiteral("source_tab_ref"), tabRef},
+        {QStringLiteral("show_drag_coordinate"), 1}}));
+    QVERIFY(!previewRequestValid(previewMethod, {
+        {QStringLiteral("action"), QStringLiteral("general.set_floating_button_drag_coordinate")},
+        {QStringLiteral("source_tab_ref"), tabRef},
+        {QStringLiteral("show_drag_coordinate"), true},
+        {QStringLiteral("extra"), 1}}));
+
+    {
+        const auto noteReq = validateMappingChangeRequest(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("configuration.set_floating_button_sync_group_note")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("sync_group_note"), QJsonObject{
+                {QStringLiteral("group_id"), 12},
+                {QStringLiteral("note"), QStringLiteral("同步组😀")}}}});
+        QVERIFY(noteReq.ok() && noteReq.update.floatingButtonSyncGroupNote.has_value());
+        QCOMPARE(noteReq.update.floatingButtonSyncGroupNote->groupId, 12);
+        QCOMPARE(noteReq.update.floatingButtonSyncGroupNote->note, QStringLiteral("同步组😀"));
+    }
+    {
+        const auto clearNoteReq = validateMappingChangeRequest(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("configuration.set_floating_button_sync_group_note")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("sync_group_note"), QJsonObject{
+                {QStringLiteral("group_id"), 999},
+                {QStringLiteral("note"), QString()}}}});
+        QVERIFY(clearNoteReq.ok() && clearNoteReq.update.floatingButtonSyncGroupNote.has_value());
+        QCOMPARE(clearNoteReq.update.floatingButtonSyncGroupNote->groupId, 999);
+        QCOMPARE(clearNoteReq.update.floatingButtonSyncGroupNote->note, QString());
+    }
+    for (const QJsonObject &badNote : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("group_id"), 0}, {QStringLiteral("note"), QStringLiteral("ok")}},
+        QJsonObject{{QStringLiteral("group_id"), 1000}, {QStringLiteral("note"), QStringLiteral("ok")}},
+        QJsonObject{{QStringLiteral("group_id"), 1.5}, {QStringLiteral("note"), QStringLiteral("ok")}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("note"), QStringLiteral("line1\nline2")}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("note"), QString(1025, QLatin1Char('A'))}},
+        QJsonObject{{QStringLiteral("group_id"), 1}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("note"), QStringLiteral("ok")}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!previewRequestValid(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("configuration.set_floating_button_sync_group_note")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("sync_group_note"), badNote}}));
+    }
+
+    {
+        const auto moveReq = validateMappingChangeRequest(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("mapping.move_floating_button_sync_group")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("sync_group_move"), QJsonObject{
+                {QStringLiteral("group_id"), 1},
+                {QStringLiteral("delta_x"), -100000},
+                {QStringLiteral("delta_y"), 100000}}}});
+        QVERIFY(moveReq.ok() && moveReq.update.floatingButtonSyncGroupMove.has_value());
+        QCOMPARE(moveReq.update.floatingButtonSyncGroupMove->groupId, 1);
+        QCOMPARE(moveReq.update.floatingButtonSyncGroupMove->deltaX, -100000);
+        QCOMPARE(moveReq.update.floatingButtonSyncGroupMove->deltaY, 100000);
+    }
+    {
+        const auto moveXOnly = validateMappingChangeRequest(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("mapping.move_floating_button_sync_group")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("sync_group_move"), QJsonObject{
+                {QStringLiteral("group_id"), 999},
+                {QStringLiteral("delta_x"), 15}}}});
+        QVERIFY(moveXOnly.ok() && moveXOnly.update.floatingButtonSyncGroupMove.has_value());
+        QCOMPARE(moveXOnly.update.floatingButtonSyncGroupMove->deltaX, 15);
+        QCOMPARE(moveXOnly.update.floatingButtonSyncGroupMove->deltaY, 0);
+    }
+    for (const QJsonObject &badMove : {
+        QJsonObject{},
+        QJsonObject{{QStringLiteral("group_id"), 0}, {QStringLiteral("delta_x"), 1}},
+        QJsonObject{{QStringLiteral("group_id"), 1000}, {QStringLiteral("delta_y"), 1}},
+        QJsonObject{{QStringLiteral("group_id"), 1}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("delta_x"), 0}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("delta_x"), 0}, {QStringLiteral("delta_y"), 0}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("delta_x"), 100001}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("delta_y"), -100001}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("delta_x"), 1.5}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("delta_x"), QJsonValue::Null}},
+        QJsonObject{{QStringLiteral("group_id"), 1}, {QStringLiteral("delta_x"), 1}, {QStringLiteral("extra"), 1}},
+    }) {
+        QVERIFY(!previewRequestValid(previewMethod, {
+            {QStringLiteral("action"), QStringLiteral("mapping.move_floating_button_sync_group")},
+            {QStringLiteral("source_tab_ref"), tabRef},
+            {QStringLiteral("sync_group_move"), badMove}}));
     }
 }
 
@@ -2936,6 +3071,7 @@ void McpControlTest::mappingChangeArguments()
     verifyTabCustomImageValidation(previewMethod, input);
     verifyCrosshairValidation(previewMethod, revision);
     verifyFloatingButtonValidation(previewMethod, revision);
+    verifyFloatingButtonSyncValidation(previewMethod, input);
     verifyWindowAndTrayArgumentsValidation(previewMethod, input);
     verifyWindowMatchAndStartupValidation(previewMethod, input);
     if (QTest::currentTestFailed()) return;

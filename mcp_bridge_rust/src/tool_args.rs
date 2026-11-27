@@ -881,6 +881,47 @@ struct MappingFloatingButtonSettings {
 
 #[derive(Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
+struct FloatingButtonShowDragCoordinate {
+    action: String,
+    source_tab_ref: String,
+    show_drag_coordinate: bool,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct FloatingButtonSyncGroupNoteFields {
+    group_id: i64,
+    note: String,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct FloatingButtonSyncGroupNote {
+    action: String,
+    source_tab_ref: String,
+    sync_group_note: FloatingButtonSyncGroupNoteFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct FloatingButtonSyncGroupMoveFields {
+    group_id: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    delta_x: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    delta_y: Option<i64>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
+struct FloatingButtonSyncGroupMove {
+    action: String,
+    source_tab_ref: String,
+    sync_group_move: FloatingButtonSyncGroupMoveFields,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 struct ProcessIconAsTrayIcon {
     action: String,
     source_tab_ref: String,
@@ -1892,6 +1933,40 @@ pub fn parse(tool: &str, arguments: Object) -> Result<Object, InvalidMessage> {
                             && f.reference_point.is_none_or(|n| (0..=11).contains(&n))
                             && f.x_offset.is_none_or(|n| (-50000..=50000).contains(&n))
                             && f.y_offset.is_none_or(|n| (-50000..=50000).contains(&n))
+                    });
+                }
+                Some("general.set_floating_button_drag_coordinate") => {
+                    return typed(arguments, |v: &FloatingButtonShowDragCoordinate| {
+                        tab_ref(&v.source_tab_ref)
+                    });
+                }
+                Some("configuration.set_floating_button_sync_group_note") => {
+                    return typed(arguments, |v: &FloatingButtonSyncGroupNote| {
+                        let f = &v.sync_group_note;
+                        tab_ref(&v.source_tab_ref)
+                            && (1..=999).contains(&f.group_id)
+                            && f.note.encode_utf16().count() <= 1024
+                            && single_line(&f.note)
+                    });
+                }
+                Some("mapping.move_floating_button_sync_group") => {
+                    if arguments
+                        .get("sync_group_move")
+                        .and_then(Value::as_object)
+                        .is_some_and(|fields| fields.values().any(Value::is_null))
+                    {
+                        return Err(InvalidMessage);
+                    }
+                    return typed(arguments, |v: &FloatingButtonSyncGroupMove| {
+                        let f = &v.sync_group_move;
+                        let dx = f.delta_x.unwrap_or(0);
+                        let dy = f.delta_y.unwrap_or(0);
+                        tab_ref(&v.source_tab_ref)
+                            && (1..=999).contains(&f.group_id)
+                            && (f.delta_x.is_some() || f.delta_y.is_some())
+                            && f.delta_x.is_none_or(|n| (-100000..=100000).contains(&n))
+                            && f.delta_y.is_none_or(|n| (-100000..=100000).contains(&n))
+                            && (dx != 0 || dy != 0)
                     });
                 }
                 Some("configuration.set_auto_match_foreground") => {
@@ -3376,6 +3451,87 @@ mod tests {
                 "action": "mapping.set_floating_button",
                 "source_ref": row,
                 "floating_button": bad
+            }))
+            .is_err());
+        }
+    }
+
+    #[test]
+    fn floating_button_sync_checks_constraints() {
+        let preview =
+            |value: &Value| parse("qkm_preview_changes", value.as_object().unwrap().clone());
+        let tab = format!("{}:source:0", "a".repeat(64));
+        let drag = json!({
+            "action": "general.set_floating_button_drag_coordinate",
+            "source_tab_ref": tab,
+            "show_drag_coordinate": false
+        });
+        assert_eq!(preview(&drag).unwrap(), *drag.as_object().unwrap());
+        for bad in [
+            json!({"action": "general.set_floating_button_drag_coordinate", "source_tab_ref": tab}),
+            json!({"action": "general.set_floating_button_drag_coordinate", "source_tab_ref": tab, "show_drag_coordinate": 1}),
+            json!({"action": "general.set_floating_button_drag_coordinate", "source_tab_ref": tab, "show_drag_coordinate": true, "extra": 1}),
+        ] {
+            assert!(preview(&bad).is_err());
+        }
+
+        let note = json!({
+            "action": "configuration.set_floating_button_sync_group_note",
+            "source_tab_ref": tab,
+            "sync_group_note": {"group_id": 12, "note": "同步组😀"}
+        });
+        assert_eq!(preview(&note).unwrap(), *note.as_object().unwrap());
+        let clear_note = json!({
+            "action": "configuration.set_floating_button_sync_group_note",
+            "source_tab_ref": tab,
+            "sync_group_note": {"group_id": 999, "note": ""}
+        });
+        assert_eq!(preview(&clear_note).unwrap(), *clear_note.as_object().unwrap());
+        for bad in [
+            json!({"group_id": 0, "note": "ok"}),
+            json!({"group_id": 1000, "note": "ok"}),
+            json!({"group_id": 1.5, "note": "ok"}),
+            json!({"group_id": 1, "note": "a\nb"}),
+            json!({"group_id": 1, "note": "A".repeat(1025)}),
+            json!({"group_id": 1}),
+            json!({"group_id": 1, "note": "ok", "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "configuration.set_floating_button_sync_group_note",
+                "source_tab_ref": tab,
+                "sync_group_note": bad
+            }))
+            .is_err());
+        }
+
+        let move_both = json!({
+            "action": "mapping.move_floating_button_sync_group",
+            "source_tab_ref": tab,
+            "sync_group_move": {"group_id": 1, "delta_x": -100000, "delta_y": 100000}
+        });
+        assert_eq!(preview(&move_both).unwrap(), *move_both.as_object().unwrap());
+        let move_x = json!({
+            "action": "mapping.move_floating_button_sync_group",
+            "source_tab_ref": tab,
+            "sync_group_move": {"group_id": 999, "delta_x": 15}
+        });
+        assert_eq!(preview(&move_x).unwrap(), *move_x.as_object().unwrap());
+        for bad in [
+            json!({"group_id": 0, "delta_x": 1}),
+            json!({"group_id": 1000, "delta_y": 1}),
+            json!({"group_id": 1}),
+            json!({"group_id": 1, "delta_x": 0}),
+            json!({"group_id": 1, "delta_x": 0, "delta_y": 0}),
+            json!({"group_id": 1, "delta_x": 100001}),
+            json!({"group_id": 1, "delta_y": -100001}),
+            json!({"group_id": 1, "delta_x": 1.5}),
+            json!({"group_id": 1, "delta_x": null}),
+            json!({"group_id": 1, "delta_x": 1, "extra": 1}),
+        ] {
+            assert!(preview(&json!({
+                "action": "mapping.move_floating_button_sync_group",
+                "source_tab_ref": tab,
+                "sync_group_move": bad
             }))
             .is_err());
         }

@@ -574,6 +574,18 @@ struct MappingFloatingButtonSettings
     int yOffset = QKeyMapperConstants::FLOATINGBUTTON_Y_OFFSET_DEFAULT;
 };
 
+struct FloatingButtonSyncGroupOffsetChange
+{
+    int sourceTabIndex = -1;
+    int sourceRow = -1;
+    bool isCommon = false;
+    QString originalKey;
+    int beforeX = 0;
+    int beforeY = 0;
+    int afterX = 0;
+    int afterY = 0;
+};
+
 struct ActiveKeyMappingRowSourceInfo
 {
     int SourceTabIndex = -1;
@@ -2238,6 +2250,21 @@ public:
     static void writeFloatingButtonSettingsToRow(MAP_KEYDATA &row, const MappingFloatingButtonSettings &settings);
     static bool isValidFloatingButtonSettings(const MappingFloatingButtonSettings &settings);
     static bool floatingButtonSettingsEqual(const MappingFloatingButtonSettings &a, const MappingFloatingButtonSettings &b);
+    bool applyFloatingButtonDragCoordinateSetting(bool enabled);
+    bool setFloatingButtonSyncGroupNoteSetting(int groupId, const QString &note);
+    QList<FloatingButtonSyncGroupOffsetChange> planFloatingButtonSyncGroupOffsetDelta(
+        int sourceTabIndex,
+        int groupId,
+        int deltaX,
+        int deltaY,
+        int excludeSourceRow = -1) const;
+    int applyFloatingButtonSyncGroupOffsetDelta(
+        int sourceTabIndex,
+        int groupId,
+        int deltaX,
+        int deltaY,
+        int excludeSourceRow = -1,
+        bool notifySourceChange = false);
     MappingFloatingButtonSettings getMappingSourceRowFloatingButtonSettings(int tabIndex, int row) const;
     bool setMappingSourceRowFloatingButtonSettings(int tabIndex, int row, const MappingFloatingButtonSettings &settings);
 private:

@@ -486,6 +486,44 @@ async def check_contract(exe):
                 assert denied.is_error is True and denied.structured_content is None
             denied = await client.call_tool("qkm_preview_changes", {"action": "mapping.set_floating_button", "source_tab_ref": tab, "floating_button": {"enable": True}})
             assert denied.is_error is True and denied.structured_content is None
+            drag_coord_req = {"action": "general.set_floating_button_drag_coordinate", "source_tab_ref": tab, "show_drag_coordinate": False}
+            validator.validate(drag_coord_req)
+            expect_not_connected(await client.call_tool("qkm_preview_changes", drag_coord_req))
+            for bad_dc in (
+                {"action": "general.set_floating_button_drag_coordinate", "source_tab_ref": tab},
+                {"action": "general.set_floating_button_drag_coordinate", "source_tab_ref": tab, "show_drag_coordinate": 1},
+                {"action": "general.set_floating_button_drag_coordinate", "source_tab_ref": tab, "show_drag_coordinate": True, "extra": 1},
+            ):
+                assert not validator.is_valid(bad_dc), bad_dc
+                denied = await client.call_tool("qkm_preview_changes", bad_dc)
+                assert denied.is_error is True and denied.structured_content is None
+            sg_note = {"action": "configuration.set_floating_button_sync_group_note", "source_tab_ref": tab}
+            for fields in ({"group_id": 12, "note": "同步组😀"}, {"group_id": 999, "note": ""}):
+                request = sg_note | {"sync_group_note": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for bad_fields in ({}, {"group_id": 0, "note": "ok"}, {"group_id": 1000, "note": "ok"},
+                               {"group_id": 1, "note": "Note\nLine2"}, {"group_id": 1, "note": "A" * 1025},
+                               {"group_id": 1}, {"group_id": 1, "note": "ok", "extra": 1}):
+                request = sg_note | {"sync_group_note": bad_fields}
+                assert not validator.is_valid(request), bad_fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
+            sg_move = {"action": "mapping.move_floating_button_sync_group", "source_tab_ref": tab}
+            for fields in ({"group_id": 1, "delta_x": -100000, "delta_y": 100000}, {"group_id": 999, "delta_x": 15}, {"group_id": 5, "delta_y": -20}):
+                request = sg_move | {"sync_group_move": fields}
+                validator.validate(request)
+                expect_not_connected(await client.call_tool("qkm_preview_changes", request))
+            for bad_fields in ({}, {"group_id": 0, "delta_x": 1}, {"group_id": 1000, "delta_y": 1},
+                               {"group_id": 1}, {"group_id": 1, "delta_x": 0}, {"group_id": 1, "delta_x": 0, "delta_y": 0},
+                               {"group_id": 1, "delta_x": 100001}, {"group_id": 1, "delta_y": -100001},
+                               {"group_id": 1, "delta_x": 1.5}, {"group_id": 1, "delta_x": None},
+                               {"group_id": 1, "delta_x": 1, "extra": 1}):
+                request = sg_move | {"sync_group_move": bad_fields}
+                if bad_fields not in ({"group_id": 1, "delta_x": 0}, {"group_id": 1, "delta_x": 0, "delta_y": 0}):
+                    assert not validator.is_valid(request), bad_fields
+                denied = await client.call_tool("qkm_preview_changes", request)
+                assert denied.is_error is True and denied.structured_content is None
             point_keys = {"action": "configuration.set_point_display_keys", "source_tab_ref": tab}
             for fields in ({"window_point_key": "None"}, {"screen_point_key": "F10"},
                            {"window_point_key": "None", "screen_point_key": "F10"},
@@ -675,7 +713,7 @@ async def check_contract(exe):
             legacy_preview_fields = set(previews["properties"]) - {
                 "copy_to", "macro", "ignore_rule", "table_insert_mode", "table_edit_trigger", "window_display_mode", "file_name",
                 "save_window_size", "save_splitter_position", "play_sound_effect", "timeout_ms",
-                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "process_icon_as_tray_icon", "point_display_keys",
+                "fullscreen_global_mapping", "key2mouse", "gyro2mouse_options", "gamepad_thresholds", "gamepad_touchpad", "accept_virtual_gamepad_input", "vbutton_panel", "notification_style", "tray_icons", "floating_window", "custom_image", "crosshair", "floating_button", "show_drag_coordinate", "sync_group_note", "sync_group_move", "process_icon_as_tray_icon", "point_display_keys",
                 "custom_notification", "window_match_criteria", "auto_match_foreground", "send_to_same_windows", "startup_position",
                 "display_scale", "catalog_revision", "groups", "on_conflict", "import_draft_id", "group", "target_group"}
             move_rule, = (rule for rule in previews["oneOf"]
